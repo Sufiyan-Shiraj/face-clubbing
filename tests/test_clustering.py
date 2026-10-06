@@ -366,7 +366,10 @@ def test_merged_from_and_id_map():
     assert cl.id_map["_metadata"]["count_pre"] == 3
     assert cl.id_map["_metadata"]["count_final"] == 2
     # All 3 pre-merge IDs must map to final IDs
-    for pid in ["p001", "p002", "p003"]:
+    pre_ids = [k for k in cl.id_map.keys() if not k.startswith("_")]
+    assert len(pre_ids) == 3
+    final_ids = {p.id for p in people}
+    for pid in pre_ids:
         assert pid in cl.id_map
-        assert cl.id_map[pid] in ["p001", "p002"]
+        assert cl.id_map[pid] in final_ids
 
