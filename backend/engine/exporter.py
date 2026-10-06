@@ -118,6 +118,8 @@ class BundleExporter:
                     }
                     for f in person.faces
                 ],
+                "merged_from": person.merged_from if person.merged_from else [person.id],
+                "merged_from_numbering": person.merged_from_numbering if person.merged_from_numbering else f"pre-merge {len(result.people)}",
                 "maybe_photos": [
                     {
                         "photo_id": m["photo_id"],
@@ -184,6 +186,7 @@ class BundleExporter:
                 "footer": "Published with PhotoSorter",
                 "show_labels": True,
                 "include_maybe": False,
+                "hide_single_photo_default": False,
             }
             if config_override:
                 default_config.update(config_override)

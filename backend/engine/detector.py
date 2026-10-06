@@ -111,16 +111,26 @@ class FaceDetector:
 
             # 3. Align, embed, and estimate head pose from ORIGINAL-resolution image
             embedding = None
+            embedding_flipped = None
             pose = None
             if orig_kps is not None:
                 face_obj = Face(bbox=np.array(orig_bbox), kps=orig_kps, det_score=det_score)
 
-                # Recognition embedding
+                # Recognition embedding (original and flipped)
                 if "recognition" in self._app.models:
-                    self._app.models["recognition"].get(orig_bgr, face_obj)
-                    if hasattr(face_obj, "embedding") and face_obj.embedding is not None:
-                        norm = np.linalg.norm(face_obj.embedding)
-                        embedding = (face_obj.embedding / norm).astype(np.float32) if norm > 1e-8 else face_obj.embedding.astype(np.float32)
+                    from insightface.utils import face_align
+                    rec_model = self._app.models["recognition"]
+                    aimg = face_align.norm_crop(orig_bgr, landmark=orig_kps, image_size=rec_model.input_size[0])
+                    if aimg is not None:
+                        feat_orig = rec_model.get_feat(aimg).flatten()
+                        norm_orig = np.linalg.norm(feat_orig)
+                        embedding = (feat_orig / norm_orig).astype(np.float32) if norm_orig > 1e-8 else feat_orig.astype(np.float32)
+
+                        aimg_flip = cv2.flip(aimg, 1)
+                        feat_flip = rec_model.get_feat(aimg_flip).flatten()
+                        feat_comb = (feat_orig + feat_flip) / 2.0
+                        norm_comb = np.linalg.norm(feat_comb)
+                        embedding_flipped = (feat_comb / norm_comb).astype(np.float32) if norm_comb > 1e-8 else feat_comb.astype(np.float32)
 
                 # 3D Landmark & Pose estimation: [pitch, yaw, roll]
                 if "landmark_3d_68" in self._app.models:
@@ -157,6 +167,7 @@ class FaceDetector:
                     bbox=orig_bbox,
                     det_score=det_score,
                     embedding=embedding,
+                    embedding_flipped=embedding_flipped,
                     landmarks=landmarks,
                     pose=pose,
                     is_good_quality=is_good,

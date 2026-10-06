@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-06  
 **Project**: Face Sorting Engine (`face-clubbing`)  
-**Status**: Pre-Phase 3 Fix-Up Round Completed. Phase 3 NOT started.  
+**Status**: Phase 1b Complete (All Tasks 1 to 11 Completed, 0 Incomplete). Phase 2 & Phase 3 NOT started.  
 
 ---
 
@@ -975,8 +975,8 @@ In Fix-Up Round 3, **re-attaching ambiguous faces after the second-pass merge** 
 | Non-Seed Attach Distance Cap | Faces Attached | Faces Unrecognized | Unrecognized: `unattached_profile` | Unrecognized: `ambiguous` | Unrecognized: `unattached_small` | Unrecognized: `unattached_lowscore` | Total Person Clusters | Singletons | Collision Clusters | Extra Faces |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **0.45 (Default + Reattach)** | 253 | 445 | 174 | 80 | 111 | 80 | 192 | 81 | 1 | 2 |
-| **0.50** | 244 | 454 | 174 | 89 | 111 | 80 | 187 | 76 | 1 | 2 |
-| **0.55** | 291 | 407 | 150 | 90 | 104 | 63 | 185 | 69 | 1 | 2 |
+| **0.50 (Cap 0.50 + Reattach)** | 275 | 423 | 174 | 58 | 111 | 80 | 187 | 75 | 1 | 2 |
+| **0.55 (Cap 0.55 + Reattach)** | 322 | 376 | 150 | 59 | 104 | 63 | 185 | 68 | 1 | 2 |
 
 ---
 
@@ -1095,3 +1095,165 @@ The clustering pipeline was executed across the full 259-photo dataset using **f
 | `p139` | `p152` | 0.7523 |
 | `p114` | `p169` | 0.7550 |
 | `p181` | `p141` | 0.7713 |
+
+---
+
+## 13. PHASE 1B ENGINE AMENDMENTS & RE-VERIFICATION REPORT
+
+**Phase 1b Status**: **Complete** (All Tasks 1 through 11 Completed, 0 Incomplete). Phase 2 and Phase 3 NOT started.
+
+### 13.1 Task 1: Working Test Suite Restoration
+- Dead code `backend/engine/clustering.py` removed.
+- Tests rewritten against current engine components (`EmbeddingCache`, `FaceClusterer`, `BundleExporter`, `PhotoScanner`).
+- Synthetic tests added in `tests/test_clustering.py` verifying seed vs attach-only roles, attach margin, same-photo exclusion on attach, second-pass auto-merge (< 0.50), same-photo collision guard (> 0.40 blocked, <= 0.40 allowed), ambiguous re-attach, and complete face accounting.
+- **Pytest Output**: 23 passed in 4.11s (`python -m pytest tests -q`).
+
+### 13.2 Task 2: Engine `merged_from` and `id_map.json` Integration
+- Pre-merge clustering produces 242 initial clusters.
+- Second-pass merge with same-photo collision guard combines 50 clusters into 17 clusters (33 net merges).
+- Final cluster count: 192 clusters.
+- `merged_from` (list of pre-merge IDs) and `merged_from_numbering` ("pre_merge_auto") populated directly on `PersonCluster` and exported to `people.json`.
+- `id_map.json` (mapping all 242 pre-merge IDs `p001`..`p242` to their final cluster IDs) written directly by engine into the organizer work directory (`export.work/id_map.json`).
+- Fully automated with zero external scratch scripts.
+
+### 13.3 Task 3: Separation of Organizer Work Directory from Public Bundle
+- Default work directory moved outside public bundle to `export.work/`.
+- Public bundle in `export/` strictly contains only:
+  - `config.json`
+  - `people.json`
+  - `faces/` (representative crop images)
+  - `thumbs/` (preview thumbnails)
+- Organizer files (`id_map.json`, `suggestions.json`, `edits.json`, detection/embedding cache `.json` records) reside strictly in `export.work/`.
+- Hygiene test in `tests/test_exporter.py` (`test_public_bundle_hygiene`) asserts no `.cache`, `suggestions.json`, `edits.json`, or `id_map.json` exist in `export/`.
+
+### 13.4 Task 4: Flip-Averaged Embedding Reproduction Benchmark
+- Implemented in `FaceDetector.detect_and_embed` and `pipeline.py`: original embedding and flipped crop embedding are averaged and re-normalized.
+- Cached in `PhotoRecord.faces` under `embedding_flipped`.
+- Engine alone reproduces earlier benchmark metrics:
+
+| Pipeline Run | Clusters | Singletons | Unrecognized Faces | Unrecognized Photos | Collision Clusters | Excess Faces |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Standard** | 192 | 81 | 445 | 168 | 1 (`p040`) | 2 |
+| **Flip-Averaged** | 176 | 70 | 420 | 160 | 1 (`p042`) | 2 |
+
+### 13.5 Task 5: Repository Hygiene & Consolidation
+- Single source of truth established under `eval/`: `eval/ground_truth.json`, `eval/loader.py`, `eval/negatives.py`, `eval/recall_table.py`, `eval/verify_export.py`.
+- Duplicate files deleted from repo root (`ground_truth.json`, `verify_final.py`) and `deliverables/`.
+- Generated outputs (`people.json`, `suggestions.json`, `id_map.json`, nested zip) purged from git tracking.
+- `.gitignore` updated to ignore `deliverables/`, `scratch/`, `export.work/`, `export_flip/`.
+- `README.md` updated with Project Status table.
+
+### 13.6 Task 6: Maybe Band ($0.50 \le d \le 0.65$) Distribution & Suggestions
+- Default `maybe_threshold` set to **0.65** in `FaceClusterer` and `EngineConfig`.
+- Regenerated `export.work/suggestions.json`:
+  - **Connected Maybe Groups**: **28 groups**
+  - **Total Maybe Links**: **82 links**
+  - **Split by Reason**:
+    - `centroid_band`: **74 links**
+    - `same_photo_conflict`: **8 links**
+
+#### Distance-Bin Distribution Table ($[0.50, 0.65]$ Band)
+| Distance Bin | Count of Maybe Links | Centroid Band Links | Same-Photo Conflict Links | Percentage of Links |
+| :---: | :---: | :---: | :---: | :---: |
+| **< 0.50** | 3 links | 0 | 3 | 3.7% |
+| **[0.50, 0.52)** | 9 links | 9 | 0 | 11.0% |
+| **[0.52, 0.55)** | 9 links | 9 | 0 | 11.0% |
+| **[0.55, 0.58)** | 10 links | 8 | 2 | 12.2% |
+| **[0.58, 0.60)** | 7 links | 7 | 0 | 8.5% |
+| **[0.60, 0.62)** | 18 links | 16 | 2 | 22.0% |
+| **[0.62, 0.65]** | 26 links | 25 | 1 | 31.7% |
+| **Total Maybe Links** | **82 links** | **74** | **8** | **100.0%** |
+
+- Blocked auto-merges (< 0.50) preserved in `same_photo_conflict`:
+  1. `('p029', 'p047')`: distance 0.2441
+  2. `('p029', 'p075')`: distance 0.4685
+  3. `('p078', 'p105')`: distance 0.4809
+
+### 13.7 Task 7: Stable Identity and Edit Replay (SPEC 6.3)
+- Deterministic Cluster ID Assignment: Clusters sorted by `(-len(photo_ids), rep_face.face_id)`. Two consecutive runs on identical inputs yield byte-identical `people.json` (except `generated_at`).
+- `export.work/edits.json` Schema (Version 1) implemented supporting ops `merge`, `remove`, `assign`, `hide`, `name` keyed by face ID anchors.
+- `apply_edits(people, unrecognized, edits_data, photos)` implemented in `backend/engine/edits.py` and wired into `pipeline.py`.
+- Unit tests in `tests/test_edits.py` passing:
+  1. `test_edit_replay_survives_config_change`: PASS
+  2. `test_unapplied_edits_unknown_face_id`: PASS
+  3. `test_deterministic_cluster_ids`: PASS
+  4. `test_hide_edit_preserves_photo_reachability`: PASS
+
+### 13.8 Task 8: Face-ID Based Verification & Same-Photo Distance Constraint
+- `eval/verify_export.py` replaces hardcoded cluster IDs with face-ID rules.
+- Rule: Across all clusters, no two faces from the same photograph may have cosine distance > `same_photo_merge_max` (0.40).
+- Result: **0 collisions above 0.40** across all 192 clusters. Maximum same-photo pairwise distance within any cluster: **0.2878** (in collage cluster `p040`, photo `4a9b927f5789cd69`).
+
+### 13.9 Task 9: Evaluation Package (SPEC 18)
+- Ground Truth Loader (`eval/loader.py`) loads `sets`, `different`, and optional `unconfirmed`.
+- `eval/ground_truth.json` updated with `"unconfirmed": ["f_d9c8bf96d71c7101_005"]`.
+- Same-photo negative generator (`eval/negatives.py`):
+  - 3,246 seed-face negative pairs from same photo.
+  - 3 pairs excluded with distance $\le 0.40$ (collage candidate photo `4a9b927f5789cd69`).
+
+#### Evaluation Table (A): All Labelled Pairs
+- **Positive Pairs**: 30 | **Labelled Sets**: 3 (Set A, Set B, Set C) | **Negative Pairs**: 3,246
+
+| Threshold ($T$) | True Recall (Standard) | False Pairs (Standard) | True Recall (Flip-Averaged) | False Pairs (Flip-Averaged) |
+| :---: | :---: | :---: | :---: | :---: |
+| **$\le 0.50$** | 1 / 30 (3.3%) | 0 / 3246 (0.00%) | 3 / 30 (10.0%) | 0 / 3246 (0.00%) |
+| **$\le 0.55$** | 4 / 30 (13.3%) | 0 / 3246 (0.00%) | 6 / 30 (20.0%) | 0 / 3246 (0.00%) |
+| **$\le 0.60$** | 7 / 30 (23.3%) | 0 / 3246 (0.00%) | 8 / 30 (26.7%) | 0 / 3246 (0.00%) |
+| **$\le 0.65$** | 10 / 30 (33.3%) | 3 / 3246 (0.09%) | 13 / 30 (43.3%) | 1 / 3246 (0.03%) |
+| **$\le 0.70$** | 18 / 30 (60.0%) | 19 / 3246 (0.59%) | 20 / 30 (66.7%) | 19 / 3246 (0.59%) |
+| **$\le 0.75$** | 24 / 30 (80.0%) | 75 / 3246 (2.31%) | 25 / 30 (83.3%) | 80 / 3246 (2.46%) |
+| **$\le 0.80$** | 25 / 30 (83.3%) | 235 / 3246 (7.24%) | 25 / 30 (83.3%) | 244 / 3246 (7.52%) |
+
+#### Evaluation Table (B): Clean Set (Excluding Unconfirmed & Near-Duplicates < 0.20)
+- **Positive Pairs**: 22 | **Labelled Sets**: 3 (Set A, Set B, Set C) | **Negative Pairs**: 3,246
+- **Exclusions**: 7 pairs involving unconfirmed face `f_d9c8bf96d71c7101_005` in Set C; 1 near-duplicate pair with distance < 0.20 (`f_cdfa42b70c134a74_001`, `f_49eff969f7dee3bd_001`, $d = 0.1649$).
+
+| Threshold ($T$) | True Recall (Standard) | False Pairs (Standard) | True Recall (Flip-Averaged) | False Pairs (Flip-Averaged) |
+| :---: | :---: | :---: | :---: | :---: |
+| **$\le 0.50$** | 0 / 22 (0.0%) | 0 / 3246 (0.00%) | 2 / 22 (9.1%) | 0 / 3246 (0.00%) |
+| **$\le 0.55$** | 3 / 22 (13.6%) | 0 / 3246 (0.00%) | 5 / 22 (22.7%) | 0 / 3246 (0.00%) |
+| **$\le 0.60$** | 6 / 22 (27.3%) | 0 / 3246 (0.00%) | 7 / 22 (31.8%) | 0 / 3246 (0.00%) |
+| **$\le 0.65$** | 8 / 22 (36.4%) | 3 / 3246 (0.09%) | 11 / 22 (50.0%) | 1 / 3246 (0.03%) |
+| **$\le 0.70$** | 16 / 22 (72.7%) | 19 / 3246 (0.59%) | 18 / 22 (81.8%) | 19 / 3246 (0.59%) |
+| **$\le 0.75$** | 21 / 22 (95.5%) | 75 / 3246 (2.31%) | 22 / 22 (100.0%) | 80 / 3246 (2.46%) |
+| **$\le 0.80$** | 22 / 22 (100.0%) | 235 / 3246 (7.24%) | 22 / 22 (100.0%) | 244 / 3246 (7.52%) |
+
+### 13.10 Task 10: Configuration and Viewer Integration
+- `hide_single_photo_default: false` added to `config.json` default in `BundleExporter`.
+- `viewer/src/components/PeopleGrid.tsx` and `viewer/src/App.tsx` updated to initialize "Hide single-photo people" toggle from `config.hide_single_photo_default`.
+- `flip_average: false` preserved as default.
+
+### 13.11 Task 11: Non-Seed Attach Distance Cap Sweep Table Fix
+- Pipeline steps aligned across all three threshold rows: each row runs seed clustering, initial strict attach, second-pass centroid merge, and post-merge ambiguous face re-attach with the specified attach distance cap.
+
+| Non-Seed Attach Distance Cap | Faces Attached | Faces Unrecognized | Unrecognized: `unattached_profile` | Unrecognized: `ambiguous` | Unrecognized: `unattached_small` | Unrecognized: `unattached_lowscore` | Total Person Clusters | Singletons | Collision Clusters | Extra Faces |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **0.45 (Default + Reattach)** | 253 | 445 | 174 | 80 | 111 | 80 | 192 | 81 | 1 | 2 |
+| **0.50 (Cap 0.50 + Reattach)** | 275 | 423 | 174 | 58 | 111 | 80 | 187 | 75 | 1 | 2 |
+| **0.55 (Cap 0.55 + Reattach)** | 322 | 376 | 150 | 59 | 104 | 63 | 185 | 68 | 1 | 2 |
+
+---
+
+### 13.12 Full Verification Audit Output (`eval/verify_export.py`)
+
+Execution command: `python eval/verify_export.py`
+
+```text
+================================================================================
+PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
+================================================================================
+[PASS] Check 1: Engine Invariants (259/259 photos covered, 1256 clustered + 445 unrec = 1701 detected faces, photos==photo_ids, maybe_photos empty)
+[PASS] Check 2: Public Bundle Hygiene (export/ contains strictly only: ['config.json', 'faces', 'people.json', 'thumbs'])
+[PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
+[PASS] Check 4: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
+[PASS] Check 5: Section 13 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
+[PASS] Check 6: Section 13 Maybe Band (0.65) Table verified (28 groups, 82 links: <0.50: 3, 50-52: 9, 52-55: 9, 55-58: 10, 58-60: 7, 60-62: 18, 62-65: 26)
+[PASS] Check 7: Section 13 Evaluation Table A (All Pairs: 30 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 8: Section 13 Evaluation Table B (Clean Set: 22 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 9: Section 12.9 Aligned Cap-Sweep Table verified (0.45: 253 att/445 unrec; 0.50: 275 att/423 unrec; 0.55: 322 att/376 unrec)
+================================================================================
+OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (9/9 CHECKS & TABLES VERIFIED)
+================================================================================
+```
+
+

@@ -178,6 +178,7 @@ export const App: React.FC = () => {
                 unrecognized={data.unrecognized}
                 searchQuery={searchQuery}
                 showLabels={config.show_labels !== false}
+                hideSinglePhotoDefault={config.hide_single_photo_default}
                 onSelectPerson={handleSelectPerson}
                 onSelectUnrecognized={handleSelectUnrecognized}
               />

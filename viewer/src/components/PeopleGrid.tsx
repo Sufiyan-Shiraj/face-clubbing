@@ -8,6 +8,7 @@ interface PeopleGridProps {
   unrecognized: UnrecognizedGroup;
   searchQuery: string;
   showLabels?: boolean;
+  hideSinglePhotoDefault?: boolean;
   onSelectPerson: (person: PersonCluster) => void;
   onSelectUnrecognized: () => void;
 }
@@ -17,11 +18,12 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
   unrecognized,
   searchQuery,
   showLabels = true,
+  hideSinglePhotoDefault = false,
   onSelectPerson,
   onSelectUnrecognized,
 }) => {
-  // Toggle: Hide single-photo people (off by default)
-  const [hideSinglePhoto, setHideSinglePhoto] = useState(false);
+  // Toggle: Hide single-photo people (initial state from config)
+  const [hideSinglePhoto, setHideSinglePhoto] = useState(hideSinglePhotoDefault);
 
   // 1. Filter by search query
   const searchFiltered = people.filter((p) => {

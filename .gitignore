@@ -36,17 +36,16 @@ models/
 # Data & Test photos
 test_photos/
 export/
+export.work/
+export_flip/
 *.cache
 *.pkl
 
-# Archives & Deprecated
+# Deliverables & Scratch
+deliverables/
+scratch/
 archives/
-
-# Scratch large caches & temporary outputs
-scratch/flip_embeddings.json
-scratch/debug_crops/
-scratch/logs/
-scratch/screenshots/
+*.zip
 
 # Auth & Secrets
 client_secret*.json
