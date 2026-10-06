@@ -32,8 +32,9 @@ class FaceClusterer:
         seed_min_det_score: float = 0.70,
         second_pass_merge: bool = True,
         merge_threshold: float = 0.50,
-        maybe_threshold: float = 0.60,
+        maybe_threshold: float = 0.65,
         same_photo_merge_max: float = 0.40,
+        attach_distance_cap: float = 0.45,
     ):
         self.distance_threshold = distance_threshold
         self.seed_min_face_size = seed_min_face_size
@@ -43,9 +44,11 @@ class FaceClusterer:
         self.merge_threshold = merge_threshold
         self.maybe_threshold = maybe_threshold
         self.same_photo_merge_max = same_photo_merge_max
+        self.attach_distance_cap = attach_distance_cap
         self.stats: Dict[str, Any] = {}
         self.maybe_groups: List[Dict[str, Any]] = []
         self.ambiguous_faces: List[Dict[str, Any]] = []
+        self.id_map: Dict[str, Any] = {}
 
     @staticmethod
     def compute_cluster_centroid(faces: List[FaceDetection], top_k: int = 5) -> Optional[np.ndarray]:
@@ -78,14 +81,14 @@ class FaceClusterer:
     @staticmethod
     def get_cluster_best_face(faces: List[FaceDetection]) -> Tuple[str, float]:
         """
-        Returns (best_face_id, best_det_score) for a cluster, ranked by det_score desc, min(w,h) desc.
+        Returns (best_face_id, best_det_score) for a cluster, ranked by det_score desc, min(w,h) desc, face_id asc.
         """
         scored = []
         for f in faces:
             w = f.bbox[2] - f.bbox[0]
             h = f.bbox[3] - f.bbox[1]
             scored.append((float(f.det_score), min(w, h), f.face_id))
-        scored.sort(key=lambda x: (x[0], x[1]), reverse=True)
+        scored.sort(key=lambda x: (-x[0], -x[1], x[2]))
         if scored:
             return scored[0][2], scored[0][0]
         return "", 0.0
@@ -201,7 +204,7 @@ class FaceClusterer:
             # b. Attach only if the best cluster distance is < 0.45 AND second-best is at least 0.05 farther.
             can_attach = (
                 c1 is not None
-                and d1 < 0.45
+                and d1 < self.attach_distance_cap
                 and (d2 - d1 >= 0.05)
                 and (face.photo_id not in cluster_photo_ids[c1])
             )
@@ -227,14 +230,20 @@ class FaceClusterer:
         # 4. Build initial clusters before merge
         initial_clusters = []
         for _, faces in cluster_map.items():
+            faces.sort(key=lambda f: (-float(f.det_score), f.face_id))
             photo_ids = list(dict.fromkeys(f.photo_id for f in faces))
             initial_clusters.append({
                 "photo_ids": photo_ids,
                 "faces": faces,
             })
 
-        # Sort: most photos first; tiebreaker: most faces
-        initial_clusters.sort(key=lambda item: (len(item["photo_ids"]), len(item["faces"])), reverse=True)
+        # Sort: most photos first; tiebreaker: lexicographically smallest best-face ID
+        initial_clusters.sort(
+            key=lambda item: (
+                -len(item["photo_ids"]),
+                FaceClusterer.get_cluster_best_face(item["faces"])[0],
+            )
+        )
 
         clusters_before_count = len(initial_clusters)
         singletons_before_count = sum(1 for c in initial_clusters if len(c["photo_ids"]) == 1)
@@ -318,10 +327,13 @@ class FaceClusterer:
                     for pid in initial_clusters[idx]["photo_ids"]:
                         if pid not in comp_photos:
                             comp_photos.append(pid)
+                comp_pre_ids = sorted([f"p{idx+1:03d}" for idx in comp], key=lambda x: int(x[1:]))
+                comp_faces.sort(key=lambda f: (-float(f.det_score), f.face_id))
                 merged_clusters.append({
                     "photo_ids": comp_photos,
                     "faces": comp_faces,
                     "orig_indices": comp,
+                    "merged_from": comp_pre_ids,
                 })
 
             # 5c. Post-merge ambiguous faces re-attach (default pipeline step)
@@ -347,7 +359,7 @@ class FaceClusterer:
 
                         can_attach = (
                             c1 is not None
-                            and d1 < 0.45
+                            and d1 < self.attach_distance_cap
                             and (d2 - d1 >= 0.05)
                             and (face.photo_id not in cluster_photo_ids[c1])
                         )
@@ -366,14 +378,27 @@ class FaceClusterer:
                         remaining_unattached.append(face)
                 unattached_faces = remaining_unattached
 
-            # Sort merged clusters: photo count desc, face count desc
-            merged_clusters.sort(key=lambda item: (len(item["photo_ids"]), len(item["faces"])), reverse=True)
+            # Sort merged clusters: photo count desc, tiebreaker: lexicographically smallest best-face ID
+            merged_clusters.sort(
+                key=lambda item: (
+                    -len(item["photo_ids"]),
+                    FaceClusterer.get_cluster_best_face(item["faces"])[0],
+                )
+            )
             init_to_final = {}
             for final_idx, c in enumerate(merged_clusters):
                 for orig_idx in c.get("orig_indices", []):
                     init_to_final[orig_idx] = final_idx
         else:
-            merged_clusters = initial_clusters
+            merged_clusters = []
+            for idx, c in enumerate(initial_clusters):
+                pre_id = f"p{idx+1:03d}"
+                merged_clusters.append({
+                    "photo_ids": c["photo_ids"],
+                    "faces": c["faces"],
+                    "orig_indices": [idx],
+                    "merged_from": [pre_id],
+                })
             blocked_initial_pairs = []
             init_to_final = {i: i for i in range(len(initial_clusters))}
 
@@ -382,10 +407,15 @@ class FaceClusterer:
 
         # 6. Build PersonCluster instances and assign IDs
         people: List[PersonCluster] = []
+        pre_to_final: Dict[str, str] = {}
         for idx, cdata in enumerate(merged_clusters):
             person_id = f"p{idx+1:03d}"
             for f in cdata["faces"]:
                 f.cluster_id = person_id
+
+            merged_from_list = cdata.get("merged_from", [person_id])
+            for pre_id in merged_from_list:
+                pre_to_final[pre_id] = person_id
 
             person = PersonCluster(
                 id=person_id,
@@ -394,16 +424,33 @@ class FaceClusterer:
                 photo_ids=cdata["photo_ids"],
                 faces=cdata["faces"],
                 maybe_photos=[],
+                merged_from=merged_from_list,
+                merged_from_numbering=f"pre-merge {len(initial_clusters)}",
             )
             people.append(person)
 
-        # 7. Tier 2: Maybe links (0.50 to 0.60) & Connected Groups
+        # Build id_map payload
+        id_map_payload: Dict[str, Any] = {
+            "_metadata": {
+                "source": f"pre-merge {len(initial_clusters)}",
+                "target": f"final {len(people)}",
+                "count_pre": len(initial_clusters),
+                "count_final": len(people),
+                "same_photo_merge_max": self.same_photo_merge_max,
+            }
+        }
+        for i in range(len(initial_clusters)):
+            pid = f"p{i+1:03d}"
+            id_map_payload[pid] = pre_to_final.get(pid, pid)
+        self.id_map = id_map_payload
+
+        # 7. Tier 2: Maybe links & Connected Groups
         self.maybe_groups = []
+        merged_centroids = [
+            self.compute_cluster_centroid(p.faces, top_k=5)
+            for p in people
+        ]
         if len(people) > 1:
-            merged_centroids = [
-                self.compute_cluster_centroid(p.faces, top_k=5)
-                for p in people
-            ]
 
             m_clusters = len(people)
             candidate_links = {}

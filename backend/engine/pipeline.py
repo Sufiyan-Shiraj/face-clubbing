@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional, Dict, Any, List
+import numpy as np
 
 from backend.engine.models import EngineResult, PhotoRecord
 from backend.engine.scanner import PhotoScanner
@@ -38,7 +39,7 @@ class EngineConfig:
     event_subtitle: str = "Photos grouped by person"
     second_pass_merge: bool = True
     merge_threshold: float = 0.50
-    maybe_threshold: float = 0.60
+    maybe_threshold: float = 0.65
     same_photo_merge_max: float = 0.40
     flip_average: bool = False
     include_maybe: bool = False
@@ -53,7 +54,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     """
     input_p = Path(config.input_path).resolve()
     out_p = Path(config.output_dir).resolve()
-    cache_p = Path(config.cache_dir).resolve() if config.cache_dir else out_p / ".cache"
+    cache_p = Path(config.cache_dir).resolve() if config.cache_dir else out_p.parent / f"{out_p.name}.work"
     cache_thumbs_p = cache_p / "thumbs"
     cache_crops_p = cache_p / "crops"
     cache_thumbs_p.mkdir(parents=True, exist_ok=True)
@@ -175,7 +176,14 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                 "message": f"[{processed}/{total_photos}] {item.file_name} ({len(photos[photo_id].faces)} faces)",
             })
 
-        # 4. Clustering
+        # 4. Clustering (with optional flip_average)
+        if config.flip_average:
+            notify({"stage": "flip_averaging", "message": "Applying flip-averaged embeddings..."})
+            for photo in photos.values():
+                for face in photo.faces:
+                    if face.embedding_flipped is not None:
+                        face.embedding = face.embedding_flipped
+
         notify({"stage": "clustering", "message": "Clustering faces by person with second-pass merge..."})
         clusterer = FaceClusterer(
             distance_threshold=config.distance_threshold,
@@ -204,16 +212,37 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         sug_path.parent.mkdir(parents=True, exist_ok=True)
         with open(sug_path, "w", encoding="utf-8") as f:
             json.dump(sug_payload, f, indent=2)
-        # Also write to root suggestions.json
-        root_sug = Path("suggestions.json")
-        with open(root_sug, "w", encoding="utf-8") as f:
-            json.dump(sug_payload, f, indent=2)
+
+        # Write id_map.json into work directory (organizer-only)
+        id_map_path = cache_p / "id_map.json"
+        with open(id_map_path, "w", encoding="utf-8") as f:
+            json.dump(clusterer.id_map, f, indent=2)
+
+        # 4c. Organizer edit replay (SPEC 6.3)
+        edits_path = cache_p / "edits.json"
+        if edits_path.exists():
+            notify({"stage": "applying_edits", "message": f"Applying organizer edits from {edits_path}..."})
+            with open(edits_path, "r", encoding="utf-8") as f:
+                edits_data = json.load(f)
+            from backend.engine.edits import apply_edits
+            people, unrecognized, unapplied, edit_stats = apply_edits(people, unrecognized, edits_data, photos)
+            if unapplied:
+                print(f"\n[WARNING] {len(unapplied)} edits could not be applied:")
+                for u in unapplied:
+                    print(f"  - {u.get('reason')}: {u.get('edit')}")
+            notify({
+                "stage": "edits_applied",
+                "applied": edit_stats.get("applied", 0),
+                "unapplied": len(unapplied),
+                "message": f"Applied {edit_stats.get('applied', 0)} edits ({len(unapplied)} unapplied).",
+            })
 
         result = EngineResult(
             photos=photos,
             people=people,
             unrecognized=unrecognized,
             distance_threshold=config.distance_threshold,
+            id_map=clusterer.id_map,
         )
 
         notify({

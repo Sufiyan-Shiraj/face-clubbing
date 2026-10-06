@@ -14,6 +14,7 @@ class FaceDetection:
     bbox: List[float]  # [x1, y1, x2, y2] in original image coordinates
     det_score: float
     embedding: Optional[np.ndarray] = None  # 512-d normalized embedding
+    embedding_flipped: Optional[np.ndarray] = None  # 512-d normalized flipped embedding
     landmarks: Optional[List[List[float]]] = None  # 5 facial landmarks
     pose: Optional[List[float]] = None  # [pitch, yaw, roll] in degrees
     is_good_quality: bool = True
@@ -30,6 +31,7 @@ class FaceDetection:
             "rejection_reason": self.rejection_reason,
             "cluster_id": self.cluster_id,
             "embedding": self.embedding.tolist() if self.embedding is not None else None,
+            "embedding_flipped": self.embedding_flipped.tolist() if self.embedding_flipped is not None else None,
             "landmarks": self.landmarks,
             "pose": self.pose,
         }
@@ -39,12 +41,16 @@ class FaceDetection:
         emb = data.get("embedding")
         if emb is not None:
             emb = np.array(emb, dtype=np.float32)
+        emb_flipped = data.get("embedding_flipped")
+        if emb_flipped is not None:
+            emb_flipped = np.array(emb_flipped, dtype=np.float32)
         return cls(
             face_id=data["face_id"],
             photo_id=data["photo_id"],
             bbox=data["bbox"],
             det_score=float(data["det_score"]),
             embedding=emb,
+            embedding_flipped=emb_flipped,
             landmarks=data.get("landmarks"),
             pose=data.get("pose"),
             is_good_quality=data.get("is_good_quality", True),
@@ -99,6 +105,8 @@ class PersonCluster:
     photo_ids: List[str] = field(default_factory=list)
     faces: List[FaceDetection] = field(default_factory=list)
     maybe_photos: List[Dict[str, Any]] = field(default_factory=list)
+    merged_from: List[str] = field(default_factory=list)
+    merged_from_numbering: str = ""
 
     @property
     def photos(self) -> List[str]:
@@ -119,3 +127,5 @@ class EngineResult:
     people: List[PersonCluster]
     unrecognized: UnrecognizedGroup
     distance_threshold: float
+    id_map: Dict[str, Any] = field(default_factory=dict)
+

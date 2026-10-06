@@ -26,7 +26,7 @@ def main():
     parser.add_argument(
         "--cache-dir",
         default=None,
-        help="Custom cache directory for embeddings (default: <out>/.cache).",
+        help="Custom cache/work directory for embeddings and organizer files (default: <out>.work).",
     )
     parser.add_argument(
         "--threshold", "-t",

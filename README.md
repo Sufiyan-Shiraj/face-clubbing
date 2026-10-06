@@ -4,6 +4,18 @@ PhotoSorter is a free, privacy-first, desktop application and static site genera
 
 ---
 
+## Project Status
+
+| Phase | Description | Status |
+|---|---|---|
+| **Phase 0** | Setup, environment, and risk check | **Done** |
+| **Phase 1** | Engine core (CLI, face detection, seed/attach, merge) | **Accepted** |
+| **Phase 1b** | Engine amendments (stable identity, edit replay, 0.65 band, eval suite) | **Completed** |
+| **Phase 2** | Static viewer (single people grid, unrecognized view, hide toggle) | Built (Pending rev 2 update) |
+| **Phase 3-9** | FastAPI API, Desktop UI, Drive integration, packaging | Not started |
+
+---
+
 ## Key Features
 
 - **No Duplication:** Group photos are indexed once and mapped to every detected person. Original photos remain untouched.

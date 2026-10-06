@@ -7,6 +7,7 @@ export interface ViewerConfig {
   footer?: string;
   show_labels?: boolean;
   include_maybe?: boolean;
+  hide_single_photo_default?: boolean;
 }
 
 export interface PhotoInfo {
