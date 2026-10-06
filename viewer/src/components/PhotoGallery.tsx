@@ -6,12 +6,14 @@ import { PhotoModal } from './PhotoModal';
 interface PhotoGalleryProps {
   person: PersonCluster;
   photos: Record<string, PhotoInfo>;
+  includeMaybe?: boolean;
   onBack: () => void;
 }
 
 export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   person,
   photos,
+  includeMaybe = false,
   onBack,
 }) => {
   const [modalState, setModalState] = useState<{
@@ -71,7 +73,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
             </h2>
             <p className="text-xs sm:text-sm text-neutral-400">
               Appears in {photoIds.length} {photoIds.length === 1 ? 'photo' : 'photos'}
-              {maybePhotos.length > 0 && ` • ${maybePhotos.length} possible additional`}
+              {includeMaybe && maybePhotos.length > 0 && ` • ${maybePhotos.length} possible additional`}
             </p>
           </div>
         </div>
@@ -149,14 +151,14 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
         </div>
       </div>
 
-      {/* "May also include" Row/Section (Shown only when maybe_photos exist) */}
-      {maybePhotos.length > 0 && (
+      {/* "Possible matches" Row/Section (Shown only when includeMaybe is true and maybe_photos exist) */}
+      {includeMaybe && maybePhotos.length > 0 && (
         <div className="pt-6 border-t border-neutral-800/80">
           <div className="mb-4">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-2">
                 <HelpCircle className="w-4 h-4 text-amber-400" />
-                May also include ({maybePhotos.length})
+                Possible matches ({maybePhotos.length})
               </h3>
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">

@@ -3,6 +3,7 @@
 from __future__ import annotations
 from typing import Dict, List, Tuple, Optional, Any
 from collections import Counter
+from pathlib import Path
 import logging
 
 from backend.engine.models import PersonCluster, UnrecognizedGroup, FaceDetection, PhotoRecord
@@ -69,7 +70,9 @@ def find_face_by_id(
     internal_items = getattr(unrecognized, "_face_items", [])
     for item in internal_items:
         f_obj = item.get("face_obj")
-        if f_obj and f_obj.face_id == face_id:
+        item_face = item.get("face", "")
+        item_stem = Path(item_face).stem if item_face else ""
+        if f_obj and (f_obj.face_id == face_id or item_stem == face_id or item.get("face_id") == face_id):
             return f_obj, "unrecognized", None
 
     # 3. Search in all photo records
@@ -205,8 +208,11 @@ def apply_edits(
                 unrecognized._face_items = []
             unrecognized._face_items.append(unrec_item)
             unrecognized.faces.append({
+                "face_id": rem_face.face_id,
                 "photo_id": rem_face.photo_id,
                 "face": f"faces/{rem_face.face_id}.jpg",
+                "rejection_reason": "removed_from_cluster",
+                "det_score": getattr(rem_face, "det_score", None),
             })
 
             # Check if photo still in person
@@ -244,8 +250,41 @@ def apply_edits(
             # Remove from unrecognized if applicable
             if loc_type == "unrecognized":
                 internal_items = getattr(unrecognized, "_face_items", [])
-                unrecognized._face_items = [it for it in internal_items if it.get("face_obj") != face_obj]
-                unrecognized.faces = [it for it in unrecognized.faces if it.get("face") != f"faces/{target_fid}.jpg"]
+                matched_face_paths = set()
+                new_internal = []
+                for it in internal_items:
+                    f_o = it.get("face_obj")
+                    fid_matches = (
+                        f_o == face_obj
+                        or (f_o and getattr(f_o, "face_id", None) == target_fid)
+                        or it.get("face_id") == target_fid
+                        or (it.get("face") and Path(it["face"]).stem == target_fid)
+                    )
+                    if fid_matches:
+                        if it.get("face"):
+                            matched_face_paths.add(it["face"])
+                    else:
+                        new_internal.append(it)
+                unrecognized._face_items = new_internal
+
+                new_faces = []
+                for it in unrecognized.faces:
+                    if isinstance(it, dict):
+                        f_id = it.get("face_id")
+                        f_path = it.get("face")
+                        is_match = (
+                            f_id == target_fid
+                            or (f_id and face_obj and f_id == face_obj.face_id)
+                            or (f_path and f_path in matched_face_paths)
+                            or (f_path and f_path == f"faces/{target_fid}.jpg")
+                            or (f_path and Path(f_path).stem == target_fid)
+                        )
+                        if not is_match:
+                            new_faces.append(it)
+                    else:
+                        if it != face_obj and getattr(it, "face_id", None) != target_fid:
+                            new_faces.append(it)
+                unrecognized.faces = new_faces
 
             face_obj.is_good_quality = True
             face_obj.rejection_reason = None
@@ -281,6 +320,24 @@ def apply_edits(
                 continue
 
             current_people.remove(target_person)
+
+            # Move all faces of hidden person to unrecognized
+            if not hasattr(unrecognized, "_face_items"):
+                unrecognized._face_items = []
+            for h_face in target_person.faces:
+                h_item = {
+                    "photo_id": h_face.photo_id,
+                    "face": f"faces/{h_face.face_id}.jpg",
+                    "face_obj": h_face,
+                }
+                unrecognized._face_items.append(h_item)
+                unrecognized.faces.append({
+                    "face_id": h_face.face_id,
+                    "photo_id": h_face.photo_id,
+                    "face": f"faces/{h_face.face_id}.jpg",
+                    "rejection_reason": "hidden_person",
+                    "det_score": getattr(h_face, "det_score", None),
+                })
 
             # Check if any photo of this hidden person becomes unreachable
             for pid in target_person.photo_ids:

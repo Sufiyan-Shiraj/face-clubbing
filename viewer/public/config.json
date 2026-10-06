@@ -6,5 +6,6 @@
   "font": "Inter",
   "footer": "Published with PhotoSorter",
   "show_labels": true,
-  "include_maybe": false
+  "include_maybe": false,
+  "hide_single_photo_default": false
 }

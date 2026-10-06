@@ -665,7 +665,16 @@ class FaceClusterer:
 
         unrecognized = UnrecognizedGroup(
             photo_ids=sorted(list(unrec_photo_ids_set)),
-            faces=[{"photo_id": item["photo_id"], "face": item["face"]} for item in unrec_face_items],
+            faces=[
+                {
+                    "face_id": item["face_obj"].face_id,
+                    "photo_id": item["photo_id"],
+                    "face": item["face"],
+                    "rejection_reason": getattr(item["face_obj"], "rejection_reason", "unattached"),
+                    "det_score": round(float(item["face_obj"].det_score), 4) if getattr(item["face_obj"], "det_score", None) else None,
+                }
+                for item in unrec_face_items
+            ],
         )
         unrecognized._face_items = unrec_face_items  # type: ignore
 
