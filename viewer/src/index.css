@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-accent: #3b82f6;
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: #09090b;
+  color: #f4f4f5;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism utilities */
+.glass-nav {
+  background: rgba(15, 15, 18, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(24, 24, 27, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  background: rgba(39, 39, 42, 0.8);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* Subtle pulse animation for loaders */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-placeholder {
+  background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+}

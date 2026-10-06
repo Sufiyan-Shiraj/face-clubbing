@@ -1,0 +1,67 @@
+[
+  {
+    "threshold": 0.45,
+    "clusters": 426,
+    "largest_cluster_photos": 62,
+    "bucket_1": 266,
+    "bucket_2_3": 97,
+    "bucket_4_10": 37,
+    "bucket_11_plus": 26,
+    "colliding_clusters": 2,
+    "collision_pct": 0.47,
+    "total_extra_faces": 4,
+    "clustering_time_ms": 3091.3
+  },
+  {
+    "threshold": 0.5,
+    "clusters": 353,
+    "largest_cluster_photos": 62,
+    "bucket_1": 209,
+    "bucket_2_3": 82,
+    "bucket_4_10": 30,
+    "bucket_11_plus": 32,
+    "colliding_clusters": 2,
+    "collision_pct": 0.57,
+    "total_extra_faces": 4,
+    "clustering_time_ms": 364.9
+  },
+  {
+    "threshold": 0.55,
+    "clusters": 295,
+    "largest_cluster_photos": 67,
+    "bucket_1": 160,
+    "bucket_2_3": 73,
+    "bucket_4_10": 28,
+    "bucket_11_plus": 34,
+    "colliding_clusters": 2,
+    "collision_pct": 0.68,
+    "total_extra_faces": 6,
+    "clustering_time_ms": 358.8
+  },
+  {
+    "threshold": 0.6,
+    "clusters": 251,
+    "largest_cluster_photos": 68,
+    "bucket_1": 117,
+    "bucket_2_3": 67,
+    "bucket_4_10": 32,
+    "bucket_11_plus": 35,
+    "colliding_clusters": 2,
+    "collision_pct": 0.8,
+    "total_extra_faces": 6,
+    "clustering_time_ms": 384.1
+  },
+  {
+    "threshold": 0.65,
+    "clusters": 214,
+    "largest_cluster_photos": 74,
+    "bucket_1": 90,
+    "bucket_2_3": 60,
+    "bucket_4_10": 29,
+    "bucket_11_plus": 35,
+    "colliding_clusters": 2,
+    "collision_pct": 0.93,
+    "total_extra_faces": 7,
+    "clustering_time_ms": 378.7
+  }
+]

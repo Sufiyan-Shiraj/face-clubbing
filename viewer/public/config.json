@@ -1,0 +1,10 @@
+{
+  "title": "Event Gallery",
+  "subtitle": "Photos grouped by person",
+  "logo": null,
+  "accent": "#2563eb",
+  "font": "Inter",
+  "footer": "Published with PhotoSorter",
+  "show_labels": true,
+  "include_maybe": false
+}
