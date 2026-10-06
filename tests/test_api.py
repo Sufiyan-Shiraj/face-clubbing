@@ -656,3 +656,29 @@ def test_api_rerun_replay_under_real_clustering_change():
         state._load_edits_from_disk()
         state.rerun_pipeline_with_edits()
 
+
+def test_api_photos_endpoint_and_remove_by_photo(api_setup):
+    """Test /api/photos returns photo map and /api/edits allows remove by photo_id."""
+    client, state, _, _ = api_setup
+    photos_resp = client.get("/api/photos")
+    assert photos_resp.status_code == 200
+    photos = photos_resp.json()
+    assert "ph1" in photos
+    assert photos["ph1"]["file_name"] == "ph1.jpg"
+
+    # Remove photo ph4 from person containing f_anchor_04b
+    people = client.get("/api/people").json()
+    target = next(p for p in people if any(f["face_id"] == "f_anchor_04b" for f in p["faces"]))
+    initial_faces_count = len(target["faces"])
+    resp = client.post("/api/edits", json={
+        "op": "remove",
+        "person_id": target["id"],
+        "photo_id": "ph4",
+    })
+    assert resp.status_code == 200
+    people_after = client.get("/api/people").json()
+    target_after = next(p for p in people_after if "f_anchor_04b" in p["anchor_face_ids"])
+    assert len(target_after["faces"]) == initial_faces_count - 1
+    assert "f_anchor_04a" not in [f["face_id"] for f in target_after["faces"]]
+
+
