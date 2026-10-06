@@ -424,41 +424,18 @@ The FastAPI application layer exposes an HTTP/REST API and SSE streaming interfa
 
 ### 15.2 Task 0 Evidence: Repository Sanity & Branch Consistency
 
-#### 1. Git Log Output (`git log --oneline -8`)
+#### 1. Git Log Output (`git log --oneline -5`)
 ```text
+c9a8fab fix(tests): resolve canonical data path relative to test file for clean-checkout safety
+7d7cfed feat(api): Phase 3 FastAPI layer, viewer fixes, and evaluation audit suite
 9f3b026 Strengthen test_edit_merge_preservation_across_thresholds with d=0.45 and add test_deterministic_identical_runs
 2ea9d8f Phase 1b closeout: fix 'five'->'six' stages, add historical notes to §9.5 and §10.4, add zip listing and SKIP verify output to §14
 bc48f06 Complete Phase 1b and repository health consolidation
-c14a778 feat(engine): complete fix-up rounds 1-3 duplicate reduction, ambiguous face re-attach, evidence reports, and workspace cleanup
-124ad07 Initial commit
 ```
 
 #### 2. Git Status Output (`git status -s`)
 ```text
- M BUILD_PLAN.md
- M REPORT.md
- M backend/api/__init__.py
- M backend/engine/clusterer.py
- M backend/engine/edits.py
- M backend/engine/exporter.py
- M backend/engine/pipeline.py
- M viewer/package-lock.json
- M viewer/package.json
- M viewer/src/App.tsx
- M viewer/src/components/PhotoGallery.tsx
-?? backend/api/app.py
-?? backend/api/jobs.py
-?? backend/api/models.py
-?? backend/api/routes.py
-?? backend/api/state.py
-?? eval/drive_curl.py
-?? eval/test_task5_real_job.py
-?? eval/verify_api.py
-?? export.api_test/
-?? tests/test_api.py
-?? viewer/scripts/
-?? viewer/src/__tests__/
-?? viewer/vitest.config.ts
+# Clean working tree (no uncommitted changes or untracked test artifacts)
 ```
 
 #### 3. Pytest Collection Output (`python -m pytest --collect-only -q`)
