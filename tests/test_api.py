@@ -21,11 +21,13 @@ from backend.engine.models import FaceDetection, PhotoRecord, PersonCluster, Unr
 from backend.api.app import create_app
 from backend.api.models import SettingsModel
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
 def _has_canonical_data() -> bool:
-    export_people = Path("export/people.json")
+    export_people = REPO_ROOT / "export" / "people.json"
     if not export_people.exists():
         return False
-    work_dir = Path("export.work")
+    work_dir = REPO_ROOT / "export.work"
     cache_subdir = work_dir / ".cache"
     has_cache = (
         (work_dir.exists() and len(list(work_dir.glob("*.json"))) >= 200)
