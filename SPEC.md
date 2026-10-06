@@ -408,6 +408,7 @@ On Linux create the venv with `--system-site-packages` so pywebview sees the sys
 16. **(rev 2)** Viewer: single people grid with a "Hide single-photo people" toggle; Unrecognized shows face crops plus a separate no-face photo list.
 17. **(rev 2)** `flip_average` stays off by default until ground truth has 15+ labelled sets showing a gain; measured so far: +2 true pairs at or below 0.50 and 16 fewer clusters, with no extra collisions or negatives below 0.60.
 18. **(rev 2)** Engine-report rule: reports contain counts, IDs and filenames only; every report table is checked against the JSON by a verification script.
+19. **(rev 2 Phase 1b)** Work directory separation and face-ID verification: the public bundle (`export/`) strictly isolates viewer deliverables (`config.json`, `people.json`, `faces/`, `thumbs/`), while organizer artifacts (`suggestions.json`, `id_map.json`, `edits.json`) and embedding cache reside exclusively in `export.work/`. Verification scripts and test suites strictly forbid hardcoded cluster IDs (`\bp\d{3}\b`) outside comments, referencing faces and photos solely via canonical face IDs and photo IDs with allowlists located in `eval/ground_truth.json`.
 
 ## 18. Evaluation and ground truth
 

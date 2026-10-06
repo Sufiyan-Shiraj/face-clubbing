@@ -951,7 +951,7 @@ The clustering pipeline was executed across the full 259-photo dataset using **f
 - Dead code `backend/engine/clustering.py` removed.
 - Tests rewritten against current engine components (`EmbeddingCache`, `FaceClusterer`, `BundleExporter`, `PhotoScanner`).
 - Synthetic tests added in `tests/test_clustering.py` verifying seed vs attach-only roles, attach margin, same-photo exclusion on attach, second-pass auto-merge (< 0.50), same-photo collision guard (> 0.40 blocked, <= 0.40 allowed), ambiguous re-attach, and complete face accounting.
-- **Pytest Output**: 23 passed in 4.11s (`python -m pytest tests -q`).
+- **Pytest Output**: 24 passed in 4.09s (`python -m pytest tests -q`).
 
 ### 13.2 Task 2: Engine `merged_from` and `id_map.json` Integration
 - Pre-merge clustering produces 242 initial clusters.
@@ -1092,7 +1092,7 @@ PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
 [PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
 [PASS] Check 4: Collision Audit by Face IDs: 1 collision instance verified (photo 4a9b927f5789cd69, faces ['f_4a9b927f5789cd69_001', 'f_4a9b927f5789cd69_005', 'f_4a9b927f5789cd69_007'], max distance 0.2878 <= 0.40, allowlist verified)
 [PASS] Check 5: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
-[PASS] Check 6: Section 13.1 Test Count verified against pytest collection (23 tests collected, 23 passed cited)
+[PASS] Check 6: Section 13.1 Test Count verified against pytest collection (24 tests collected, 24 passed cited)
 [PASS] Check 7: Section 13.2 Merge Arithmetic verified (83 pre-merge clusters -> 33 final clusters = 50 net merges, 242 - 50 = 192)
 [PASS] Check 8: Section 13.4 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
 [PASS] Check 9: Blocked Merges by Best-Face IDs verified (3 blocked links < 0.50 matched; 8 same_photo_conflict links total)
@@ -1200,8 +1200,8 @@ export.work/  (259 per-photo detection JSON files + id_map.json + suggestions.js
 Execution command: `python -m pytest tests -q`
 
 ```text
-.......................                                                   [100%]
-23 passed in 4.17s
+........................                                                 [100%]
+24 passed in 4.09s
 ```
 
 #### 4. verify_export.py Output with pytest Blocked ([SKIP] Path)
@@ -1230,7 +1230,7 @@ OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
 ================================================================================
 ```
 
-*(When pytest is available — as inside the zip self-check — Check 6 prints: `[PASS] Check 6: Section 13.1 Test Count verified against pytest collection (23 tests collected, 23 passed cited)`)*
+*(When pytest is available — as inside the zip self-check — Check 6 prints: `[PASS] Check 6: Section 13.1 Test Count verified against pytest collection (24 tests collected, 24 passed cited)`)*
 
 ---
 
@@ -1343,7 +1343,7 @@ This appendix records historical contact sheet inspection data from exploratory 
 | :--- | :---: | :--- | :--- |
 | **TASK 1: Remove cluster-ID checks from eval/verify_export.py** | **COMPLETE** | Command: `python eval/verify_export.py --export export/ --work export.work/ --report REPORT.md`<br>Files: [`eval/verify_export.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_export.py), [`eval/ground_truth.json`](file:///c:/Users/DELL/face-clubbing/eval/ground_truth.json) | Check 4 verifies collision by face IDs and ground-truth photo allowlist (`4a9b927f5789cd69`). Check 9 verifies blocked auto-merges using link best-face IDs. Check 14 verifies zero `\bp\d{3}\b` tokens in code outside comments across `eval/` and `tests/`. (14/14 checks pass). |
 | **TASK 2: Edit-replay test with a changed config** | **COMPLETE** | Command: `python -m pytest tests/test_edits.py -q`<br>File: [`tests/test_edits.py`](file:///c:/Users/DELL/face-clubbing/tests/test_edits.py) | `test_edit_merge_preservation_across_thresholds`: Config A (0.50) -> edit merge -> Config B (0.35) -> anchors remain merged, unlocatable reported.<br>`test_unapplied_edit_unknown_face_id`: unknown anchor reported in unapplied, run does not crash.<br>`test_deterministic_cluster_ids_shuffled_input`: 5 shuffled permutations produce identical photo-count descending and smallest-face-ID tie-break. (4 passed in 0.57s). |
-| **TASK 3: Robust pytest check in verify_export.py** | **COMPLETE** | Command: `python eval/verify_export.py --export export/ --work export.work/ --report REPORT.md`<br>File: [`eval/verify_export.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_export.py#L254-L277) | Check 6 prints `[SKIP] pytest not installed` gracefully without reporting mismatch if pytest unimportable; when available, runs `pytest --collect-only -q`, asserts exit code == 0, and compares collected count (23) against report citation. |
+| **TASK 3: Robust pytest check in verify_export.py** | **COMPLETE** | Command: `python eval/verify_export.py --export export/ --work export.work/ --report REPORT.md`<br>File: [`eval/verify_export.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_export.py#L254-L277) | Check 6 prints `[SKIP] pytest not installed` gracefully without reporting mismatch if pytest unimportable; when available, runs `pytest --collect-only -q`, asserts exit code == 0, and compares collected count (24) against report citation. |
 | **TASK 4: Packaging and report hygiene** | **COMPLETE** | Command: `python scratch/build_zip.py`<br>Files: [`BUILD_PLAN.md`](file:///c:/Users/DELL/face-clubbing/BUILD_PLAN.md#L15), [`SPEC.md`](file:///c:/Users/DELL/face-clubbing/SPEC.md#L411), [`REPORT.md`](file:///c:/Users/DELL/face-clubbing/REPORT.md) | Retitled report to `PhotoSorter Phase 1b Verification Report`. Relocated visual contact sheet descriptions to Appendix, retaining counts, IDs, filenames. Excluded `faces/` (637) and `thumbs/` (259) from zip for size efficiency with note in report. Excluded duplicate root json files from zip. Updated `BUILD_PLAN.md` line 15 to `Phase 1b: Done`. Added Item 19 to `SPEC.md` Decisions Log. |
 
 

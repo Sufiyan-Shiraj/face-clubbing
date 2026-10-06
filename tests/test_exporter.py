@@ -67,12 +67,14 @@ def test_bundle_exporter(tmp_path: Path):
     )
 
     person1 = PersonCluster(
-        id="p001",
+        id="c_01",
         label=None,
-        face_path="faces/p001.jpg",
+        face_path="faces/c_01.jpg",
         rep_face=f1,
         photo_ids=["pid1"],
         faces=[f1],
+        merged_from=["pre_01"],
+        merged_from_numbering="pre-merge 1",
     )
 
     unrecognized = UnrecognizedGroup(
@@ -103,7 +105,7 @@ def test_bundle_exporter(tmp_path: Path):
     assert (export_dir / "config.json").is_file()
     assert (export_dir / "thumbs" / "pid1.jpg").is_file()
     assert (export_dir / "thumbs" / "pid2.jpg").is_file()
-    assert (export_dir / "faces" / "p001.jpg").is_file()
+    assert (export_dir / "faces" / "c_01.jpg").is_file()
     assert (export_dir / "faces" / "u001.jpg").is_file()
 
     with open(export_dir / "people.json", "r", encoding="utf-8") as f:
@@ -113,10 +115,10 @@ def test_bundle_exporter(tmp_path: Path):
     assert "pid1" in people_data["photos"]
     assert "pid2" in people_data["photos"]
     assert len(people_data["people"]) == 1
-    assert people_data["people"][0]["id"] == "p001"
+    assert people_data["people"][0]["id"] == "c_01"
     assert people_data["people"][0]["photo_ids"] == ["pid1"]
     assert people_data["people"][0]["photos"] == ["pid1"]
-    assert people_data["people"][0]["merged_from"] == ["p001"]
+    assert people_data["people"][0]["merged_from"] == ["pre_01"]
     assert people_data["people"][0]["merged_from_numbering"] == "pre-merge 1"
 
     with open(export_dir / "config.json", "r", encoding="utf-8") as f:
@@ -152,12 +154,12 @@ def test_public_bundle_hygiene(tmp_path: Path):
         faces=[f1],
     )
     person1 = PersonCluster(
-        id="p001",
-        face_path="faces/p001.jpg",
+        id="c_01",
+        face_path="faces/c_01.jpg",
         rep_face=f1,
         photo_ids=["pid1"],
         faces=[f1],
-        merged_from=["p001"],
+        merged_from=["pre_01"],
         merged_from_numbering="pre-merge 1",
     )
     result = EngineResult(
