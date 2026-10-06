@@ -64,6 +64,10 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
     def get_unrecognized():
         return state.get_unrecognized_response()
 
+    @router.get("/photos")
+    def get_photos():
+        return state.get_photos_response()
+
     # 3. Suggestions Endpoints
     @router.get("/suggestions", response_model=SuggestionsResponse)
     def get_suggestions():

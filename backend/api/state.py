@@ -18,7 +18,7 @@ import numpy as np
 
 from backend.engine.models import EngineResult, PersonCluster, UnrecognizedGroup, PhotoRecord, FaceDetection
 from backend.engine.clusterer import FaceClusterer
-from backend.engine.edits import apply_edits, find_face_by_id
+from backend.engine.edits import apply_edits, find_face_by_id, locate_person_by_anchors
 from backend.engine.exporter import BundleExporter
 from backend.engine.cache import EmbeddingCache
 from backend.engine.pipeline import EngineConfig, run_pipeline
@@ -356,7 +356,7 @@ class AppState:
                 return False, "Merge requires 'person_ids' or 'anchors'", []
 
         elif op == "remove":
-            # Remove face from person
+            # Remove face or photo from person
             if "person_id" in req and req["person_id"]:
                 stored_edit["person"] = self.resolve_person_handle_to_anchors(req["person_id"])
             elif "person" in req and req["person"]:
@@ -365,8 +365,20 @@ class AppState:
                 return False, "Remove requires 'person_id' or 'person' anchors", []
 
             if not req.get("face_id"):
-                return False, "Remove requires 'face_id'", []
-            stored_edit["face_id"] = req["face_id"]
+                if req.get("photo_id"):
+                    target_person, _ = locate_person_by_anchors(self.people, stored_edit["person"])
+                    if target_person:
+                        matching_faces = [f.face_id for f in target_person.faces if f.photo_id == req["photo_id"]]
+                        if matching_faces:
+                            stored_edit["face_id"] = matching_faces[0]
+                        else:
+                            return False, f"Photo {req['photo_id']} has no faces in this person", []
+                    else:
+                        return False, "Could not locate person", []
+                else:
+                    return False, "Remove requires 'face_id' or 'photo_id'", []
+            else:
+                stored_edit["face_id"] = req["face_id"]
 
         elif op == "assign":
             # Assign unrecognized face to person or create new person
@@ -376,7 +388,7 @@ class AppState:
             face_obj, _, _ = find_face_by_id(fid, self.people, self.unrecognized, self.photos)
             stored_edit["face_id"] = face_obj.face_id if face_obj else fid
 
-            if req.get("person_id"):
+            if req.get("person_id") and req["person_id"] != "new":
                 stored_edit["person"] = self.resolve_person_handle_to_anchors(req["person_id"])
             elif req.get("person"):
                 stored_edit["person"] = req["person"]
@@ -610,6 +622,18 @@ class AppState:
             no_face_photos=no_face_photos,
             faces=faces_resp,
         )
+
+    def get_photos_response(self) -> Dict[str, Any]:
+        result = {}
+        for pid, p in self.photos.items():
+            result[pid] = {
+                "photo_id": pid,
+                "file_name": p.file_name,
+                "width": p.width,
+                "height": p.height,
+                "thumb": f"thumbs/{pid}.jpg",
+            }
+        return result
 
     def get_suggestions_response(self) -> SuggestionsResponse:
         """

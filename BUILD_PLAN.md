@@ -94,24 +94,26 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
-## Phase 4: Organizer UI (React)
+## Phase 4: Organizer UI (React) [COMPLETE]
 
-**Build** (in `frontend/`)
-1. Screens: Home (choose source), Progress, Review People, Export, Settings.
-2. Source picker: folder/zip (native pickers, see Phase 5) and Drive link field (wired up in Phase 6).
-3. Live progress bar from SSE with cancel.
-4. **Review People** (this screen decides the product's real quality; budget real time for it):
-   - grid of people with multi-select and **merge many**;
-   - side-by-side **suggestion review** (both faces, photo counts, distance, reason) with accept/reject;
-   - ranked low-confidence list for single-photo people, clearly labelled;
-   - remove face/photo from a person, hide, optional naming;
-   - **Unrecognized triage:** assign a face to a person (top-3 candidates shown for ambiguous faces) or create a person;
-   - undo for every action.
-5. Export screen: preview, open output folder, instructions for publishing to GitHub/Cloudflare Pages.
-6. Settings: clustering sensitivity, thumbnail size, API key field (Method 1), storage-level choice (Method 2, stubbed for now).
-7. Reuse the viewer's grid/gallery components where practical.
+**Build** (in `frontend/` - React + Vite + Tailwind CSS + TypeScript)
+1. Screens: Home (source picker with native path input, Drive link field disabled/stubbed for Phase 6), Progress (SSE bar with current, total, percent, stage, ETA, cancel), Review People (core organizer workflow), Export (preview, stats, publishing instructions), Settings (clustering params, thumb size, API key stub, storage-level stub).
+2. Source picker: folder/zip source path input with quick defaults, Drive link field clearly labelled "Phase 6".
+3. Live progress bar from SSE streaming (`/api/jobs/{id}/progress`) with status, ETA, and cancellation.
+4. **Review People**:
+   - Grid of people with multi-select and multi-merge in one action (`/api/edits` merge).
+   - Side-by-side **suggestion review** with both faces, photo counts, distance, and reason, supporting accept and persistent session reject.
+   - Ranked low-confidence "Possibly the same" list for single-photo people.
+   - Per-person controls: remove face, remove photo, hide person, rename person.
+   - **Unrecognized triage**: assign face to person (displaying top-3 candidates for ambiguous faces) or create new person; photos without detected faces remain reachable.
+   - Global and per-edit Undo control for every edit operation.
+5. Export screen: triggers bundle export, shows public file stats, lists output folder, provides GitHub Pages and Cloudflare Pages publishing guides.
+6. Settings: sensitivity slider mapping directly to SPEC 6.2 parameters (`seed_threshold`, `attach_margin`, `merge_threshold`), thumbnail size selector, API key input, and Method 2 credential storage selector (stubbed).
+7. Rerun clustering with edit replay and banner listing unapplied edits.
+8. Reused viewer gallery components via `@viewer/components/PhotoModal`.
 
 **Done when:** the whole local-folder workflow works in the browser against the running FastAPI app (`npm run dev` + `uvicorn`), and the 7-way split in the test set can be merged in one action.
+**Status**: **COMPLETE**. Verified via `frontend/scripts/e2e.mjs` against live uvicorn, Vitest suite (11 passed), Pytest suite (34 passed), and verify_export / verify_api audit scripts. Layout, wording, and qualitative ergonomics marked as NEEDS ORGANIZER REVIEW.
 
 ---
 

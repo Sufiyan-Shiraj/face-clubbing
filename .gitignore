@@ -67,6 +67,8 @@ viewer/dist/
 viewer/.vite/
 viewer/public/faces/
 viewer/public/thumbs/
+frontend/dist/
+frontend/.vite/
 
 # OS / IDE
 .DS_Store
