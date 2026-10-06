@@ -1,0 +1,76 @@
+# Python
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.whl
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments & uv
+.uv/
+
+# Models & InsightFace
+.insightface/
+models/
+*.onnx
+
+# Data & Test photos
+test_photos/
+export/
+*.cache
+*.pkl
+
+# Archives & Deprecated
+archives/
+
+# Scratch large caches & temporary outputs
+scratch/flip_embeddings.json
+scratch/debug_crops/
+scratch/logs/
+scratch/screenshots/
+
+# Auth & Secrets
+client_secret*.json
+token*.json
+credentials.json
+*.key
+.env
+.env.*
+
+# Node / Frontend
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+viewer/dist/
+viewer/.vite/
+viewer/public/faces/
+viewer/public/thumbs/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

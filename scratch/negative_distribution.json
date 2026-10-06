@@ -1,0 +1,51 @@
+{
+  "total_pairs": 3246,
+  "thresholds": {
+    "0.5": {
+      "standard_count": 0,
+      "standard_pct": 0.0,
+      "flip_count": 0,
+      "flip_pct": 0.0
+    },
+    "0.55": {
+      "standard_count": 0,
+      "standard_pct": 0.0,
+      "flip_count": 0,
+      "flip_pct": 0.0
+    },
+    "0.6": {
+      "standard_count": 0,
+      "standard_pct": 0.0,
+      "flip_count": 0,
+      "flip_pct": 0.0
+    },
+    "0.65": {
+      "standard_count": 3,
+      "standard_pct": 0.0924,
+      "flip_count": 1,
+      "flip_pct": 0.0308
+    },
+    "0.7": {
+      "standard_count": 19,
+      "standard_pct": 0.5853,
+      "flip_count": 19,
+      "flip_pct": 0.5853
+    },
+    "0.75": {
+      "standard_count": 75,
+      "standard_pct": 2.3105,
+      "flip_count": 80,
+      "flip_pct": 2.4646
+    },
+    "0.8": {
+      "standard_count": 235,
+      "standard_pct": 7.2397,
+      "flip_count": 244,
+      "flip_pct": 7.5169
+    }
+  },
+  "min_distance": {
+    "standard": 0.6144,
+    "flip_averaged": 0.617
+  }
+}
