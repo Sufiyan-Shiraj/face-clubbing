@@ -13,8 +13,9 @@
 | 0 Setup + risk check | Done |
 | 1 Engine core (CLI) | Accepted (271 files / 259 unique photos / 1,701 faces tested) |
 | 1b Engine amendments | Done |
-| 2 Static viewer | Built against an earlier bundle; needs the rev 2 changes below |
-| 3 to 9 | Not started |
+| 2 Static viewer | Done except deploy test (row 14) |
+| 3 API layer (FastAPI) | Done |
+| 4 to 9 | Not started |
 
 ---
 

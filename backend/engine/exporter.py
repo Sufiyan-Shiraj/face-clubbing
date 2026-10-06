@@ -135,7 +135,7 @@ class BundleExporter:
         internal_unrec_items = getattr(result.unrecognized, "_face_items", [])
         for item in internal_unrec_items:
             face_obj = item["face_obj"]
-            face_rel = item["face"]
+            face_rel = item.get("face", f"faces/{face_obj.face_id}.jpg")
             face_dest = self.output_dir / face_rel
 
             cached_crop = cache_crops / f"{face_obj.face_id}.jpg" if cache_crops else None

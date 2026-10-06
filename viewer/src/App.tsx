@@ -188,6 +188,7 @@ export const App: React.FC = () => {
               <PhotoGallery
                 person={selectedPerson}
                 photos={data.photos}
+                includeMaybe={config.include_maybe === true}
                 onBack={handleBackToGrid}
               />
             )}

@@ -37,6 +37,8 @@ models/
 test_photos/
 export/
 export.work/
+export.work/edits_test_*.json
+export.api_test/
 export_flip/
 *.cache
 *.pkl

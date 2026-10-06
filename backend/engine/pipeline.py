@@ -41,10 +41,12 @@ class EngineConfig:
     merge_threshold: float = 0.50
     maybe_threshold: float = 0.65
     same_photo_merge_max: float = 0.40
+    attach_distance_cap: float = 0.45
     flip_average: bool = False
     include_maybe: bool = False
     suggestions_path: Optional[str | Path] = None
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None
+    cancel_check: Optional[Callable[[], bool]] = None
 
 
 def run_pipeline(config: EngineConfig) -> EngineResult:
@@ -61,6 +63,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     cache_crops_p.mkdir(parents=True, exist_ok=True)
 
     def notify(payload: Dict[str, Any]):
+        if config.cancel_check and config.cancel_check():
+            raise InterruptedError("Job cancelled by user")
         if config.progress_callback:
             config.progress_callback(payload)
 
@@ -90,6 +94,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         # 3. Detect and Embed (with thumbnail & crop caching)
         start_time = time.time()
         for idx, item in enumerate(scanned_photos):
+            if config.cancel_check and config.cancel_check():
+                raise InterruptedError("Job cancelled by user")
             photo_id = item.photo_id
 
             if cache.has(photo_id):
@@ -194,6 +200,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             merge_threshold=config.merge_threshold,
             maybe_threshold=config.maybe_threshold,
             same_photo_merge_max=config.same_photo_merge_max,
+            attach_distance_cap=config.attach_distance_cap,
         )
         people, unrecognized = clusterer.cluster(photos)
 
