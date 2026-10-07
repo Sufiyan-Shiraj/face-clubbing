@@ -159,6 +159,7 @@ export const UnrecognizedTriage: React.FC<UnrecognizedTriageProps> = ({
                 <div className="pt-2 border-t border-neutral-800/80 space-y-2">
                   <div className="flex items-center gap-1.5">
                     <select
+                      data-testid="assign-target-select"
                       value={selectedPid}
                       onChange={(e) =>
                         setSelectedPersonForAssign({
@@ -176,6 +177,7 @@ export const UnrecognizedTriage: React.FC<UnrecognizedTriageProps> = ({
                       ))}
                     </select>
                     <button
+                      data-testid="assign-to-person-btn"
                       onClick={() => {
                         if (selectedPid) onAssignFace(faceId, selectedPid);
                       }}

@@ -8,6 +8,7 @@ Guarantees:
 """
 
 from __future__ import annotations
+import os
 import copy
 import json
 import re
@@ -38,14 +39,18 @@ from backend.api.models import (
 class AppState:
     def __init__(self, work_dir: Optional[Path] = None):
         self.repo_root = Path(__file__).resolve().parent.parent.parent
-        self.work_dir = Path(work_dir) if work_dir else self.repo_root / "export.work"
+        env_work = os.environ.get("PHOTOSORTER_WORK_DIR")
+        env_output = os.environ.get("PHOTOSORTER_OUTPUT_DIR")
+        env_cache = os.environ.get("PHOTOSORTER_CACHE_DIR")
+
+        self.work_dir = Path(work_dir or env_work).resolve() if (work_dir or env_work) else self.repo_root / "export.work"
         self.work_dir.mkdir(parents=True, exist_ok=True)
         self.edits_path = self.work_dir / "edits.json"
 
         self.settings = SettingsModel(
             input_path=str(self.repo_root / "test_photos") if (self.repo_root / "test_photos").exists() else None,
-            output_dir=str(self.repo_root / "export"),
-            cache_dir=str(self.work_dir),
+            output_dir=str(Path(env_output).resolve()) if env_output else str(self.repo_root / "export"),
+            cache_dir=str(Path(env_cache).resolve()) if env_cache else str(self.work_dir),
         )
 
         # In-memory runtime dataset
@@ -642,9 +647,10 @@ class AppState:
         2. ranked possibly_the_same list (including extended range up to 0.75 for single-photo people)
         3. top-3 candidates for ambiguous faces
         """
-        # 1. Compute top-5 centroids for all current people
+        # 1. Compute top-5 centroids for all current people (snapshot for thread safety)
+        current_people = list(self.people)
         centroids: Dict[str, np.ndarray] = {}
-        for p in self.people:
+        for p in current_people:
             good_faces = [f for f in p.faces if getattr(f, "is_good_quality", True) and f.embedding is not None]
             if not good_faces:
                 good_faces = [f for f in p.faces if f.embedding is not None]
@@ -658,16 +664,16 @@ class AppState:
                 centroids[p.id] = c
 
         ranked_pairs: List[RankedPairSuggestion] = []
-        n_people = len(self.people)
+        n_people = len(current_people)
 
         for i in range(n_people):
-            p_a = self.people[i]
+            p_a = current_people[i]
             c_a = centroids.get(p_a.id)
             if c_a is None:
                 continue
 
             for j in range(i + 1, n_people):
-                p_b = self.people[j]
+                p_b = current_people[j]
                 c_b = centroids.get(p_b.id)
                 if c_b is None:
                     continue

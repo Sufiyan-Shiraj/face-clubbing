@@ -4,7 +4,7 @@ import { PersonCluster } from '../types';
 describe('Merge Selection Logic', () => {
   const mockPeople: PersonCluster[] = [
     {
-      id: 'p001',
+      id: 'mock_person_1',
       label: null,
       face: 'faces/f_1.jpg',
       photo_ids: ['ph1', 'ph2'],
@@ -17,7 +17,7 @@ describe('Merge Selection Logic', () => {
       anchor_face_ids: ['f_face_101', 'f_face_102'],
     },
     {
-      id: 'p002',
+      id: 'mock_person_2',
       label: 'Alice',
       face: 'faces/f_2.jpg',
       photo_ids: ['ph3'],
@@ -27,7 +27,7 @@ describe('Merge Selection Logic', () => {
       anchor_face_ids: ['f_face_201'],
     },
     {
-      id: 'p003',
+      id: 'mock_person_3',
       label: null,
       face: 'faces/f_3.jpg',
       photo_ids: ['ph4'],
@@ -41,21 +41,21 @@ describe('Merge Selection Logic', () => {
   it('correctly toggles selection in a Set', () => {
     let selected = new Set<string>();
 
-    // Toggle on p001
-    selected = new Set(selected).add('p001');
-    expect(selected.has('p001')).toBe(true);
+    // Toggle on mock_person_1
+    selected = new Set(selected).add('mock_person_1');
+    expect(selected.has('mock_person_1')).toBe(true);
     expect(selected.size).toBe(1);
 
-    // Toggle on p002
-    selected = new Set(selected).add('p002');
-    expect(selected.has('p002')).toBe(true);
+    // Toggle on mock_person_2
+    selected = new Set(selected).add('mock_person_2');
+    expect(selected.has('mock_person_2')).toBe(true);
     expect(selected.size).toBe(2);
 
-    // Toggle off p001
+    // Toggle off mock_person_1
     const next = new Set(selected);
-    next.delete('p001');
+    next.delete('mock_person_1');
     selected = next;
-    expect(selected.has('p001')).toBe(false);
+    expect(selected.has('mock_person_1')).toBe(false);
     expect(selected.size).toBe(1);
   });
 
@@ -63,13 +63,13 @@ describe('Merge Selection Logic', () => {
     const isEligible = (set: Set<string>) => set.size >= 2;
 
     expect(isEligible(new Set())).toBe(false);
-    expect(isEligible(new Set(['p001']))).toBe(false);
-    expect(isEligible(new Set(['p001', 'p002']))).toBe(true);
-    expect(isEligible(new Set(['p001', 'p002', 'p003']))).toBe(true);
+    expect(isEligible(new Set(['mock_person_1']))).toBe(false);
+    expect(isEligible(new Set(['mock_person_1', 'mock_person_2']))).toBe(true);
+    expect(isEligible(new Set(['mock_person_1', 'mock_person_2', 'mock_person_3']))).toBe(true);
   });
 
   it('constructs merge edit payload with strictly face ID anchors, zero cluster IDs', () => {
-    const selectedIds = new Set(['p001', 'p002']);
+    const selectedIds = new Set(['mock_person_1', 'mock_person_2']);
     const selectedPeople = mockPeople.filter((p) => selectedIds.has(p.id));
 
     // Extract anchors

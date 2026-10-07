@@ -15,7 +15,8 @@
 | 1b Engine amendments | Done |
 | 2 Static viewer | Done except deploy test (row 14) |
 | 3 API layer (FastAPI) | Done |
-| 4 to 9 | Not started |
+| 4 Organizer UI (React) | In verification |
+| 5 to 9 | Not started |
 
 ---
 
@@ -94,7 +95,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
-## Phase 4: Organizer UI (React) [COMPLETE]
+## Phase 4: Organizer UI (React) [IN VERIFICATION]
 
 **Build** (in `frontend/` - React + Vite + Tailwind CSS + TypeScript)
 1. Screens: Home (source picker with native path input, Drive link field disabled/stubbed for Phase 6), Progress (SSE bar with current, total, percent, stage, ETA, cancel), Review People (core organizer workflow), Export (preview, stats, publishing instructions), Settings (clustering params, thumb size, API key stub, storage-level stub).
@@ -113,7 +114,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 8. Reused viewer gallery components via `@viewer/components/PhotoModal`.
 
 **Done when:** the whole local-folder workflow works in the browser against the running FastAPI app (`npm run dev` + `uvicorn`), and the 7-way split in the test set can be merged in one action.
-**Status**: **COMPLETE**. Verified via `frontend/scripts/e2e.mjs` against live uvicorn, Vitest suite (11 passed), Pytest suite (34 passed), and verify_export / verify_api audit scripts. Layout, wording, and qualitative ergonomics marked as NEEDS ORGANIZER REVIEW.
+**Status**: **In verification**. Currently undergoing browser e2e verification, Vitest unit test suite, and regression checks. Layout, wording, and qualitative ergonomics marked as NEEDS ORGANIZER REVIEW.
 
 ---
 
