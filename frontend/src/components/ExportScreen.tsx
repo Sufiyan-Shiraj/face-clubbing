@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { Download, CheckCircle2, Folder, ExternalLink, Globe, Github, Sparkles, Layers } from 'lucide-react';
 
@@ -18,6 +18,12 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   const [subtitle, setSubtitle] = useState(initialSubtitle);
   const [includeMaybe, setIncludeMaybe] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    api.getSettings().then((s) => {
+      if (s.output_dir) setOutputDir(s.output_dir);
+    }).catch(() => {});
+  }, []);
   const [exportResult, setExportResult] = useState<{
     success: boolean;
     output_dir: string;

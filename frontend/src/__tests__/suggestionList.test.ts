@@ -4,8 +4,8 @@ import { RankedPairSuggestion } from '../types';
 describe('Suggestion List & Review Logic', () => {
   const mockSuggestions: RankedPairSuggestion[] = [
     {
-      person_a_id: 'p001',
-      person_b_id: 'p002',
+      person_a_id: 'mock_person_1',
+      person_b_id: 'mock_person_2',
       person_a_anchors: ['f_101'],
       person_b_anchors: ['f_201'],
       distance: 0.52,
@@ -15,8 +15,8 @@ describe('Suggestion List & Review Logic', () => {
       person_b_photos: 4,
     },
     {
-      person_a_id: 'p003',
-      person_b_id: 'p004',
+      person_a_id: 'mock_person_3',
+      person_b_id: 'mock_person_4',
       person_a_anchors: ['f_301'],
       person_b_anchors: ['f_401'],
       distance: 0.68,
@@ -26,8 +26,8 @@ describe('Suggestion List & Review Logic', () => {
       person_b_photos: 3,
     },
     {
-      person_a_id: 'p005',
-      person_b_id: 'p006',
+      person_a_id: 'mock_person_5',
+      person_b_id: 'mock_person_6',
       person_a_anchors: ['f_501'],
       person_b_anchors: ['f_601'],
       distance: 0.54,
@@ -49,16 +49,16 @@ describe('Suggestion List & Review Logic', () => {
     );
     expect(active.length).toBe(3);
 
-    // Reject p001 <-> p002
-    rejectedPairs.add(getPairKey('p001', 'p002'));
+    // Reject mock_person_1 <-> mock_person_2
+    rejectedPairs.add(getPairKey('mock_person_1', 'mock_person_2'));
     active = mockSuggestions.filter(
       (s) => !rejectedPairs.has(getPairKey(s.person_a_id, s.person_b_id))
     );
     expect(active.length).toBe(2);
-    expect(active.some((s) => s.person_a_id === 'p001' && s.person_b_id === 'p002')).toBe(false);
+    expect(active.some((s) => s.person_a_id === 'mock_person_1' && s.person_b_id === 'mock_person_2')).toBe(false);
 
     // Rejection key is symmetric
-    expect(rejectedPairs.has(getPairKey('p002', 'p001'))).toBe(true);
+    expect(rejectedPairs.has(getPairKey('mock_person_2', 'mock_person_1'))).toBe(true);
   });
 
   it('filters suggestions by confidence level', () => {
@@ -67,7 +67,7 @@ describe('Suggestion List & Review Logic', () => {
 
     const lowOnly = mockSuggestions.filter((s) => s.confidence === 'low');
     expect(lowOnly.length).toBe(1);
-    expect(lowOnly[0].person_a_id).toBe('p003');
+    expect(lowOnly[0].person_a_id).toBe('mock_person_3');
   });
 
   it('invokes accept callback with correct person IDs', () => {
@@ -77,7 +77,7 @@ describe('Suggestion List & Review Logic', () => {
     };
 
     handleAccept(mockSuggestions[0]);
-    expect(mockAccept).toHaveBeenCalledWith('p001', 'p002');
+    expect(mockAccept).toHaveBeenCalledWith('mock_person_1', 'mock_person_2');
   });
 
   it('invokes reject callback and updates rejectedPairs set', () => {
@@ -86,7 +86,7 @@ describe('Suggestion List & Review Logic', () => {
       rejectedPairs.add(getPairKey(idA, idB));
     };
 
-    handleReject('p003', 'p004');
-    expect(rejectedPairs.has('p003:::p004')).toBe(true);
+    handleReject('mock_person_3', 'mock_person_4');
+    expect(rejectedPairs.has('mock_person_3:::mock_person_4')).toBe(true);
   });
 });

@@ -1165,38 +1165,22 @@ OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
 
 ### 17.1 Task-by-Task Implementation & Verification Matrix
 
-| Task | Description | Status | Evidence Command / File Path | Key Verification Output Summary |
-| :---: | :--- | :---: | :--- | :--- |
-| **TASK 0** | Hygiene & Repository Sanity | **COMPLETE** | `git show --stat HEAD~2`<br>`git ls-files \| grep -E "test_photos\|\.venv\|\.cache\|client_secret\|token\|\.onnx"` | 0 unwanted files tracked. Confirmed canonical dataset (259 unique photos / 1,701 detected faces) and clean Phase 1b export. |
-| **TASK 1** | Frontend Scaffolding | **COMPLETE** | `npm run build` in `frontend/`<br>Files: [`frontend/package.json`](file:///c:/Users/DELL/face-clubbing/frontend/package.json), [`frontend/vite.config.ts`](file:///c:/Users/DELL/face-clubbing/frontend/vite.config.ts) | React 18 + Vite + Tailwind CSS + TypeScript. Proxies `/api` to uvicorn. Built cleanly (`dist/` servable by FastAPI at `/`). Reused `@viewer/components/PhotoModal`. |
-| **TASK 2** | Five Screens Implementation | **COMPLETE**<br>*(Layout/wording: NEEDS ORGANIZER REVIEW)* | Files: [`HomeScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/HomeScreen.tsx), [`ProgressScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ProgressScreen.tsx), [`ReviewPeopleScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ReviewPeopleScreen.tsx), [`ExportScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx), [`SettingsScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SettingsScreen.tsx) | All 5 screens implemented. Source picker with path input and disabled Drive field labelled "Phase 6". SSE progress with ETA and cancel. Layout, typography, and styling require organizer aesthetic review. |
-| **TASK 3** | Review People Core Workflow | **COMPLETE**<br>*(UI ergonomics: NEEDS ORGANIZER REVIEW)* | Files: [`PeopleGrid.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/PeopleGrid.tsx), [`SuggestionReview.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SuggestionReview.tsx), [`UnrecognizedTriage.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/UnrecognizedTriage.tsx), [`PersonModal.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/PersonModal.tsx) | People grid with multi-select and multi-merge in one action. Side-by-side suggestion review with persistent session rejection. Ranked low-confidence singletons. Per-person remove face/photo, hide, rename. Unrecognized triage with top-3 candidates for ambiguous faces. Global/per-edit Undo. Dynamic count refresh. |
-| **TASK 4** | Export & Settings Screens | **COMPLETE**<br>*(Copy/instructions: NEEDS ORGANIZER REVIEW)* | Files: [`ExportScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx), [`SettingsScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SettingsScreen.tsx) | Export calls API, lists file counts and folder path, documents GitHub and Cloudflare Pages publishing steps. Settings maps sensitivity slider to SPEC 6.2 parameters, thumb size, API key stub, Method 2 stub. Clustering rerun triggers edit replay and displays unapplied edits list. |
-| **TASK 5** | End-to-End Browser Verification (Playwright) | **COMPLETE** | `node frontend/scripts/e2e.mjs`<br>File: [`frontend/scripts/e2e.mjs`](file:///c:/Users/DELL/face-clubbing/frontend/scripts/e2e.mjs) | Steps (a) through (h) passed 100% against uvicorn serving built UI. 7-way split merged in one action. Invariant $N_{\text{clustered}} + N_{\text{unrec}} = 1,701$ maintained across every step. |
-| **TASK 6** | Unit & Regression Tests | **COMPLETE** | `npx vitest run`<br>`python -m pytest tests -q`<br>`python eval/verify_export.py`<br>`python eval/verify_api.py --mode all` | Vitest: 11 passed (100%). Pytest: 34 passed (100%). Verify export: 14/14 checks passed (100%). Verify API: all modes passed (100%). Zero backend regressions. |
-| **TASK 7** | Verification Documentation & Build Plan | **COMPLETE** | `REPORT.md`<br>`BUILD_PLAN.md` | Phase 4 documented with task matrix, invariant accounting, and verbatim outputs. Subjective UI aesthetics marked as NEEDS ORGANIZER REVIEW. |
+| Task | Description | Status | Evidence Command | Key Verification Output Summary | File Path |
+| :---: | :--- | :---: | :--- | :--- | :--- |
+| **TASK 0** | Hygiene & Repository Sanity | **COMPLETE** | `git show --stat HEAD~2`<br>`git ls-files \| grep -E "test_photos\|\.venv\|node_modules\|\.cache\|client_secret\|token\|\.onnx\|^(export\|viewer/public)/(faces\|thumbs)/"` | 0 unwanted files tracked. 0 real face crops, 0 secrets, 0 `.cache/` dirs. Only `backend/engine/cache.py` and `tests/test_cache.py` match grep pattern due to unescaped dot matching `/cache.py`. | [`.gitignore`](file:///c:/Users/DELL/face-clubbing/.gitignore)<br>[`backend/engine/cache.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/cache.py) |
+| **TASK 1** | Frontend Scaffolding | **COMPLETE** | `npm run build` in `frontend/` | React 18 + Vite + Tailwind CSS + TypeScript. Proxies `/api` to uvicorn. Built cleanly (`dist/` servable by FastAPI at `/`). Reused `@viewer/components/PhotoModal`. | [`frontend/package.json`](file:///c:/Users/DELL/face-clubbing/frontend/package.json)<br>[`frontend/vite.config.ts`](file:///c:/Users/DELL/face-clubbing/frontend/vite.config.ts) |
+| **TASK 2** | Five Screens Implementation | **COMPLETE**<br>*(Layout/wording: NEEDS ORGANIZER REVIEW)* | Browser rendering via Playwright (`node frontend/scripts/e2e.mjs`) | All 5 screens implemented: Home (source picker with path input, disabled Drive field labelled "Phase 6"), Progress (SSE bar with current, total, percent, stage, ETA, cancel), Review People, Export, Settings. Subjective visual layout and typography require organizer review. | [`HomeScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/HomeScreen.tsx)<br>[`ProgressScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ProgressScreen.tsx)<br>[`ReviewPeopleScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ReviewPeopleScreen.tsx)<br>[`ExportScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx)<br>[`SettingsScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SettingsScreen.tsx) |
+| **TASK 3** | Review People Core Workflow | **COMPLETE**<br>*(UI ergonomics: NEEDS ORGANIZER REVIEW)* | `node frontend/scripts/e2e.mjs` (Steps B, C, D, E, F) | People grid with multi-select and multi-merge in one action. Side-by-side suggestion review with persistent session rejection. Ranked low-confidence singletons. Per-person remove face/photo, hide, rename. Unrecognized triage with top-3 candidates for ambiguous faces. Global/per-edit Undo. Dynamic count refresh. | [`PeopleGrid.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/PeopleGrid.tsx)<br>[`SuggestionReview.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SuggestionReview.tsx)<br>[`UnrecognizedTriage.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/UnrecognizedTriage.tsx)<br>[`PersonModal.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/PersonModal.tsx) |
+| **TASK 4** | Export & Settings Screens | **COMPLETE**<br>*(Copy/instructions: NEEDS ORGANIZER REVIEW)* | `python eval/check_settings_spec.py`<br>`node frontend/scripts/e2e.mjs` (Steps G, H) | Export calls API, outputs strictly to configured folder (`export.e2e_temp`), documents GitHub and Cloudflare Pages publishing steps. Settings maps sensitivity slider to SPEC 6.2 parameters (100% verified match), thumb size, API key stub, Method 2 stub. Clustering rerun triggers edit replay and displays unapplied edits list. | [`ExportScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx)<br>[`SettingsScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SettingsScreen.tsx)<br>[`eval/check_settings_spec.py`](file:///c:/Users/DELL/face-clubbing/eval/check_settings_spec.py) |
+| **TASK 5** | End-to-End Browser Verification (Playwright) | **COMPLETE** | `node frontend/scripts/e2e.mjs` (Run 1 & Run 2) | Steps A through H passed 100% against uvicorn serving built UI. Ran twice in complete isolation; both runs yielded identical counts and zero changes to canonical files. 7-way split merged on clean baseline. Honest Step G rerun accounting verified. Zero `pNNN` in printed assertions. | [`frontend/scripts/e2e.mjs`](file:///c:/Users/DELL/face-clubbing/frontend/scripts/e2e.mjs) |
+| **TASK 6** | Unit & Regression Tests | **COMPLETE** | `npm test` in `frontend/`<br>`python -m pytest -v`<br>`python eval/verify_export.py`<br>`python eval/verify_api.py --mode all` | Vitest: 11 passed (100%, pure logic only). Pytest: 34 passed (100%, test 34 is `test_api_photos_endpoint_and_remove_by_photo`). Verify export: 14/14 checks passed (Check 14 scanned 27 files in eval/, tests/, and frontend/). Verify API: all modes passed (100%). Zero regressions. | [`frontend/src/__tests__/`](file:///c:/Users/DELL/face-clubbing/frontend/src/__tests__/)<br>[`tests/test_api.py`](file:///c:/Users/DELL/face-clubbing/tests/test_api.py)<br>[`eval/verify_export.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_export.py) |
+| **TASK 7** | Verification Documentation & Build Plan | **COMPLETE** | Verification audits | Phase 4 documented with task matrix, invariant accounting, Step C clean-state evidence, honest Step G accounting, Settings slider verification, and double E2E execution transcripts. `BUILD_PLAN.md` updated to "In verification" with status table fixed. | [`REPORT.md`](file:///c:/Users/DELL/face-clubbing/REPORT.md)<br>[`BUILD_PLAN.md`](file:///c:/Users/DELL/face-clubbing/BUILD_PLAN.md) |
 
 *(Note: Items marked **NEEDS ORGANIZER REVIEW** reflect subjective human-experience factors such as visual spacing, wording nuance, and workflow ease-of-use that cannot be programmatically validated).*
 
-### 17.2 End-to-End Verification Invariant Accounting Table
+### 17.2 Step C on Clean State: 7-Way Split Resolution (Ground Truth Set C)
 
-Invariant: $\text{Total Detected Faces} = N_{\text{clustered}} + N_{\text{unrec}} = 1,256 + 445 = 1,701$.
-
-| E2E Step | Action Description | Clustered Faces | Unrecognized Faces | Total Faces | Expected Invariant | Status |
-| :---: | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Step A** | Baseline after job start (192 people) | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
-| **Step B** | Multi-select merge 3 people (people: 192 -> 190) | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
-| **Step C** | Merge 7-way split from ground truth (Set C: 8 faces) | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
-| **Step D** | Assign Unrecognized face (`f_fc494beca08b210c_003`) | 1,257 | 444 | 1,701 | 1,701 | **HOLDS** |
-| **Step E.1** | Undo assign edit | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
-| **Step E.2** | Undo 7-way split merge | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
-| **Step E.3** | Undo 3-way merge (people: 190 -> 192) | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
-| **Step F** | Accept suggestion (192 -> 191) & reject another | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
-| **Step G** | Trigger rerun with edit replay (2 edits replayed) | 1,257 | 444 | 1,701 | 1,701 | **HOLDS** |
-| **Step H** | Export bundle (clean bundle: config, people, faces, thumbs) | 1,257 | 444 | 1,701 | 1,701 | **HOLDS** |
-
-### 17.3 Ground Truth 7-Way Split Resolution Evidence (Set C)
-In `eval/ground_truth.json`, Set C defines an individual whose 8 faces were split across 7 initial clusters due to pose and lighting variations:
+In `eval/ground_truth.json`, Set C defines an individual whose 8 faces were split across 7 initial clusters due to extreme variation in pose and illumination:
 - Face IDs:
   - `f_cdfa42b70c134a74_001`
   - `f_49eff969f7dee3bd_001`
@@ -1207,18 +1191,150 @@ In `eval/ground_truth.json`, Set C defines an individual whose 8 faces were spli
   - `f_a527ac003612de6e_005`
   - `f_869adaf675c3009c_006`
 
-In Step C of `e2e.mjs`, all 7 person clusters containing these 8 faces were multi-selected and merged in a **single user action**. The API converted the selected person handles into anchor face IDs, persisted the merge in `edits.json`, and unified all 8 faces into a single person cluster containing 171 faces.
+#### Clean State Execution & Exact Face Arithmetic
+To ensure strict verification without interference from prior merges, Step C is executed **first on a clean state** (directly after job startup at baseline of 192 people):
+1. **Initial Cluster Sizes of the 7 People**:
+   - Cluster #1: **71 faces** (contains 2 Set C face IDs: `f_cdfa42b70c134a74_001`, `f_49eff969f7dee3bd_001`)
+   - Cluster #2: **1 face** (contains `f_1ba2b67379394309_005`)
+   - Cluster #3: **1 face** (contains `f_d9c8bf96d71c7101_005`)
+   - Cluster #4: **1 face** (contains `f_34a0bab12251055a_003`)
+   - Cluster #5: **1 face** (contains `f_10bae275a2e5daf8_002`)
+   - Cluster #6: **1 face** (contains `f_a527ac003612de6e_005`)
+   - Cluster #7: **1 face** (contains `f_869adaf675c3009c_006`)
+2. **Sum of the Seven Cluster Sizes**:
+   $$71 + 1 + 1 + 1 + 1 + 1 + 1 = 77 \text{ faces}$$
+3. **Single Action Merge**:
+   All 7 clusters are multi-selected in the UI and merged in one single action (`Merge Selected (7)` button).
+   Total people count drops by exactly 6:
+   $$192 - 6 = 186 \text{ people}$$
+4. **Resulting Person Face Count**:
+   The resulting merged person cluster contains exactly **77 faces**.
+5. **Exact Assertions**:
+   - $\sum(\text{initial 7 cluster sizes}) \equiv \text{resulting person face count} \implies 77 \equiv 77$ (**ASSERTION PASS**).
+   - By face ID, all 8 Set C face IDs reside within the unified person cluster (**ASSERTION PASS**).
 
-### 17.4 Verbatim Test & Verification Execution Transcripts
+### 17.3 Step G Made Honest: Explanation, Fix, and Persistence Assertions
 
-#### 1. End-to-End Browser Verification Transcript (`node frontend/scripts/e2e.mjs`)
+#### Explanation and Resolution of the 191 -> 192 Discrepancy
+- **Root Cause of Discrepancy**:
+  In earlier iterations, after accepting 1 suggestion ($192 \to 191$ people), the test script performed an Unrecognized triage assign by clicking the UI button *"Create Person with this Face"* (`#create-person-btn`). Creating a new person increases the cluster count by 1 ($191 \to 192$). During the rerun, the pipeline replayed both active edits: (1) the suggestion merge and (2) the new person creation. The re-clustered state thus had 192 people. The previous documentation mistakenly cited "pre-rerun people: 191" because it ignored the new person creation from triage, creating an apparent 191 $\to$ 192 discrepancy.
+- **The Honest Fix**:
+  The triage assign in Step G now explicitly selects an **existing TARGET person** using the UI dropdown (`#assign-target-select`) and clicks *"Assign Face"* (`#assign-btn`), assigning unrecognized face `f_554ef87868d6ec38_003` to target person `f_cdfa42b70c134a74_001`.
+  This decrements unrecognized faces ($445 \to 444$) while keeping the total number of people constant at 191.
+- **Pre-Rerun Counts**:
+  - `people_count`: **191**
+  - `unrecognized_faces_count`: **444**
+- **Post-Rerun Counts (Rerun with Identical Settings)**:
+  - `people_count`: **191**
+  - `unrecognized_faces_count`: **444**
+- **Strict Equality Assertions**:
+  - `pre_rerun_people (191) === post_rerun_people (191)` (**PASS**)
+  - `pre_rerun_unrecognized (444) === post_rerun_unrecognized (444)` (**PASS**)
+- **Face ID Persistence Assertions**:
+  - Assigned face `f_554ef87868d6ec38_003` is verified by face ID to reside in its specific **TARGET** person (anchor `f_cdfa42b70c134a74_001`), not merely "some cluster" (**PASS**).
+  - Accepted suggestion anchor faces (`f_056e4727b8b8d6d0_001` and `f_f3de19871f241880_002`) are verified by face ID to reside together in one unified person (**PASS**).
+
+#### Settings Slider Defaults Mapping to SPEC 6.2
+The Settings screen sensitivity slider and defaults were verified to map **exactly 100%** to SPEC 6.2 specifications across `SettingsModel`, `EngineConfig`, and `SettingsScreen.tsx`.
+Execution command: `python eval/check_settings_spec.py`
+```text
+================================================================================
+VERIFYING CLUSTERING SETTINGS SLIDER DEFAULTS AGAINST SPEC 6.2
+================================================================================
+
+[CHECK 1] backend.api.models.SettingsModel Defaults:
+  [PASS] distance_threshold: 0.5 == 0.5
+  [PASS] min_det_score: 0.5 == 0.5
+  [PASS] min_face_size: 64 == 64
+  [PASS] max_yaw: 70.0 == 70.0
+  [PASS] seed_min_det_score: 0.7 == 0.7
+  [PASS] seed_min_face_size: 64 == 64
+  [PASS] seed_max_yaw: 60.0 == 60.0
+  [PASS] attach_distance_cap: 0.45 == 0.45
+  [PASS] second_pass_merge: True == True
+  [PASS] merge_threshold: 0.5 == 0.5
+  [PASS] maybe_threshold: 0.65 == 0.65
+  [PASS] same_photo_merge_max: 0.4 == 0.4
+  [PASS] flip_average: False == False
+  [PASS] thumb_size: 400 == 400
+  [PASS] face_crop_size: 256 == 256
+
+[CHECK 2] backend.engine.pipeline.EngineConfig Defaults:
+  [PASS] distance_threshold: 0.5 == 0.5
+  [PASS] min_det_score: 0.5 == 0.5
+  [PASS] min_face_size: 64 == 64
+  [PASS] max_yaw: 70.0 == 70.0
+  [PASS] seed_min_det_score: 0.7 == 0.7
+  [PASS] seed_min_face_size: 64 == 64
+  [PASS] seed_max_yaw: 60.0 == 60.0
+  [PASS] attach_distance_cap: 0.45 == 0.45
+  [PASS] second_pass_merge: True == True
+  [PASS] merge_threshold: 0.5 == 0.5
+  [PASS] maybe_threshold: 0.65 == 0.65
+  [PASS] same_photo_merge_max: 0.4 == 0.4
+  [PASS] flip_average: False == False
+  [PASS] thumb_size: 400 == 400
+  [PASS] face_crop_size: 256 == 256
+
+[CHECK 3] frontend/src/components/SettingsScreen.tsx React State Defaults:
+  [PASS] distance_threshold defaults to 0.5
+  [PASS] min_det_score defaults to 0.5
+  [PASS] min_face_size defaults to 64
+  [PASS] max_yaw defaults to 70.0
+  [PASS] seed_min_det_score defaults to 0.7
+  [PASS] seed_min_face_size defaults to 64
+  [PASS] seed_max_yaw defaults to 60.0
+  [PASS] attach_distance_cap defaults to 0.45
+  [PASS] second_pass_merge defaults to True
+  [PASS] merge_threshold defaults to 0.5
+  [PASS] maybe_threshold defaults to 0.65
+  [PASS] same_photo_merge_max defaults to 0.4
+  [PASS] flip_average defaults to False
+  [PASS] thumb_size defaults to 400
+  [PASS] face_crop_size defaults to 256
+
+================================================================================
+ALL SETTINGS SLIDER AND ENGINE CONFIG DEFAULTS MATCH SPEC 6.2 (100% OK)
+================================================================================
+```
+
+### 17.4 End-to-End Verification Invariant Accounting Table
+
+Invariant: $\text{Total Detected Faces} = N_{\text{clustered}} + N_{\text{unrec}} = 1,256 + 445 = 1,701$.
+
+| E2E Step | Action Description | Clustered Faces | Unrecognized Faces | Total Faces | Expected Invariant | Status |
+| :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+| **Step A** | Baseline after job start (192 people) | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
+| **Step C** | 7-way split on clean state (Set C: 8 faces; 7 clusters -> 1; 192 -> 186 people) | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
+| **Step B** | Multi-select merge 3 people (186 -> 184 people) | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
+| **Step D** | Assign Unrecognized face to person (unrec: 445 -> 444) | 1,257 | 444 | 1,701 | 1,701 | **HOLDS** |
+| **Step E.1** | Undo assign edit (unrec: 444 -> 445) | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
+| **Step E.2** | Undo 3-way merge (people: 184 -> 186) | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
+| **Step E.3** | Undo 7-way split merge (people: 186 -> 192 baseline) | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
+| **Step F** | Accept suggestion (192 -> 191) & reject another (suggestions: 31 -> 29) | 1,256 | 445 | 1,701 | 1,701 | **HOLDS** |
+| **Step G** | Explicit assign to TARGET person & rerun (pre: 191/444, post: 191/444) | 1,257 | 444 | 1,701 | 1,701 | **HOLDS** |
+| **Step H** | Export bundle to isolated temp folder (191 people, 259 photos) | 1,257 | 444 | 1,701 | 1,701 | **HOLDS** |
+
+### 17.5 Isolation Architecture & Dual E2E Browser Executions
+
+#### Isolation Architecture
+The E2E test script (`frontend/scripts/e2e.mjs`) guarantees total isolation from the repository's canonical data:
+1. Environment variables `PHOTOSORTER_WORK_DIR` and `PHOTOSORTER_OUTPUT_DIR` redirect API state to a temporary workspace directory (`export.work_temp`).
+2. Step H explicitly fills the Export destination input (`#export-output-dir-input`) with an isolated temporary output directory (`C:\Users\DELL\face-clubbing\export.e2e_temp`).
+3. An isolation audit asserts that canonical `export/` and `export.work/edits.json` modification timestamps (`mtime`) remain strictly unchanged.
+4. Clean teardown removes all temporary directories upon completion.
+
+#### Dual Execution: Identical Outputs & Counts
+To prove determinism and total isolation, `e2e.mjs` was executed twice sequentially. Below are the verbatim outputs from both runs.
+
+#### E2E Verification Run 1 Transcript (`node frontend/scripts/e2e.mjs`)
 ```text
 ================================================================
 PhotoSorter Phase 4: Full End-to-End Browser Verification
-Testing against uvicorn serving built React UI & canonical data
+Isolated test execution against temporary workspace
 ================================================================
 
-[SPAWN] Starting uvicorn on port 8765...
+[SPAWN] Starting uvicorn with isolated work/output dirs on port 8765...
 [SERVER READY] PhotoSorter API running at http://127.0.0.1:8765
 [BROWSER] Launching headless Chromium via Playwright...
 
@@ -1239,15 +1355,7 @@ STEP A: Start sorting job, verify >= 5 SSE updates, end at 192 people
 [INVARIANT a] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
 
 ----------------------------------------------------------------
-STEP B: Multi-select merge 3 people in one action (people drops by 2)
-----------------------------------------------------------------
-[STEP B] Selecting 3 people by handle for multi-merge: p001, p002, p003
-[STEP B] Merge banner ready: "Merge Selected (3)"
-[STEP B] Count after merging 3 people: 190 (initial: 192)
-[INVARIANT b] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
-
-----------------------------------------------------------------
-STEP C: Merge 7-way split from eval/ground_truth.json (Set C) in one action
+STEP C: 7-way split from eval/ground_truth.json (Set C) on clean state
 ----------------------------------------------------------------
 [STEP C] Set C ground truth face IDs (8 faces):
   - f_cdfa42b70c134a74_001
@@ -1258,18 +1366,39 @@ STEP C: Merge 7-way split from eval/ground_truth.json (Set C) in one action
   - f_10bae275a2e5daf8_002
   - f_a527ac003612de6e_005
   - f_869adaf675c3009c_006
-[STEP C] Found 8 faces split across 7 persons:
-  Person handle p001: faces [f_cdfa42b70c134a74_001, f_49eff969f7dee3bd_001]
-  Person handle p126: faces [f_1ba2b67379394309_005]
-  Person handle p185: faces [f_d9c8bf96d71c7101_005]
-  Person handle p132: faces [f_34a0bab12251055a_003]
-  Person handle p111: faces [f_10bae275a2e5daf8_002]
-  Person handle p171: faces [f_a527ac003612de6e_005]
-  Person handle p164: faces [f_869adaf675c3009c_006]
-[STEP C] Merging all 7 persons in one action...
-[STEP C] Verification: Person containing Set C has 171 faces.
-[STEP C] SUCCESS: All 8 faces from Set C now reside in one unified person!
+[STEP C] Set C faces are distributed across 7 initial clusters.
+  Cluster #1 size: 71 faces (contains 2 Set C face IDs)
+  Cluster #2 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #3 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #4 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #5 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #6 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #7 size: 1 faces (contains 1 Set C face IDs)
+[STEP C] Sum of the seven cluster sizes: 77
+[STEP C] Merge button text before click: "Merge Selected (7)"
+[STEP C] Merging all 7 clusters in one single action...
+[STEP C] Total people count after C: 186
+[STEP C] Resulting person face count: 77
+[STEP C] Asserting sum (77) === resulting person face count (77)...
+  [PASS] Cluster sizes sum (77) equals resulting person face count (77)!
+[STEP C] Asserting all 8 Set C faces reside in the merged person by face ID...
+  [PASS] All 8 Set C face IDs are present in the unified person:
+    - f_cdfa42b70c134a74_001 (confirmed)
+    - f_49eff969f7dee3bd_001 (confirmed)
+    - f_1ba2b67379394309_005 (confirmed)
+    - f_d9c8bf96d71c7101_005 (confirmed)
+    - f_34a0bab12251055a_003 (confirmed)
+    - f_10bae275a2e5daf8_002 (confirmed)
+    - f_a527ac003612de6e_005 (confirmed)
+    - f_869adaf675c3009c_006 (confirmed)
 [INVARIANT c] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP B: Multi-select merge 3 people in one action (people drops by 2)
+----------------------------------------------------------------
+[STEP B] Selecting 3 people for multi-merge...
+[STEP B] Count after merging 3 people: 184 (before: 186)
+[INVARIANT b] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
 
 ----------------------------------------------------------------
 STEP D: Assign an Unrecognized face (unrecognized count drops by 1)
@@ -1285,11 +1414,12 @@ STEP E: Perform Undo for each edit type and assert counts return
 [STEP E.1] Undoing assign edit...
   Unrecognized count restored to: 445 (baseline: 445)
 [INVARIANT e.1] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
-[STEP E.2] Undoing 7-way split merge...
-  Set C faces restored to 7 distinct persons.
+[STEP E.2] Undoing 3-way merge...
+  People count restored to: 186 (expected: 186)
 [INVARIANT e.2] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
-[STEP E.3] Undoing initial 3-way merge...
-  People count restored to: 192 (original: 192)
+[STEP E.3] Undoing 7-way split merge...
+  People count restored to baseline: 192 (original: 192)
+  Set C faces restored across 7 distinct persons.
 [STEP E] SUCCESS: All edit types cleanly undone and counts returned to baseline.
 [INVARIANT e.3] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
 
@@ -1297,9 +1427,9 @@ STEP E: Perform Undo for each edit type and assert counts return
 STEP F: Accept one suggestion and reject another
 ----------------------------------------------------------------
 [STEP F] Initial suggestions count: 31
-[STEP F] Accepting suggestion between p007 and p191 (d=0.5012)...
+[STEP F] Accepting suggestion between anchor f_056e4727b8b8d6d0_001 and anchor f_f3de19871f241880_002 (d=0.5012)...
 [STEP F] People count after accept: 191 (expected 191)
-[STEP F] Rejecting suggestion between p023 and p136...
+[STEP F] Rejecting suggestion between anchor f_2916e35d73c60b70_001 and anchor f_3a9077105f8e5efe_006...
 [STEP F] Visible suggestion cards after rejection: 29
 [STEP F] SUCCESS: Suggestion accepted and rejected with session persistence.
 [INVARIANT f] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
@@ -1307,54 +1437,290 @@ STEP F: Accept one suggestion and reject another
 ----------------------------------------------------------------
 STEP G: Trigger rerun and assert edits survive by face ID
 ----------------------------------------------------------------
-[STEP G] Active edits before rerun:
-  1. Merged suggestion face anchors: [f_056e4727b8b8d6d0_001, f_372c7184a6f9ca9b_001, f_0bf624c185eab253_001, f_dfad8f137d1dd576_002, f_8353ef3d4d422bcb_001, f_ad29ac441aec98f6_002, f_3f6b48045c08a4f7_003, f_cbba146515475217_002, f_9e727246187d628a_002, f_da8031c194150c64_002, f_cf489398a58d21cf_001, f_cdfa42b70c134a74_004, f_de8394820ab47c98_002, f_686a33a9d553032b_004, f_b0267c29612d4dd8_001, f_49eff969f7dee3bd_004, f_e090cc1f015121be_003, f_fde5142b4016983d_001, f_193e620297a06dff_005, f_f35e8d4830b268b8_005, f_cb1603bc0ba6627f_004, f_2916e35d73c60b70_004, f_10bae275a2e5daf8_004, f_48b6b59ff0cc1f8c_004, f_6068266b54dba3ae_004, f_2cb0526da4045648_004, f_466105678f7975ca_006, f_d696c5b7f1335d94_004, f_7d3e278d4ea82619_003] + [f_f3de19871f241880_002]
-  2. Assigned unrecognized face ID: f_fc494beca08b210c_003
-[STEP G] Clicking "Save & Rerun Clustering"...
-[STEP G] Rerun completed! Feedback: Re-clustering Completed with Edit ReplayClustering rerun finished. 2 edits successfully replayed by face ID.People192Unrecognized Faces444Replayed Edits2All org...
-  [OK] Merge survived: anchors from both persons reside in one unified cluster post-rerun.
-  [OK] Assign survived: face ID f_fc494beca08b210c_003 remains assigned to a cluster post-rerun.
-[STEP G] SUCCESS: All edits survived pipeline rerun strictly by face ID.
+[STEP G ACTION] Explicitly assigning unrecognized face ID: f_554ef87868d6ec38_003
+  -> Assigning to TARGET person with anchor face ID: f_cdfa42b70c134a74_001
+[STEP G PRE-RERUN] people_count: 191
+[STEP G PRE-RERUN] unrecognized_faces_count: 444
+[STEP G PRE-RERUN] Active persisted edits:
+  1. Merged suggestion face anchors: [f_056e4727b8b8d6d0_001] + [f_f3de19871f241880_002]
+  2. Assigned face ID f_554ef87868d6ec38_003 to TARGET person [f_cdfa42b70c134a74_001]
+[STEP G ACTION] Navigating to Settings tab to rerun clustering with identical settings...
+[STEP G ACTION] Clicking "Save & Rerun Clustering"...
+[STEP G] Rerun completed! Result summary: Re-clustering Completed with Edit ReplayClustering rerun finished. 2 edits successfully replayed by face ID.People191Unrecognized Faces444Replayed Edits2All org...
+[STEP G POST-RERUN] people_count: 191
+[STEP G POST-RERUN] unrecognized_faces_count: 444
+[STEP G ASSERTION] Asserting people_count equals pre-rerun count (191 === 191)...
+  [PASS] people_count identical: 191 === 191
+[STEP G ASSERTION] Asserting unrecognized_faces_count equals pre-rerun count (444 === 444)...
+  [PASS] unrecognized_faces_count identical: 444 === 444
+[STEP G ASSERTION] Asserting assigned face f_554ef87868d6ec38_003 is in its TARGET person [f_cdfa42b70c134a74_001]...
+  [PASS] Assigned face f_554ef87868d6ec38_003 confirmed in TARGET person (anchor f_cdfa42b70c134a74_001).
+[STEP G ASSERTION] Asserting accepted-suggestion anchors (f_056e4727b8b8d6d0_001 & f_f3de19871f241880_002) are in one person...
+  [PASS] Both suggestion anchors (f_056e4727b8b8d6d0_001 & f_f3de19871f241880_002) reside in one unified person post-rerun.
 [INVARIANT g] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
 
 ----------------------------------------------------------------
-STEP H: Export bundle and assert clean static bundle structure
+STEP H: Export bundle to temp folder and assert clean static bundle structure
 ----------------------------------------------------------------
+[STEP H ACTION] Explicitly setting export destination input to isolated path: C:\Users\DELL\face-clubbing\export.e2e_temp
 [STEP H] Clicking "Export Public Bundle"...
-[STEP H] Export completed: 192 people, 259 photos.
-[STEP H] Contents of export/ directory on disk: [ 'config.json', 'faces', 'people.json', 'thumbs' ]
+[STEP H] Export completed: 191 people, 259 photos.
+[STEP H] Contents of isolated export directory on disk: config.json,faces,people.json,thumbs
 [STEP H] SUCCESS: Bundle contains strictly config.json, people.json, faces/, and thumbs/.
 [INVARIANT h] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+ISOLATION AUDIT: Asserting canonical files were NEVER modified
+----------------------------------------------------------------
+[ISOLATION AUDIT PASS] Canonical export.work/edits.json mtime unchanged.
+
+----------------------------------------------------------------
+CLUSTER-ID AUDIT: Verifying zero pNNN tokens in printed assertions and output
+----------------------------------------------------------------
+[CLUSTER-ID AUDIT PASS] Zero pNNN tokens detected across all 137 printed log/assertion lines.
 
 ================================================================
 ALL PHASE 4 E2E BROWSER VERIFICATION CHECKS PASSED (100%)
 ================================================================
 
-[TEARDOWN] Stopping uvicorn server process...
-[TEARDOWN] Canonical export/people.json restored.
+[TEARDOWN] Stopping uvicorn server process and cleaning temp dirs...
+[TEARDOWN] Temporary test directories removed.
 ```
 
-#### 2. Vitest Unit Test Suite Output (`npx vitest run`)
+#### E2E Verification Run 2 Transcript (`node frontend/scripts/e2e.mjs`)
 ```text
+================================================================
+PhotoSorter Phase 4: Full End-to-End Browser Verification
+Isolated test execution against temporary workspace
+================================================================
+
+[SPAWN] Starting uvicorn with isolated work/output dirs on port 8765...
+[SERVER READY] PhotoSorter API running at http://127.0.0.1:8765
+[BROWSER] Launching headless Chromium via Playwright...
+
+----------------------------------------------------------------
+STEP A: Start sorting job, verify >= 5 SSE updates, end at 192 people
+----------------------------------------------------------------
+[STEP A] Sorting job started. Collecting SSE progress updates...
+  [PROGRESS UPDATE #1] 0.0%[starting]Initializing job...0 / 0
+  [PROGRESS UPDATE #2] 0.0%[scanning]Scanning input: C:\Users\DELL\face-clubbing\test_photos0 / 0
+  [PROGRESS UPDATE #3] 0.0%[scanned]Found 271 photos to process.0 / 271
+  [PROGRESS UPDATE #4] 0.4%[processing]IMG-20260226-WA0037.jpg1 / 271
+  [PROGRESS UPDATE #5] 0.7%[processing]IMG-20260226-WA0047.jpg2 / 271
+  [PROGRESS UPDATE #6] 1.1%[processing]IMG-20260227-WA0110.jpg3 / 271
+  [PROGRESS UPDATE #7] 1.5%[processing]IMG_20260227_220404.jpg4 / 271
+  [PROGRESS UPDATE #8] 1.8%[processing]IMG_20260227_220436.jpg5 / 271
+[STEP A] Total progress updates recorded: 50 (>= 5 required)
+[STEP A] Review People screen loaded. People count: 192
+[INVARIANT a] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP C: 7-way split from eval/ground_truth.json (Set C) on clean state
+----------------------------------------------------------------
+[STEP C] Set C ground truth face IDs (8 faces):
+  - f_cdfa42b70c134a74_001
+  - f_49eff969f7dee3bd_001
+  - f_1ba2b67379394309_005
+  - f_d9c8bf96d71c7101_005
+  - f_34a0bab12251055a_003
+  - f_10bae275a2e5daf8_002
+  - f_a527ac003612de6e_005
+  - f_869adaf675c3009c_006
+[STEP C] Set C faces are distributed across 7 initial clusters.
+  Cluster #1 size: 71 faces (contains 2 Set C face IDs)
+  Cluster #2 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #3 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #4 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #5 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #6 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #7 size: 1 faces (contains 1 Set C face IDs)
+[STEP C] Sum of the seven cluster sizes: 77
+[STEP C] Merge button text before click: "Merge Selected (7)"
+[STEP C] Merging all 7 clusters in one single action...
+[STEP C] Total people count after C: 186
+[STEP C] Resulting person face count: 77
+[STEP C] Asserting sum (77) === resulting person face count (77)...
+  [PASS] Cluster sizes sum (77) equals resulting person face count (77)!
+[STEP C] Asserting all 8 Set C faces reside in the merged person by face ID...
+  [PASS] All 8 Set C face IDs are present in the unified person:
+    - f_cdfa42b70c134a74_001 (confirmed)
+    - f_49eff969f7dee3bd_001 (confirmed)
+    - f_1ba2b67379394309_005 (confirmed)
+    - f_d9c8bf96d71c7101_005 (confirmed)
+    - f_34a0bab12251055a_003 (confirmed)
+    - f_10bae275a2e5daf8_002 (confirmed)
+    - f_a527ac003612de6e_005 (confirmed)
+    - f_869adaf675c3009c_006 (confirmed)
+[INVARIANT c] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP B: Multi-select merge 3 people in one action (people drops by 2)
+----------------------------------------------------------------
+[STEP B] Selecting 3 people for multi-merge...
+[STEP B] Count after merging 3 people: 184 (before: 186)
+[INVARIANT b] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP D: Assign an Unrecognized face (unrecognized count drops by 1)
+----------------------------------------------------------------
+[STEP D] Unrecognized faces before assign: 445
+[STEP D] Unrecognized faces after assign: 444
+[STEP D] SUCCESS: Unrecognized faces dropped by exactly 1.
+[INVARIANT d] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP E: Perform Undo for each edit type and assert counts return
+----------------------------------------------------------------
+[STEP E.1] Undoing assign edit...
+  Unrecognized count restored to: 445 (baseline: 445)
+[INVARIANT e.1] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+[STEP E.2] Undoing 3-way merge...
+  People count restored to: 186 (expected: 186)
+[INVARIANT e.2] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+[STEP E.3] Undoing 7-way split merge...
+  People count restored to baseline: 192 (original: 192)
+  Set C faces restored across 7 distinct persons.
+[STEP E] SUCCESS: All edit types cleanly undone and counts returned to baseline.
+[INVARIANT e.3] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP F: Accept one suggestion and reject another
+----------------------------------------------------------------
+[STEP F] Initial suggestions count: 31
+[STEP F] Accepting suggestion between anchor f_056e4727b8b8d6d0_001 and anchor f_f3de19871f241880_002 (d=0.5012)...
+[STEP F] People count after accept: 191 (expected 191)
+[STEP F] Rejecting suggestion between anchor f_2916e35d73c60b70_001 and anchor f_3a9077105f8e5efe_006...
+[STEP F] Visible suggestion cards after rejection: 29
+[STEP F] SUCCESS: Suggestion accepted and rejected with session persistence.
+[INVARIANT f] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP G: Trigger rerun and assert edits survive by face ID
+----------------------------------------------------------------
+[STEP G ACTION] Explicitly assigning unrecognized face ID: f_554ef87868d6ec38_003
+  -> Assigning to TARGET person with anchor face ID: f_cdfa42b70c134a74_001
+[STEP G PRE-RERUN] people_count: 191
+[STEP G PRE-RERUN] unrecognized_faces_count: 444
+[STEP G PRE-RERUN] Active persisted edits:
+  1. Merged suggestion face anchors: [f_056e4727b8b8d6d0_001] + [f_f3de19871f241880_002]
+  2. Assigned face ID f_554ef87868d6ec38_003 to TARGET person [f_cdfa42b70c134a74_001]
+[STEP G ACTION] Navigating to Settings tab to rerun clustering with identical settings...
+[STEP G ACTION] Clicking "Save & Rerun Clustering"...
+[STEP G] Rerun completed! Result summary: Re-clustering Completed with Edit ReplayClustering rerun finished. 2 edits successfully replayed by face ID.People191Unrecognized Faces444Replayed Edits2All org...
+[STEP G POST-RERUN] people_count: 191
+[STEP G POST-RERUN] unrecognized_faces_count: 444
+[STEP G ASSERTION] Asserting people_count equals pre-rerun count (191 === 191)...
+  [PASS] people_count identical: 191 === 191
+[STEP G ASSERTION] Asserting unrecognized_faces_count equals pre-rerun count (444 === 444)...
+  [PASS] unrecognized_faces_count identical: 444 === 444
+[STEP G ASSERTION] Asserting assigned face f_554ef87868d6ec38_003 is in its TARGET person [f_cdfa42b70c134a74_001]...
+  [PASS] Assigned face f_554ef87868d6ec38_003 confirmed in TARGET person (anchor f_cdfa42b70c134a74_001).
+[STEP G ASSERTION] Asserting accepted-suggestion anchors (f_056e4727b8b8d6d0_001 & f_f3de19871f241880_002) are in one person...
+  [PASS] Both suggestion anchors (f_056e4727b8b8d6d0_001 & f_f3de19871f241880_002) reside in one unified person post-rerun.
+[INVARIANT g] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP H: Export bundle to temp folder and assert clean static bundle structure
+----------------------------------------------------------------
+[STEP H ACTION] Explicitly setting export destination input to isolated path: C:\Users\DELL\face-clubbing\export.e2e_temp
+[STEP H] Clicking "Export Public Bundle"...
+[STEP H] Export completed: 191 people, 259 photos.
+[STEP H] Contents of isolated export directory on disk: config.json,faces,people.json,thumbs
+[STEP H] SUCCESS: Bundle contains strictly config.json, people.json, faces/, and thumbs/.
+[INVARIANT h] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+ISOLATION AUDIT: Asserting canonical files were NEVER modified
+----------------------------------------------------------------
+[ISOLATION AUDIT PASS] Canonical export.work/edits.json mtime unchanged.
+
+----------------------------------------------------------------
+CLUSTER-ID AUDIT: Verifying zero pNNN tokens in printed assertions and output
+----------------------------------------------------------------
+[CLUSTER-ID AUDIT PASS] Zero pNNN tokens detected across all 137 printed log/assertion lines.
+
+================================================================
+ALL PHASE 4 E2E BROWSER VERIFICATION CHECKS PASSED (100%)
+================================================================
+
+[TEARDOWN] Stopping uvicorn server process and cleaning temp dirs...
+[TEARDOWN] Temporary test directories removed.
+```
+
+### 17.6 Test Suites, Regression Verification, and Cluster-ID Audit
+
+#### 1. Vitest Unit Test Suite Output (`npm test` in `frontend/`)
+**Scope Statement**: Vitest tests strictly cover **pure frontend logic** (state machines, filtering, sorting, selection sets, and edit stack manipulation). No network calls or DOM layouts are asserted here.
+```text
+> photosorter-frontend@1.0.0 test
+> vitest run
+
  RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
 
  ✓ src/__tests__/undoControl.test.ts (3 tests) 10ms
+ ✓ src/__tests__/suggestionList.test.ts (4 tests) 11ms
  ✓ src/__tests__/mergeSelection.test.ts (4 tests) 10ms
- ✓ src/__tests__/suggestionList.test.ts (4 tests) 20ms
 
  Test Files  3 passed (3)
       Tests  11 passed (11)
-   Start at  04:04:14
-   Duration  4.07s (environment 95%, transform 3%, import 1%, worker 1%)
+   Start at  07:26:59
+   Duration  3.32s (environment 95%, transform 2%, worker 1%, import 1%)
 ```
 
-#### 3. Pytest Regression Test Suite Output (`python -m pytest tests -q`)
+#### 2. Pytest Regression Test Suite Output (`python -m pytest -v`)
+The test that raised pytest collection from 33 to 34 tests is explicitly identified as:
+`tests/test_api.py::test_api_photos_endpoint_and_remove_by_photo`
+(Added to verify the photo browsing endpoint and the removal of all faces belonging to a photo from a person cluster).
 ```text
-..................................                                       [100%]
-34 passed in 62.08s (0:01:02)
+============================= test session starts =============================
+platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\DELL\face-clubbing\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\DELL\face-clubbing
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.15.1
+collecting ... collected 34 items
+
+tests/test_api.py::test_api_merge_three_people_writes_anchor_faces_no_cluster_ids PASSED [  2%]
+tests/test_api.py::test_api_assign_unrecognized_face_and_rerun_survives PASSED [  5%]
+tests/test_api.py::test_api_unapplied_edit_when_anchor_face_no_longer_exists PASSED [  8%]
+tests/test_api.py::test_api_undo_restores_previous_state_for_each_edit_type PASSED [ 11%]
+tests/test_api.py::test_api_cancel_stops_running_job PASSED              [ 14%]
+tests/test_api.py::test_api_export_public_bundle_hygiene PASSED          [ 17%]
+tests/test_state_missing_embedding_raises_error PASSED                   [ 20%]
+tests/test_api.py::test_api_unrecognized_count_bug_and_invariants PASSED [ 23%]
+tests/test_api.py::test_api_rerun_replay_under_real_clustering_change PASSED [ 26%]
+tests/test_api.py::test_api_photos_endpoint_and_remove_by_photo PASSED   [ 29%]
+tests/test_cache.py::test_cache_miss PASSED                              [ 32%]
+tests/test_cache.py::test_cache_save_and_get PASSED                      [ 35%]
+tests/test_cache.py::test_cache_load_all PASSED                          [ 38%]
+tests/test_clustering.py::test_seed_vs_attach_only_roles PASSED          [ 41%]
+tests/test_clustering.py::test_attach_margin PASSED                      [ 44%]
+tests/test_clustering.py::test_same_photo_exclusion_on_attach PASSED     [ 47%]
+tests/test_clustering.py::test_second_pass_auto_merge_below_050 PASSED   [ 50%]
+tests/test_clustering.py::test_same_photo_guard_blocking_and_collage PASSED [ 52%]
+tests/test_clustering.py::test_ambiguous_reattach_after_merge PASSED     [ 55%]
+tests/test_clustering.py::test_every_photo_covered_and_face_accounting PASSED [ 58%]
+tests/test_clustering.py::test_merged_from_and_id_map PASSED             [ 61%]
+tests/test_edits.py::test_edit_merge_preservation_across_thresholds PASSED [ 64%]
+tests/test_edits.py::test_unapplied_edit_unknown_face_id PASSED          [ 67%]
+tests/test_edits.py::test_deterministic_cluster_ids_shuffled_input PASSED [ 70%]
+tests/test_edits.py::test_hide_removes_person_and_preserves_photo_reachability PASSED [ 73%]
+tests/test_edits.py::test_deterministic_identical_runs PASSED            [ 76%]
+tests/test_exporter.py::test_bundle_exporter PASSED                      [ 79%]
+tests/test_exporter.py::test_public_bundle_hygiene PASSED                [ 82%]
+tests/test_pipeline.py::test_pipeline_organizer_and_public_bundle PASSED [ 85%]
+tests/test_scanner.py::test_supported_extensions PASSED                  [ 88%]
+tests/test_scanner.py::test_compute_file_hash_stability PASSED           [ 91%]
+tests/test_scanner.py::test_scan_folder PASSED                           [ 94%]
+tests/test_scanner.py::test_scan_zip PASSED                              [ 97%]
+tests/test_scanner.py::test_scan_single_file PASSED                      [100%]
+
+======================== 34 passed in 61.64s (0:01:01) ========================
 ```
 
-#### 4. Bundle Export Audit Output (`python eval/verify_export.py --export export/ --work export.work/ --report REPORT.md`)
+#### 3. Verification Audit & Check 14 Scan (`python eval/verify_export.py --export export/ --work export.work/ --report REPORT.md`)
+Check 14 was updated to scan across `eval/`, `tests/`, and `frontend/` (27 files total). Zero `\bp\d{3}\b` tokens detected outside comments and docstrings.
 ```text
 ================================================================================
 PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
@@ -1372,13 +1738,13 @@ PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
 [PASS] Check 11: Section 13.9 Evaluation Table A (All Pairs: 30 positive, 3246 negative) verified across 7 thresholds
 [PASS] Check 12: Section 13.9 Evaluation Table B (Clean Set: 22 positive, 3246 negative) verified across 7 thresholds
 [PASS] Check 13: Section 13.11 Aligned Cap-Sweep Table verified (0.45: 253 att/445 unrec; 0.50: 275 att/423 unrec; 0.55: 322 att/376 unrec)
-[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (9 files scanned in eval/ and tests/)
+[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (27 files scanned across eval/, tests/, and frontend/)
 ================================================================================
 OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
 ================================================================================
 ```
 
-#### 5. FastAPI Live & Fixture Verification Output (`python eval/verify_api.py --mode all`)
+#### 4. FastAPI Live & Fixture Verification (`python eval/verify_api.py --mode all`)
 ```text
 ================================================================================
 PHOTOSORTER PHASE 3 FASTAPI LAYER VERIFICATION (eval/verify_api.py)
@@ -1411,48 +1777,15 @@ LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
 ================================================================================
 ```
 
-#### 6. Repository Hygiene Verification Outputs
-Execution command: `git show --stat HEAD~2`
+#### 5. Repository Hygiene Verification
+Execution command: `git ls-files | grep -E "test_photos|\.venv|node_modules|\.cache|client_secret|token|\.onnx|^(export|viewer/public)/(faces|thumbs)/"`
 ```text
-commit 7d7cfedc2c0b65478c505aa2c468b835a90ad321
-Author: Sufiyan-Shiraj <sufiyanshiraj@gmail.com>
-Date:   Wed Oct 7 01:52:05 2026 +0530
-
-    feat(api): Phase 3 FastAPI layer, viewer fixes, and evaluation audit suite
-
- .gitignore                             |     2 +
- BUILD_PLAN.md                          |     5 +-
- REPORT.md                              |  2873 ++--
- backend/api/__init__.py                |     6 +-
- backend/api/app.py                     |    70 +
- backend/api/jobs.py                    |   218 +
- backend/api/models.py                  |   177 +
- backend/api/routes.py                  |   150 +
- backend/api/state.py                   |   740 +
- backend/engine/clusterer.py            |    11 +-
- backend/engine/edits.py                |    63 +-
- backend/engine/exporter.py             |     2 +-
- backend/engine/pipeline.py             |     7 +
- eval/drive_curl.py                     |   175 +
- eval/test_task5_real_job.py            |   189 +
- eval/verify_api.py                     |   459 +
- tests/test_api.py                      |   656 +
- viewer/package-lock.json               |   972 +-
- viewer/package.json                    |    10 +-
- viewer/public/config.json              |     3 +-
- viewer/public/people.json              | 25356 +++++++++++++++----------------
- viewer/scripts/test_config_swap.py     |    61 +
- viewer/scripts/verify_reachability.py  |    86 +
- viewer/scripts/verify_viewport.cjs     |   127 +
- viewer/src/App.tsx                     |     1 +
- viewer/src/__tests__/viewer.test.tsx   |   261 +
- viewer/src/components/PhotoGallery.tsx |    10 +-
- viewer/vitest.config.ts                |    10 +
- 28 files changed, 18997 insertions(+), 13703 deletions(-)
+backend/engine/cache.py
+tests/test_cache.py
 ```
+*Explanation of Output*:
+`backend/engine/cache.py` and `tests/test_cache.py` are the only matched lines. They match solely because the unescaped dot wildcard `.` before `cache` in PowerShell's argument parsing matches the slash separator `/cache.py`. Neither file is a cache directory, model file, test photo, or credential. Zero real face crops, zero `.cache/` directories, zero client secrets, and zero virtual environments are tracked in git.
 
-Execution command: `git ls-files | grep -E "test_photos|\.venv|\.cache|client_secret|token|\.onnx"`
-*(Output empty - zero unwanted files tracked)*
 
 ---
 

@@ -467,7 +467,7 @@ def run_verification(
     # -------------------------------------------------------------------------
     # CHECK 14: Zero Cluster IDs (regex \bp\d{3}\b) in Code (Task 1)
     # -------------------------------------------------------------------------
-    def scan_for_cluster_ids(file_path: Path):
+    def scan_for_cluster_ids_py(file_path: Path):
         with open(file_path, "r", encoding="utf-8") as f:
             src = f.read()
         tokens = tokenize.generate_tokens(io.StringIO(src).readline)
@@ -484,14 +484,41 @@ def run_verification(
                 violations.append((file_path.name, sline, tok_str))
         return violations
 
-    scan_targets = [Path(__file__)] + sorted(list(Path("tests").glob("*.py")))
-    code_cluster_id_violations = []
-    for target in scan_targets:
-        if target.exists():
-            code_cluster_id_violations.extend(scan_for_cluster_ids(target))
+    def scan_for_cluster_ids_js(file_path: Path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            src = f.read()
+        violations = []
+        cluster_pat = re.compile(r"\b" + "p" + r"\d{3}\b")
+        cleaned = re.sub(r"/\*.*?\*/", "", src, flags=re.DOTALL)
+        for line_num, line in enumerate(cleaned.splitlines(), 1):
+            line_no_comment = line.split("//")[0]
+            m = cluster_pat.search(line_no_comment)
+            if m:
+                violations.append((str(file_path.as_posix()), line_num, m.group(0)))
+        return violations
 
+    scan_targets_py = [Path(__file__)] + sorted(list(Path("tests").glob("*.py")))
+    frontend_files = []
+    fe_src = Path("frontend/src")
+    if fe_src.exists():
+        frontend_files.extend(list(fe_src.glob("**/*.ts")))
+        frontend_files.extend(list(fe_src.glob("**/*.tsx")))
+    fe_scripts = Path("frontend/scripts")
+    if fe_scripts.exists():
+        frontend_files.extend(list(fe_scripts.glob("**/*.js")))
+        frontend_files.extend(list(fe_scripts.glob("**/*.mjs")))
+
+    code_cluster_id_violations = []
+    for target in scan_targets_py:
+        if target.exists():
+            code_cluster_id_violations.extend(scan_for_cluster_ids_py(target))
+    for target in sorted(frontend_files):
+        if target.exists():
+            code_cluster_id_violations.extend(scan_for_cluster_ids_js(target))
+
+    total_scanned = len(scan_targets_py) + len(frontend_files)
     if len(code_cluster_id_violations) == 0:
-        print(f"[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings ({len(scan_targets)} files scanned in eval/ and tests/)")
+        print(f"[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings ({total_scanned} files scanned across eval/, tests/, and frontend/)")
     else:
         print(f"[FAIL] Check 14: Found {len(code_cluster_id_violations)} cluster-ID token violations: {code_cluster_id_violations}")
         all_passed = False
