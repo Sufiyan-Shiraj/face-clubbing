@@ -60,20 +60,49 @@ export const api = {
     onMessage: (status: JobStatus) => void,
     onError?: (err: any) => void
   ): () => void {
-    const eventSource = new EventSource(`${BASE_URL}/jobs/progress`);
-    eventSource.onmessage = (event) => {
+    let eventSource: EventSource | null = null;
+    let isClosed = false;
+    let reconnectTimeout: any = null;
+
+    const connect = () => {
+      if (isClosed) return;
       try {
-        const data = JSON.parse(event.data);
-        onMessage(data);
+        eventSource = new EventSource(`${BASE_URL}/jobs/progress`);
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            onMessage(data);
+          } catch (err) {
+            if (onError) onError(err);
+          }
+        };
+        eventSource.onerror = (err) => {
+          if (onError) onError(err);
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+          if (!isClosed) {
+            reconnectTimeout = setTimeout(connect, 1500);
+          }
+        };
       } catch (err) {
         if (onError) onError(err);
+        if (!isClosed) {
+          reconnectTimeout = setTimeout(connect, 2000);
+        }
       }
     };
-    eventSource.onerror = (err) => {
-      if (onError) onError(err);
-    };
+
+    connect();
+
     return () => {
-      eventSource.close();
+      isClosed = true;
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
     };
   },
 
