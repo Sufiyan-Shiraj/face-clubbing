@@ -1,0 +1,13 @@
+{
+  "name": "photosorter-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "test": "npm --prefix frontend test",
+    "dev:viewer": "npm --prefix viewer run dev",
+    "build:viewer": "npm --prefix viewer run build",
+    "e2e": "node frontend/scripts/e2e.mjs",
+    "e2e:dev": "node frontend/scripts/e2e.mjs --dev"
+  }
+}
