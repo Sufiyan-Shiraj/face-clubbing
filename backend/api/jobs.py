@@ -212,10 +212,8 @@ class JobManager:
                 try:
                     payload = await asyncio.wait_for(queue.get(), timeout=2.0)
                     yield f"data: {json.dumps(payload)}\n\n"
-                    if payload.get("status") in ["completed", "failed", "cancelled"]:
-                        break
                 except asyncio.TimeoutError:
-                    # Keepalive comment
+                    # Keepalive comment to prevent proxy timeouts
                     yield ": keepalive\n\n"
         finally:
             if sub_entry in self._subscribers:

@@ -95,7 +95,13 @@ export const App: React.FC = () => {
   useEffect(() => {
     const unsubscribe = api.subscribeProgress((status) => {
       setJobStatus(status);
-      setProgressHistory((prev) => [...prev.slice(-49), status]);
+      setProgressHistory((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.current === status.current && last.stage === status.stage && last.status === status.status && last.percent === status.percent) {
+          return prev;
+        }
+        return [...prev.slice(-49), status];
+      });
       if (status.status === 'completed') {
         loadAllData();
       }
@@ -104,6 +110,31 @@ export const App: React.FC = () => {
       unsubscribe();
     };
   }, [loadAllData]);
+
+  // Robust live polling fallback to guarantee real-time updates even if SSE is buffered
+  useEffect(() => {
+    if (jobStatus.status === 'running' || isCancelling || activeTab === 'progress') {
+      const timer = setInterval(async () => {
+        try {
+          const st = await api.getJobStatus();
+          setJobStatus(st);
+          setProgressHistory((prev) => {
+            const last = prev[prev.length - 1];
+            if (last && last.current === st.current && last.stage === st.stage && last.status === st.status && last.percent === st.percent) {
+              return prev;
+            }
+            return [...prev.slice(-49), st];
+          });
+          if (st.status === 'completed') {
+            loadAllData();
+          }
+        } catch (err) {
+          // ignore transient poll error
+        }
+      }, 500);
+      return () => clearInterval(timer);
+    }
+  }, [jobStatus.status, isCancelling, activeTab, loadAllData]);
 
   // Multi-select helpers
   const handleToggleSelect = (personId: string) => {
