@@ -7,6 +7,7 @@
     "test": "npm --prefix frontend test",
     "dev:viewer": "npm --prefix viewer run dev",
     "build:viewer": "npm --prefix viewer run build",
+    "server": ".venv\\Scripts\\python.exe -m uvicorn backend.api.app:app --port 8000 --reload",
     "e2e": "node frontend/scripts/e2e.mjs",
     "e2e:dev": "node frontend/scripts/e2e.mjs --dev"
   }
