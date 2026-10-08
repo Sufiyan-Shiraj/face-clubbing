@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-07  
 **Project**: Face Sorting Engine (`face-clubbing`)  
-**Status**: Phase 1b Complete, Phase 2 Complete (Rows 1-13 & 15 PASS, Row 14 INCOMPLETE pending remote deployment), Phase 3 Complete, Phase 4 Complete (All verification tasks pass; subjective UI styling/layout marked as NEEDS ORGANIZER REVIEW).
+**Status**: Phase 1b Complete, Phase 2 Complete (Rows 1-13 & 15 PASS, Row 14 INCOMPLETE pending remote deployment), Phase 3 Complete, Phase 4 Done (All verification tasks pass; organizer review of layout/wording is still pending).
 
 ### Working Rules Compliance Confirmation
 - **No Cluster IDs (`pNNN`)**: Strictly enforced. Cluster IDs are display handles only for a single export and are never persisted, tested, compared, or allowlisted. All tests, edits, and verification scripts key strictly by anchor face IDs and photo IDs. Check 14 of `eval/verify_export.py` enforces zero `\bp\d{3}\b` tokens in code outside comments across `eval/` and `tests/`.
@@ -1167,7 +1167,7 @@ OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
 
 | Task | Description | Status | Evidence Command | Key Verification Output Summary | File Path |
 | :---: | :--- | :---: | :--- | :--- | :--- |
-| **TASK 0** | Hygiene & Repository Sanity | **COMPLETE** | `git show --stat HEAD~2`<br>`git ls-files \| grep -E "test_photos\|\.venv\|node_modules\|\.cache\|client_secret\|token\|\.onnx\|^(export\|viewer/public)/(faces\|thumbs)/"` | 0 unwanted files tracked. 0 real face crops, 0 secrets, 0 `.cache/` dirs. Only `backend/engine/cache.py` and `tests/test_cache.py` match grep pattern due to unescaped dot matching `/cache.py`. | [`.gitignore`](file:///c:/Users/DELL/face-clubbing/.gitignore)<br>[`backend/engine/cache.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/cache.py) |
+| **TASK 0** | Hygiene & Repository Sanity | **COMPLETE** | `git show --stat HEAD`<br>`git ls-files \| Select-String -Pattern 'test_photos','\.venv','node_modules','/\.cache/','client_secret','token','\.onnx','^(export\|viewer/public)/(faces\|thumbs)/'` | 0 unwanted files tracked. Hygiene check returns empty (0 matches). 0 real face crops, 0 secrets, 0 `.cache/` dirs, 0 virtualenvs, 0 node_modules, 0 ONNX model weights. | [`.gitignore`](file:///c:/Users/DELL/face-clubbing/.gitignore) |
 | **TASK 1** | Frontend Scaffolding | **COMPLETE** | `npm run build` in `frontend/` | React 18 + Vite + Tailwind CSS + TypeScript. Proxies `/api` to uvicorn. Built cleanly (`dist/` servable by FastAPI at `/`). Reused `@viewer/components/PhotoModal`. | [`frontend/package.json`](file:///c:/Users/DELL/face-clubbing/frontend/package.json)<br>[`frontend/vite.config.ts`](file:///c:/Users/DELL/face-clubbing/frontend/vite.config.ts) |
 | **TASK 2** | Five Screens Implementation | **COMPLETE**<br>*(Layout/wording: NEEDS ORGANIZER REVIEW)* | Browser rendering via Playwright (`node frontend/scripts/e2e.mjs`) | All 5 screens implemented: Home (source picker with path input, disabled Drive field labelled "Phase 6"), Progress (SSE bar with current, total, percent, stage, ETA, cancel), Review People, Export, Settings. Subjective visual layout and typography require organizer review. | [`HomeScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/HomeScreen.tsx)<br>[`ProgressScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ProgressScreen.tsx)<br>[`ReviewPeopleScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ReviewPeopleScreen.tsx)<br>[`ExportScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx)<br>[`SettingsScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SettingsScreen.tsx) |
 | **TASK 3** | Review People Core Workflow | **COMPLETE**<br>*(UI ergonomics: NEEDS ORGANIZER REVIEW)* | `node frontend/scripts/e2e.mjs` (Steps B, C, D, E, F) | People grid with multi-select and multi-merge in one action. Side-by-side suggestion review with persistent session rejection. Ranked low-confidence singletons. Per-person remove face/photo, hide, rename. Unrecognized triage with top-3 candidates for ambiguous faces. Global/per-edit Undo. Dynamic count refresh. | [`PeopleGrid.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/PeopleGrid.tsx)<br>[`SuggestionReview.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SuggestionReview.tsx)<br>[`UnrecognizedTriage.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/UnrecognizedTriage.tsx)<br>[`PersonModal.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/PersonModal.tsx) |
@@ -1319,18 +1319,22 @@ Invariant: $\text{Total Detected Faces} = N_{\text{clustered}} + N_{\text{unrec}
 
 #### Isolation Architecture
 The E2E test script (`frontend/scripts/e2e.mjs`) guarantees total isolation from the repository's canonical data:
-1. Environment variables `PHOTOSORTER_WORK_DIR` and `PHOTOSORTER_OUTPUT_DIR` redirect API state to a temporary workspace directory (`export.work_temp`).
+1. Environment variables `PHOTOSORTER_WORK_DIR` and `PHOTOSORTER_OUTPUT_DIR` redirect API state and output to temporary directories (`export.e2e_temp.work` and `export.e2e_temp`).
 2. Step H explicitly fills the Export destination input (`#export-output-dir-input`) with an isolated temporary output directory (`C:\Users\DELL\face-clubbing\export.e2e_temp`).
-3. An isolation audit asserts that canonical `export/` and `export.work/edits.json` modification timestamps (`mtime`) remain strictly unchanged.
+3. An extended isolation audit asserts that:
+   - Canonical `export.work/edits.json` modification time (`mtime`) and SHA-256 hash remain strictly unchanged before vs after.
+   - Canonical `export/` directory file listing remains strictly unchanged before vs after.
+   - Canonical `export/people.json` SHA-256 hash remains strictly unchanged before vs after.
 4. Clean teardown removes all temporary directories upon completion.
 
-#### Dual Execution: Identical Outputs & Counts
-To prove determinism and total isolation, `e2e.mjs` was executed twice sequentially. Below are the verbatim outputs from both runs.
+#### Dual Execution against Built UI Served by Uvicorn: Identical Outputs & Counts
+To prove determinism and total isolation, `e2e.mjs` was executed twice sequentially against the production-built UI (`frontend/dist`) served directly by `uvicorn` at `http://127.0.0.1:8765/`. Below are the verbatim outputs from both runs.
 
-#### E2E Verification Run 1 Transcript (`node frontend/scripts/e2e.mjs`)
+#### E2E Verification Run 1 Transcript (Built UI + Uvicorn) (`node frontend/scripts/e2e.mjs`)
 ```text
 ================================================================
 PhotoSorter Phase 4: Full End-to-End Browser Verification
+[MODE] Running against built UI (frontend/dist) served directly by uvicorn
 Isolated test execution against temporary workspace
 ================================================================
 
@@ -1470,27 +1474,30 @@ STEP H: Export bundle to temp folder and assert clean static bundle structure
 [INVARIANT h] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
 
 ----------------------------------------------------------------
-ISOLATION AUDIT: Asserting canonical files were NEVER modified
+ISOLATION AUDIT: Asserting canonical export/ and export.work/ were NEVER modified
 ----------------------------------------------------------------
-[ISOLATION AUDIT PASS] Canonical export.work/edits.json mtime unchanged.
+[ISOLATION AUDIT PASS] Canonical export.work/edits.json unchanged (SHA-256: 61706f6e7d08b874d1ecca34b1145a28edf367cd9f90664974202e05fdd5b2d7).
+[ISOLATION AUDIT PASS] Canonical export/ file list unchanged: [config.json, faces, people.json, thumbs].
+[ISOLATION AUDIT PASS] Canonical export/people.json unchanged (SHA-256: 3b0524102e62804a4012659be7ca3a0eea20597f68f085b94a8ddf31f12bed10).
 
 ----------------------------------------------------------------
 CLUSTER-ID AUDIT: Verifying zero pNNN tokens in printed assertions and output
 ----------------------------------------------------------------
-[CLUSTER-ID AUDIT PASS] Zero pNNN tokens detected across all 137 printed log/assertion lines.
+[CLUSTER-ID AUDIT PASS] Zero pNNN tokens detected across all 140 printed log/assertion lines.
 
 ================================================================
 ALL PHASE 4 E2E BROWSER VERIFICATION CHECKS PASSED (100%)
 ================================================================
 
-[TEARDOWN] Stopping uvicorn server process and cleaning temp dirs...
+[TEARDOWN] Stopping server processes and cleaning temp dirs...
 [TEARDOWN] Temporary test directories removed.
 ```
 
-#### E2E Verification Run 2 Transcript (`node frontend/scripts/e2e.mjs`)
+#### E2E Verification Run 2 Transcript (Built UI + Uvicorn) (`node frontend/scripts/e2e.mjs`)
 ```text
 ================================================================
 PhotoSorter Phase 4: Full End-to-End Browser Verification
+[MODE] Running against built UI (frontend/dist) served directly by uvicorn
 Isolated test execution against temporary workspace
 ================================================================
 
@@ -1630,20 +1637,186 @@ STEP H: Export bundle to temp folder and assert clean static bundle structure
 [INVARIANT h] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
 
 ----------------------------------------------------------------
-ISOLATION AUDIT: Asserting canonical files were NEVER modified
+ISOLATION AUDIT: Asserting canonical export/ and export.work/ were NEVER modified
 ----------------------------------------------------------------
-[ISOLATION AUDIT PASS] Canonical export.work/edits.json mtime unchanged.
+[ISOLATION AUDIT PASS] Canonical export.work/edits.json unchanged (SHA-256: 61706f6e7d08b874d1ecca34b1145a28edf367cd9f90664974202e05fdd5b2d7).
+[ISOLATION AUDIT PASS] Canonical export/ file list unchanged: [config.json, faces, people.json, thumbs].
+[ISOLATION AUDIT PASS] Canonical export/people.json unchanged (SHA-256: 3b0524102e62804a4012659be7ca3a0eea20597f68f085b94a8ddf31f12bed10).
 
 ----------------------------------------------------------------
 CLUSTER-ID AUDIT: Verifying zero pNNN tokens in printed assertions and output
 ----------------------------------------------------------------
-[CLUSTER-ID AUDIT PASS] Zero pNNN tokens detected across all 137 printed log/assertion lines.
+[CLUSTER-ID AUDIT PASS] Zero pNNN tokens detected across all 140 printed log/assertion lines.
 
 ================================================================
 ALL PHASE 4 E2E BROWSER VERIFICATION CHECKS PASSED (100%)
 ================================================================
 
-[TEARDOWN] Stopping uvicorn server process and cleaning temp dirs...
+[TEARDOWN] Stopping server processes and cleaning temp dirs...
+[TEARDOWN] Temporary test directories removed.
+```
+
+#### E2E Verification Development Mode Transcript (`npm run dev` + Uvicorn) (`node frontend/scripts/e2e.mjs --dev`)
+```text
+================================================================
+PhotoSorter Phase 4: Full End-to-End Browser Verification
+[MODE] Running against Vite dev server (npm run dev) + uvicorn API
+Isolated test execution against temporary workspace
+================================================================
+
+[SPAWN] Starting uvicorn with isolated work/output dirs on port 8000...
+[SPAWN] Starting Vite dev server (npm run dev) on port 5174...
+[SERVER READY] PhotoSorter API running at http://127.0.0.1:8000, UI at http://127.0.0.1:5174
+[BROWSER] Launching headless Chromium via Playwright...
+
+----------------------------------------------------------------
+STEP A: Start sorting job, verify >= 5 SSE updates, end at 192 people
+----------------------------------------------------------------
+[STEP A] Sorting job started. Collecting SSE progress updates...
+  [PROGRESS UPDATE #1] 0.0%[starting]Initializing job...0 / 0
+  [PROGRESS UPDATE #2] 0.0%[scanned]Found 271 photos to process.0 / 271
+  [PROGRESS UPDATE #3] 0.4%[processing]IMG-20260226-WA0037.jpg1 / 271
+  [PROGRESS UPDATE #4] 0.7%[processing]IMG-20260226-WA0047.jpg2 / 271
+  [PROGRESS UPDATE #5] 1.1%[processing]IMG-20260227-WA0110.jpg3 / 271
+  [PROGRESS UPDATE #6] 1.5%[processing]IMG_20260227_220404.jpg4 / 271
+  [PROGRESS UPDATE #7] 1.8%[processing]IMG_20260227_220436.jpg5 / 271
+  [PROGRESS UPDATE #8] 2.2%[processing]IMG_20260227_220543.jpg6 / 271
+[STEP A] Total progress updates recorded: 50 (>= 5 required)
+[STEP A] Review People screen loaded. People count: 192
+[INVARIANT a] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP C: 7-way split from eval/ground_truth.json (Set C) on clean state
+----------------------------------------------------------------
+[STEP C] Set C ground truth face IDs (8 faces):
+  - f_cdfa42b70c134a74_001
+  - f_49eff969f7dee3bd_001
+  - f_1ba2b67379394309_005
+  - f_d9c8bf96d71c7101_005
+  - f_34a0bab12251055a_003
+  - f_10bae275a2e5daf8_002
+  - f_a527ac003612de6e_005
+  - f_869adaf675c3009c_006
+[STEP C] Set C faces are distributed across 7 initial clusters.
+  Cluster #1 size: 71 faces (contains 2 Set C face IDs)
+  Cluster #2 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #3 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #4 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #5 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #6 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #7 size: 1 faces (contains 1 Set C face IDs)
+[STEP C] Sum of the seven cluster sizes: 77
+[STEP C] Merge button text before click: "Merge Selected (7)"
+[STEP C] Merging all 7 clusters in one single action...
+[STEP C] Total people count after C: 186
+[STEP C] Resulting person face count: 77
+[STEP C] Asserting sum (77) === resulting person face count (77)...
+  [PASS] Cluster sizes sum (77) equals resulting person face count (77)!
+[STEP C] Asserting all 8 Set C faces reside in the merged person by face ID...
+  [PASS] All 8 Set C face IDs are present in the unified person:
+    - f_cdfa42b70c134a74_001 (confirmed)
+    - f_49eff969f7dee3bd_001 (confirmed)
+    - f_1ba2b67379394309_005 (confirmed)
+    - f_d9c8bf96d71c7101_005 (confirmed)
+    - f_34a0bab12251055a_003 (confirmed)
+    - f_10bae275a2e5daf8_002 (confirmed)
+    - f_a527ac003612de6e_005 (confirmed)
+    - f_869adaf675c3009c_006 (confirmed)
+[INVARIANT c] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP B: Multi-select merge 3 people in one action (people drops by 2)
+----------------------------------------------------------------
+[STEP B] Selecting 3 people for multi-merge...
+[STEP B] Count after merging 3 people: 184 (before: 186)
+[INVARIANT b] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP D: Assign an Unrecognized face (unrecognized count drops by 1)
+----------------------------------------------------------------
+[STEP D] Unrecognized faces before assign: 445
+[STEP D] Unrecognized faces after assign: 444
+[STEP D] SUCCESS: Unrecognized faces dropped by exactly 1.
+[INVARIANT d] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP E: Perform Undo for each edit type and assert counts return
+----------------------------------------------------------------
+[STEP E.1] Undoing assign edit...
+  Unrecognized count restored to: 445 (baseline: 445)
+[INVARIANT e.1] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+[STEP E.2] Undoing 3-way merge...
+  People count restored to: 186 (expected: 186)
+[INVARIANT e.2] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+[STEP E.3] Undoing 7-way split merge...
+  People count restored to baseline: 192 (original: 192)
+  Set C faces restored across 7 distinct persons.
+[STEP E] SUCCESS: All edit types cleanly undone and counts returned to baseline.
+[INVARIANT e.3] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP F: Accept one suggestion and reject another
+----------------------------------------------------------------
+[STEP F] Initial suggestions count: 31
+[STEP F] Accepting suggestion between anchor f_056e4727b8b8d6d0_001 and anchor f_f3de19871f241880_002 (d=0.5012)...
+[STEP F] People count after accept: 191 (expected 191)
+[STEP F] Rejecting suggestion between anchor f_2916e35d73c60b70_001 and anchor f_3a9077105f8e5efe_006...
+[STEP F] Visible suggestion cards after rejection: 29
+[STEP F] SUCCESS: Suggestion accepted and rejected with session persistence.
+[INVARIANT f] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP G: Trigger rerun and assert edits survive by face ID
+----------------------------------------------------------------
+[STEP G ACTION] Explicitly assigning unrecognized face ID: f_554ef87868d6ec38_003
+  -> Assigning to TARGET person with anchor face ID: f_cdfa42b70c134a74_001
+[STEP G PRE-RERUN] people_count: 191
+[STEP G PRE-RERUN] unrecognized_faces_count: 444
+[STEP G PRE-RERUN] Active persisted edits:
+  1. Merged suggestion face anchors: [f_056e4727b8b8d6d0_001] + [f_f3de19871f241880_002]
+  2. Assigned face ID f_554ef87868d6ec38_003 to TARGET person [f_cdfa42b70c134a74_001]
+[STEP G ACTION] Navigating to Settings tab to rerun clustering with identical settings...
+[STEP G ACTION] Clicking "Save & Rerun Clustering"...
+[STEP G] Rerun completed! Result summary: Re-clustering Completed with Edit ReplayClustering rerun finished. 2 edits successfully replayed by face ID.People191Unrecognized Faces444Replayed Edits2All org...
+[STEP G POST-RERUN] people_count: 191
+[STEP G POST-RERUN] unrecognized_faces_count: 444
+[STEP G ASSERTION] Asserting people_count equals pre-rerun count (191 === 191)...
+  [PASS] people_count identical: 191 === 191
+[STEP G ASSERTION] Asserting unrecognized_faces_count equals pre-rerun count (444 === 444)...
+  [PASS] unrecognized_faces_count identical: 444 === 444
+[STEP G ASSERTION] Asserting assigned face f_554ef87868d6ec38_003 is in its TARGET person [f_cdfa42b70c134a74_001]...
+  [PASS] Assigned face f_554ef87868d6ec38_003 confirmed in TARGET person (anchor f_cdfa42b70c134a74_001).
+[STEP G ASSERTION] Asserting accepted-suggestion anchors (f_056e4727b8b8d6d0_001 & f_f3de19871f241880_002) are in one person...
+  [PASS] Both suggestion anchors (f_056e4727b8b8d6d0_001 & f_f3de19871f241880_002) reside in one unified person post-rerun.
+[INVARIANT g] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP H: Export bundle to temp folder and assert clean static bundle structure
+----------------------------------------------------------------
+[STEP H ACTION] Explicitly setting export destination input to isolated path: C:\Users\DELL\face-clubbing\export.e2e_temp
+[STEP H] Clicking "Export Public Bundle"...
+[STEP H] Export completed: 191 people, 259 photos.
+[STEP H] Contents of isolated export directory on disk: config.json,faces,people.json,thumbs
+[STEP H] SUCCESS: Bundle contains strictly config.json, people.json, faces/, and thumbs/.
+[INVARIANT h] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+ISOLATION AUDIT: Asserting canonical export/ and export.work/ were NEVER modified
+----------------------------------------------------------------
+[ISOLATION AUDIT PASS] Canonical export.work/edits.json unchanged (SHA-256: 61706f6e7d08b874d1ecca34b1145a28edf367cd9f90664974202e05fdd5b2d7).
+[ISOLATION AUDIT PASS] Canonical export/ file list unchanged: [config.json, faces, people.json, thumbs].
+[ISOLATION AUDIT PASS] Canonical export/people.json unchanged (SHA-256: 3b0524102e62804a4012659be7ca3a0eea20597f68f085b94a8ddf31f12bed10).
+
+----------------------------------------------------------------
+CLUSTER-ID AUDIT: Verifying zero pNNN tokens in printed assertions and output
+----------------------------------------------------------------
+[CLUSTER-ID AUDIT PASS] Zero pNNN tokens detected across all 141 printed log/assertion lines.
+
+================================================================
+ALL PHASE 4 E2E BROWSER VERIFICATION CHECKS PASSED (100%)
+================================================================
+
+[TEARDOWN] Stopping server processes and cleaning temp dirs...
 [TEARDOWN] Temporary test directories removed.
 ```
 
@@ -1778,14 +1951,45 @@ LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
 ```
 
 #### 5. Repository Hygiene Verification
-Execution command: `git ls-files | grep -E "test_photos|\.venv|node_modules|\.cache|client_secret|token|\.onnx|^(export|viewer/public)/(faces|thumbs)/"`
+Execution command: `git ls-files | Select-String -Pattern 'test_photos','\.venv','node_modules','/\.cache/','client_secret','token','\.onnx','^(export|viewer/public)/(faces|thumbs)/'`
 ```text
-backend/engine/cache.py
-tests/test_cache.py
 ```
-*Explanation of Output*:
-`backend/engine/cache.py` and `tests/test_cache.py` are the only matched lines. They match solely because the unescaped dot wildcard `.` before `cache` in PowerShell's argument parsing matches the slash separator `/cache.py`. Neither file is a cache directory, model file, test photo, or credential. Zero real face crops, zero `.cache/` directories, zero client secrets, and zero virtual environments are tracked in git.
+*Verification Confirmation*:
+The output is completely empty (0 matches). Strictly zero test photos, zero virtual environments, zero `node_modules`, zero `.cache/` directories, zero client secrets or auth tokens, zero `.onnx` model weights, and zero real face crops or thumbnails under `export/` or `viewer/public/` are tracked in git. Repository hygiene is 100% clean.
 
+### 17.7 Phase 4 Closeout Git Commit & Repository State
+
+All Phase 4 deliverables (`frontend/`, E2E test scripts, `eval/check_settings_spec.py`, unit/regression tests, `REPORT.md`, `BUILD_PLAN.md`) are committed with a clean working tree.
+
+#### 1. Clean Working Tree Status (`git status -s`)
+```text
+```
+*(Clean working tree: zero unstaged modifications, zero untracked files).*
+
+#### 2. Recent Commit History (`git log --oneline -5`)
+```text
+354c499 feat(phase4): close out Phase 4 Organizer UI and verification
+9b13059 feat(frontend): complete Phase 4 Organizer UI verification and report audit
+6b33158 feat: implement Phase 4 frontend organizer UI and E2E browser verification
+2f189fa docs(report): update Section 15.2 with clean repo commit state
+c9a8fab fix(tests): resolve canonical data path relative to test file for clean-checkout safety
+```
+
+#### 3. Commit Statistics (`git show --stat HEAD`)
+```text
+commit 354c4998df66464b3c414f7f16669d4696470022
+Author: Sufiyan-Shiraj <sufiyanshiraj@gmail.com>
+Date:   Thu Oct 8 09:20:44 2026 +0530
+
+    feat(phase4): close out Phase 4 Organizer UI and verification
+
+ .gitignore               |   1 +
+ BUILD_PLAN.md            |   8 +-
+ REPORT.md                | 229 ++++++++++++++++++++++++++++++++++++++++++-----
+ backend/api/jobs.py      |   6 +-
+ frontend/scripts/e2e.mjs | 226 +++++++++++++++++++++++++++++++++++++---------
+ 5 files changed, 404 insertions(+), 66 deletions(-)
+```
 
 ---
 

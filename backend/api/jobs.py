@@ -3,6 +3,7 @@
 from __future__ import annotations
 import asyncio
 import json
+import os
 import threading
 import time
 import uuid
@@ -115,8 +116,11 @@ class JobManager:
                     setattr(self.state.settings, k, v)
         if req.input_path:
             self.state.settings.input_path = req.input_path
-        if req.output_dir:
+        env_out = os.environ.get("PHOTOSORTER_OUTPUT_DIR")
+        if req.output_dir and (req.output_dir != "export" or not env_out):
             self.state.settings.output_dir = req.output_dir
+        elif env_out:
+            self.state.settings.output_dir = env_out
         if req.cache_dir:
             self.state.settings.cache_dir = req.cache_dir
 

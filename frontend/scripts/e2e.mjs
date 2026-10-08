@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import { readFileSync, readdirSync, writeFileSync, existsSync, rmSync, mkdirSync, statSync } from 'fs';
+import { createHash } from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { chromium } from 'playwright';
@@ -7,8 +8,13 @@ import { chromium } from 'playwright';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const PORT = 8765;
-const BASE_URL = `http://127.0.0.1:${PORT}`;
+
+const isDevMode = process.argv.includes('--dev');
+const API_PORT = isDevMode ? 8000 : 8765;
+const UI_PORT = isDevMode ? 5174 : 8765;
+const BASE_URL = `http://127.0.0.1:${UI_PORT}`;
+const API_BASE_URL = `http://127.0.0.1:${API_PORT}`;
+
 const PYTHON_PATH = path.resolve(REPO_ROOT, '.venv', 'Scripts', 'python.exe');
 const CHROME_PATH = 'C:\\Users\\DELL\\AppData\\Local\\ms-playwright\\chromium-1200\\chrome-win64\\chrome.exe';
 
@@ -18,9 +24,16 @@ const TEMP_OUTPUT_DIR = path.resolve(REPO_ROOT, 'export.e2e_temp');
 const CANONICAL_WORK_DIR = path.resolve(REPO_ROOT, 'export.work');
 const CANONICAL_EXPORT_DIR = path.resolve(REPO_ROOT, 'export');
 const CANONICAL_EDITS_PATH = path.resolve(CANONICAL_WORK_DIR, 'edits.json');
+const CANONICAL_PEOPLE_PATH = path.resolve(CANONICAL_EXPORT_DIR, 'people.json');
 
 // Captured log lines for zero-cluster-id audit
 const capturedLogs = [];
+
+function computeSha256(filePath) {
+  if (!existsSync(filePath)) return null;
+  const content = readFileSync(filePath);
+  return createHash('sha256').update(content).digest('hex');
+}
 
 function logMessage(...args) {
   const line = args.join(' ');
@@ -33,23 +46,27 @@ function sleep(ms) {
 }
 
 async function fetchJson(endpoint) {
-  const res = await fetch(`${BASE_URL}${endpoint}`);
+  const res = await fetch(`${API_BASE_URL}${endpoint}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
   return res.json();
 }
 
-async function waitForServer(maxAttempts = 40) {
+async function waitForServer(url = `${API_BASE_URL}/api/health`, maxAttempts = 40) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
-      const res = await fetch(`${BASE_URL}/api/health`);
+      const res = await fetch(url);
       if (res.ok) {
-        const data = await res.json();
-        if (data.status === 'ok') return true;
+        if (url.includes('/api/health')) {
+          const data = await res.json();
+          if (data.status === 'ok') return true;
+        } else {
+          return true;
+        }
       }
     } catch {}
     await sleep(500);
   }
-  throw new Error(`Server at ${BASE_URL} did not become ready in time.`);
+  throw new Error(`Server at ${url} did not become ready in time.`);
 }
 
 async function checkInvariant(stepName) {
@@ -73,13 +90,24 @@ async function checkInvariant(stepName) {
 async function run() {
   logMessage('================================================================');
   logMessage('PhotoSorter Phase 4: Full End-to-End Browser Verification');
+  logMessage(
+    isDevMode
+      ? '[MODE] Running against Vite dev server (npm run dev) + uvicorn API'
+      : '[MODE] Running against built UI (frontend/dist) served directly by uvicorn'
+  );
   logMessage('Isolated test execution against temporary workspace');
   logMessage('================================================================');
 
-  // Verify and record canonical mtime before run to assert isolation
+  // Verify and record canonical mtime and SHA-256 before run to assert isolation
   const initialCanonicalEditsMtime = existsSync(CANONICAL_EDITS_PATH)
     ? statSync(CANONICAL_EDITS_PATH).mtimeMs
     : 0;
+  const initialCanonicalEditsSha = computeSha256(CANONICAL_EDITS_PATH);
+
+  const initialExportFiles = existsSync(CANONICAL_EXPORT_DIR)
+    ? readdirSync(CANONICAL_EXPORT_DIR).sort()
+    : [];
+  const initialPeopleJsonSha = computeSha256(CANONICAL_PEOPLE_PATH);
 
   // Setup isolated temporary directories
   if (existsSync(TEMP_WORK_DIR)) rmSync(TEMP_WORK_DIR, { recursive: true, force: true });
@@ -91,10 +119,10 @@ async function run() {
   writeFileSync(tempEditsPath, JSON.stringify({ version: 1, edits: [] }, null, 2), 'utf8');
 
   // Spawn uvicorn server in isolated environment
-  logMessage(`\n[SPAWN] Starting uvicorn with isolated work/output dirs on port ${PORT}...`);
+  logMessage(`\n[SPAWN] Starting uvicorn with isolated work/output dirs on port ${API_PORT}...`);
   const serverProc = spawn(
     PYTHON_PATH,
-    ['-m', 'uvicorn', 'backend.api.app:app', '--host', '127.0.0.1', '--port', String(PORT)],
+    ['-m', 'uvicorn', 'backend.api.app:app', '--host', '127.0.0.1', '--port', String(API_PORT)],
     {
       cwd: REPO_ROOT,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -113,9 +141,26 @@ async function run() {
     }
   });
 
+  let viteProc = null;
+  if (isDevMode) {
+    logMessage(`[SPAWN] Starting Vite dev server (npm run dev) on port ${UI_PORT}...`);
+    viteProc = spawn(
+      process.platform === 'win32' ? 'npm.cmd' : 'npm',
+      ['--prefix', path.resolve(REPO_ROOT, 'frontend'), 'run', 'dev', '--', '--host', '127.0.0.1', '--port', String(UI_PORT)],
+      {
+        cwd: REPO_ROOT,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: process.platform === 'win32',
+      }
+    );
+  }
+
   try {
-    await waitForServer();
-    logMessage(`[SERVER READY] PhotoSorter API running at ${BASE_URL}`);
+    await waitForServer(`${API_BASE_URL}/api/health`);
+    if (isDevMode) {
+      await waitForServer(BASE_URL);
+    }
+    logMessage(`[SERVER READY] PhotoSorter API running at ${API_BASE_URL}, UI at ${BASE_URL}`);
 
     // Launch Chromium with Playwright
     logMessage(`[BROWSER] Launching headless Chromium via Playwright...`);
@@ -125,6 +170,15 @@ async function run() {
     });
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
+    page.on('console', (msg) => {
+      const txt = msg.text();
+      if (txt.toLowerCase().includes('error') || txt.toLowerCase().includes('failed')) {
+        console.error(`[BROWSER CONSOLE] ${msg.type()}: ${txt}`);
+      }
+    });
+    page.on('pageerror', (err) => {
+      console.error(`[BROWSER PAGEERROR] ${err}`);
+    });
     page.on('dialog', async (dialog) => {
       console.error(`[BROWSER DIALOG] ${dialog.type()}: ${dialog.message()}`);
       await dialog.dismiss();
@@ -249,10 +303,16 @@ async function run() {
     logMessage(`[STEP C] Merge button text before click: "${mergeBtnText}"`);
     logMessage(`[STEP C] Merging all 7 clusters in one single action...`);
     await page.click('#merge-selected-btn');
-    await sleep(1500);
+    await page.waitForSelector('#merge-selected-btn', { state: 'detached', timeout: 20000 });
+
+    let peopleAfterC = [];
+    for (let i = 0; i < 30; i++) {
+      peopleAfterC = await fetchJson('/api/people');
+      if (peopleAfterC.length === 186) break;
+      await sleep(300);
+    }
 
     // Query resulting person and assert face count equals sum of the seven clusters
-    const peopleAfterC = await fetchJson('/api/people');
     logMessage(`[STEP C] Total people count after C: ${peopleAfterC.length}`);
     const mergedPersonC = peopleAfterC.find((p) => p.faces && p.faces.some((f) => f.face_id === setCFaces[0]));
     if (!mergedPersonC) {
@@ -302,9 +362,23 @@ async function run() {
 
     await page.waitForSelector('#merge-selected-btn:not([disabled])');
     await page.click('#merge-selected-btn');
-    await sleep(800);
-    await page.waitForSelector('#subtab-people-count');
+    await page.waitForSelector('#merge-selected-btn', { state: 'detached', timeout: 20000 });
 
+    let peopleAfterB = [];
+    for (let i = 0; i < 30; i++) {
+      peopleAfterB = await fetchJson('/api/people');
+      if (peopleAfterB.length === countBeforeB - 2) break;
+      await sleep(300);
+    }
+
+    await page.waitForFunction(
+      (expected) => {
+        const el = document.querySelector('#subtab-people-count');
+        return el && parseInt(el.textContent || '0', 10) === expected;
+      },
+      countBeforeB - 2,
+      { timeout: 15000 }
+    );
     const countAfterB = parseInt(await page.$eval('#subtab-people-count', (el) => el.textContent?.trim() || '0'), 10);
     logMessage(`[STEP B] Count after merging 3 people: ${countAfterB} (before: ${countBeforeB})`);
     if (countAfterB !== countBeforeB - 2) {
@@ -326,9 +400,14 @@ async function run() {
     logMessage(`[STEP D] Unrecognized faces before assign: ${unrecCountBeforeD}`);
 
     await page.click('[data-testid="create-person-btn"]');
-    await sleep(800);
 
-    const unrecAfterD = await fetchJson('/api/unrecognized');
+    let unrecAfterD = unrecBeforeD;
+    for (let i = 0; i < 30; i++) {
+      unrecAfterD = await fetchJson('/api/unrecognized');
+      if (unrecAfterD.faces.length === unrecCountBeforeD - 1) break;
+      await sleep(300);
+    }
+
     const unrecCountAfterD = unrecAfterD.faces.length;
     logMessage(`[STEP D] Unrecognized faces after assign: ${unrecCountAfterD}`);
 
@@ -347,8 +426,13 @@ async function run() {
     // 1. Undo Assign (edit type: assign)
     logMessage('[STEP E.1] Undoing assign edit...');
     await page.click('#header-undo-btn');
-    await sleep(800);
-    const unrecAfterUndoAssign = (await fetchJson('/api/unrecognized')).faces.length;
+
+    let unrecAfterUndoAssign = 0;
+    for (let i = 0; i < 30; i++) {
+      unrecAfterUndoAssign = (await fetchJson('/api/unrecognized')).faces.length;
+      if (unrecAfterUndoAssign === unrecCountBeforeD) break;
+      await sleep(300);
+    }
     logMessage(`  Unrecognized count restored to: ${unrecAfterUndoAssign} (baseline: ${unrecCountBeforeD})`);
     if (unrecAfterUndoAssign !== unrecCountBeforeD) {
       throw new Error(`Undo assign failed: expected ${unrecCountBeforeD}, got ${unrecAfterUndoAssign}`);
@@ -358,8 +442,13 @@ async function run() {
     // 2. Undo 3-way merge (edit type: merge)
     logMessage('[STEP E.2] Undoing 3-way merge...');
     await page.click('#header-undo-btn');
-    await sleep(800);
-    const peopleAfterUndoB = await fetchJson('/api/people');
+
+    let peopleAfterUndoB = [];
+    for (let i = 0; i < 30; i++) {
+      peopleAfterUndoB = await fetchJson('/api/people');
+      if (peopleAfterUndoB.length === countBeforeB) break;
+      await sleep(300);
+    }
     logMessage(`  People count restored to: ${peopleAfterUndoB.length} (expected: ${countBeforeB})`);
     if (peopleAfterUndoB.length !== countBeforeB) {
       throw new Error(`Undo 3-way merge failed: expected ${countBeforeB}, got ${peopleAfterUndoB.length}`);
@@ -369,8 +458,13 @@ async function run() {
     // 3. Undo 7-way split merge (edit type: merge)
     logMessage('[STEP E.3] Undoing 7-way split merge...');
     await page.click('#header-undo-btn');
-    await sleep(800);
-    const peopleFinalUndo = await fetchJson('/api/people');
+
+    let peopleFinalUndo = [];
+    for (let i = 0; i < 30; i++) {
+      peopleFinalUndo = await fetchJson('/api/people');
+      if (peopleFinalUndo.length === 192) break;
+      await sleep(300);
+    }
     logMessage(`  People count restored to baseline: ${peopleFinalUndo.length} (original: 192)`);
     if (peopleFinalUndo.length !== 192) {
       throw new Error(`Undo 7-way merge failed: expected 192, got ${peopleFinalUndo.length}`);
@@ -409,9 +503,13 @@ async function run() {
     const firstAnchorB = firstSug.person_b_anchors[0];
     logMessage(`[STEP F] Accepting suggestion between anchor ${firstAnchorA} and anchor ${firstAnchorB} (d=${firstSug.distance})...`);
     await page.click('[data-testid="accept-suggestion-btn"]');
-    await sleep(800);
 
-    const peopleAfterSugAccept = await fetchJson('/api/people');
+    let peopleAfterSugAccept = [];
+    for (let i = 0; i < 30; i++) {
+      peopleAfterSugAccept = await fetchJson('/api/people');
+      if (peopleAfterSugAccept.length === 191) break;
+      await sleep(300);
+    }
     logMessage(`[STEP F] People count after accept: ${peopleAfterSugAccept.length} (expected 191)`);
     if (peopleAfterSugAccept.length !== 191) {
       throw new Error(`Expected people count 191 after suggestion accept, got ${peopleAfterSugAccept.length}`);
@@ -454,16 +552,28 @@ async function run() {
 
     // Navigate to Unrecognized tab and execute assign in UI
     await page.click('#tab-unrecognized');
-    await page.waitForSelector('[data-testid="assign-target-select"]');
+    const faceCardSelector = `[data-testid="unrec-face-card-${assignedFaceId}"]`;
+    await page.waitForSelector(faceCardSelector);
 
-    // Select target person in dropdown and click Assign
-    await page.locator('[data-testid="assign-target-select"]').first().selectOption(targetHandle);
-    await page.locator('[data-testid="assign-to-person-btn"]').first().click();
-    await sleep(800);
+    // Select target person in dropdown and click Assign on this specific face card
+    const faceCard = page.locator(faceCardSelector);
+    await faceCard.locator('[data-testid="assign-target-select"]').selectOption(targetHandle);
+    await faceCard.locator('[data-testid="assign-to-person-btn"]:not([disabled])').click();
+
+    // Poll until assign takes effect in backend and state
+    let peoplePreRerun = [];
+    let unrecPreRerun = null;
+    for (let i = 0; i < 30; i++) {
+      peoplePreRerun = await fetchJson('/api/people');
+      unrecPreRerun = await fetchJson('/api/unrecognized');
+      const targetP = peoplePreRerun.find((p) => p.anchor_face_ids.includes(targetAnchorId));
+      if (targetP && targetP.faces.some((f) => f.face_id === assignedFaceId)) {
+        break;
+      }
+      await sleep(300);
+    }
 
     // 2. Pre-rerun status log and counts
-    const peoplePreRerun = await fetchJson('/api/people');
-    const unrecPreRerun = await fetchJson('/api/unrecognized');
     const prePeopleCount = peoplePreRerun.length;
     const preUnrecCount = unrecPreRerun.faces.length;
 
@@ -591,16 +701,38 @@ async function run() {
     // ISOLATION AND CANONICAL PRESERVATION ASSERTION
     // ----------------------------------------------------------------
     logMessage('\n----------------------------------------------------------------');
-    logMessage('ISOLATION AUDIT: Asserting canonical files were NEVER modified');
+    logMessage('ISOLATION AUDIT: Asserting canonical export/ and export.work/ were NEVER modified');
     logMessage('----------------------------------------------------------------');
     const finalCanonicalEditsMtime = existsSync(CANONICAL_EDITS_PATH)
       ? statSync(CANONICAL_EDITS_PATH).mtimeMs
       : 0;
+    const finalCanonicalEditsSha = computeSha256(CANONICAL_EDITS_PATH);
+    const finalExportFiles = existsSync(CANONICAL_EXPORT_DIR)
+      ? readdirSync(CANONICAL_EXPORT_DIR).sort()
+      : [];
+    const finalPeopleJsonSha = computeSha256(CANONICAL_PEOPLE_PATH);
 
+    // 1. export.work/edits.json mtime and SHA-256
     if (finalCanonicalEditsMtime !== initialCanonicalEditsMtime) {
-      throw new Error(`CRITICAL ISOLATION VIOLATION: Canonical export.work/edits.json was modified during e2e test!`);
+      throw new Error(`CRITICAL ISOLATION VIOLATION: Canonical export.work/edits.json mtime changed!`);
     }
-    logMessage('[ISOLATION AUDIT PASS] Canonical export.work/edits.json mtime unchanged.');
+    if (finalCanonicalEditsSha !== initialCanonicalEditsSha) {
+      throw new Error(`CRITICAL ISOLATION VIOLATION: Canonical export.work/edits.json SHA-256 changed! before=${initialCanonicalEditsSha} after=${finalCanonicalEditsSha}`);
+    }
+    logMessage(`[ISOLATION AUDIT PASS] Canonical export.work/edits.json unchanged (SHA-256: ${finalCanonicalEditsSha}).`);
+
+    // 2. Canonical export/ directory file list
+    const exportFileListMatches = JSON.stringify(finalExportFiles) === JSON.stringify(initialExportFiles);
+    if (!exportFileListMatches) {
+      throw new Error(`CRITICAL ISOLATION VIOLATION: Canonical export/ directory file list changed! before=${JSON.stringify(initialExportFiles)} after=${JSON.stringify(finalExportFiles)}`);
+    }
+    logMessage(`[ISOLATION AUDIT PASS] Canonical export/ file list unchanged: [${finalExportFiles.join(', ')}].`);
+
+    // 3. Canonical export/people.json SHA-256
+    if (finalPeopleJsonSha !== initialPeopleJsonSha) {
+      throw new Error(`CRITICAL ISOLATION VIOLATION: Canonical export/people.json SHA-256 changed! before=${initialPeopleJsonSha} after=${finalPeopleJsonSha}`);
+    }
+    logMessage(`[ISOLATION AUDIT PASS] Canonical export/people.json unchanged (SHA-256: ${finalPeopleJsonSha}).`);
 
     // ----------------------------------------------------------------
     // ZERO CLUSTER-ID (\bp\d{3}\b) AUDIT IN PRINTED ASSERTIONS & OUTPUT
@@ -632,8 +764,22 @@ async function run() {
 
     await browser.close();
   } finally {
-    logMessage('\n[TEARDOWN] Stopping uvicorn server process and cleaning temp dirs...');
-    serverProc.kill('SIGTERM');
+    logMessage('\n[TEARDOWN] Stopping server processes and cleaning temp dirs...');
+    if (serverProc) {
+      if (process.platform === 'win32') {
+        try { spawn('taskkill', ['/pid', String(serverProc.pid), '/f', '/t']); } catch {}
+      } else {
+        serverProc.kill('SIGTERM');
+      }
+    }
+    if (viteProc) {
+      if (process.platform === 'win32') {
+        try { spawn('taskkill', ['/pid', String(viteProc.pid), '/f', '/t']); } catch {}
+      } else {
+        viteProc.kill('SIGTERM');
+      }
+    }
+    await sleep(1000);
     if (existsSync(TEMP_WORK_DIR)) rmSync(TEMP_WORK_DIR, { recursive: true, force: true });
     if (existsSync(TEMP_OUTPUT_DIR)) rmSync(TEMP_OUTPUT_DIR, { recursive: true, force: true });
     logMessage('[TEARDOWN] Temporary test directories removed.');
