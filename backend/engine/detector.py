@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 from typing import List, Optional, Tuple
-import numpy as np
+import warnings
 import cv2
+import numpy as np
+
+# Suppress upstream scikit-image FutureWarning from insightface face_align
+warnings.filterwarnings("ignore", category=FutureWarning, module="insightface")
+warnings.filterwarnings("ignore", category=FutureWarning, message=".*estimate.*")
 
 from backend.engine.models import FaceDetection, PhotoRecord
 
