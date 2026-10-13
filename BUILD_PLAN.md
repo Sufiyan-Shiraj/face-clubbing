@@ -36,7 +36,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
-## Phase 1b: Engine amendments (do before Phase 3)
+## Phase 1b: Engine amendments [DONE]
 
 **Build**
 1. **Maybe band:** set `maybe_threshold` default to 0.65 (was 0.60). Regenerate `suggestions.json` and report the new link/group counts and the distance-bin table.
@@ -59,7 +59,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
-## Phase 2: Static viewer (update to SPEC 9, rev 2)
+## Phase 2: Static viewer (update to SPEC 9, rev 2) [DONE]
 
 **Build** (in `viewer/`)
 1. React + Vite + Tailwind project reading `config.json` and `people.json`.
@@ -77,7 +77,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
-## Phase 3: API layer (FastAPI)
+## Phase 3: API layer (FastAPI) [DONE]
 
 **Build** (in `backend/api/`)
 1. Job manager: start the engine as a background thread/process, with cancel.

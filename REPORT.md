@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-07  
 **Project**: Face Sorting Engine (`face-clubbing`)  
-**Status**: Phase 1b Complete, Phase 2 Complete (Rows 1-13 & 15 PASS, Row 14 INCOMPLETE pending remote deployment), Phase 3 Complete, Phase 4 Done (All verification tasks pass; organizer review of layout/wording is still pending).
+**Status**: Phase 1b Complete, Phase 2 Complete (All Rows 1-15 PASS), Phase 3 Complete, Phase 4 Complete, Hygiene & Isolation Round Complete (Tasks 0-7 COMPLETE).
 
 ### Working Rules Compliance Confirmation
 - **No Cluster IDs (`pNNN`)**: Strictly enforced. Cluster IDs are display handles only for a single export and are never persisted, tested, compared, or allowlisted. All tests, edits, and verification scripts key strictly by anchor face IDs and photo IDs. Check 14 of `eval/verify_export.py` enforces zero `\bp\d{3}\b` tokens in code outside comments across `eval/` and `tests/`.
@@ -352,7 +352,7 @@ OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
 | **11** | Download button per photo (hidden when null) | **PASS** | Download button rendered conditionally on `photo.download_url != null`. |
 | **12** | Swapping `config.json` changes look without code change | **PASS** | Verified via Vitest (`npm test -- -t "Config Swap"`). Verifies title, `--color-accent`, footer, and toggle state. |
 | **13** | Mobile-first responsive layout | **PASS** | Verified via Playwright headless Chromium at 390px (2 columns) vs 1280px (6 columns). |
-| **14** | Deploy test to GitHub Pages / Cloudflare Pages | **INCOMPLETE** | Remote repository unauthenticated in CI. Exact step-by-step instructions documented in Section 15.3.2. |
+| **14** | Deploy test to GitHub Pages / Cloudflare Pages | **PASS** | [`eval/build_synthetic_bundle.py`](file:///c:/Users/DELL/face-clubbing/eval/build_synthetic_bundle.py), [`eval/deploy_gh_pages.py`](file:///c:/Users/DELL/face-clubbing/eval/deploy_gh_pages.py). Deployed 20-photo privacy-safe synthetic bundle (zero real test photos) to GitHub Pages: `https://sufiyan-shiraj.github.io/face-clubbing/`. Both `config.json` and `people.json` load with HTTP 200. |
 | **15** | Every photo reachable from some screen | **PASS** | Invariant check: all 259 photos reachable via person gallery or unrecognized gallery. |
 
 ---
@@ -1990,6 +1990,602 @@ Date:   Thu Oct 8 09:20:44 2026 +0530
  frontend/scripts/e2e.mjs | 226 +++++++++++++++++++++++++++++++++++--------
  5 files changed, 421 insertions(+), 66 deletions(-)
 ```
+
+---
+
+
+## 18. HYGIENE & ISOLATION ROUND DELIVERABLES & VERIFICATION EVIDENCE (TASKS 0 TO 7)
+
+**Status**: **All Tasks 0 Through 7 COMPLETE** (Zero cluster IDs asserted or persisted; all numbers checked by script; live data preserved; checks isolated from live organizer edits).
+
+---
+
+### 18.1 Task Matrix: Hygiene & Isolation Round (Tasks 0 to 7)
+
+| Task | Objective | Status | Evidence Script / File Path | Verification Outcome & Key Metrics |
+| :---: | :--- | :---: | :--- | :--- |
+| **TASK 0** | Preserve live data | **COMPLETE** | [`archives/edits_2026-10-08.json`](file:///c:/Users/DELL/face-clubbing/archives/edits_2026-10-08.json)<br>Commit: `5f3e66d` | Copied live `export.work/edits.json` to archives. Preserved 4 merges reported solely by anchor face IDs (`f_056e4727b8b8d6d0_001` + `f_f3de19871f241880_002`, `f_2916e35d73c60b70_001` + `f_3a9077105f8e5efe_006`, `f_10bae275a2e5daf8_002` + `f_1ba2b67379394309_005`, `f_c86529d195d9fcb2_004` + `f_15b9e3e80b666d62_003`). Original intact. |
+| **TASK 1** | Pinned baseline fixture | **COMPLETE** | [`eval/baseline/`](file:///c:/Users/DELL/face-clubbing/eval/baseline/)<br>[`eval/check_baseline.py`](file:///c:/Users/DELL/face-clubbing/eval/check_baseline.py)<br>Commit: `174307b` | Pinned baseline fixture created with `people.json`, `config.json`, `id_map.json`, `suggestions.json`, empty `edits.json`. `check_baseline.py` passes: 192 people, 445 unrecognized faces, 168 unrecognized photos, 4 no-face photos. CLI regeneration documented in `eval/baseline/README.md`. |
+| **TASK 2** | Isolate every check from live data | **COMPLETE** | [`tests/test_isolation.py`](file:///c:/Users/DELL/face-clubbing/tests/test_isolation.py)<br>[`tests/test_api.py`](file:///c:/Users/DELL/face-clubbing/tests/test_api.py)<br>[`eval/verify_export.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_export.py)<br>Commit: `639b1b3` | Tests, verification scripts, and E2E read only pinned baseline and temp cache copy. `test_isolation.py` proves SHA-256 tree hashes of `export/` and `export.work/` are 100% untouched. Running `pytest`, `verify_export.py`, `verify_api.py --mode all`, and `e2e.mjs` yields identical 100% passes whether live edits are present or absent. |
+| **TASK 3** | Make Check 6 real | **COMPLETE** | [`eval/verify_export.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_export.py) (Check 6)<br>Commit: `968ec2a` | Updated Check 6 from collection-only to real execution of pytest suite (`sys.executable -m pytest -q`). Fails on any test error or failure. Full suite: 35 passed, 0 failures/errors. |
+| **TASK 4** | Public bundle definition | **COMPLETE** | [`SPEC.md`](file:///c:/Users/DELL/face-clubbing/SPEC.md) (Decision 20)<br>[`BUILD_PLAN.md`](file:///c:/Users/DELL/face-clubbing/BUILD_PLAN.md)<br>[`tests/test_exporter.py`](file:///c:/Users/DELL/face-clubbing/tests/test_exporter.py)<br>Commit: `2e62c51` | Public bundle defined as `config.json`, `people.json`, `faces/`, `thumbs/`, optional viewer build (`index.html`, `assets/`), and standalone `gallery.html`. Enforced in `verify_export.py` Check 2 and `test_exporter.py`. Organizer files (`suggestions.json`, `edits.json`, `id_map.json`, `.cache/`) strictly rejected. Standalone gallery rows added to BUILD_PLAN. |
+| **TASK 5** | Live state vs baseline diff | **COMPLETE** | [`eval/verify_live.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_live.py)<br>Commit: `5ddae6f` | Live export kept as organizer output and uncoupled from test oracle. `verify_live.py` diffs live state against baseline without failing: 192 -> 188 people (-4), 4 live edits, merged anchors reported by face IDs. Exits 0. |
+| **TASK 6** | Phase 2 Row 14 deploy test | **COMPLETE** | [`eval/build_synthetic_bundle.py`](file:///c:/Users/DELL/face-clubbing/eval/build_synthetic_bundle.py)<br>[`eval/deploy_gh_pages.py`](file:///c:/Users/DELL/face-clubbing/eval/deploy_gh_pages.py)<br>Commit: `9ef5fdc` | Zero test photos published. Built 20-photo synthetic bundle (generated avatar photos, crops, thumbs) and deployed to GitHub Pages at `https://sufiyan-shiraj.github.io/face-clubbing/`. HTTP 200 verified for `config.json` and `people.json`. |
+| **TASK 7** | Report hygiene & plan sync | **COMPLETE** | [`REPORT.md`](file:///c:/Users/DELL/face-clubbing/REPORT.md)<br>[`BUILD_PLAN.md`](file:///c:/Users/DELL/face-clubbing/BUILD_PLAN.md) | Stale counts updated. Full verbatim script outputs pasted. BUILD_PLAN statuses updated only for COMPLETE items. |
+
+---
+
+### 18.2 Task 0 Evidence: Preserved Live Organizer Edits
+
+Live organizer edits preserved in `archives/edits_2026-10-08.json` (4 merges, reported strictly by anchor face IDs):
+- **Merge 1**: Group 1 anchor `f_056e4727b8b8d6d0_001` (28 additional faces in cluster) merged with Group 2 anchor `f_f3de19871f241880_002`.
+- **Merge 2**: Group 1 anchor `f_2916e35d73c60b70_001` (19 additional faces in cluster) merged with Group 2 anchor `f_3a9077105f8e5efe_006`.
+- **Merge 3**: Group 1 anchor `f_10bae275a2e5daf8_002` merged with Group 2 anchor `f_1ba2b67379394309_005`.
+- **Merge 4**: Group 1 anchor `f_c86529d195d9fcb2_004` (7 additional faces in cluster) merged with Group 2 anchor `f_15b9e3e80b666d62_003`.
+
+---
+
+### 18.3 Task 1 Evidence: Baseline Fixture Verification
+
+Execution command: `python eval/check_baseline.py`
+```text
+================================================================================
+PHOTOSORTER BASELINE FIXTURE VERIFICATION (eval/check_baseline.py)
+================================================================================
+[PASS] Pinned baseline directory verified: eval/baseline
+[PASS] Canonical People Count: 192 (matched: 192)
+[PASS] Canonical Clustered Faces: 1256 (matched: 1256)
+[PASS] Canonical Unrecognized Faces: 445 (matched: 445)
+[PASS] Total Detected Faces: 1701 (matched: 1701 = 1256 clustered + 445 unrecognized)
+[PASS] Canonical Unrecognized Photos: 168 (matched: 168)
+[PASS] Canonical No-Face Photos: 4 (matched: 4: ['3a6ecb102a1bcf95', 'ac41dd5a9fde7b36', 'cbc787ccd8664c53', 'fd6bc6fe47a406ab'])
+[PASS] Baseline Edits Fixture: 0 edits (clean baseline)
+[PASS] Suggestions Maybe Groups: 28 groups
+[PASS] Suggestions Ranked Pairs: 29 pairs
+[PASS] Pre-Merge Clusters in id_map: 242 pre-merge clusters -> 192 final clusters
+================================================================================
+ALL BASELINE CANONICAL NUMBERS VERIFIED (ZERO DRIFT DETECTED)
+================================================================================
+```
+
+---
+
+### 18.4 Task 2 & Task 3 Evidence: Live-Data Isolation & Real Check 6 Execution
+
+Execution command: `python eval/verify_export.py`
+```text
+================================================================================
+PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
+================================================================================
+[PASS] Check 1: Engine Invariants (259/259 photos covered, 1256 clustered + 445 unrec = 1701 detected faces, photos==photo_ids, maybe_photos empty)
+[PASS] Check 2: Public Bundle Hygiene verified (['assets', 'config.json', 'faces', 'gallery.html', 'index.html', 'people.json', 'thumbs'] - zero organizer files)
+[PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
+[PASS] Check 4: Collision Audit by Face IDs: 1 collision instance verified (photo 4a9b927f5789cd69, faces ['f_4a9b927f5789cd69_001', 'f_4a9b927f5789cd69_005', 'f_4a9b927f5789cd69_007'], max distance 0.2878 <= 0.40, allowlist verified)
+[PASS] Check 5: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
+[PASS] Check 6: Pytest full suite execution passed (35 passed, 0 failures/errors)
+[PASS] Check 7: Section 13.2 Merge Arithmetic verified (83 pre-merge clusters -> 33 final clusters = 50 net merges, 242 - 50 = 192)
+[PASS] Check 8: Section 13.4 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
+[PASS] Check 9: Blocked Merges by Best-Face IDs verified (3 blocked links < 0.50 matched; 8 same_photo_conflict links total)
+[PASS] Check 10: Section 13.8 Maximum Same-Photo Distance verified (computed=0.2878, report=0.2878 <= 0.40)
+[PASS] Check 11: Section 13.9 Evaluation Table A (All Pairs: 30 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 12: Section 13.9 Evaluation Table B (Clean Set: 22 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 13: Section 13.11 Aligned Cap-Sweep Table verified (0.45: 253 att/445 unrec; 0.50: 275 att/423 unrec; 0.55: 322 att/376 unrec)
+[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (28 files scanned across eval/, tests/, and frontend/)
+================================================================================
+OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
+================================================================================
+```
+
+#### Dual Isolation Proof Transcripts (Live Edits Present vs Absent)
+
+##### Run A: Live Edits Present in `export.work/edits.json`
+```text
+=== pytest ===
+...................................                                      [100%]
+35 passed in 80.83s (0:01:20)
+
+
+=== verify_export ===
+================================================================================
+PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
+================================================================================
+[PASS] Check 1: Engine Invariants (259/259 photos covered, 1256 clustered + 445 unrec = 1701 detected faces, photos==photo_ids, maybe_photos empty)
+[PASS] Check 2: Public Bundle Hygiene verified (['assets', 'config.json', 'faces', 'gallery.html', 'index.html', 'people.json', 'thumbs'] - zero organizer files)
+[PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
+[PASS] Check 4: Collision Audit by Face IDs: 1 collision instance verified (photo 4a9b927f5789cd69, faces ['f_4a9b927f5789cd69_001', 'f_4a9b927f5789cd69_005', 'f_4a9b927f5789cd69_007'], max distance 0.2878 <= 0.40, allowlist verified)
+[PASS] Check 5: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
+[PASS] Check 6: Pytest full suite execution passed (35 passed, 0 failures/errors)
+[PASS] Check 7: Section 13.2 Merge Arithmetic verified (83 pre-merge clusters -> 33 final clusters = 50 net merges, 242 - 50 = 192)
+[PASS] Check 8: Section 13.4 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
+[PASS] Check 9: Blocked Merges by Best-Face IDs verified (3 blocked links < 0.50 matched; 8 same_photo_conflict links total)
+[PASS] Check 10: Section 13.8 Maximum Same-Photo Distance verified (computed=0.2878, report=0.2878 <= 0.40)
+[PASS] Check 11: Section 13.9 Evaluation Table A (All Pairs: 30 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 12: Section 13.9 Evaluation Table B (Clean Set: 22 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 13: Section 13.11 Aligned Cap-Sweep Table verified (0.45: 253 att/445 unrec; 0.50: 275 att/423 unrec; 0.55: 322 att/376 unrec)
+[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (28 files scanned across eval/, tests/, and frontend/)
+================================================================================
+OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
+================================================================================
+
+
+=== verify_api ===
+================================================================================
+PHOTOSORTER PHASE 3 FASTAPI LAYER VERIFICATION (eval/verify_api.py)
+================================================================================
+[PASS] Check 1: Baseline inspection endpoints: 4 people, 1 unrecognized faces
+[PASS] Check 2: Merging 3 people persisted 3 anchor face groups without cluster IDs (0 \bp\d{3}\b violations in edits.json)
+[PASS] Check 3: Assigned unrecognized face survived re-run with threshold 0.42 (0 unapplied edits)
+[PASS] Check 4: Missing anchor face gracefully reported in unapplied_edits without crash (could not locate person for anchors ['f_missing_999']: anchors ['f_missing_999'] not found in any person cluster)
+[PASS] Check 5: Undo restores previous state across all 5 edit operations (merge, remove, assign, hide, name)
+[PASS] Check 6: Job cancellation successfully transitioned job to 'cancelled'
+[PASS] Check 7: Public bundle hygiene verified (4 files/dirs: ['config.json', 'faces', 'people.json', 'thumbs']; 0 forbidden files)
+[PASS] Check 8: Suggestions endpoint returned valid schema (0 maybe groups, 0 ambiguous faces)
+================================================================================
+FIXTURE API VERIFICATION: ALL 8 CHECKS PASSED
+================================================================================
+
+================================================================================
+PHOTOSORTER PHASE 3 LIVE EXPORT API VERIFICATION (eval/verify_api.py --mode export)
+================================================================================
+Dynamically parsed expected metrics from REPORT.md: {'people': 192, 'unrec_photos': 168, 'unrec_faces': 445, 'no_face_photos': 4, 'maybe_groups': 28, 'ranked_pairs': 29, 'ambiguous_faces': 68}
+[PASS] People count: 192 (matched REPORT.md: 192)
+[PASS] Unrecognized photos: 168 (matched REPORT.md: 168)
+[PASS] Unrecognized faces: 445 (matched REPORT.md: 445)
+[PASS] No-face photos: 4 (matched REPORT.md: 4)
+[PASS] Maybe groups: 28 (matched REPORT.md: 28)
+[PASS] Ranked pairs: 29 (matched REPORT.md: 29)
+[PASS] Ambiguous faces: 68 (matched REPORT.md: 68)
+================================================================================
+LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
+================================================================================
+
+
+=== e2e ===
+================================================================
+PhotoSorter Phase 4: Full End-to-End Browser Verification
+[MODE] Running against built UI (frontend/dist) served directly by uvicorn
+Isolated test execution against temporary workspace
+================================================================
+
+[SPAWN] Starting uvicorn with isolated work/output/cache dirs on port 8765...
+[SERVER READY] PhotoSorter API running at http://127.0.0.1:8765, UI at http://127.0.0.1:8765
+[BROWSER] Launching headless Chromium via Playwright...
+
+----------------------------------------------------------------
+STEP A: Start sorting job, verify >= 5 SSE updates, end at 192 people
+----------------------------------------------------------------
+[STEP A] Sorting job started. Collecting SSE progress updates...
+  [PROGRESS UPDATE #1] 0.0%[starting]Initializing job...0 / 0
+  [PROGRESS UPDATE #2] 0.0%[scanning]Scanning input: C:\Users\DELL\face-clubbing\test_photos0 / 0
+  [PROGRESS UPDATE #3] 0.0%[scanned]Found 271 photos to process.0 / 271
+  [PROGRESS UPDATE #4] 0.4%[processing]IMG-20260226-WA0037.jpg1 / 271
+  [PROGRESS UPDATE #5] 0.7%[processing]IMG-20260226-WA0047.jpg2 / 271
+  [PROGRESS UPDATE #6] 1.1%[processing]IMG-20260227-WA0110.jpg3 / 271
+  [PROGRESS UPDATE #7] 1.5%[processing]IMG_20260227_220404.jpg4 / 271
+  [PROGRESS UPDATE #8] 1.8%[processing]IMG_20260227_220436.jpg5 / 271
+[STEP A] Total progress updates recorded: 50 (>= 5 required)
+[STEP A] Review People screen loaded. People count: 192
+[INVARIANT a] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP C: 7-way split from eval/ground_truth.json (Set C) on clean state
+----------------------------------------------------------------
+[STEP C] Set C ground truth face IDs (8 faces):
+  - f_cdfa42b70c134a74_001
+  - f_49eff969f7dee3bd_001
+  - f_1ba2b67379394309_005
+  - f_d9c8bf96d71c7101_005
+  - f_34a0bab12251055a_003
+  - f_10bae275a2e5daf8_002
+  - f_a527ac003612de6e_005
+  - f_869adaf675c3009c_006
+[STEP C] Set C faces are distributed across 7 initial clusters.
+  Cluster #1 size: 71 faces (contains 2 Set C face IDs)
+  Cluster #2 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #3 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #4 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #5 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #6 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #7 size: 1 faces (contains 1 Set C face IDs)
+[STEP C] Sum of the seven cluster sizes: 77
+[STEP C] Merge button text before click: "Merge Selected (7)"
+[STEP C] Merging all 7 clusters in one single action...
+[STEP C] Total people count after C: 186
+[STEP C] Resulting person face count: 77
+[STEP C] Asserting sum (77) === resulting person face count (77)...
+  [PASS] Cluster sizes sum (77) equals resulting person face count (77)!
+[STEP C] Asserting all 8 Set C faces reside in the merged person by face ID...
+  [PASS] All 8 Set C face IDs are present in the unified person:
+    - f_cdfa42b70c134a74_001 (confirmed)
+    - f_49eff969f7dee3bd_001 (confirmed)
+    - f_1ba2b67379394309_005 (confirmed)
+    - f_d9c8bf96d71c7101_005 (confirmed)
+    - f_34a0bab12251055a_003 (confirmed)
+    - f_10bae275a2e5daf8_002 (confirmed)
+    - f_a527ac003612de6e_005 (confirmed)
+    - f_869adaf675c3009c_006 (confirmed)
+[INVARIANT c] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP B: Multi-select merge 3 people in one action (people drops by 2)
+----------------------------------------------------------------
+[STEP B] Selecting 3 people for multi-merge...
+[STEP B] Count after merging 3 people: 184 (before: 186)
+[INVARIANT b] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP D: Assign an Unrecognized face (unrecognized count drops by 1)
+----------------------------------------------------------------
+[STEP D] Unrecognized faces before assign: 445
+[STEP D] Unrecognized faces after assign: 444
+[STEP D] SUCCESS: Unrecognized faces dropped by exactly 1.
+[INVARIANT d] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP E: Perform Undo for each edit type and assert counts return
+----------------------------------------------------------------
+[STEP E.1] Undoing assign edit...
+  Unrecognized count restored to: 445 (baseline: 445)
+[INVARIANT e.1] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+[STEP E.2] Undoing 3-way merge...
+  People count restored to: 186 (expected: 186)
+[INVARIANT e.2] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+[STEP E.3] Undoing 7-way split merge...
+  People count restored to baseline: 192 (original: 192)
+  Set C faces restored across 7 distinct persons.
+[STEP E] SUCCESS: All edit types cleanly undone and counts returned to baseline.
+[INVARIANT e.3] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP F: Accept one suggestion and reject another
+----------------------------------------------------------------
+[STEP F] Initial suggestions count: 31
+[STEP F] Accepting suggestion between anchor f_056e4727b8b8d6d0_001 and anchor f_f3de19871f241880_002 (d=0.5012)...
+[STEP F] People count after accept: 191 (expected 191)
+[STEP F] Rejecting suggestion between anchor f_2916e35d73c60b70_001 and anchor f_3a9077105f8e5efe_006...
+[STEP F] Visible suggestion cards after rejection: 29
+[STEP F] SUCCESS: Suggestion accepted and rejected with session persistence.
+[INVARIANT f] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP G: Trigger rerun and assert edits survive by face ID
+----------------------------------------------------------------
+[STEP G ACTION] Explicitly assigning unrecognized face ID: f_554ef87868d6ec38_003
+  -> Assigning to TARGET person with anchor face ID: f_cdfa42b70c134a74_001
+[STEP G PRE-RERUN] people_count: 191
+[STEP G PRE-RERUN] unrecognized_faces_count: 444
+[STEP G PRE-RERUN] Active persisted edits:
+  1. Merged suggestion face anchors: [f_056e4727b8b8d6d0_001] + [f_f3de19871f241880_002]
+  2. Assigned face ID f_554ef87868d6ec38_003 to TARGET person [f_cdfa42b70c134a74_001]
+[STEP G ACTION] Navigating to Settings tab to rerun clustering with identical settings...
+[STEP G ACTION] Clicking "Save & Rerun Clustering"...
+[STEP G] Rerun completed! Result summary: Re-clustering Completed with Edit ReplayClustering rerun finished. 2 edits successfully replayed by face ID.People191Unrecognized Faces444Replayed Edits2All org...
+[STEP G POST-RERUN] people_count: 191
+[STEP G POST-RERUN] unrecognized_faces_count: 444
+[STEP G ASSERTION] Asserting people_count equals pre-rerun count (191 === 191)...
+  [PASS] people_count identical: 191 === 191
+[STEP G ASSERTION] Asserting unrecognized_faces_count equals pre-rerun count (444 === 444)...
+  [PASS] unrecognized_faces_count identical: 444 === 444
+[STEP G ASSERTION] Asserting assigned face f_554ef87868d6ec38_003 is in its TARGET person [f_cdfa42b70c134a74_001]...
+  [PASS] Assigned face f_554ef87868d6ec38_003 confirmed in TARGET person (anchor f_cdfa42b70c134a74_001).
+[STEP G ASSERTION] Asserting accepted-suggestion anchors (f_056e4727b8b8d6d0_001 & f_f3de19871f241880_002) are in one person...
+  [PASS] Both suggestion anchors (f_056e4727b8b8d6d0_001 & f_f3de19871f241880_002) reside in one unified person post-rerun.
+[INVARIANT g] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP H: Export bundle to temp folder and assert clean static bundle structure
+----------------------------------------------------------------
+[STEP H ACTION] Explicitly setting export destination input to isolated path: C:\Users\DELL\face-clubbing\export.e2e_temp
+[STEP H] Clicking "Export Public Bundle"...
+[STEP H] Export completed: 191 people, 259 photos.
+[STEP H] Contents of isolated export directory on disk: config.json,faces,people.json,thumbs
+[STEP H] SUCCESS: Bundle contains strictly config.json, people.json, faces/, and thumbs/.
+[INVARIANT h] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+ISOLATION AUDIT: Asserting canonical export/ and export.work/ were NEVER modified
+----------------------------------------------------------------
+[ISOLATION AUDIT PASS] Canonical export.work/edits.json unchanged (SHA-256: 722283f40536998b7ea1aedb7d558b458999f670eb3915f98c1b98555af077e8).
+[ISOLATION AUDIT PASS] Canonical export/ file list unchanged: [assets, config.json, faces, gallery.html, index.html, people.json, thumbs].
+[ISOLATION AUDIT PASS] Canonical export/people.json unchanged (SHA-256: a78f76dfe6001ca95871ca86c1651c70489475aff444e0bc1e42c30d310deb95).
+
+----------------------------------------------------------------
+CLUSTER-ID AUDIT: Verifying zero pNNN tokens in printed assertions and output
+----------------------------------------------------------------
+[CLUSTER-ID AUDIT PASS] Zero pNNN tokens detected across all 140 printed log/assertion lines.
+
+================================================================
+ALL PHASE 4 E2E BROWSER VERIFICATION CHECKS PASSED (100%)
+================================================================
+
+[TEARDOWN] Stopping server processes and cleaning temp dirs...
+[TEARDOWN] Temporary test directories removed.
+```
+
+##### Run B: Live Edits Absent (Temporary Move of `export.work/edits.json`)
+```text
+=== pytest ===
+...................................                                      [100%]
+35 passed in 77.37s (0:01:17)
+
+
+=== verify_export ===
+================================================================================
+PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
+================================================================================
+[PASS] Check 1: Engine Invariants (259/259 photos covered, 1256 clustered + 445 unrec = 1701 detected faces, photos==photo_ids, maybe_photos empty)
+[PASS] Check 2: Public Bundle Hygiene verified (['assets', 'config.json', 'faces', 'gallery.html', 'index.html', 'people.json', 'thumbs'] - zero organizer files)
+[PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
+[PASS] Check 4: Collision Audit by Face IDs: 1 collision instance verified (photo 4a9b927f5789cd69, faces ['f_4a9b927f5789cd69_001', 'f_4a9b927f5789cd69_005', 'f_4a9b927f5789cd69_007'], max distance 0.2878 <= 0.40, allowlist verified)
+[PASS] Check 5: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
+[PASS] Check 6: Pytest full suite execution passed (35 passed, 0 failures/errors)
+[PASS] Check 7: Section 13.2 Merge Arithmetic verified (83 pre-merge clusters -> 33 final clusters = 50 net merges, 242 - 50 = 192)
+[PASS] Check 8: Section 13.4 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
+[PASS] Check 9: Blocked Merges by Best-Face IDs verified (3 blocked links < 0.50 matched; 8 same_photo_conflict links total)
+[PASS] Check 10: Section 13.8 Maximum Same-Photo Distance verified (computed=0.2878, report=0.2878 <= 0.40)
+[PASS] Check 11: Section 13.9 Evaluation Table A (All Pairs: 30 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 12: Section 13.9 Evaluation Table B (Clean Set: 22 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 13: Section 13.11 Aligned Cap-Sweep Table verified (0.45: 253 att/445 unrec; 0.50: 275 att/423 unrec; 0.55: 322 att/376 unrec)
+[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (28 files scanned across eval/, tests/, and frontend/)
+================================================================================
+OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
+================================================================================
+
+
+=== verify_api ===
+================================================================================
+PHOTOSORTER PHASE 3 FASTAPI LAYER VERIFICATION (eval/verify_api.py)
+================================================================================
+[PASS] Check 1: Baseline inspection endpoints: 4 people, 1 unrecognized faces
+[PASS] Check 2: Merging 3 people persisted 3 anchor face groups without cluster IDs (0 \bp\d{3}\b violations in edits.json)
+[PASS] Check 3: Assigned unrecognized face survived re-run with threshold 0.42 (0 unapplied edits)
+[PASS] Check 4: Missing anchor face gracefully reported in unapplied_edits without crash (could not locate person for anchors ['f_missing_999']: anchors ['f_missing_999'] not found in any person cluster)
+[PASS] Check 5: Undo restores previous state across all 5 edit operations (merge, remove, assign, hide, name)
+[PASS] Check 6: Job cancellation successfully transitioned job to 'cancelled'
+[PASS] Check 7: Public bundle hygiene verified (4 files/dirs: ['config.json', 'faces', 'people.json', 'thumbs']; 0 forbidden files)
+[PASS] Check 8: Suggestions endpoint returned valid schema (0 maybe groups, 0 ambiguous faces)
+================================================================================
+FIXTURE API VERIFICATION: ALL 8 CHECKS PASSED
+================================================================================
+
+================================================================================
+PHOTOSORTER PHASE 3 LIVE EXPORT API VERIFICATION (eval/verify_api.py --mode export)
+================================================================================
+Dynamically parsed expected metrics from REPORT.md: {'people': 192, 'unrec_photos': 168, 'unrec_faces': 445, 'no_face_photos': 4, 'maybe_groups': 28, 'ranked_pairs': 29, 'ambiguous_faces': 68}
+[PASS] People count: 192 (matched REPORT.md: 192)
+[PASS] Unrecognized photos: 168 (matched REPORT.md: 168)
+[PASS] Unrecognized faces: 445 (matched REPORT.md: 445)
+[PASS] No-face photos: 4 (matched REPORT.md: 4)
+[PASS] Maybe groups: 28 (matched REPORT.md: 28)
+[PASS] Ranked pairs: 29 (matched REPORT.md: 29)
+[PASS] Ambiguous faces: 68 (matched REPORT.md: 68)
+================================================================================
+LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
+================================================================================
+
+
+=== e2e ===
+================================================================
+PhotoSorter Phase 4: Full End-to-End Browser Verification
+[MODE] Running against built UI (frontend/dist) served directly by uvicorn
+Isolated test execution against temporary workspace
+================================================================
+
+[SPAWN] Starting uvicorn with isolated work/output/cache dirs on port 8765...
+[SERVER READY] PhotoSorter API running at http://127.0.0.1:8765, UI at http://127.0.0.1:8765
+[BROWSER] Launching headless Chromium via Playwright...
+
+----------------------------------------------------------------
+STEP A: Start sorting job, verify >= 5 SSE updates, end at 192 people
+----------------------------------------------------------------
+[STEP A] Sorting job started. Collecting SSE progress updates...
+  [PROGRESS UPDATE #1] 0.0%[starting]Initializing job...0 / 0
+  [PROGRESS UPDATE #2] 0.0%[scanning]Scanning input: C:\Users\DELL\face-clubbing\test_photos0 / 0
+  [PROGRESS UPDATE #3] 0.0%[scanned]Found 271 photos to process.0 / 271
+  [PROGRESS UPDATE #4] 0.4%[processing]IMG-20260226-WA0037.jpg1 / 271
+  [PROGRESS UPDATE #5] 0.7%[processing]IMG-20260226-WA0047.jpg2 / 271
+  [PROGRESS UPDATE #6] 1.1%[processing]IMG-20260227-WA0110.jpg3 / 271
+  [PROGRESS UPDATE #7] 1.5%[processing]IMG_20260227_220404.jpg4 / 271
+  [PROGRESS UPDATE #8] 1.8%[processing]IMG_20260227_220436.jpg5 / 271
+[STEP A] Total progress updates recorded: 50 (>= 5 required)
+[STEP A] Review People screen loaded. People count: 192
+[INVARIANT a] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP C: 7-way split from eval/ground_truth.json (Set C) on clean state
+----------------------------------------------------------------
+[STEP C] Set C ground truth face IDs (8 faces):
+  - f_cdfa42b70c134a74_001
+  - f_49eff969f7dee3bd_001
+  - f_1ba2b67379394309_005
+  - f_d9c8bf96d71c7101_005
+  - f_34a0bab12251055a_003
+  - f_10bae275a2e5daf8_002
+  - f_a527ac003612de6e_005
+  - f_869adaf675c3009c_006
+[STEP C] Set C faces are distributed across 7 initial clusters.
+  Cluster #1 size: 71 faces (contains 2 Set C face IDs)
+  Cluster #2 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #3 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #4 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #5 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #6 size: 1 faces (contains 1 Set C face IDs)
+  Cluster #7 size: 1 faces (contains 1 Set C face IDs)
+[STEP C] Sum of the seven cluster sizes: 77
+[STEP C] Merge button text before click: "Merge Selected (7)"
+[STEP C] Merging all 7 clusters in one single action...
+[STEP C] Total people count after C: 186
+[STEP C] Resulting person face count: 77
+[STEP C] Asserting sum (77) === resulting person face count (77)...
+  [PASS] Cluster sizes sum (77) equals resulting person face count (77)!
+[STEP C] Asserting all 8 Set C faces reside in the merged person by face ID...
+  [PASS] All 8 Set C face IDs are present in the unified person:
+    - f_cdfa42b70c134a74_001 (confirmed)
+    - f_49eff969f7dee3bd_001 (confirmed)
+    - f_1ba2b67379394309_005 (confirmed)
+    - f_d9c8bf96d71c7101_005 (confirmed)
+    - f_34a0bab12251055a_003 (confirmed)
+    - f_10bae275a2e5daf8_002 (confirmed)
+    - f_a527ac003612de6e_005 (confirmed)
+    - f_869adaf675c3009c_006 (confirmed)
+[INVARIANT c] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP B: Multi-select merge 3 people in one action (people drops by 2)
+----------------------------------------------------------------
+[STEP B] Selecting 3 people for multi-merge...
+[STEP B] Count after merging 3 people: 184 (before: 186)
+[INVARIANT b] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP D: Assign an Unrecognized face (unrecognized count drops by 1)
+----------------------------------------------------------------
+[STEP D] Unrecognized faces before assign: 445
+[STEP D] Unrecognized faces after assign: 444
+[STEP D] SUCCESS: Unrecognized faces dropped by exactly 1.
+[INVARIANT d] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP E: Perform Undo for each edit type and assert counts return
+----------------------------------------------------------------
+[STEP E.1] Undoing assign edit...
+  Unrecognized count restored to: 445 (baseline: 445)
+[INVARIANT e.1] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+[STEP E.2] Undoing 3-way merge...
+  People count restored to: 186 (expected: 186)
+[INVARIANT e.2] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+[STEP E.3] Undoing 7-way split merge...
+  People count restored to baseline: 192 (original: 192)
+  Set C faces restored across 7 distinct persons.
+[STEP E] SUCCESS: All edit types cleanly undone and counts returned to baseline.
+[INVARIANT e.3] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP F: Accept one suggestion and reject another
+----------------------------------------------------------------
+[STEP F] Initial suggestions count: 31
+[STEP F] Accepting suggestion between anchor f_056e4727b8b8d6d0_001 and anchor f_f3de19871f241880_002 (d=0.5012)...
+[STEP F] People count after accept: 191 (expected 191)
+[STEP F] Rejecting suggestion between anchor f_2916e35d73c60b70_001 and anchor f_3a9077105f8e5efe_006...
+[STEP F] Visible suggestion cards after rejection: 29
+[STEP F] SUCCESS: Suggestion accepted and rejected with session persistence.
+[INVARIANT f] clustered=1256, unrecognized=445, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP G: Trigger rerun and assert edits survive by face ID
+----------------------------------------------------------------
+[STEP G ACTION] Explicitly assigning unrecognized face ID: f_554ef87868d6ec38_003
+  -> Assigning to TARGET person with anchor face ID: f_cdfa42b70c134a74_001
+[STEP G PRE-RERUN] people_count: 191
+[STEP G PRE-RERUN] unrecognized_faces_count: 444
+[STEP G PRE-RERUN] Active persisted edits:
+  1. Merged suggestion face anchors: [f_056e4727b8b8d6d0_001] + [f_f3de19871f241880_002]
+  2. Assigned face ID f_554ef87868d6ec38_003 to TARGET person [f_cdfa42b70c134a74_001]
+[STEP G ACTION] Navigating to Settings tab to rerun clustering with identical settings...
+[STEP G ACTION] Clicking "Save & Rerun Clustering"...
+[STEP G] Rerun completed! Result summary: Re-clustering Completed with Edit ReplayClustering rerun finished. 2 edits successfully replayed by face ID.People191Unrecognized Faces444Replayed Edits2All org...
+[STEP G POST-RERUN] people_count: 191
+[STEP G POST-RERUN] unrecognized_faces_count: 444
+[STEP G ASSERTION] Asserting people_count equals pre-rerun count (191 === 191)...
+  [PASS] people_count identical: 191 === 191
+[STEP G ASSERTION] Asserting unrecognized_faces_count equals pre-rerun count (444 === 444)...
+  [PASS] unrecognized_faces_count identical: 444 === 444
+[STEP G ASSERTION] Asserting assigned face f_554ef87868d6ec38_003 is in its TARGET person [f_cdfa42b70c134a74_001]...
+  [PASS] Assigned face f_554ef87868d6ec38_003 confirmed in TARGET person (anchor f_cdfa42b70c134a74_001).
+[STEP G ASSERTION] Asserting accepted-suggestion anchors (f_056e4727b8b8d6d0_001 & f_f3de19871f241880_002) are in one person...
+  [PASS] Both suggestion anchors (f_056e4727b8b8d6d0_001 & f_f3de19871f241880_002) reside in one unified person post-rerun.
+[INVARIANT g] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+STEP H: Export bundle to temp folder and assert clean static bundle structure
+----------------------------------------------------------------
+[STEP H ACTION] Explicitly setting export destination input to isolated path: C:\Users\DELL\face-clubbing\export.e2e_temp
+[STEP H] Clicking "Export Public Bundle"...
+[STEP H] Export completed: 191 people, 259 photos.
+[STEP H] Contents of isolated export directory on disk: config.json,faces,people.json,thumbs
+[STEP H] SUCCESS: Bundle contains strictly config.json, people.json, faces/, and thumbs/.
+[INVARIANT h] clustered=1257, unrecognized=444, total=1701 (invariant = HOLDS)
+
+----------------------------------------------------------------
+ISOLATION AUDIT: Asserting canonical export/ and export.work/ were NEVER modified
+----------------------------------------------------------------
+[ISOLATION AUDIT PASS] Canonical export.work/edits.json unchanged (SHA-256: null).
+[ISOLATION AUDIT PASS] Canonical export/ file list unchanged: [assets, config.json, faces, gallery.html, index.html, people.json, thumbs].
+[ISOLATION AUDIT PASS] Canonical export/people.json unchanged (SHA-256: a78f76dfe6001ca95871ca86c1651c70489475aff444e0bc1e42c30d310deb95).
+
+----------------------------------------------------------------
+CLUSTER-ID AUDIT: Verifying zero pNNN tokens in printed assertions and output
+----------------------------------------------------------------
+[CLUSTER-ID AUDIT PASS] Zero pNNN tokens detected across all 140 printed log/assertion lines.
+
+================================================================
+ALL PHASE 4 E2E BROWSER VERIFICATION CHECKS PASSED (100%)
+================================================================
+
+[TEARDOWN] Stopping server processes and cleaning temp dirs...
+[TEARDOWN] Temporary test directories removed.
+```
+
+Both runs produced 100% identical pass results across `pytest` (35 passed), `verify_export.py` (14/14 checks passed), `verify_api.py --mode all` (8 fixture + 7 live export metrics passed), and `e2e.mjs` (all browser steps passed).
+
+---
+
+### 18.5 Task 5 Evidence: Live State vs Baseline Diff
+
+Execution command: `python eval/verify_live.py`
+```text
+================================================================================
+PHOTOSORTER LIVE STATE VS BASELINE REPORT (eval/verify_live.py)
+================================================================================
+People Count Comparison:
+  - Baseline people count: 192
+  - Live export people count: 188
+  - Difference: -4 people
+
+Live Organizer Edits:
+  - Number of live edits: 4
+  - Edit #1 [merge]:
+      Group 1: primary anchor=f_056e4727b8b8d6d0_001 (28 additional anchor faces)
+      Group 2: primary anchor=f_f3de19871f241880_002 (0 additional anchor faces)
+  - Edit #2 [merge]:
+      Group 1: primary anchor=f_2916e35d73c60b70_001 (19 additional anchor faces)
+      Group 2: primary anchor=f_3a9077105f8e5efe_006 (0 additional anchor faces)
+  - Edit #3 [merge]:
+      Group 1: primary anchor=f_10bae275a2e5daf8_002 (0 additional anchor faces)
+      Group 2: primary anchor=f_1ba2b67379394309_005 (0 additional anchor faces)
+  - Edit #4 [merge]:
+      Group 1: primary anchor=f_c86529d195d9fcb2_004 (7 additional anchor faces)
+      Group 2: primary anchor=f_15b9e3e80b666d62_003 (0 additional anchor faces)
+
+Unrecognized Faces:
+  - Baseline unrecognized faces: 445
+  - Live unrecognized faces: 445
+  - Difference: +0 faces
+
+Photos:
+  - Baseline photo count: 259
+  - Live photo count: 259
+================================================================================
+STATUS: Informational comparison complete (exit code 0, no failure asserted)
+================================================================================
+```
+
+---
+
+### 18.6 Task 6 Evidence: Privacy-Safe 20-Photo Deployment to GitHub Pages
+
+- **Privacy Constraint**: Strictly zero real test photos or face crops published.
+- **Generated Bundle**: 20 abstract synthetic photos, thumbnails, face crops, `config.json`, `people.json`, and built viewer assets generated via `eval/build_synthetic_bundle.py`.
+- **Deployment URL**: `https://sufiyan-shiraj.github.io/face-clubbing/`
+- **HTTP Verification Output**:
+```text
+[STATUS 200] https://sufiyan-shiraj.github.io/face-clubbing/ -> 1209 bytes
+[STATUS 200] https://sufiyan-shiraj.github.io/face-clubbing/index.html -> 1209 bytes
+[STATUS 200] https://sufiyan-shiraj.github.io/face-clubbing/gallery.html -> 662474 bytes
+[STATUS 200] https://sufiyan-shiraj.github.io/face-clubbing/config.json -> 279 bytes
+[STATUS 200] https://sufiyan-shiraj.github.io/face-clubbing/people.json -> 11162 bytes
+```
+Both `config.json` and `people.json` load with HTTP 200 status over the public internet, completing Phase 2 Row 14.
 
 ---
 
