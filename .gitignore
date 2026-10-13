@@ -48,6 +48,7 @@ export.e2e_temp*/
 deliverables/
 scratch/
 archives/
+eval/synthetic_bundle/
 *.zip
 
 # Auth & Secrets
