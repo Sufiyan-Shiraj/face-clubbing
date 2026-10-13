@@ -1,0 +1,8 @@
+{
+  "title": "PhotoSorter Privacy-Safe Gallery",
+  "subtitle": "Synthetic 20-Photo Demonstration (Generated Avatars)",
+  "hide_single_photo_default": false,
+  "include_maybe": false,
+  "accent": "#6366f1",
+  "footer": "Deployed via PhotoSorter Phase 2 Privacy-Safe Deploy Test"
+}

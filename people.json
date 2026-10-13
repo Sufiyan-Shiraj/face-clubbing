@@ -1,0 +1,517 @@
+{
+  "version": 1,
+  "generated_at": "2026-10-13T12:00:00+00:00",
+  "photos": {
+    "synth_01": {
+      "name": "synth_01.jpg",
+      "thumb": "thumbs/synth_01.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_02": {
+      "name": "synth_02.jpg",
+      "thumb": "thumbs/synth_02.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_03": {
+      "name": "synth_03.jpg",
+      "thumb": "thumbs/synth_03.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_04": {
+      "name": "synth_04.jpg",
+      "thumb": "thumbs/synth_04.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_05": {
+      "name": "synth_05.jpg",
+      "thumb": "thumbs/synth_05.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_06": {
+      "name": "synth_06.jpg",
+      "thumb": "thumbs/synth_06.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_07": {
+      "name": "synth_07.jpg",
+      "thumb": "thumbs/synth_07.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_08": {
+      "name": "synth_08.jpg",
+      "thumb": "thumbs/synth_08.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_09": {
+      "name": "synth_09.jpg",
+      "thumb": "thumbs/synth_09.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_10": {
+      "name": "synth_10.jpg",
+      "thumb": "thumbs/synth_10.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_11": {
+      "name": "synth_11.jpg",
+      "thumb": "thumbs/synth_11.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_12": {
+      "name": "synth_12.jpg",
+      "thumb": "thumbs/synth_12.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_13": {
+      "name": "synth_13.jpg",
+      "thumb": "thumbs/synth_13.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_14": {
+      "name": "synth_14.jpg",
+      "thumb": "thumbs/synth_14.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_15": {
+      "name": "synth_15.jpg",
+      "thumb": "thumbs/synth_15.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_16": {
+      "name": "synth_16.jpg",
+      "thumb": "thumbs/synth_16.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_17": {
+      "name": "synth_17.jpg",
+      "thumb": "thumbs/synth_17.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_18": {
+      "name": "synth_18.jpg",
+      "thumb": "thumbs/synth_18.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_19": {
+      "name": "synth_19.jpg",
+      "thumb": "thumbs/synth_19.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    },
+    "synth_20": {
+      "name": "synth_20.jpg",
+      "thumb": "thumbs/synth_20.jpg",
+      "download": null,
+      "width": 800,
+      "height": 600
+    }
+  },
+  "people": [
+    {
+      "id": "c_01",
+      "label": "Alice (Synthetic)",
+      "face": "faces/c_01.jpg",
+      "photo_ids": [
+        "synth_01",
+        "synth_02",
+        "synth_03",
+        "synth_04",
+        "synth_05"
+      ],
+      "photos": [
+        "synth_01",
+        "synth_02",
+        "synth_03",
+        "synth_04",
+        "synth_05"
+      ],
+      "faces": [
+        {
+          "face_id": "f_synth_01_001",
+          "photo_id": "synth_01",
+          "file_name": "synth_01.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_02_001",
+          "photo_id": "synth_02",
+          "file_name": "synth_02.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_03_001",
+          "photo_id": "synth_03",
+          "file_name": "synth_03.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_04_001",
+          "photo_id": "synth_04",
+          "file_name": "synth_04.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_05_001",
+          "photo_id": "synth_05",
+          "file_name": "synth_05.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        }
+      ],
+      "merged_from": [
+        "c_01"
+      ],
+      "merged_from_numbering": "pre-merge 1",
+      "maybe_photos": []
+    },
+    {
+      "id": "c_02",
+      "label": "Bob (Synthetic)",
+      "face": "faces/c_02.jpg",
+      "photo_ids": [
+        "synth_06",
+        "synth_07",
+        "synth_08",
+        "synth_09"
+      ],
+      "photos": [
+        "synth_06",
+        "synth_07",
+        "synth_08",
+        "synth_09"
+      ],
+      "faces": [
+        {
+          "face_id": "f_synth_06_001",
+          "photo_id": "synth_06",
+          "file_name": "synth_06.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_07_001",
+          "photo_id": "synth_07",
+          "file_name": "synth_07.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_08_001",
+          "photo_id": "synth_08",
+          "file_name": "synth_08.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_09_001",
+          "photo_id": "synth_09",
+          "file_name": "synth_09.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        }
+      ],
+      "merged_from": [
+        "c_02"
+      ],
+      "merged_from_numbering": "pre-merge 2",
+      "maybe_photos": []
+    },
+    {
+      "id": "c_03",
+      "label": "Charlie (Synthetic)",
+      "face": "faces/c_03.jpg",
+      "photo_ids": [
+        "synth_10",
+        "synth_11",
+        "synth_12",
+        "synth_13"
+      ],
+      "photos": [
+        "synth_10",
+        "synth_11",
+        "synth_12",
+        "synth_13"
+      ],
+      "faces": [
+        {
+          "face_id": "f_synth_10_001",
+          "photo_id": "synth_10",
+          "file_name": "synth_10.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_11_001",
+          "photo_id": "synth_11",
+          "file_name": "synth_11.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_12_001",
+          "photo_id": "synth_12",
+          "file_name": "synth_12.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_13_001",
+          "photo_id": "synth_13",
+          "file_name": "synth_13.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        }
+      ],
+      "merged_from": [
+        "c_03"
+      ],
+      "merged_from_numbering": "pre-merge 3",
+      "maybe_photos": []
+    },
+    {
+      "id": "c_04",
+      "label": "Diana (Synthetic)",
+      "face": "faces/c_04.jpg",
+      "photo_ids": [
+        "synth_14",
+        "synth_15",
+        "synth_16"
+      ],
+      "photos": [
+        "synth_14",
+        "synth_15",
+        "synth_16"
+      ],
+      "faces": [
+        {
+          "face_id": "f_synth_14_001",
+          "photo_id": "synth_14",
+          "file_name": "synth_14.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_15_001",
+          "photo_id": "synth_15",
+          "file_name": "synth_15.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_16_001",
+          "photo_id": "synth_16",
+          "file_name": "synth_16.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        }
+      ],
+      "merged_from": [
+        "c_04"
+      ],
+      "merged_from_numbering": "pre-merge 4",
+      "maybe_photos": []
+    },
+    {
+      "id": "c_05",
+      "label": "Evan (Synthetic)",
+      "face": "faces/c_05.jpg",
+      "photo_ids": [
+        "synth_17",
+        "synth_18",
+        "synth_19"
+      ],
+      "photos": [
+        "synth_17",
+        "synth_18",
+        "synth_19"
+      ],
+      "faces": [
+        {
+          "face_id": "f_synth_17_001",
+          "photo_id": "synth_17",
+          "file_name": "synth_17.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_18_001",
+          "photo_id": "synth_18",
+          "file_name": "synth_18.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        },
+        {
+          "face_id": "f_synth_19_001",
+          "photo_id": "synth_19",
+          "file_name": "synth_19.jpg",
+          "det_score": 0.95,
+          "bbox": [
+            280.0,
+            140.0,
+            520.0,
+            380.0
+          ]
+        }
+      ],
+      "merged_from": [
+        "c_05"
+      ],
+      "merged_from_numbering": "pre-merge 5",
+      "maybe_photos": []
+    }
+  ],
+  "unrecognized": {
+    "photo_ids": [
+      "synth_20"
+    ],
+    "faces": [
+      {
+        "face_id": "f_synth_02_999",
+        "photo_id": "synth_02",
+        "file_name": "synth_02.jpg",
+        "face": "faces/u_001.jpg",
+        "rejection_reason": "unattached_profile",
+        "det_score": 0.58
+      },
+      {
+        "face_id": "f_synth_12_999",
+        "photo_id": "synth_12",
+        "file_name": "synth_12.jpg",
+        "face": "faces/u_002.jpg",
+        "rejection_reason": "unattached_profile",
+        "det_score": 0.58
+      }
+    ]
+  }
+}
