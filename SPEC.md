@@ -2,6 +2,8 @@
 
 > Working name: **PhotoSorter** (rename freely). This file is the single source of truth for what we are building and why. Read it fully before writing any code. See `BUILD_PLAN.md` for the build order.
 >
+> **Revision 3 (2026-10-13).** Method 2 (upload to Drive, OAuth) and the credential-storage section removed; no Google sign-in anywhere. Public bundle definition and standalone gallery recorded in decision 20.
+>
 > **Revision 2 (2026-10-06).** Updated after Phase 0/1 acceptance and three fix-up rounds on a real 271-file test set. Sections 3, 6, 8, 9, 16 and 17 changed materially; section 18 (evaluation) is new. Anything marked **[measured]** comes from that test set. Anything marked **[default]** is a configurable starting value, not a law.
 
 ---
@@ -22,7 +24,7 @@ A free, general-purpose tool that takes an event's photos, groups them **by pers
 4. **Cross-platform:** Windows, macOS, Linux. One codebase, per-OS builds automated via GitHub Actions.
 5. **React-level modern UI.** Tkinter/CustomTkinter were explicitly rejected as dated.
 6. **Works for only organizers** (the app is organizer-only; attendees only use the static viewer).
-7. **Method 2 (upload) must be possible but not required** for the project to be complete.
+7. **No Google sign-in anywhere.** Drive support is read-only through an optional API key (Method 1). Uploading to Drive is out of scope; organizers upload originals themselves (section 7).
 8. **Nobody is discarded as "noise," and every photo is reachable.** Faces that pass the quality rules become people, including people who appear in only one photo. Faces that cannot be reliably placed go into an **Unrecognized** category with a reason code instead of being dropped or force-assigned. **Every photo must appear in at least one person cluster or in Unrecognized.** No face or photo is ever deleted or hidden automatically; hiding is a manual organizer action only.
    - *Revised in rev 2:* the original wording ("every detected person gets their own cluster") was replaced. Low-quality faces (small, profile, low-score) may only *attach* to an existing person; they never start a new one. Reason: letting every weak face start a cluster produced 353 clusters (59% single-photo) on the test set.
 9. **Organizer decisions must survive re-runs.** Manual edits are keyed by face and photo IDs, never by cluster IDs (section 6.3).
@@ -32,6 +34,7 @@ A free, general-purpose tool that takes an event's photos, groups them **by pers
 - Hosting a multi-user service or accounts system.
 - Attendee-side face matching (selfie search is an optional later feature, see section 16).
 - Video support.
+- Uploading photos to Drive, OAuth, or any Google sign-in (removed in rev 3).
 - Commercial use (InsightFace's pretrained models are licensed for non-commercial use; flag this in the README).
 - Perfect automatic clustering. The tool is *automatic grouping plus fast human review* (section 6.4).
 
@@ -48,7 +51,7 @@ A free, general-purpose tool that takes an event's photos, groups them **by pers
 |                              |                               |
 |                              v                               |
 |   Engine: scan -> detect -> embed -> cluster -> export       |
-|   Drive module: read (API key) / upload (OAuth, optional)    |
+|   Drive module: read-only (API key)                          |
 +--------------------------------------------------------------+
                               |
                               v  (export bundle)
@@ -170,16 +173,12 @@ Automatic clustering is deliberately conservative: it avoids wrong merges and ac
 - Nothing sensitive is stored in this method.
 - Note: detection runs on the downloaded thumbnail, so face sizes in the quality rules refer to that image. Re-check the 64 px floors against real Drive thumbnails.
 
-### Method 2: Local folder or zip, upload to Drive (OPTIONAL, built last)
-- User picks a local folder or a zip (auto-extracted).
-- Engine runs locally on the originals.
-- App uploads originals to a new Drive folder, then makes the **folder** public (`permissions.create`, `type: anyone`, `role: reader`; files inherit it), then collects file IDs for links.
-- **Requires Google sign-in** (OAuth, "Desktop app" client type). No anonymous upload exists. Service accounts were considered and rejected (no storage quota of their own, upload failures).
-- Scope: `drive.file` (app can only touch files it created). Believed not to need full Google verification, **verify this when implementing**.
-- Check total size vs. the account's free 15 GB before uploading and warn.
-- Resumable uploads, with parallelism and retry.
-- **Each user brings their own `client_secret.json`** (one-time ~10 min Google Cloud setup: create project, enable Drive API, create OAuth client). Provide a setup guide and an "Import client_secret.json" button. A bundled default client ID is an optional later fallback. Note: in "Testing" mode only listed test emails can log in and tokens expire every 7 days; publishing the consent screen removes both limits.
-- **Simple alternative that avoids OAuth entirely:** the user drag-and-drops the folder into Drive in the browser, makes it public, and uses Method 1. Document this in the README.
+### Local folder or zip (no Drive access)
+- User picks a local folder or a zip (auto-extracted). The engine runs locally on the originals.
+- `download` is null in the export, so the viewer hides the download button.
+
+### Getting Drive download links for local photos (no upload feature)
+Upload to Drive is **not** built (removed in rev 3). The supported workflow: the organizer drags the folder into Drive in the browser, makes it "anyone with the link", and runs Method 1 on that folder link. Document this in the README.
 
 ## 8. Export bundle (the contract between engine and viewer)
 
@@ -298,19 +297,9 @@ id_map.json          # pre-merge -> final cluster IDs (debug)
 - Hosting: GitHub Pages or Cloudflare Pages, linked to the club's domain. Use an **unguessable URL slug** for privacy.
 - Only thumbnails live on the static host (tens of MB), never the originals.
 
-## 10. Credential storage (Method 2 only)
+## 10. Secrets handling
 
-The sensitive item is the **OAuth refresh token** (grants Drive access). `client_secret.json` is far less sensitive (Google treats desktop-app secrets as non-confidential) but is stored the same way.
-
-Three user-selectable levels in Settings:
-1. **Don't save (default):** sign in each run; token held in memory only. Safest for shared computers.
-2. **OS keychain:** Python `keyring` (Windows Credential Manager, macOS Keychain, Linux Secret Service). Encrypted, tied to OS login; does not re-prompt on read.
-3. **App passphrase:** encrypt with `cryptography` Fernet, key derived from a passphrase via scrypt. App prompts for the passphrase whenever the token is needed or "Reveal" is clicked.
-
-- **"Sign out and erase"** button: call Google's token revoke endpoint **and** wipe local data.
-- Never put tokens or client secrets in the repo or in the built exe.
-- Honest limit: this cannot defend against someone with full control of a running, unlocked computer. Prompting for the *OS* admin password is not portable and is not attempted.
-
+The only user-supplied secret is the optional **Drive API key** (Method 1). It is entered in Settings, kept in the local app settings outside the repository, never committed, never embedded in builds, and never written to the export bundle. There is no OAuth, no refresh token, no `client_secret.json`, no keychain or passphrase storage.
 ## 11. Repo layout (proposed)
 
 ```
@@ -323,7 +312,7 @@ photosorter/
   run.bat / run.sh         # dev convenience: venv + install + launch
   backend/
     engine/                # scan, detect, embed, cluster, merge, export, cache, edits replay
-    drive/                 # read (API key), upload (OAuth), auth storage
+    drive/                 # read-only (API key)
     api/                   # FastAPI routes, SSE progress, job manager, edits store
   frontend/                # React app (organizer UI), committed dist/ build
   viewer/                  # React static viewer template
@@ -334,7 +323,7 @@ photosorter/
 
 ## 12. Dependencies (initial)
 
-Python 3.10 to 3.12 (3.13 may break ML wheels): `fastapi`, `uvicorn`, `pywebview`, `insightface`, `onnxruntime`, `numpy`, `scikit-learn`, `opencv-python`, `Pillow`, `google-api-python-client`, `google-auth-oauthlib`, `keyring`, `cryptography`, `pyinstaller` (build only).
+Python 3.10 to 3.12 (3.13 may break ML wheels): `fastapi`, `uvicorn`, `pywebview`, `insightface`, `onnxruntime`, `numpy`, `scikit-learn`, `opencv-python`, `Pillow`, `google-api-python-client` (or plain HTTP calls), `pyinstaller` (build only).
 Frontend: React, Vite, Tailwind, shadcn/ui. Node is needed only to modify the UI; the built `dist/` is committed so end users never need it.
 
 ## 13. Packaging and release
@@ -383,7 +372,6 @@ On Linux create the venv with `--system-site-packages` so pywebview sees the sys
 | Labelled data is thin | 30 positive pairs from 3 sets, no listed negatives. One Set C face is an outlier (0.60 to 0.89 from the rest) and needs the organizer to confirm the label. Target: 15+ sets before changing defaults. |
 | Cluster IDs unstable between runs | Handled by section 6.3. Any code that stores or compares `pNNN` IDs across runs is a bug. |
 | Drive thumbnail availability / size via API key on public folders | Verify behavior in Method 1 before committing; re-check the 64 px face-size floors on Drive thumbnails. |
-| `drive.file` scope not needing Google verification | Believed true; verify at implementation. |
 | InsightFace install on Windows | May need C++ Build Tools or pinned wheel. |
 | pywebview on Linux (system deps) | Document; Electron is the fallback. |
 | Drive download throttling under heavy traffic | Low concern at club scale. |
@@ -399,8 +387,8 @@ On Linux create the venv with `--system-site-packages` so pywebview sees the sys
 2. Output via a static page + Drive links to originals; avoid duplicating files (Drive shortcuts considered, index page chosen).
 3. Fully free stack only.
 4. Browser-only processing considered; desktop app chosen for accuracy and no Drive CORS issues.
-5. Two input methods: Drive link (read-only, API key) and folder/zip upload (OAuth). Upload is optional.
-6. No profiles; general-purpose tool; credentials get 3 storage levels with encrypted + erasable options.
+5. Two input sources: Drive link (read-only, API key) and local folder/zip. *(rev 3: the OAuth upload method was removed.)*
+6. No profiles; general-purpose tool. *(rev 3: the three credential-storage levels were removed along with OAuth; only an optional Drive API key remains.)*
 7. UI: React inside pywebview (not Tkinter), FastAPI backend, PyInstaller packaging.
 8. Cross-platform builds via GitHub Actions; Python kept over Java.
 9. No noise label; unrecognizable faces and face-less photos go into an Unrecognized category; clustering switched from DBSCAN to average-linkage agglomerative.
@@ -415,6 +403,7 @@ On Linux create the venv with `--system-site-packages` so pywebview sees the sys
 18. **(rev 2)** Engine-report rule: reports contain counts, IDs and filenames only; every report table is checked against the JSON by a verification script.
 19. **(rev 2 Phase 1b)** Work directory separation and face-ID verification: the public bundle (`export/`) strictly isolates viewer deliverables (`config.json`, `people.json`, `faces/`, `thumbs/`), while organizer artifacts (`suggestions.json`, `id_map.json`, `edits.json`) and embedding cache reside exclusively in `export.work/`. Verification scripts and test suites strictly forbid hardcoded cluster IDs (`\bp\d{3}\b`) outside comments, referencing faces and photos solely via canonical face IDs and photo IDs with allowlists located in `eval/ground_truth.json`.
 20. **(rev 2 Phase 2/Hygiene)** Public bundle definition and standalone HTML gallery: The public bundle consists of `config.json`, `people.json`, `faces/`, `thumbs/`, plus the optional viewer build (`index.html`, `assets/`) and standalone zero-server `gallery.html`. Organizer-only files (`suggestions.json`, `edits.json`, `id_map.json`, `.cache/`) are strictly forbidden and fail verification checks. The standalone HTML gallery (`gallery.html`) is self-contained with no local or web server required, opening directly via `file://`, rendering all people and thumbnails with photo reachability, and showing or hiding download links per `config.json`.
+21. **(rev 3, 2026-10-13)** Method 2 / Phase 8 removed: no upload to Drive, no OAuth, no credential storage. Drive remains read-only via an API key (Phase 6). Organizers upload originals to Drive manually if they want download links.
 
 ## 18. Evaluation and ground truth
 

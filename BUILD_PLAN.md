@@ -2,9 +2,11 @@
 
 > Read `SPEC.md` first (revision 2). This file is the order of work. Each phase ends with something runnable and a clear "done when" check. Do not start a phase until the previous one meets its check.
 >
+> **Revision 3 (2026-10-13).** Phase 8 (Method 2, upload to Drive, OAuth) removed; the project has no Google sign-in anywhere. Phase 5 status corrected (windowed launch and native pickers still need verification).
+>
 > **Revision 2 (2026-10-06).** Phases 0 and 1 are accepted. A new Phase 1b collects engine changes decided after the fix-up rounds and must finish before Phase 3. Phases 2 to 4 gained requirements from the measured clustering results.
 
-**Principle:** build the riskiest part first (clustering quality), keep the engine UI-independent, and leave OAuth/upload for last.
+**Principle:** build the riskiest part first (clustering quality), keep the engine UI-independent, and never require a Google sign-in (Drive is read-only through an optional API key).
 
 ## Status
 
@@ -16,7 +18,11 @@
 | 2 Static viewer | Done except deploy test (row 14) |
 | 3 API layer (FastAPI) | Done |
 | 4 Organizer UI (React) | Done (organizer review of layout/wording pending) |
-| 5 to 9 | Not started |
+| 5 Desktop shell + first package | In verification (headless exe run verified; windowed launch, native pickers, model availability on a clean machine not yet) |
+| 6 Method 1 (Drive link) | Not started |
+| 7 Release automation | Not started |
+| 8 | Removed (2026-10-13) |
+| 9 Polish / extras | Not started |
 
 ---
 
@@ -100,7 +106,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 ## Phase 4: Organizer UI (React) [DONE]
 
 **Build** (in `frontend/` - React + Vite + Tailwind CSS + TypeScript)
-1. Screens: Home (source picker with native path input, Drive link field disabled/stubbed for Phase 6), Progress (SSE bar with current, total, percent, stage, ETA, cancel), Review People (core organizer workflow), Export (preview, stats, publishing instructions), Settings (clustering params, thumb size, API key stub, storage-level stub).
+1. Screens: Home (source picker with native path input, Drive link field disabled/stubbed for Phase 6), Progress (SSE bar with current, total, percent, stage, ETA, cancel), Review People (core organizer workflow), Export (preview, stats, publishing instructions), Settings (clustering params, thumb size, Drive API key field).
 2. Source picker: folder/zip source path input with quick defaults, Drive link field clearly labelled "Phase 6".
 3. Live progress bar from SSE streaming (`/api/jobs/{id}/progress`) with status, ETA, and cancellation.
 4. **Review People**:
@@ -111,7 +117,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
    - **Unrecognized triage**: assign face to person (displaying top-3 candidates for ambiguous faces) or create new person; photos without detected faces remain reachable.
    - Global and per-edit Undo control for every edit operation.
 5. Export screen: triggers bundle export, shows public file stats, lists output folder, provides GitHub Pages and Cloudflare Pages publishing guides.
-6. Settings: sensitivity slider mapping directly to SPEC 6.2 parameters (`seed_threshold`, `attach_margin`, `merge_threshold`), thumbnail size selector, API key input, and Method 2 credential storage selector (stubbed).
+6. Settings: sensitivity slider mapping directly to SPEC 6.2 parameters (`seed_threshold`, `attach_margin`, `merge_threshold`), thumbnail size selector, API key input, and the Drive API key field (used from Phase 6). The former Method 2 credential-storage selector is removed with Phase 8.
 7. Rerun clustering with edit replay and banner listing unapplied edits.
 8. Reused viewer gallery components via `@viewer/components/PhotoModal`.
 
@@ -120,7 +126,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
-## Phase 5: Desktop shell and first package [DONE]
+## Phase 5: Desktop shell and first package [IN VERIFICATION]
 
 **Build**
 1. `main.py`: start FastAPI on a random free port in a background thread, open a pywebview window pointed at it, shut down cleanly on window close.
@@ -160,18 +166,9 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
-## Phase 8: Method 2, folder/zip upload to Drive (optional, last)
+## Phase 8: Removed
 
-**Build**
-1. Settings: import `client_secret.json`, with a step-by-step Google Cloud setup guide in the UI/README.
-2. OAuth desktop flow with `drive.file` scope.
-3. Create event folder, resumable parallel uploads, progress via SSE, retries.
-4. Make the folder public (`anyone` / `reader`); collect file IDs for export links.
-5. Pre-flight storage check against the account's 15 GB.
-6. Credential storage levels: (1) in-memory default, (2) OS keychain via `keyring`, (3) passphrase-encrypted via Fernet + scrypt, with a passphrase prompt on reveal.
-7. "Sign out and erase": revoke token at Google and wipe local data.
-
-**Done when:** a local folder uploads to a new public Drive folder and produces an export with working links, and "Sign out and erase" invalidates the token.
+Method 2 (upload to Drive with Google sign-in) is no longer part of the project (decision 2026-10-13). There is no OAuth, no `client_secret.json`, no credential storage, no "Sign out and erase". Organizers who want Drive download links upload the originals to Drive themselves, make the folder public, and use Method 1 (Phase 6). The phase number is kept as a gap so earlier references stay valid.
 
 ---
 
@@ -182,7 +179,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 - Selfie search in the viewer (needs in-browser face matching or a backend; not free-trivial).
 - Zip download per person (Cloudflare R2 + client-side zip, or a small backend).
 - Auto-publish to GitHub Pages from the app.
-- Optional bundled default Google OAuth client ID.
+- Optional bundled default Drive API key (never committed; only if a safe way exists).
 
 ---
 
@@ -197,9 +194,9 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 | 3 | FastAPI layer | Engine becomes controllable; edits persist across re-runs |
 | 4 | Organizer UI | Human review is the quality safety net, not an extra |
 | 5 | Desktop shell + exe | Double-click experience on Windows |
-| 6 | Method 1 (Drive link) | Second input source, no OAuth |
+| 6 | Method 1 (Drive link) | Second input source, no sign-in |
 | 7 | CI release builds | Cross-platform distribution |
-| 8 | Method 2 (upload) | Optional; OAuth and credential storage last |
+| 8 | ~~Method 2 (upload)~~ | Removed 2026-10-13 |
 | 9 | Polish / extras | Only after core is solid |
 
 ## Working rules for the AI building this
