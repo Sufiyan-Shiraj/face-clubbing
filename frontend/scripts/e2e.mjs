@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { readFileSync, readdirSync, writeFileSync, existsSync, rmSync, mkdirSync, statSync } from 'fs';
+import { readFileSync, readdirSync, writeFileSync, existsSync, rmSync, mkdirSync, statSync, copyFileSync, cpSync } from 'fs';
 import { createHash } from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -21,6 +21,7 @@ const CHROME_PATH = 'C:\\Users\\DELL\\AppData\\Local\\ms-playwright\\chromium-12
 // ISOLATION PATHS
 const TEMP_WORK_DIR = path.resolve(REPO_ROOT, 'export.e2e_temp.work');
 const TEMP_OUTPUT_DIR = path.resolve(REPO_ROOT, 'export.e2e_temp');
+const TEMP_CACHE_DIR = path.resolve(REPO_ROOT, 'export.e2e_temp.cache');
 const CANONICAL_WORK_DIR = path.resolve(REPO_ROOT, 'export.work');
 const CANONICAL_EXPORT_DIR = path.resolve(REPO_ROOT, 'export');
 const CANONICAL_EDITS_PATH = path.resolve(CANONICAL_WORK_DIR, 'edits.json');
@@ -112,14 +113,32 @@ async function run() {
   // Setup isolated temporary directories
   if (existsSync(TEMP_WORK_DIR)) rmSync(TEMP_WORK_DIR, { recursive: true, force: true });
   if (existsSync(TEMP_OUTPUT_DIR)) rmSync(TEMP_OUTPUT_DIR, { recursive: true, force: true });
+  if (existsSync(TEMP_CACHE_DIR)) rmSync(TEMP_CACHE_DIR, { recursive: true, force: true });
   mkdirSync(TEMP_WORK_DIR, { recursive: true });
   mkdirSync(TEMP_OUTPUT_DIR, { recursive: true });
+  mkdirSync(TEMP_CACHE_DIR, { recursive: true });
 
   const tempEditsPath = path.resolve(TEMP_WORK_DIR, 'edits.json');
   writeFileSync(tempEditsPath, JSON.stringify({ version: 1, edits: [] }, null, 2), 'utf8');
 
+  // Populate temp cache copy with photo embeddings and thumbnails, strictly excluding edits.json
+  const sourceCacheDir = existsSync(path.resolve(CANONICAL_WORK_DIR, '.cache'))
+    ? path.resolve(CANONICAL_WORK_DIR, '.cache')
+    : CANONICAL_WORK_DIR;
+  for (const file of readdirSync(sourceCacheDir)) {
+    if (file === 'edits.json' || file === 'suggestions.json' || file === 'id_map.json') continue;
+    const srcPath = path.resolve(sourceCacheDir, file);
+    const dstPath = path.resolve(TEMP_CACHE_DIR, file);
+    const stat = statSync(srcPath);
+    if (stat.isFile() && file.endsWith('.json')) {
+      copyFileSync(srcPath, dstPath);
+    } else if (stat.isDirectory() && (file === 'crops' || file === 'thumbs')) {
+      cpSync(srcPath, dstPath, { recursive: true });
+    }
+  }
+
   // Spawn uvicorn server in isolated environment
-  logMessage(`\n[SPAWN] Starting uvicorn with isolated work/output dirs on port ${API_PORT}...`);
+  logMessage(`\n[SPAWN] Starting uvicorn with isolated work/output/cache dirs on port ${API_PORT}...`);
   const serverProc = spawn(
     PYTHON_PATH,
     ['-m', 'uvicorn', 'backend.api.app:app', '--host', '127.0.0.1', '--port', String(API_PORT)],
@@ -130,7 +149,7 @@ async function run() {
         ...process.env,
         PHOTOSORTER_WORK_DIR: TEMP_WORK_DIR,
         PHOTOSORTER_OUTPUT_DIR: TEMP_OUTPUT_DIR,
-        PHOTOSORTER_CACHE_DIR: CANONICAL_WORK_DIR,
+        PHOTOSORTER_CACHE_DIR: TEMP_CACHE_DIR,
       },
     }
   );
@@ -782,6 +801,7 @@ async function run() {
     await sleep(1000);
     if (existsSync(TEMP_WORK_DIR)) rmSync(TEMP_WORK_DIR, { recursive: true, force: true });
     if (existsSync(TEMP_OUTPUT_DIR)) rmSync(TEMP_OUTPUT_DIR, { recursive: true, force: true });
+    if (existsSync(TEMP_CACHE_DIR)) rmSync(TEMP_CACHE_DIR, { recursive: true, force: true });
     logMessage('[TEARDOWN] Temporary test directories removed.');
   }
 }

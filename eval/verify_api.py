@@ -103,10 +103,8 @@ def run_api_verification() -> bool:
 
         engine_res = EngineResult(photos=photos, people=people, unrecognized=unrec, distance_threshold=0.50, id_map={})
 
-        app = create_app(work_dir=work_dir)
+        app = create_app(work_dir=work_dir, output_dir=export_dir, cache_dir=work_dir)
         state = app.state.app_state
-        state.settings.output_dir = str(export_dir)
-        state.settings.cache_dir = str(work_dir)
         state.set_result(engine_res, work_dir=work_dir)
         client = TestClient(app)
 
@@ -344,8 +342,41 @@ def parse_report_phase3_metrics(report_path: Path = Path("REPORT.md")) -> dict[s
     return metrics
 
 
+def setup_isolated_export_client():
+    temp_dir = tempfile.mkdtemp(prefix="photosorter_api_export_")
+    t_path = Path(temp_dir)
+    temp_work = t_path / "work"
+    temp_export = t_path / "export"
+    temp_cache = t_path / "cache"
+    temp_work.mkdir(parents=True, exist_ok=True)
+    temp_export.mkdir(parents=True, exist_ok=True)
+    temp_cache.mkdir(parents=True, exist_ok=True)
+
+    repo_root = Path(__file__).resolve().parent.parent
+    baseline_dir = repo_root / "eval" / "baseline"
+    for item in baseline_dir.iterdir():
+        if item.is_file() and item.name.endswith(".json"):
+            shutil.copy2(item, temp_export / item.name)
+
+    (temp_work / "edits.json").write_text(json.dumps({"version": 1, "edits": []}, indent=2), encoding="utf-8")
+    if (baseline_dir / "suggestions.json").exists():
+        shutil.copy2(baseline_dir / "suggestions.json", temp_work / "suggestions.json")
+    if (baseline_dir / "id_map.json").exists():
+        shutil.copy2(baseline_dir / "id_map.json", temp_work / "id_map.json")
+
+    work_dir = repo_root / "export.work"
+    source_cache = work_dir / ".cache" if (work_dir / ".cache").exists() else work_dir
+    for jf in source_cache.glob("*.json"):
+        if jf.name not in ("edits.json", "suggestions.json", "id_map.json"):
+            shutil.copy2(jf, temp_cache / jf.name)
+
+    app = create_app(work_dir=temp_work, output_dir=temp_export, cache_dir=temp_cache)
+    client = TestClient(app)
+    return client, temp_dir
+
+
 def run_live_export_verification(base_url: str = "http://127.0.0.1:8000", report_path: Path = Path("REPORT.md")) -> bool:
-    """Verifies live API output against canonical test export numbers parsed dynamically from REPORT.md."""
+    """Verifies API output against canonical test export numbers parsed dynamically from REPORT.md using isolated baseline."""
     import urllib.request
     import urllib.error
 
@@ -357,76 +388,79 @@ def run_live_export_verification(base_url: str = "http://127.0.0.1:8000", report
     expected = parse_report_phase3_metrics(report_path)
     print(f"Dynamically parsed expected metrics from {report_path.name}: {expected}")
 
-    # Helper to query API either via HTTP or fallback to TestClient
-    def get_json(path: str):
-        try:
-            req = urllib.request.Request(f"{base_url}{path}", headers={"User-Agent": "verify_api"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.URLError:
-            app = create_app()
-            client = TestClient(app)
-            r = client.get(path)
-            return r.json()
+    client, temp_dir = setup_isolated_export_client()
 
     all_passed = True
 
-    # 1. People count
-    people_data = get_json("/api/people")
-    people_count = len(people_data) if isinstance(people_data, list) else 0
-    if people_count == expected["people"]:
-        print(f"[PASS] People count: {people_count} (matched REPORT.md: {expected['people']})")
-    else:
-        print(f"[FAIL] People count: {people_count} (expected from REPORT.md: {expected['people']})")
-        all_passed = False
+    try:
+        def get_json(path: str):
+            try:
+                req = urllib.request.Request(f"{base_url}{path}", headers={"User-Agent": "verify_api"})
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
+            except (urllib.error.URLError, TimeoutError):
+                r = client.get(path)
+                return r.json()
 
-    # 2. Unrecognized: photos, faces, no-face photos
-    unrec_data = get_json("/api/unrecognized")
-    unrec_photos = unrec_data.get("total_unrecognized_photos", 0)
-    unrec_faces = len(unrec_data.get("faces", []))
-    no_face_photos = len(unrec_data.get("no_face_photos", []))
+        # 1. People count
+        people_data = get_json("/api/people")
+        people_count = len(people_data) if isinstance(people_data, list) else 0
+        if people_count == expected["people"]:
+            print(f"[PASS] People count: {people_count} (matched REPORT.md: {expected['people']})")
+        else:
+            print(f"[FAIL] People count: {people_count} (expected from REPORT.md: {expected['people']})")
+            all_passed = False
 
-    if unrec_photos == expected["unrec_photos"]:
-        print(f"[PASS] Unrecognized photos: {unrec_photos} (matched REPORT.md: {expected['unrec_photos']})")
-    else:
-        print(f"[FAIL] Unrecognized photos: {unrec_photos} (expected from REPORT.md: {expected['unrec_photos']})")
-        all_passed = False
+        # 2. Unrecognized: photos, faces, no-face photos
+        unrec_data = get_json("/api/unrecognized")
+        unrec_photos = unrec_data.get("total_unrecognized_photos", 0)
+        unrec_faces = len(unrec_data.get("faces", []))
+        no_face_photos = len(unrec_data.get("no_face_photos", []))
 
-    if unrec_faces == expected["unrec_faces"]:
-        print(f"[PASS] Unrecognized faces: {unrec_faces} (matched REPORT.md: {expected['unrec_faces']})")
-    else:
-        print(f"[FAIL] Unrecognized faces: {unrec_faces} (expected from REPORT.md: {expected['unrec_faces']})")
-        all_passed = False
+        if unrec_photos == expected["unrec_photos"]:
+            print(f"[PASS] Unrecognized photos: {unrec_photos} (matched REPORT.md: {expected['unrec_photos']})")
+        else:
+            print(f"[FAIL] Unrecognized photos: {unrec_photos} (expected from REPORT.md: {expected['unrec_photos']})")
+            all_passed = False
 
-    if no_face_photos == expected["no_face_photos"]:
-        print(f"[PASS] No-face photos: {no_face_photos} (matched REPORT.md: {expected['no_face_photos']})")
-    else:
-        print(f"[FAIL] No-face photos: {no_face_photos} (expected from REPORT.md: {expected['no_face_photos']})")
-        all_passed = False
+        if unrec_faces == expected["unrec_faces"]:
+            print(f"[PASS] Unrecognized faces: {unrec_faces} (matched REPORT.md: {expected['unrec_faces']})")
+        else:
+            print(f"[FAIL] Unrecognized faces: {unrec_faces} (expected from REPORT.md: {expected['unrec_faces']})")
+            all_passed = False
 
-    # 3. Suggestions: maybe groups, ranked pairs, ambiguous faces
-    sug_data = get_json("/api/suggestions")
-    maybe_groups = sug_data.get("maybe_groups_count", len(sug_data.get("maybe_groups", [])))
-    ranked_pairs = sug_data.get("possibly_the_same_count", len(sug_data.get("possibly_the_same", [])))
-    ambiguous_faces = sug_data.get("ambiguous_faces_count", len(sug_data.get("ambiguous_faces", [])))
+        if no_face_photos == expected["no_face_photos"]:
+            print(f"[PASS] No-face photos: {no_face_photos} (matched REPORT.md: {expected['no_face_photos']})")
+        else:
+            print(f"[FAIL] No-face photos: {no_face_photos} (expected from REPORT.md: {expected['no_face_photos']})")
+            all_passed = False
 
-    if maybe_groups == expected["maybe_groups"]:
-        print(f"[PASS] Maybe groups: {maybe_groups} (matched REPORT.md: {expected['maybe_groups']})")
-    else:
-        print(f"[FAIL] Maybe groups: {maybe_groups} (expected from REPORT.md: {expected['maybe_groups']})")
-        all_passed = False
+        # 3. Suggestions: maybe groups, ranked pairs, ambiguous faces
+        sug_data = get_json("/api/suggestions")
+        maybe_groups = sug_data.get("maybe_groups_count", len(sug_data.get("maybe_groups", [])))
+        ranked_pairs = sug_data.get("possibly_the_same_count", len(sug_data.get("possibly_the_same", [])))
+        ambiguous_faces = sug_data.get("ambiguous_faces_count", len(sug_data.get("ambiguous_faces", [])))
 
-    if ranked_pairs == expected["ranked_pairs"]:
-        print(f"[PASS] Ranked pairs: {ranked_pairs} (matched REPORT.md: {expected['ranked_pairs']})")
-    else:
-        print(f"[FAIL] Ranked pairs: {ranked_pairs} (expected from REPORT.md: {expected['ranked_pairs']})")
-        all_passed = False
+        if maybe_groups == expected["maybe_groups"]:
+            print(f"[PASS] Maybe groups: {maybe_groups} (matched REPORT.md: {expected['maybe_groups']})")
+        else:
+            print(f"[FAIL] Maybe groups: {maybe_groups} (expected from REPORT.md: {expected['maybe_groups']})")
+            all_passed = False
 
-    if ambiguous_faces == expected["ambiguous_faces"]:
-        print(f"[PASS] Ambiguous faces: {ambiguous_faces} (matched REPORT.md: {expected['ambiguous_faces']})")
-    else:
-        print(f"[FAIL] Ambiguous faces: {ambiguous_faces} (expected from REPORT.md: {expected['ambiguous_faces']})")
-        all_passed = False
+        if ranked_pairs == expected["ranked_pairs"]:
+            print(f"[PASS] Ranked pairs: {ranked_pairs} (matched REPORT.md: {expected['ranked_pairs']})")
+        else:
+            print(f"[FAIL] Ranked pairs: {ranked_pairs} (expected from REPORT.md: {expected['ranked_pairs']})")
+            all_passed = False
+
+        if ambiguous_faces == expected["ambiguous_faces"]:
+            print(f"[PASS] Ambiguous faces: {ambiguous_faces} (matched REPORT.md: {expected['ambiguous_faces']})")
+        else:
+            print(f"[FAIL] Ambiguous faces: {ambiguous_faces} (expected from REPORT.md: {expected['ambiguous_faces']})")
+            all_passed = False
+
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
     print("=" * 80)
     if all_passed:

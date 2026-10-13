@@ -11,6 +11,7 @@ Tests:
 
 import json
 import re
+import shutil
 import time
 from pathlib import Path
 import numpy as np
@@ -24,8 +25,8 @@ from backend.api.models import SettingsModel
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 def _has_canonical_data() -> bool:
-    export_people = REPO_ROOT / "export" / "people.json"
-    if not export_people.exists():
+    baseline_people = REPO_ROOT / "eval" / "baseline" / "people.json"
+    if not baseline_people.exists():
         return False
     work_dir = REPO_ROOT / "export.work"
     cache_subdir = work_dir / ".cache"
@@ -37,6 +38,42 @@ def _has_canonical_data() -> bool:
 
 
 CANONICAL_DATA_PRESENT = _has_canonical_data()
+
+
+def _setup_isolated_baseline_fixture(tmp_path: Path):
+    """Creates a temporary workspace with:
+    1. A temp export dir containing eval/baseline/ files (people.json, config.json)
+    2. A temp cache dir containing a copy of photo embedding JSONs from export.work (excluding edits.json)
+    3. A temp work dir with an empty edits.json
+    Returns (temp_export_dir, temp_work_dir, temp_cache_dir).
+    """
+    temp_export = tmp_path / "export"
+    temp_work = tmp_path / "work"
+    temp_cache = tmp_path / "cache"
+    temp_export.mkdir(parents=True, exist_ok=True)
+    temp_work.mkdir(parents=True, exist_ok=True)
+    temp_cache.mkdir(parents=True, exist_ok=True)
+
+    baseline_dir = REPO_ROOT / "eval" / "baseline"
+    for item in baseline_dir.iterdir():
+        if item.is_file() and item.name.endswith(".json"):
+            shutil.copy2(item, temp_export / item.name)
+
+    # Empty edits in work dir
+    (temp_work / "edits.json").write_text(json.dumps({"version": 1, "edits": []}, indent=2), encoding="utf-8")
+    if (baseline_dir / "suggestions.json").exists():
+        shutil.copy2(baseline_dir / "suggestions.json", temp_work / "suggestions.json")
+    if (baseline_dir / "id_map.json").exists():
+        shutil.copy2(baseline_dir / "id_map.json", temp_work / "id_map.json")
+
+    # Copy cached embeddings into temp_cache (photo json files only, never edits.json)
+    work_dir = REPO_ROOT / "export.work"
+    source_cache = work_dir / ".cache" if (work_dir / ".cache").exists() else work_dir
+    for jf in source_cache.glob("*.json"):
+        if jf.name not in ("edits.json", "suggestions.json", "id_map.json"):
+            shutil.copy2(jf, temp_cache / jf.name)
+
+    return temp_export, temp_work, temp_cache
 
 from PIL import Image
 
@@ -86,10 +123,8 @@ def api_setup(tmp_path: Path):
         img.save(p_path)
         photo_paths[pid] = str(p_path)
 
-    app = create_app(work_dir=work_dir)
+    app = create_app(work_dir=work_dir, output_dir=export_dir, cache_dir=work_dir)
     state = app.state.app_state
-    state.settings.output_dir = str(export_dir)
-    state.settings.cache_dir = str(work_dir)
 
     # Populate synthetic baseline dataset
     # Person 1 (photo 1)
@@ -392,23 +427,20 @@ def test_state_missing_embedding_raises_error(tmp_path: Path):
     (fake_export / "people.json").write_text(json.dumps(dummy_people_json), encoding="utf-8")
 
     # Creating AppState with empty cache must raise RuntimeError
-    state = AppState(work_dir=fake_work)
-    state.settings.output_dir = str(fake_export)
-    state.settings.cache_dir = str(fake_work)
-
     with pytest.raises(RuntimeError) as exc_info:
-        state._try_load_existing_dataset()
+        AppState(work_dir=fake_work, output_dir=fake_export, cache_dir=fake_work)
     expected_error_msg = (
         "Missing embedding cache for face 'f_missing_999' in photo 'ph_missing'. "
         "State must load embeddings for every face in people.json; fabricating fake FaceDetection is forbidden."
     )
     assert str(exc_info.value) == expected_error_msg
 
-    # Verify that loading the real canonical state succeeds and NO face has embedding None
+    # Verify that loading the pinned baseline state succeeds and NO face has embedding None
     if not CANONICAL_DATA_PRESENT:
-        pytest.skip("Requires 271-photo export/ and export.work/.cache embedding cache")
+        pytest.skip("Requires baseline fixture and embedding cache")
 
-    real_state = AppState()
+    temp_export, temp_work, temp_cache = _setup_isolated_baseline_fixture(tmp_path / "baseline_test")
+    real_state = AppState(work_dir=temp_work, output_dir=temp_export, cache_dir=temp_cache)
     assert len(real_state.people) == 192
     assert len(real_state.unrecognized.faces) == 445
     for p in real_state.people:
@@ -526,135 +558,115 @@ def test_api_unrecognized_count_bug_and_invariants(api_setup):
 
 @pytest.mark.skipif(
     not CANONICAL_DATA_PRESENT,
-    reason="Requires 271-photo export/ and export.work/.cache embedding cache",
+    reason="Requires baseline fixture and embedding cache",
 )
-def test_api_rerun_replay_under_real_clustering_change():
+def test_api_rerun_replay_under_real_clustering_change(tmp_path: Path):
     """TASK 4: Re-run proves replay under a real clustering change (attach_distance_cap).
     Reports people_count and unrec_faces with and without it, asserts by face ID merged anchors and assigned face survive.
     """
-    from backend.api.state import AppState
     from backend.api.app import create_app
 
-    # Use a separate test work directory so we never touch canonical edits.json
-    repo_root = Path(__file__).resolve().parent.parent
-    work_dir = repo_root / "export.work"
-    test_edits_path = work_dir / "edits_test_task4.json"
-    if test_edits_path.exists():
-        test_edits_path.unlink()
-
-    app = create_app(work_dir=work_dir)
+    temp_export, temp_work, temp_cache = _setup_isolated_baseline_fixture(tmp_path / "rerun_test")
+    app = create_app(work_dir=temp_work, output_dir=temp_export, cache_dir=temp_cache)
     client = TestClient(app)
     state = app.state.app_state
-    # Point edits path to test file
-    state.edits_path = test_edits_path
-    state.edits_list = []
 
-    try:
-        # Default baseline check
-        people_init = client.get("/api/people").json()
-        unrec_init = client.get("/api/unrecognized").json()
-        assert len(people_init) == 192
-        assert len(unrec_init["faces"]) == 445
+    # Default baseline check
+    people_init = client.get("/api/people").json()
+    unrec_init = client.get("/api/unrecognized").json()
+    assert len(people_init) == 192
+    assert len(unrec_init["faces"]) == 445
 
-        # Pick 3 people to merge by dynamic handles from people_init
-        c_a = people_init[-3]
-        c_b = people_init[-2]
-        c_c = people_init[-1]
-        anchor_a = c_a["anchor_face_ids"][0]
-        anchor_b = c_b["anchor_face_ids"][0]
-        anchor_c = c_c["anchor_face_ids"][0]
+    # Pick 3 people to merge by dynamic handles from people_init
+    c_a = people_init[-3]
+    c_b = people_init[-2]
+    c_c = people_init[-1]
+    anchor_a = c_a["anchor_face_ids"][0]
+    anchor_b = c_b["anchor_face_ids"][0]
+    anchor_c = c_c["anchor_face_ids"][0]
 
-        res_merge = client.post("/api/edits", json={"op": "merge", "person_ids": [c_a["id"], c_b["id"], c_c["id"]]})
-        assert res_merge.status_code == 200
+    res_merge = client.post("/api/edits", json={"op": "merge", "person_ids": [c_a["id"], c_b["id"], c_c["id"]]})
+    assert res_merge.status_code == 200
 
-        # Assign an unrecognized face f_017688ce4a6e7198_004 to first person
-        target_person = people_init[0]
-        target_person_anchor = target_person["anchor_face_ids"][0]
-        unrec_face_id = "f_017688ce4a6e7198_004"
+    # Assign an unrecognized face f_017688ce4a6e7198_004 to first person
+    target_person = people_init[0]
+    target_person_anchor = target_person["anchor_face_ids"][0]
+    unrec_face_id = "f_017688ce4a6e7198_004"
 
-        res_assign = client.post("/api/edits", json={
-            "op": "assign",
-            "face_id": unrec_face_id,
-            "person_id": target_person["id"],
-        })
-        assert res_assign.status_code == 200
-        assign_data = res_assign.json()
-        assert assign_data["unrecognized_faces_count"] == 444
+    res_assign = client.post("/api/edits", json={
+        "op": "assign",
+        "face_id": unrec_face_id,
+        "person_id": target_person["id"],
+    })
+    assert res_assign.status_code == 200
+    assign_data = res_assign.json()
+    assert assign_data["unrecognized_faces_count"] == 444
 
-        # Capture baseline people_count and unrecognized_faces_count before rerun
-        people_pre = client.get("/api/people").json()
-        unrec_pre = client.get("/api/unrecognized").json()
-        people_count_baseline = len(people_pre)
-        unrecognized_faces_count_baseline = len(unrec_pre["faces"])
+    # Capture baseline people_count and unrecognized_faces_count before rerun
+    people_pre = client.get("/api/people").json()
+    unrec_pre = client.get("/api/unrecognized").json()
+    people_count_baseline = len(people_pre)
+    unrecognized_faces_count_baseline = len(unrec_pre["faces"])
 
-        # Rerun under attach_distance_cap = 0.35 (measurably changes clustering: 194 people / 528 unrec faces base)
-        rerun_res = client.post("/api/rerun", json={
-            "settings": {"attach_distance_cap": 0.35}
-        })
-        assert rerun_res.status_code == 200
-        rerun_data = rerun_res.json()
-        assert rerun_data["success"] is True
+    # Rerun under attach_distance_cap = 0.35 (measurably changes clustering: 194 people / 528 unrec faces base)
+    rerun_res = client.post("/api/rerun", json={
+        "settings": {"attach_distance_cap": 0.35}
+    })
+    assert rerun_res.status_code == 200
+    rerun_data = rerun_res.json()
+    assert rerun_data["success"] is True
 
-        # Capture counts after rerun with attach_distance_cap = 0.35
-        people_post = client.get("/api/people").json()
-        unrec_post = client.get("/api/unrecognized").json()
-        people_count_after = len(people_post)
-        unrecognized_faces_count_after = len(unrec_post["faces"])
+    # Capture counts after rerun with attach_distance_cap = 0.35
+    people_post = client.get("/api/people").json()
+    unrec_post = client.get("/api/unrecognized").json()
+    people_count_after = len(people_post)
+    unrecognized_faces_count_after = len(unrec_post["faces"])
 
-        # Print all four numbers
-        print(f"\npeople_count_baseline: {people_count_baseline}")
-        print(f"unrecognized_faces_count_baseline: {unrecognized_faces_count_baseline}")
-        print(f"people_count_after: {people_count_after}")
-        print(f"unrecognized_faces_count_after: {unrecognized_faces_count_after}")
+    # Print all four numbers
+    print(f"\npeople_count_baseline: {people_count_baseline}")
+    print(f"unrecognized_faces_count_baseline: {unrecognized_faces_count_baseline}")
+    print(f"people_count_after: {people_count_after}")
+    print(f"unrecognized_faces_count_after: {unrecognized_faces_count_after}")
 
-        # Assert both differ from baseline
-        assert people_count_after != people_count_baseline, (
-            f"people_count did not differ after rerun: {people_count_after} == {people_count_baseline}"
-        )
-        assert unrecognized_faces_count_after != unrecognized_faces_count_baseline, (
-            f"unrecognized_faces_count did not differ after rerun: "
-            f"{unrecognized_faces_count_after} == {unrecognized_faces_count_baseline}"
-        )
-        assert people_count_after == 192
-        assert unrecognized_faces_count_after == 527
+    # Assert both differ from baseline
+    assert people_count_after != people_count_baseline, (
+        f"people_count did not differ after rerun: {people_count_after} == {people_count_baseline}"
+    )
+    assert unrecognized_faces_count_after != unrecognized_faces_count_baseline, (
+        f"unrecognized_faces_count did not differ after rerun: "
+        f"{unrecognized_faces_count_after} == {unrecognized_faces_count_baseline}"
+    )
+    assert people_count_after == 192
+    assert unrecognized_faces_count_after == 527
 
-        # Assert BY FACE ID:
-        # (a) the 3 merged anchors are in ONE person
-        people_after = client.get("/api/people").json()
-        merged_person = None
-        for p in people_after:
-            fids = {f["face_id"] for f in p["faces"]}
-            if anchor_a in fids:
-                merged_person = p
-                break
-        assert merged_person is not None, f"Anchor {anchor_a} not found after rerun!"
-        merged_fids = {f["face_id"] for f in merged_person["faces"]}
-        assert anchor_b in merged_fids, f"Anchor {anchor_b} not in merged person after rerun!"
-        assert anchor_c in merged_fids, f"Anchor {anchor_c} not in merged person after rerun!"
+    # Assert BY FACE ID:
+    # (a) the 3 merged anchors are in ONE person
+    people_after = client.get("/api/people").json()
+    merged_person = None
+    for p in people_after:
+        fids = {f["face_id"] for f in p["faces"]}
+        if anchor_a in fids:
+            merged_person = p
+            break
+    assert merged_person is not None, f"Anchor {anchor_a} not found after rerun!"
+    merged_fids = {f["face_id"] for f in merged_person["faces"]}
+    assert anchor_b in merged_fids, f"Anchor {anchor_b} not in merged person after rerun!"
+    assert anchor_c in merged_fids, f"Anchor {anchor_c} not in merged person after rerun!"
 
-        # (b) the assigned face is in its target person
-        target_person_after = None
-        for p in people_after:
-            fids = {f["face_id"] for f in p["faces"]}
-            if target_person_anchor in fids:
-                target_person_after = p
-                break
-        assert target_person_after is not None, f"Target anchor {target_person_anchor} not found after rerun!"
-        target_fids = {f["face_id"] for f in target_person_after["faces"]}
-        assert unrec_face_id in target_fids, f"Assigned face {unrec_face_id} not in target person after rerun!"
+    # (b) the assigned face is in its target person
+    target_person_after = None
+    for p in people_after:
+        fids = {f["face_id"] for f in p["faces"]}
+        if target_person_anchor in fids:
+            target_person_after = p
+            break
+    assert target_person_after is not None, f"Target anchor {target_person_anchor} not found after rerun!"
+    target_fids = {f["face_id"] for f in target_person_after["faces"]}
+    assert unrec_face_id in target_fids, f"Assigned face {unrec_face_id} not in target person after rerun!"
 
-        # Face must NOT be in unrecognized
-        unrec_after = client.get("/api/unrecognized").json()
-        assert not any(f["face_id"] == unrec_face_id for f in unrec_after["faces"])
-    finally:
-        # Cleanup
-        if test_edits_path.exists():
-            test_edits_path.unlink()
-        # Reset state back to default
-        state.settings.attach_distance_cap = 0.45
-        state.edits_path = work_dir / "edits.json"
-        state._load_edits_from_disk()
-        state.rerun_pipeline_with_edits()
+    # Face must NOT be in unrecognized
+    unrec_after = client.get("/api/unrecognized").json()
+    assert not any(f["face_id"] == unrec_face_id for f in unrec_after["faces"])
 
 
 def test_api_photos_endpoint_and_remove_by_photo(api_setup):

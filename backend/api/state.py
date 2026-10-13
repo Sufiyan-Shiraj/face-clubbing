@@ -37,7 +37,12 @@ from backend.api.models import (
 
 
 class AppState:
-    def __init__(self, work_dir: Optional[Path] = None):
+    def __init__(
+        self,
+        work_dir: Optional[Path] = None,
+        output_dir: Optional[Path] = None,
+        cache_dir: Optional[Path] = None,
+    ):
         self.repo_root = Path(__file__).resolve().parent.parent.parent
         env_work = os.environ.get("PHOTOSORTER_WORK_DIR")
         env_output = os.environ.get("PHOTOSORTER_OUTPUT_DIR")
@@ -47,10 +52,13 @@ class AppState:
         self.work_dir.mkdir(parents=True, exist_ok=True)
         self.edits_path = self.work_dir / "edits.json"
 
+        resolved_output = Path(output_dir or env_output).resolve() if (output_dir or env_output) else (self.repo_root / "export")
+        resolved_cache = Path(cache_dir or env_cache).resolve() if (cache_dir or env_cache) else self.work_dir
+
         self.settings = SettingsModel(
             input_path=str(self.repo_root / "test_photos") if (self.repo_root / "test_photos").exists() else None,
-            output_dir=str(Path(env_output).resolve()) if env_output else str(self.repo_root / "export"),
-            cache_dir=str(Path(env_cache).resolve()) if env_cache else str(self.work_dir),
+            output_dir=str(resolved_output),
+            cache_dir=str(resolved_cache),
         )
 
         # In-memory runtime dataset
@@ -76,7 +84,10 @@ class AppState:
         """Attempts to load existing Phase 1/1b export data if present."""
         export_people = Path(self.settings.output_dir) / "people.json"
         if not export_people.exists():
-            export_people = self.repo_root / "export" / "people.json"
+            if Path(self.settings.output_dir).resolve() == (self.repo_root / "export").resolve():
+                export_people = self.repo_root / "export" / "people.json"
+            else:
+                return
 
         if export_people.exists():
             try:
@@ -96,11 +107,12 @@ class AppState:
                     cache_candidates.append(self.work_dir / ".cache")
                 if self.work_dir.exists():
                     cache_candidates.append(self.work_dir)
-                export_work = self.repo_root / "export.work"
-                if (export_work / ".cache").exists():
-                    cache_candidates.append(export_work / ".cache")
-                if export_work.exists():
-                    cache_candidates.append(export_work)
+                if not cache_candidates:
+                    export_work = self.repo_root / "export.work"
+                    if (export_work / ".cache").exists():
+                        cache_candidates.append(export_work / ".cache")
+                    if export_work.exists():
+                        cache_candidates.append(export_work)
 
                 cached_photos = {}
                 for c_dir in cache_candidates:

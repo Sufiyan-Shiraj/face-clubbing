@@ -12,7 +12,12 @@ from backend.api.jobs import JobManager
 from backend.api.routes import create_router
 
 
-def create_app(work_dir: Optional[Path] = None, static_dir: Optional[Path] = None) -> FastAPI:
+def create_app(
+    work_dir: Optional[Path] = None,
+    static_dir: Optional[Path] = None,
+    output_dir: Optional[Path] = None,
+    cache_dir: Optional[Path] = None,
+) -> FastAPI:
     app = FastAPI(
         title="PhotoSorter API",
         description="Local organizer API for face clustering, review, edits, and static viewer export.",
@@ -29,7 +34,7 @@ def create_app(work_dir: Optional[Path] = None, static_dir: Optional[Path] = Non
     )
 
     repo_root = Path(__file__).resolve().parent.parent.parent
-    state = AppState(work_dir=work_dir)
+    state = AppState(work_dir=work_dir, output_dir=output_dir, cache_dir=cache_dir)
     job_manager = JobManager(state=state)
 
     # Attach instances to app state
