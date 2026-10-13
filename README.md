@@ -11,8 +11,14 @@ PhotoSorter is a free, privacy-first, desktop application and static site genera
 | **Phase 0** | Setup, environment, and risk check | **Done** |
 | **Phase 1** | Engine core (CLI, face detection, seed/attach, merge) | **Accepted** |
 | **Phase 1b** | Engine amendments (stable identity, edit replay, 0.65 band, eval suite) | **Completed** |
-| **Phase 2** | Static viewer (single people grid, unrecognized view, hide toggle) | Built (Pending rev 2 update) |
-| **Phase 3-9** | FastAPI API, Desktop UI, Drive integration, packaging | Not started |
+| **Phase 2** | Static viewer (single people grid, unrecognized view, hide toggle) | **Completed** |
+| **Phase 3** | FastAPI API layer (SSE streaming, edit replay, suggestions API) | **Completed** |
+| **Phase 4** | Organizer UI (React, review people, multi-merge, suggestions) | **Completed** |
+| **Phase 5** | Desktop shell & packaging (pywebview, native pickers, PyInstaller) | **In Progress** |
+| **Phase 6** | Method 1: Google Drive link input | Not started |
+| **Phase 7** | Release automation | Not started |
+| **Phase 8** | Method 2: Google Drive upload | Not started |
+| **Phase 9** | Polish & extras | Not started |
 
 ---
 
@@ -56,25 +62,27 @@ PhotoSorter is a free, privacy-first, desktop application and static site genera
 
 ### Prerequisites
 - Python 3.10 to 3.12 recommended
+- Node.js 18+ (for UI development)
 - Git
 
-### Windows
-```powershell
-git clone <repo-url>
-cd face-clubbing
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-python -m backend.engine --input test_photos --out export
-```
+### Launch Desktop Application
 
-### macOS / Linux
+**Windows:**
+```cmd
+run.bat
+```
+*(Or activate virtual environment and run `python main.py`)*
+
+**macOS / Linux:**
 ```bash
-git clone <repo-url>
-cd face-clubbing
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+chmod +x run.sh
+./run.sh
+```
+*(Or activate virtual environment and run `python3 main.py`)*
+
+### Headless CLI Engine
+
+```powershell
 python -m backend.engine --input test_photos --out export
 ```
 

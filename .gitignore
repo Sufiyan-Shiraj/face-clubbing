@@ -49,6 +49,7 @@ deliverables/
 scratch/
 archives/
 eval/synthetic_bundle/
+report_assets*/
 *.zip
 
 # Auth & Secrets

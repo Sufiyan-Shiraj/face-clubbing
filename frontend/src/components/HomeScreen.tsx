@@ -16,6 +16,56 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [driveLink, setDriveLink] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const handleBrowseFolder = async () => {
+    if (window.pywebview?.api?.select_folder) {
+      try {
+        const selected = await window.pywebview.api.select_folder('Select Photo Folder');
+        if (selected) {
+          setFolderPath(selected);
+        }
+      } catch (err) {
+        console.error('Native folder picker failed:', err);
+      }
+    } else {
+      const input = document.createElement('input');
+      input.type = 'file';
+      (input as any).webkitdirectory = true;
+      input.onchange = (e: any) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+          const first = files[0];
+          const folder = first.webkitRelativePath ? first.webkitRelativePath.split('/')[0] : '';
+          if (folder) setFolderPath(folder);
+        }
+      };
+      input.click();
+    }
+  };
+
+  const handleBrowseFile = async () => {
+    if (window.pywebview?.api?.select_file) {
+      try {
+        const selected = await window.pywebview.api.select_file('Select Zip Archive or File');
+        if (selected) {
+          setFolderPath(selected);
+        }
+      } catch (err) {
+        console.error('Native file picker failed:', err);
+      }
+    } else {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.zip,.tar,.jpg,.jpeg,.png';
+      input.onchange = (e: any) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+          setFolderPath(files[0].name);
+        }
+      };
+      input.click();
+    }
+  };
+
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
     if (!folderPath.trim()) {
@@ -53,7 +103,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </span>
               <span className="text-xs text-neutral-500 font-normal">Method 2 / Local Offline</span>
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 id="input-source-path"
                 data-testid="input-source-path"
@@ -63,13 +113,36 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 placeholder="e.g. test_photos or C:\photos\event.zip"
                 className="flex-1 px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-mono transition-all"
               />
-              <button
-                type="button"
-                onClick={() => setFolderPath('test_photos')}
-                className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium border border-neutral-700 transition-colors whitespace-nowrap"
-              >
-                Use test_photos
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  id="btn-browse-folder"
+                  data-testid="btn-browse-folder"
+                  onClick={handleBrowseFolder}
+                  className="px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 text-xs font-medium border border-blue-500/40 transition-colors whitespace-nowrap flex items-center gap-1.5"
+                  title="Browse for folder"
+                >
+                  <Folder className="w-3.5 h-3.5" />
+                  Browse Folder
+                </button>
+                <button
+                  type="button"
+                  id="btn-browse-file"
+                  data-testid="btn-browse-file"
+                  onClick={handleBrowseFile}
+                  className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium border border-neutral-700 transition-colors whitespace-nowrap"
+                  title="Browse for zip archive or file"
+                >
+                  Browse File
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFolderPath('test_photos')}
+                  className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium border border-neutral-700 transition-colors whitespace-nowrap"
+                >
+                  Use test_photos
+                </button>
+              </div>
             </div>
             <p className="mt-1.5 text-xs text-neutral-500">
               Scans JPEG, PNG, HEIC, TIFF files or unzips archive automatically.

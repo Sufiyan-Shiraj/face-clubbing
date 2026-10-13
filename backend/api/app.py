@@ -1,5 +1,4 @@
-"""FastAPI main application setup and static file mounting (BUILD_PLAN Phase 3)."""
-
+import sys
 from pathlib import Path
 from typing import Optional
 from fastapi import FastAPI, HTTPException
@@ -33,7 +32,10 @@ def create_app(
         allow_headers=["*"],
     )
 
-    repo_root = Path(__file__).resolve().parent.parent.parent
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        repo_root = Path(sys._MEIPASS)
+    else:
+        repo_root = Path(__file__).resolve().parent.parent.parent
     state = AppState(work_dir=work_dir, output_dir=output_dir, cache_dir=cache_dir)
     job_manager = JobManager(state=state)
 

@@ -17,7 +17,7 @@ if not exist ".venv\Scripts\python.exe" (
     )
 )
 
-echo [INFO] Running PhotoSorter Engine...
-.venv\Scripts\python.exe -m backend.engine %*
+echo [INFO] Running PhotoSorter Desktop Shell...
+.venv\Scripts\python.exe main.py %*
 
 endlocal

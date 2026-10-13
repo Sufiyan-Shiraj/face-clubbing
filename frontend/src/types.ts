@@ -145,3 +145,14 @@ export interface PhotoInfo {
 }
 
 export type ActiveTab = 'home' | 'progress' | 'people' | 'export' | 'settings';
+
+declare global {
+  interface Window {
+    pywebview?: {
+      api: {
+        select_folder: (title?: string) => Promise<string>;
+        select_file: (title?: string) => Promise<string>;
+      };
+    };
+  }
+}
