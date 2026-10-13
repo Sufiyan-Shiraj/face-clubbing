@@ -114,8 +114,9 @@ class JobManager:
             for k, v in req.settings.model_dump(exclude_unset=True).items():
                 if hasattr(self.state.settings, k) and v is not None:
                     setattr(self.state.settings, k, v)
-        if req.input_path:
-            self.state.settings.input_path = req.input_path
+        chosen_input = req.input_path or req.source_path
+        if chosen_input:
+            self.state.settings.input_path = chosen_input
         env_out = os.environ.get("PHOTOSORTER_OUTPUT_DIR")
         if req.output_dir and (req.output_dir != "export" or not env_out):
             self.state.settings.output_dir = req.output_dir
@@ -124,8 +125,20 @@ class JobManager:
         if req.cache_dir:
             self.state.settings.cache_dir = req.cache_dir
 
+        raw_input = self.state.settings.input_path or "test_photos"
+        input_candidate = Path(raw_input)
+        if not input_candidate.is_absolute():
+            if (Path.cwd() / input_candidate).exists():
+                resolved_input = str((Path.cwd() / input_candidate).resolve())
+            elif (self.state.repo_root / input_candidate).exists():
+                resolved_input = str((self.state.repo_root / input_candidate).resolve())
+            else:
+                resolved_input = str(input_candidate.resolve())
+        else:
+            resolved_input = str(input_candidate)
+
         config = EngineConfig(
-            input_path=self.state.settings.input_path or str(self.state.repo_root / "test_photos"),
+            input_path=resolved_input,
             output_dir=self.state.settings.output_dir,
             cache_dir=self.state.settings.cache_dir,
             distance_threshold=self.state.settings.distance_threshold,

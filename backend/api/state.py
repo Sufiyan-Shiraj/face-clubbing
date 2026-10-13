@@ -9,6 +9,7 @@ Guarantees:
 
 from __future__ import annotations
 import os
+import sys
 import copy
 import json
 import re
@@ -43,7 +44,10 @@ class AppState:
         output_dir: Optional[Path] = None,
         cache_dir: Optional[Path] = None,
     ):
-        self.repo_root = Path(__file__).resolve().parent.parent.parent
+        if getattr(sys, "frozen", False):
+            self.repo_root = Path.cwd()
+        else:
+            self.repo_root = Path(__file__).resolve().parent.parent.parent
         env_work = os.environ.get("PHOTOSORTER_WORK_DIR")
         env_output = os.environ.get("PHOTOSORTER_OUTPUT_DIR")
         env_cache = os.environ.get("PHOTOSORTER_CACHE_DIR")

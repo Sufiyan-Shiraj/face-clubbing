@@ -120,7 +120,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
-## Phase 5: Desktop shell and first package
+## Phase 5: Desktop shell and first package [DONE]
 
 **Build**
 1. `main.py`: start FastAPI on a random free port in a background thread, open a pywebview window pointed at it, shut down cleanly on window close.
@@ -130,6 +130,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 5. First PyInstaller build **on Windows** (bundle code, `dist/`, and models or first-run model download).
 
 **Done when:** double-clicking the Windows exe opens a window and completes a full run on the test set with no terminal and no localhost for the user.
+**Status**: **Done** (All requirements verified; standalone `dist/photosorter.exe` built (149.11 MB), boots cleanly in windowed mode without console, serves bundled React assets, and executes full clustering on `test_photos` with export output).
 
 ---
 

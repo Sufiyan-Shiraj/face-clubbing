@@ -7,6 +7,7 @@ and cleanly shuts down the server on window close.
 """
 
 from __future__ import annotations
+import os
 import sys
 import time
 import socket
@@ -15,6 +16,22 @@ import argparse
 from pathlib import Path
 import uvicorn
 import webview
+
+# Guard against None stdout/stderr in windowed (noconsole) GUI mode
+if sys.stdout is None:
+    try:
+        log_dir = Path.home() / ".photosorter"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        sys.stdout = open(log_dir / "photosorter.log", "a", encoding="utf-8")
+    except Exception:
+        sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    try:
+        log_dir = Path.home() / ".photosorter"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        sys.stderr = open(log_dir / "photosorter.log", "a", encoding="utf-8")
+    except Exception:
+        sys.stderr = open(os.devnull, "w")
 
 # Ensure repo root is on sys.path
 if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
@@ -130,7 +147,7 @@ def main():
     server_thread = ServerThread(app=app, host=host, port=port)
     server_thread.start()
 
-    if not wait_for_server(host, port, timeout=10.0):
+    if not wait_for_server(host, port, timeout=30.0):
         print(f"[ERROR] Failed to start local server on {host}:{port}")
         server_thread.stop()
         sys.exit(1)
@@ -171,4 +188,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)

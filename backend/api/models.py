@@ -33,6 +33,7 @@ class SettingsModel(BaseModel):
 
 class JobStartRequest(BaseModel):
     input_path: Optional[str] = None
+    source_path: Optional[str] = None
     output_dir: Optional[str] = "export"
     cache_dir: Optional[str] = None
     settings: Optional[SettingsModel] = None
