@@ -46,7 +46,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
    - Tests prove that re-running the engine with a changed config and the same `edits.json` preserves the organizer's merges.
 3. **Allowlists and tests keyed by face ID.** Replace every hard-coded cluster ID (for example the collage allowlist in `verify_final.py`) with face-ID or photo-ID based rules. Move the script to `eval/verify_export.py`.
 4. **Evaluation package** in `eval/`: `ground_truth.json` loader (sets + `different`), the same-photo negative generator, and a script that prints the SPEC 18 table (recall and false pairs at 0.50 to 0.80, standard and flip). Include the existing three sets.
-5. **Public bundle filter:** the exporter writes the public bundle (`config.json`, `people.json`, `faces/`, `thumbs/`) separately from organizer-only files, and never copies `suggestions.json`, `edits.json`, `id_map.json` or `.cache/` into it. Add a test.
+5. **Public bundle filter:** the exporter writes the public bundle (`config.json`, `people.json`, `faces/`, `thumbs/`, plus optional viewer build `index.html`, `assets/`, and `gallery.html`) separately from organizer-only files, and never copies `suggestions.json`, `edits.json`, `id_map.json` or `.cache/` into it. Enforced in `tests/test_exporter.py` and `eval/verify_export.py` Check 2.
 6. **Config:** add `hide_single_photo_default` to `config.json` (default false).
 7. **Gated, not changed:** leave `flip_average` off. Add it to the evaluation table only.
 
@@ -70,8 +70,10 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 6. Theming from `config.json` (title, logo, accent, font, footer).
 7. Mobile-first responsive layout.
 8. Deploy test to GitHub Pages or Cloudflare Pages using a Phase 1b bundle.
+9. **Standalone HTML gallery (`gallery.html`):** Single-file zero-server gallery embedded in the public bundle. Works purely via `file://` protocol with no local or web server required. Relative paths for thumbnails and face crops. Full photo reachability across all people and unrecognized photos. Download links dynamically rendered or hidden per `config.json`.
+10. **Standalone gallery verification:** Automated verification opening `gallery.html` with no server, asserting every photo reachable and download links present or hidden per config.
 
-**Done when:** a Phase 1b export dropped into the viewer works end to end on a phone and a laptop, swapping `config.json` changes the look without code changes, and every photo can be reached from some screen.
+**Done when:** a Phase 1b export dropped into the viewer works end to end on a phone and a laptop, swapping `config.json` changes the look without code changes, every photo can be reached from some screen, and `gallery.html` opens cleanly offline without a server.
 
 ---
 

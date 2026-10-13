@@ -172,11 +172,33 @@ def test_public_bundle_hygiene(tmp_path: Path):
     exporter = BundleExporter(output_dir=export_dir)
     exporter.export(result)
 
-    allowed_entries = {"config.json", "people.json", "faces", "thumbs"}
+    # Public bundle definition: config.json, people.json, faces/, thumbs/, optional viewer build (index.html, assets/), and gallery.html
+    allowed_public_entries = {"config.json", "people.json", "faces", "thumbs", "index.html", "assets", "gallery.html"}
+    organizer_only = {"suggestions.json", "edits.json", "id_map.json", ".cache"}
+
+    # 1. Base exporter produces core bundle
     actual_entries = {p.name for p in export_dir.iterdir()}
-    assert actual_entries == allowed_entries, f"Export directory contains unexpected files: {actual_entries - allowed_entries}"
-    
-    # Explicitly assert organizer-only files are NOT present
-    for forbidden in [".cache", "suggestions.json", "edits.json", "id_map.json"]:
+    assert actual_entries.issubset(allowed_public_entries), f"Export contains disallowed files: {actual_entries - allowed_public_entries}"
+    assert actual_entries == {"config.json", "people.json", "faces", "thumbs"}
+
+    # 2. Add optional viewer build files and standalone gallery.html -> all allowed
+    (export_dir / "index.html").write_text("<!doctype html><html></html>", encoding="utf-8")
+    (export_dir / "assets").mkdir()
+    (export_dir / "gallery.html").write_text("<!doctype html><html></html>", encoding="utf-8")
+    updated_entries = {p.name for p in export_dir.iterdir()}
+    assert updated_entries == allowed_public_entries
+
+    # 3. Explicitly assert organizer-only files are rejected
+    for forbidden in organizer_only:
         assert not (export_dir / forbidden).exists(), f"Forbidden organizer file found in public export: {forbidden}"
+        # Negative check: injecting organizer file violates bundle hygiene
+        bad_dir = tmp_path / f"bad_export_{forbidden.strip('.')}"
+        bad_dir.mkdir()
+        if forbidden == ".cache":
+            (bad_dir / forbidden).mkdir()
+        else:
+            (bad_dir / forbidden).write_text("{}", encoding="utf-8")
+        bad_entries = {p.name for p in bad_dir.iterdir()}
+        assert not bad_entries.issubset(allowed_public_entries)
+        assert bool(bad_entries & organizer_only)
 

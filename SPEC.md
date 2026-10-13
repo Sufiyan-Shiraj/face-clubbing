@@ -189,9 +189,14 @@ Automatic clustering is deliberately conservative: it avoids wrong merges and ac
 export/
   config.json        # theme + event info
   people.json        # people and their photos
-  faces/             # person crops (p001.jpg ...) and unrecognized-face crops (u001.jpg ...)
+  faces/             # person crops (and unrecognized-face crops)
   thumbs/            # one thumbnail per photo: <photo_id>.jpg
+  index.html         # optional viewer web app build
+  assets/            # optional viewer web app static assets (JS/CSS)
+  gallery.html       # optional zero-server standalone HTML gallery
 ```
+
+Any organizer-only files (suggestions.json, edits.json, id_map.json, .cache/) are strictly forbidden and fail verification.
 
 ### 8.2 Organizer-only files (never published; excluded from the public bundle)
 
@@ -409,6 +414,7 @@ On Linux create the venv with `--system-site-packages` so pywebview sees the sys
 17. **(rev 2)** `flip_average` stays off by default until ground truth has 15+ labelled sets showing a gain; measured so far: +2 true pairs at or below 0.50 and 16 fewer clusters, with no extra collisions or negatives below 0.60.
 18. **(rev 2)** Engine-report rule: reports contain counts, IDs and filenames only; every report table is checked against the JSON by a verification script.
 19. **(rev 2 Phase 1b)** Work directory separation and face-ID verification: the public bundle (`export/`) strictly isolates viewer deliverables (`config.json`, `people.json`, `faces/`, `thumbs/`), while organizer artifacts (`suggestions.json`, `id_map.json`, `edits.json`) and embedding cache reside exclusively in `export.work/`. Verification scripts and test suites strictly forbid hardcoded cluster IDs (`\bp\d{3}\b`) outside comments, referencing faces and photos solely via canonical face IDs and photo IDs with allowlists located in `eval/ground_truth.json`.
+20. **(rev 2 Phase 2/Hygiene)** Public bundle definition and standalone HTML gallery: The public bundle consists of `config.json`, `people.json`, `faces/`, `thumbs/`, plus the optional viewer build (`index.html`, `assets/`) and standalone zero-server `gallery.html`. Organizer-only files (`suggestions.json`, `edits.json`, `id_map.json`, `.cache/`) are strictly forbidden and fail verification checks. The standalone HTML gallery (`gallery.html`) is self-contained with no local or web server required, opening directly via `file://`, rendering all people and thumbnails with photo reachability, and showing or hiding download links per `config.json`.
 
 ## 18. Evaluation and ground truth
 
