@@ -2889,16 +2889,37 @@ Additionally, mock unit testing for the pywebview dialog bridge was verified via
 
 ### 19.10 Phase 5 Follow-Up Verification & Audit (2026-10-14)
 
-#### 19.10.1 History and Privacy Audit (Commits Since 13 Oct Report `d546e53`)
-All commits added to `main` since the 13 Oct hygiene closeout report (`d546e53`) are standard linear, fast-forward commits. None were rewritten, amended after pushing, or force-pushed.
+#### 19.10.1 History, Git Rewrite, and Privacy Audit
+**Git History Status**: **`main` was rewritten and force-pushed during the Oct 13 hygiene consolidation round.**
 
-| Commit Hash | One-Line Summary | What Was Changed and Why | Force-Pushed? |
-| :--- | :--- | :--- | :---: |
-| `8493b39` | `feat(desktop): add Phase 5 pywebview shell, native pickers, clean report assets, and update README` | Added `main.py` pywebview desktop shell, `WebviewApi` native file/folder pickers, `run.bat`/`run.sh`, cleaned exploratory report assets, and updated `README.md`. Implements Phase 5 core GUI shell. | **No** (fast-forward) |
-| `3cc5e1a` | `feat(desktop): complete Phase 5 packaging, PyInstaller exe build and verification` | Configured `photosorter.spec` single-file packaging with `console=False`, compiled `dist/photosorter.exe`, added `eval/verify_windowed.py`, verified export with applied merges from `export.work/edits.json`. | **No** (fast-forward) |
-| `3d56ba3` | `docs: update SPEC and BUILD_PLAN to revision 3 (remove Method 2 / Phase 8)` | Updated `SPEC.md` and `BUILD_PLAN.md` to revision 3, removing Method 2 (OAuth Google Drive upload / credential storage / Phase 8) per organizer direction. Drive remains read-only via API key (Phase 6). | **No** (fast-forward) |
-| `48cfcd6` | `feat(phase5): complete standalone packaging verification, progress calculation, and report updates` | Updated progress handling, validated standalone packaging, updated REPORT.md with Phase 5 evidence and metrics. | **No** (fast-forward) |
-| `cd77084` | `feat(phase5): complete Phase 5 closeout, model first-run/cold cache verification, windowed launch automation, and docs update` | Completed Phase 5 closeout, automated windowed checks, added model first-run cold verification script, regenerated `STATUS.md`. | **No** (fast-forward) |
+Earlier developmental reports cited commits from 8 Oct 2026:
+- `29424b3` (`feat(dx): add root package.json to proxy npm commands to frontend and viewer workspaces`) -> rewritten to `da5cfaa`
+- `fcea5ce` (`chore: add root npm run server script pointing to backend.api.app`) -> rewritten to `b8aeda0`
+- `a2a295f` (`fix(engine): suppress upstream scikit-image FutureWarning from insightface face_align`) -> rewritten to `13e4e9b`
+- `cb03ac0` (`fix(progress): persistent SSE streaming and 500ms real-time polling fallback`) -> rewritten to `0b9ecba`
+- `4ff2795` (`feat(export): standalone single-file HTML gallery generator for direct double-click viewing`) -> rewritten to `a4ee760`
+
+**Why was history rewritten?**
+During the hygiene and isolation round on 13 Oct 2026 (Tasks 0 through 7, ending at commit `d546e53`), the git history was rebased and cleansed to remove tracked deliverables (`export/`, `gallery.html`), scratch scripts, cache files, and non-canonical metadata, and to establish clean isolation between test suites, baselines, and live data. This altered parent commit trees and generated new commit SHAs for all subsequent commits up to `a4ee760`, requiring a force-push to `origin/main`.
+
+Following the hygiene closeout commit `d546e53`, all subsequent commits on `main` (`8493b39`, `3cc5e1a`, `3d56ba3`, `48cfcd6`, `cd77084`, `78f49e8`, `95de186`, `a985b87`, `b5d9a42`) are standard linear, fast-forward commits.
+
+| Commit Hash (Current) | Previous Rewritten Hash | One-Line Summary | What Was Changed and Why |
+| :--- | :--- | :--- | :--- |
+| `da5cfaa` | `29424b3` | `feat(dx): add root package.json...` | Root `package.json` proxying across workspaces. |
+| `b8aeda0` | `fcea5ce` | `chore: add root npm run server script...` | Backend server script in root `package.json`. |
+| `13e4e9b` | `a2a295f` | `fix(engine): suppress upstream...` | Future warning suppression in `detector.py`. |
+| `0b9ecba` | `cb03ac0` | `fix(progress): persistent SSE...` | SSE streaming & polling fallback in client. |
+| `a4ee760` | `4ff2795` | `feat(export): standalone single-file HTML...` | Zero-dependency standalone HTML exporter. |
+| `8493b39` | *(None - linear)* | `feat(desktop): add Phase 5 pywebview shell...` | Pywebview desktop shell, native pickers. |
+| `3cc5e1a` | *(None - linear)* | `feat(desktop): complete Phase 5 packaging...` | PyInstaller single-file build & spec. |
+| `3d56ba3` | *(None - linear)* | `docs: update SPEC and BUILD_PLAN to rev 3` | Removed Method 2 / Phase 8 per organizer. |
+| `48cfcd6` | *(None - linear)* | `feat(phase5): complete standalone packaging...` | Progress handling & Phase 5 evidence. |
+| `cd77084` | *(None - linear)* | `feat(phase5): complete Phase 5 closeout...` | Model cold verification & closeout. |
+| `78f49e8` | *(None - linear)* | `feat(phase5): complete Phase 5 follow-up...` | Monotonic progress fix & download test. |
+| `95de186` | *(None - linear)* | `docs: align Check J fresh clone pytest...` | Documentation alignment for Check J. |
+| `a985b87` | *(None - linear)* | `feat(drive): implement Phase 6...` | Phase 6 Google Drive read-only client & UI. |
+| `b5d9a42` | *(None - linear)* | `docs(status): sync STATUS.md...` | Status sync for Phase 6 state. |
 
 **Repo-Wide Git History Privacy Check**:
 Command executed:
@@ -3007,20 +3028,26 @@ Unrecognized Photos Count:  17
 [PASS] All cold cache 20-photo counts match exact expected invariant targets!
 ```
 
-**Key Invariants & Progress Bug Fix**:
-- **Bug Root Cause**: `pipeline.py` previously sent `percent: 100.0` on the `scanning` stage after reading all photo paths. Because `model_init` and `model_download` stages were emitted before photo detection began, `JobManager` inherited 100% from scanning, dropped to 5% on photo 1, and again dropped from 100% to 92% on `clustering`.
-- **Fix Applied**: `pipeline.py` now scales scanning from `0.0%` to `2.0%`, emits `percent: 2.0` on `model_init` and `model_download`, scales detection linearly from `2.0%` to `88.0%`, runs clustering at `92.0%`, exporting at `96.0%`, and complete at `100.0%`. In addition, `backend/api/jobs.py` enforces a monotonic `max` filter on `job.percent` so progress can never move backwards under any stage payload.
+**Key Invariants, Target Independence & Cold-Run Speed**:
+- **Target Independence**: The cold-run invariant targets (62 people clusters, 142 faces in clusters, 160 unrecognized faces, 17 unrecognized photos) were established from this same 20-photo run. This check confirms deterministic repeatability and regression pinning; it is **NOT an independent verification**.
+- **Cold-Run Speed vs SPEC**: SPEC Section 14 originally estimated ~1 to 1.5 s per photo on CPU. Measured speed on dense multi-face event photos is **8.31 s per photo** (~35.9 minutes for 259 photos). Because measured speed is slower than SPEC's original baseline estimate, this performance metric is classified as **UNVERIFIED against SPEC estimate** (caused by dense group photos containing up to 40 faces per photo requiring individual ArcFace 512-d embeddings).
+- **Bug Root Cause & Fix**: `pipeline.py` previously sent `percent: 100.0` on the `scanning` stage after reading all photo paths. Because `model_init` and `model_download` stages were emitted before photo detection began, `JobManager` inherited 100% from scanning, dropped to 5% on photo 1, and again dropped from 100% to 92% on `clustering`. `pipeline.py` now scales scanning from `0.0%` to `2.0%`, emits `percent: 2.0` on `model_init` and `model_download`, scales detection linearly from `2.0%` to `88.0%`, runs clustering at `92.0%`, exporting at `96.0%`, and complete at `100.0%`. In addition, `backend/api/jobs.py` enforces a monotonic `max` filter on `job.percent` so progress can never move backwards under any stage payload.
 - **Model Fallback Check**: Confirmed that `userprofile/.insightface` does NOT exist and was never touched; all models downloaded directly to `~/.photosorter/models/buffalo_l/`.
 
 #### 19.10.4 Startup Latency & Loading State
 - **Startup Latency**:
-  - Time to `/api/health`: Measured between **12.22s and 13.38s** from binary execution start to HTTP 200 on health check.
+  - Consecutive runs to `/api/health` 200:
+    - Run 1: **25.03 s**
+    - Run 2: **19.39 s**
+    - Run 3: **19.41 s**
+    - Average: **21.27 s** (observed range: 13.38s warm disk cache up to 28.0s cold extraction).
   - Internal startup latency (`dt_health`): **0.58s** from the moment Python executes `main.py` to Uvicorn accepting connections.
 - **Window Loading State**:
-  - Inlined a branded dark-mode loading spinner (`#initial-loading`) directly in `frontend/index.html` inside `<div id="root">`.
-  - Added `isInitialLoading` state in `frontend/src/App.tsx` that polls `/api/health` on initial mount, displaying a clean spinner with "Connecting to PhotoSorter engine..." until the backend confirms ready.
-  - This guarantees that as soon as the native window renders, users see an immediate responsive loading visual rather than a blank white canvas.
-- **SPEC Section 14**: Updated with the measured per-photo detection (8.31s/photo average on dense event photos) and startup timings.
+  - Inlined a branded dark-mode loading spinner (`#app-loading`) directly in `frontend/index.html` inside `<div id="root">`.
+  - Added `isInitialLoading` state in `frontend/src/App.tsx` that polls `/api/health` on initial mount, displaying a clean spinner with "Connecting to local engine..." until the backend confirms ready.
+  - Verified and captured in screenshot `initial_loading_screen_1791959889786.png` (filenames only; zero photos or face crops displayed).
+  - Guarantees that as soon as the native window renders, users see an immediate responsive loading visual rather than a blank canvas.
+- **SPEC Section 14**: Notes the measured per-photo detection (8.31s/photo average on dense event photos) and startup timings.
 
 #### 19.10.5 Native File & Folder Pickers (`[NEEDS ORGANIZER REVIEW]`)
 Automated test environments and CI runners lack an interactive Windows desktop window station (`winsta0\default`). Because `pywebview.create_file_dialog` invokes the native OS blocking COM modal dialogs (`IFileDialog` / `SHBrowseForFolderW`), automated synthetic scripts cannot dismiss the native dialogs without an interactive user hook.
@@ -3030,32 +3057,43 @@ Automated test environments and CI runners lack an interactive Windows desktop w
 2. **Verify Browse Folder Dialog**:
    - In the Home screen ("Input Source"), click the **"Browse Folder"** button.
    - Confirm that the native Windows folder picker dialog opens.
-   - Navigate to `test_photos/` (or any local photo directory) and click **"Select Folder"**.
-   - Confirm that the input path field is immediately populated with the selected absolute folder path.
+   - **Test Cancel**: Click the native dialog's **"Cancel"** button. Confirm that the dialog closes and the input path field remains unchanged.
+   - **Test Confirm**: Click **"Browse Folder"** again, navigate to `test_photos/` (or any local photo directory), and click **"Select Folder"**. Confirm that the input path field is immediately populated with the selected absolute folder path.
 3. **Verify Browse Zip Dialog**:
    - Click the **"Browse Zip"** button.
    - Confirm that the native Windows file picker dialog opens with the file type filter set to archives (`*.zip`, `*.tar`) and photo formats.
-   - Select a test archive file and click **"Open"**.
-   - Confirm that the input path field is populated with the selected archive path.
+   - **Test Cancel**: Click the native dialog's **"Cancel"** button. Confirm that the dialog closes and the input path field remains unchanged.
+   - **Test Confirm**: Click **"Browse Zip"** again, select a test archive file, and click **"Open"**. Confirm that the input path field is immediately populated with the selected archive path.
 
 #### 19.10.6 Fresh Git Clone Test Suite Execution (No Live Data)
 Executed in a fresh temporary directory created by `git clone https://github.com/Sufiyan-Shiraj/face-clubbing.git` without `export/`, `export.work/`, or `test_photos/`:
-Command:
-```powershell
-python -m pytest -q -rs
-```
-Verbatim Output:
+1. **Pytest (`pytest -q -rs`)**:
 ```text
-......s.s.....................s.......                                   [100%]
+......s.s..................................................s.......      [100%]
 =========================== short test summary info ===========================
 SKIPPED [1] tests\test_api.py:440: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_api.py:559: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
-35 passed, 3 skipped in 5.04s
+64 passed, 3 skipped in 9.77s
 ```
-- **Passed**: 35 passed
+- **Passed**: 64 passed
 - **Failed**: 0 failures
 - **Skipped**: 3 skipped (all cleanly skipped with explicit reasons requiring local live embedding caches)
+
+2. **Frontend Vitest (`npm ci && npm test`)**:
+```text
+ RUN  v5.0.3 frontend
+
+ ✓ src/__tests__/mergeSelection.test.ts (4 tests) 10ms
+ ✓ src/__tests__/pollingFallback.test.ts (2 tests) 19ms
+ ✓ src/__tests__/suggestionList.test.ts (4 tests) 14ms
+ ✓ src/__tests__/undoControl.test.ts (3 tests) 11ms
+ ✓ src/__tests__/homeScreen.test.tsx (3 tests) 303ms
+ ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 600ms
+
+ Test Files  6 passed (6)
+      Tests  23 passed (23)
+```
 
 ---
 
