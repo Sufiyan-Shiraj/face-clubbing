@@ -3038,6 +3038,25 @@ Automated test environments and CI runners lack an interactive Windows desktop w
    - Select a test archive file and click **"Open"**.
    - Confirm that the input path field is populated with the selected archive path.
 
+#### 19.10.6 Fresh Git Clone Test Suite Execution (No Live Data)
+Executed in a fresh temporary directory created by `git clone https://github.com/Sufiyan-Shiraj/face-clubbing.git` without `export/`, `export.work/`, or `test_photos/`:
+Command:
+```powershell
+python -m pytest -q -rs
+```
+Verbatim Output:
+```text
+......s.s.....................s.......                                   [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_api.py:440: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_api.py:559: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
+35 passed, 3 skipped in 5.04s
+```
+- **Passed**: 35 passed
+- **Failed**: 0 failures
+- **Skipped**: 3 skipped (all cleanly skipped with explicit reasons requiring local live embedding caches)
+
 ---
 
 ## APPENDIX A: HISTORICAL ENGINE EVOLUTION & INTERMEDIATE STAGES (SUPERSEDED)

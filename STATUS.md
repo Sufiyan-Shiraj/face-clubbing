@@ -352,12 +352,12 @@ python -m pytest -q -rs
 ```
 Verbatim Output:
 ```text
-......s.s...............................                                 [100%]
+......s.s.....................s.......                                   [100%]
 =========================== short test summary info ===========================
 SKIPPED [1] tests\test_api.py:440: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_api.py:559: Requires baseline fixture and embedding cache
-SKIPPED [1] tests\test_isolation.py:23: Requires export/ and export.work/ embedding cache
-35 passed, 3 skipped in 6.42s
+SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
+35 passed, 3 skipped in 5.04s
 ```
 - **Passed**: 35 passed
 - **Failed**: 0 failures
