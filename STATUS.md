@@ -1,6 +1,6 @@
 # PhotoSorter Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-14T12:12:00+05:30  
+**Generated**: 2026-10-14T17:28:00+05:30  
 **Audit Mode**: Verification Gaps Resolution & Full State Audit  
 
 ---
@@ -26,6 +26,7 @@
   ```
 - **`git log --oneline -15`**:
   ```text
+  6f4c510 docs: resolve verification gaps in REPORT.md and regenerate STATUS.md
   b5d9a42 docs(status): sync STATUS.md with Phase 6 commit and verification state
   a985b87 feat(drive): implement Phase 6 Google Drive read-only integration, UI link input, and mocked test suite
   95de186 docs: align Check J fresh clone pytest summary between REPORT.md and STATUS.md
@@ -40,7 +41,6 @@
   65cbdc6 feat(eval): add verify_live.py for diffing live organizer output against baseline
   2e4c6b9 docs: formalize public bundle definition and standalone gallery in SPEC and BUILD_PLAN
   9957c57 feat(eval): execute full pytest suite in verify_export Check 6
-  c071205 feat(eval): isolate test suites, verify scripts, and e2e from live organizer data
   ```
 
 ---
@@ -83,7 +83,7 @@ Ran with `.venv/Scripts/python.exe`:
 Ran with `.venv\Scripts\pytest -q -rs`:
 ```text
 ...................................................................      [100%]
-67 passed in 78.01s (0:01:18)
+67 passed in 171.89s (0:02:51)
 ```
 - **Passed**: 67 passed
 - **Failed**: 0
@@ -157,37 +157,37 @@ LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
 #### 1. `frontend/` (`npm test`)
 ```text
 > photosorter-frontend@1.0.0 test
-> vitest run
+> vitest run --run
 
 
  RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
 
- ✓ src/__tests__/pollingFallback.test.ts (2 tests) 21ms
- ✓ src/__tests__/mergeSelection.test.ts (4 tests) 10ms
- ✓ src/__tests__/homeScreen.test.tsx (3 tests) 180ms
- ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 484ms
- ✓ src/__tests__/suggestionList.test.ts (4 tests) 8ms
- ✓ src/__tests__/undoControl.test.ts (3 tests) 5ms
+ ✓ src/__tests__/pollingFallback.test.ts (2 tests) 24ms
+ ✓ src/__tests__/mergeSelection.test.ts (4 tests) 9ms
+ ✓ src/__tests__/suggestionList.test.ts (4 tests) 12ms
+ ✓ src/__tests__/undoControl.test.ts (3 tests) 8ms
+ ✓ src/__tests__/homeScreen.test.tsx (3 tests) 198ms
+ ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 341ms
 
  Test Files  6 passed (6)
       Tests  23 passed (23)
-   Duration  7.25s
+   Duration  85.49s
 ```
 *(Note on previous stale status: STATUS §3 had previously recorded 16 passed across 5 files from the Phase 5 closeout. Phase 6 added `frontend/src/__tests__/driveIntegration.test.tsx` containing 7 tests, bringing the total frontend Vitest suite to 23 passed across 6 files.)*
 
 #### 2. `viewer/` (`npm test`)
 ```text
 > photosorter-viewer@1.0.0 test
-> vitest run
+> vitest run --run
 
 
  RUN  v5.0.3 C:/Users/DELL/face-clubbing/viewer
 
- ✓ src/__tests__/viewer.test.tsx (6 tests) 362ms
+ ✓ src/__tests__/viewer.test.tsx (6 tests) 423ms
 
  Test Files  1 passed (1)
       Tests  6 passed (6)
-   Duration  3.80s
+   Duration  43.84s
 ```
 
 ### Check E: `node frontend/scripts/e2e.mjs`
@@ -351,7 +351,7 @@ Executed in a fresh temporary directory created by `git clone https://github.com
 SKIPPED [1] tests\test_api.py:440: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_api.py:559: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
-64 passed, 3 skipped in 9.77s
+64 passed, 3 skipped in 8.09s
 ```
 - **Passed**: 64 passed
 - **Failed**: 0 failures
@@ -359,17 +359,22 @@ SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedd
 
 2. **Frontend Vitest (`npm ci && npm test`)**:
 ```text
- RUN  v5.0.3 frontend
+> photosorter-frontend@1.0.0 test
+> vitest run --run
 
- ✓ src/__tests__/mergeSelection.test.ts (4 tests) 10ms
- ✓ src/__tests__/pollingFallback.test.ts (2 tests) 19ms
- ✓ src/__tests__/suggestionList.test.ts (4 tests) 14ms
- ✓ src/__tests__/undoControl.test.ts (3 tests) 11ms
- ✓ src/__tests__/homeScreen.test.tsx (3 tests) 303ms
- ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 600ms
+
+ RUN  v5.0.3 C:/Users/DELL/AppData/Local/Temp/clone_test_894c29cc/frontend
+
+ ✓ src/__tests__/mergeSelection.test.ts (4 tests) 11ms
+ ✓ src/__tests__/pollingFallback.test.ts (2 tests) 22ms
+ ✓ src/__tests__/suggestionList.test.ts (4 tests) 13ms
+ ✓ src/__tests__/undoControl.test.ts (3 tests) 9ms
+ ✓ src/__tests__/homeScreen.test.tsx (3 tests) 204ms
+ ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 286ms
 
  Test Files  6 passed (6)
       Tests  23 passed (23)
+   Duration  48.11s
 ```
 - **Test Files**: 6 passed (6)
 - **Tests**: 23 passed (23)
@@ -377,20 +382,20 @@ SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedd
 ### Check K: Startup Latency & Loading State
 1. **Startup Latency on 3 Consecutive Runs (`scratch/measure_startup.py`)**:
 ```text
---- Run 1: starting dist/photosorter.exe on port 49868 ---
-Run 1: /api/health returned 200 in 25.03 s
---- Run 2: starting dist/photosorter.exe on port 49898 ---
-Run 2: /api/health returned 200 in 19.39 s
---- Run 3: starting dist/photosorter.exe on port 49924 ---
-Run 3: /api/health returned 200 in 19.41 s
+--- Run 1: starting dist/photosorter.exe on port 49596 ---
+Run 1: /api/health returned 200 in 27.33 s
+--- Run 2: starting dist/photosorter.exe on port 51466 ---
+Run 2: /api/health returned 200 in 23.88 s
+--- Run 3: starting dist/photosorter.exe on port 51492 ---
+Run 3: /api/health returned 200 in 18.84 s
 
 Summary of 3 consecutive runs:
-  Run 1: 25.03 s
-  Run 2: 19.39 s
-  Run 3: 19.41 s
-  Average: 21.27 s
+  Run 1: 27.33 s
+  Run 2: 23.88 s
+  Run 3: 18.84 s
+  Average: 23.35 s
 ```
-- Observed variance: Between 13.38s (warm cache) and 25.03s–28.0s (cold disk extraction / CPU load).
+- Observed variance: Between 13.38s (warm cache) and 23.88s–27.33s (cold disk extraction / CPU load).
 
 2. **UI Loading State**:
 - Confirmed: Inlined `#app-loading` element in `frontend/index.html` and `isInitialLoading` state in `frontend/src/App.tsx` display an immediate responsive dark loading screen with spinner, title "PhotoSorter", and subtitle "Connecting to local engine..." before the server is ready.
@@ -496,13 +501,14 @@ git grep -I "data:image/" $(git rev-list --all)
 ## 5. CLOSEOUT VERDICT
 
 Strictly reflecting the verifiable runs recorded in Section 3 of this document:
-- **Full Backend Test Suite**: **67 passed**, 0 failed, 0 skipped (Check A, Check B Check 6).
-- **Frontend Vitest Suite**: **23 passed**, 0 failed across 6 test files (Check D1).
-- **Viewer Vitest Suite**: **6 passed**, 0 failed across 1 test file (Check D2).
-- **Fresh Git Clone Execution (No Live Data)**: **64 passed, 3 skipped** in pytest (skips require local live caches); **23 passed** in frontend Vitest (Check J).
-- **Phase 6 Mocked Drive Suite**: **29 passed** in `tests/test_drive.py` (included in Check A); **7 passed** in `frontend/src/__tests__/driveIntegration.test.tsx` (included in Check D1).
-- **Cold-Run Detection Speed**: **8.31 s/photo** on dense event photos (Check I) -> **UNVERIFIED against SPEC estimate** (1–1.5 s/photo).
-- **Cold-Run Targets**: Derived from this same run; confirms regression determinism, **NOT an independent verification**.
-- **Startup Latency**: 3 consecutive runs measured at **25.03s, 19.39s, 19.41s** (average 21.27s; Check K). Loading screen confirmed via screenshot `initial_loading_screen_1791959889786.png`.
-- **Native Pickers**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps (Check L).
-- **Privacy & Secrets**: Zero photos, faces, API keys, or secrets in git history; git history rewrite during Oct 13 hygiene round explicitly documented.
+- **Full Backend Test Suite (Check A)**: **67 passed**, 0 failed, 0 skipped in `pytest -q -rs`.
+- **Frontend Vitest Suite (Check D1)**: **23 passed**, 0 failed across 6 test files in `npm test` (`frontend/`).
+- **Viewer Vitest Suite (Check D2)**: **6 passed**, 0 failed across 1 test file in `npm test` (`viewer/`).
+- **Fresh Git Clone Pytest Execution (Check J1)**: **64 passed, 3 skipped** in `pytest -q -rs` (skips require local live caches).
+- **Fresh Git Clone Frontend Vitest Execution (Check J2)**: **23 passed** across 6 test files in `npm ci && npm test` (`frontend/`).
+- **Phase 6 Mocked Drive Suite**: **29 passed** in `tests/test_drive.py` (included in Check A 67 total); **7 passed** in `frontend/src/__tests__/driveIntegration.test.tsx` (included in Check D1 23 total).
+- **Cold-Run Detection Speed (Check I)**: **8.31 s/photo** on dense event photos (~35.9 minutes for 259 photos) -> **UNVERIFIED against SPEC estimate** (~1 to 1.5 s/photo).
+- **Cold-Run Invariant Targets (Check I)**: 62 people, 142 faces in clusters, 160 unrecognized faces, 17 unrecognized photos. Established from this same 20-photo run to verify deterministic repeatability -> **NOT an independent verification**.
+- **Startup Latency (Check K)**: 3 consecutive runs measured at **27.33 s, 23.88 s, 18.84 s** (average 23.35 s). Loading screen confirmed via screenshot `initial_loading_screen_1791959889786.png` before server ready (filenames only; zero photos or face crops).
+- **Native Pickers (Check L)**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps.
+- **Privacy & Secrets (Section 4)**: 100% clean repository audit. Main git history rewrite during the Oct 13 hygiene consolidation round is explicitly documented.

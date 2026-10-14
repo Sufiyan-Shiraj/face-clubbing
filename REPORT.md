@@ -3037,10 +3037,10 @@ Unrecognized Photos Count:  17
 #### 19.10.4 Startup Latency & Loading State
 - **Startup Latency**:
   - Consecutive runs to `/api/health` 200:
-    - Run 1: **25.03 s**
-    - Run 2: **19.39 s**
-    - Run 3: **19.41 s**
-    - Average: **21.27 s** (observed range: 13.38s warm disk cache up to 28.0s cold extraction).
+    - Run 1: **27.33 s**
+    - Run 2: **23.88 s**
+    - Run 3: **18.84 s**
+    - Average: **23.35 s** (observed range: 13.38s warm disk cache up to 27.33s cold extraction).
   - Internal startup latency (`dt_health`): **0.58s** from the moment Python executes `main.py` to Uvicorn accepting connections.
 - **Window Loading State**:
   - Inlined a branded dark-mode loading spinner (`#app-loading`) directly in `frontend/index.html` inside `<div id="root">`.
@@ -3074,7 +3074,7 @@ Executed in a fresh temporary directory created by `git clone https://github.com
 SKIPPED [1] tests\test_api.py:440: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_api.py:559: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
-64 passed, 3 skipped in 9.77s
+64 passed, 3 skipped in 8.09s
 ```
 - **Passed**: 64 passed
 - **Failed**: 0 failures
