@@ -28,6 +28,7 @@ class FaceDetector:
         max_yaw: float = 70.0,
         max_image_dim: int = 1600,
         providers: Optional[List[str]] = None,
+        progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     ):
         self.model_name = model_name
         if model_root is None:
@@ -40,6 +41,7 @@ class FaceDetector:
         self.max_yaw = max_yaw
         self.max_image_dim = max_image_dim
         self.providers = providers
+        self.progress_callback = progress_callback
         self._app = None
 
     def _init_app(self):
@@ -63,6 +65,17 @@ class FaceDetector:
                 except Exception:
                     pass
 
+            if not target_model_dir.exists() or not any(target_model_dir.glob("*.onnx")):
+                if self.progress_callback:
+                    self.progress_callback({
+                        "stage": "model_download",
+                        "current": 0,
+                        "total": 1,
+                        "percent": 0.0,
+                        "progress": 0.0,
+                        "message": f"Downloading {self.model_name} face model weights (~300MB) to ~/.photosorter/models... Please keep internet connected.",
+                    })
+
             try:
                 app = FaceAnalysis(**kwargs)
                 app.prepare(ctx_id=0, det_size=self.det_size)
@@ -70,7 +83,7 @@ class FaceDetector:
             except Exception as e:
                 if not target_model_dir.exists() or not any(target_model_dir.glob("*.onnx")):
                     raise RuntimeError(
-                        f"InsightFace model '{self.model_name}' is not available at '{target_model_dir}' and automatic download failed. "
+                        f"InsightFace model '{self.model_name}' is not available at '{target_model_dir}' and automatic download failed ({e}). "
                         f"Please ensure an internet connection on first run to download models to '{target_model_dir}', or manually place the model ONNX files."
                     ) from e
                 raise RuntimeError(f"Failed to initialize FaceAnalysis model '{self.model_name}': {e}") from e

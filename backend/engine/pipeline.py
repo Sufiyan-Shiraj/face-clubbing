@@ -44,6 +44,7 @@ class EngineConfig:
     attach_distance_cap: float = 0.45
     flip_average: bool = False
     include_maybe: bool = False
+    model_root: Optional[str] = None
     suggestions_path: Optional[str | Path] = None
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None
     cancel_check: Optional[Callable[[], bool]] = None
@@ -139,10 +140,12 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                     notify({"stage": "model_init", "message": "Initializing InsightFace model..."})
                     detector = FaceDetector(
                         model_name="buffalo_l",
+                        model_root=config.model_root,
                         min_det_score=config.min_det_score,
                         min_face_size=config.min_face_size,
                         max_yaw=config.max_yaw,
                         max_image_dim=config.max_image_dim,
+                        progress_callback=notify,
                     )
 
                 rgb_img, orig_w, orig_h, pil_img = loader.load_image(item.file_path)

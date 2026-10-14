@@ -1,6 +1,6 @@
 # PhotoSorter Verification & Phase 5 Delivery Report
 
-**Date**: 2026-10-13  
+**Date**: 2026-10-14  
 **Project**: Face Sorting Engine (`face-clubbing`)  
 **Status**: Phase 1b Complete, Phase 2 Complete (All Rows 1-15 PASS), Phase 3 Complete, Phase 4 Complete, Hygiene & Isolation Round Complete (Tasks 0-7 COMPLETE), Phase 5 Complete (Desktop Shell & Windows Packaging).
 
@@ -2642,11 +2642,16 @@ Both `config.json` and `people.json` load with HTTP 200 status over the public i
 | **Clusters Produced on `test_photos`** | **188 people (with 4 preserved edits)** | 192 clean baseline / 188 with edits | Verified |
 | **Export Directory Integrity** | `['assets', 'config.json', 'faces', 'gallery.html', 'index.html', 'people.json', 'thumbs']` | Complete static export bundle | Verified |
 
-### 19.3 Automated End-to-End Verification Transcript (`scratch/verify_dist_exe.py`)
+### 19.3 Verification Transcripts (SUPERSEDED by eval/verify_exe.py & eval/verify_windowed.py)
 
-The script `scratch/verify_dist_exe.py` executes the newly built standalone `dist/photosorter.exe` binary directly, tests HTTP health readiness, validates frontend bundle mounting, triggers the clustering pipeline on `test_photos` via REST API, monitors progress to completion, verifies people count, and cleanly shuts down the process:
+> [!NOTE]
+> **SUPERSEDED (2026-10-14)**: The preliminary scratch run transcript below (`scratch/verify_dist_exe.py`) is marked **SUPERSEDED** and kept for historical record. Canonical Phase 5 packaging and desktop verification are formally executed by:
+> - `eval/verify_exe.py`: Isolated temp execution against clean baseline fixtures (192 people, 445 unrecognized faces, 168 unrecognized photos, 259 total photos).
+> - `eval/verify_windowed.py`: Automated Windows Win32 verification proving native top-level window titled "PhotoSorter", zero console window, health HTTP 200, and clean WM_CLOSE teardown.
+> - `eval/verify_models_cold.py`: Proves model download failure clear offline error and cold embedding cache extraction on 20 photos.
 
 ```text
+[SUPERSEDED - Historical Scratch Run Log]
 Executable found: C:\Users\DELL\face-clubbing\dist\photosorter.exe
 Size: 156355635 bytes (149.11 MB)
 Launching: C:\Users\DELL\face-clubbing\dist\photosorter.exe --no-gui --port 8996
@@ -2772,6 +2777,115 @@ Total Photo Records: 259 (Baseline expected: 259)
 ALL PHASE 5 EXECUTABLE REQUIREMENTS VERIFIED SUCCESSFULLY!
 ================================================================================
 ```
+
+### 19.7 Model First-Run Download & Cold Embedding Cache Verification (`eval/verify_models_cold.py`)
+
+1. **Model Storage Location**:
+   - Primary model location: `~/.photosorter/models/buffalo_l/`
+   - Legacy automatic fallback: checks `~/.insightface/models/buffalo_l/` if present.
+   - Model weights are strictly excluded from git tracking (`.gitignore`).
+
+2. **UI Progress State & Error Handling**:
+   - Emits structured progress stage `{"stage": "model_download", "percent": 0.0, "message": "Downloading face detection model..."}` if weights are not found locally on first launch.
+   - Raises an actionable `RuntimeError` advising the user if network is unreachable or download fails.
+
+3. **Verbatim Verification Output**:
+```text
+================================================================================
+VERIFY MODELS & COLD EMBEDDING CACHE RUN
+================================================================================
+--- TEST 1: Model folder unavailable & offline download failure ---
+[INFO] Tested model initialization with isolated non-existent folder and blocked network:
+RuntimeError: InsightFace model 'buffalo_l' is not available at 'C:\Users\DELL\AppData\Local\Temp\test_models_offline_we8f06t4\empty_userprofile\.photosorter\models\buffalo_l' and automatic download failed (HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /deepinsight/insightface/releases/download/model-zoo/buffalo_l.zip (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))). Please ensure an internet connection on first run to download models to 'C:\Users\DELL\AppData\Local\Temp\test_models_offline_we8f06t4\empty_userprofile\.photosorter\models\buffalo_l', or manually place the model ONNX files.
+
+[PASS] Clear offline error verified when model folder is unavailable!
+
+--- TEST 2: COLD embedding cache on 20-photo subset ---
+[OK] Verified COLD embedding cache in C:\Users\DELL\AppData\Local\Temp\test_cold_cache_84e_dz1v\work (0 pre-seeded files)
+[OK] Server started on port 63710
+[INFO] Started sorting 20-photo subset from: C:\Users\DELL\AppData\Local\Temp\test_subset_20_b5q9_ypf
+       [running] stage=model_init percent=100.0% msg=Initializing InsightFace model...
+       [running] stage=processing percent=5.0% msg=[1/20] IMG-20260226-WA0037.jpg (0 faces)
+       [running] stage=processing percent=10.0% msg=[2/20] IMG-20260226-WA0047.jpg (0 faces)
+       [running] stage=processing percent=15.0% msg=[3/20] IMG-20260227-WA0110.jpg (3 faces)
+       [running] stage=processing percent=20.0% msg=[4/20] IMG_20260227_220404.jpg (3 faces)
+       [running] stage=processing percent=25.0% msg=[5/20] IMG_20260227_220436.jpg (13 faces)
+       [running] stage=processing percent=30.0% msg=[6/20] IMG_20260227_220543.jpg (4 faces)
+       [running] stage=processing percent=35.0% msg=[7/20] IMG_20260227_222103.jpg (7 faces)
+       [running] stage=processing percent=40.0% msg=[8/20] IMG_20260303_233345.jpg (22 faces)
+       [running] stage=processing percent=45.0% msg=[9/20] IMG_20260303_233547.jpg (28 faces)
+       [running] stage=processing percent=50.0% msg=[10/20] IMG_20260303_233740.jpg (21 faces)
+       [running] stage=processing percent=55.0% msg=[11/20] IMG_20260303_234707.jpg (18 faces)
+       [running] stage=processing percent=60.0% msg=[12/20] IMG_20260304_000154.jpg (38 faces)
+       [running] stage=processing percent=65.0% msg=[13/20] IMG_20260304_000554.jpg (1 faces)
+       [running] stage=processing percent=70.0% msg=[14/20] IMG_20260304_001930.jpg (28 faces)
+       [running] stage=processing percent=75.0% msg=[15/20] IMG_20260304_002052.jpg (15 faces)
+       [running] stage=processing percent=80.0% msg=[16/20] IMG_20260304_002232.jpg (40 faces)
+       [running] stage=processing percent=85.0% msg=[17/20] IMG_20260304_002918.jpg (29 faces)
+       [running] stage=processing percent=90.0% msg=[18/20] IMG_20260304_080950.jpg (22 faces)
+       [running] stage=processing percent=95.0% msg=[19/20] IMG_20260309_211339.jpg (4 faces)
+       [running] stage=clustering percent=92.0% msg=Clustering faces by person with second-pass merge...
+       [running] stage=exporting percent=96.0% msg=Generating static export bundle in C:\Users\DELL\AppData\Local\Temp\test_cold_cache_84e_dz1v\export...
+       [completed] stage=complete percent=100.0% msg=Job finished. Clustered 62 people.
+[PASS] Cold run on 20 photos completed in 185.51s
+
+==================================================
+COLD CACHE RUN RESULTS (20 Photos):
+Total Photos Processed:     20
+Total Faces Detected:       302
+  - Faces in Clusters:      142
+  - Unrecognized Faces:     160
+People Clusters Count:      62
+Unrecognized Photos Count:  17
+==================================================
+[PASS] Cold embedding cache test on 20 photos verified successfully!
+```
+
+### 19.8 Windowed Desktop Shell Launch Verification (`eval/verify_windowed.py`)
+
+The standalone Windows executable (`dist/photosorter.exe`) was launched in windowed GUI mode without `--no-gui` to programmatically verify native window instantiation, console suppression, frontend page loading, and clean window-close termination.
+
+```text
+================================================================================
+PHOTOSORTER WINDOWED LAUNCH VERIFICATION (eval/verify_windowed.py)
+================================================================================
+[INFO] PE Subsystem: 2 (2 = Windows GUI, 3 = Windows CUI/Console)
+[PASS] (b) PE Subsystem is IMAGE_SUBSYSTEM_WINDOWS_GUI (no console window)
+
+[INFO] Launching executable in WINDOWED mode (without --no-gui):
+       C:\Users\DELL\face-clubbing\dist\photosorter.exe --port 53284 --work-dir C:\Users\DELL\AppData\Local\Temp\test_windowed_x5fyb9s2\work --output-dir C:\Users\DELL\AppData\Local\Temp\test_windowed_x5fyb9s2\export
+[PASS] (c) Server online and healthy at http://127.0.0.1:53284/api/health
+[PASS] (c) Frontend page loads successfully (status 200, HTML content served)
+
+[INFO] Searching for top-level window titled 'PhotoSorter'...
+[PASS] (a) Top-level window found: hwnd=3343954, title='PhotoSorter'
+[PASS] (b) Verified no ConsoleWindowClass window associated with the process
+
+[INFO] Sending WM_CLOSE (0x0010) to window hwnd=3343954...
+[PASS] (d) Closing window cleanly ended process (exit code: 0)
+[PASS] (d) Port 53284 successfully released and re-bindable
+
+================================================================================
+ALL WINDOWED LAUNCH CHECKS PASSED AUTOMATICALLY:
+ [PASS] (a) Top-level window titled 'PhotoSorter' appeared
+ [PASS] (b) No console window (PE Subsystem 2 GUI, no ConsoleWindowClass)
+ [PASS] (c) Page loads (health check 200, HTML served on process port)
+ [PASS] (d) WM_CLOSE cleanly terminated process and released bound port
+================================================================================
+```
+
+Additionally, mock unit testing for the pywebview dialog bridge was verified via pytest:
+- `tests/test_api.py::test_pywebview_api_dialogs`: Mocks `webview.windows[0].create_file_dialog` and asserts that `WebviewApi.select_folder` and `WebviewApi.select_file` correctly return user-selected paths.
+
+### 19.9 Post-Phase-4 Architectural Enhancements & Commits
+
+| Commit Hash | One-Line Summary | Test & Implementation Evidence |
+| :--- | :--- | :--- |
+| `da5cfaa` | `feat(dx): add root package.json to proxy npm commands to frontend and viewer workspaces` | Root `package.json` with npm workspace proxying (`npm test`, `npm run build`, `npm run dev`) across `frontend` and `viewer`. |
+| `b8aeda0` | `chore: add root npm run server script pointing to backend.api.app` | Added `"server": "uvicorn backend.api.app:app --reload --port 8000"` to root `package.json`. |
+| `13e4e9b` | `fix(engine): suppress upstream scikit-image FutureWarning from insightface face_align` | Filter in `backend/engine/detector.py`: `warnings.filterwarnings("ignore", category=FutureWarning, module=r"skimage\.transform\._geometric")`. |
+| `0b9ecba` | `fix(progress): persistent SSE streaming and 500ms real-time polling fallback` | `frontend/src/api/client.ts` implements SSE `EventSource` with automated 500ms fallback; unit test in `frontend/src/__tests__/pollingFallback.test.ts`. |
+| `a4ee760` | `feat(export): standalone single-file HTML gallery generator for direct double-click viewing` | `backend/engine/standalone_html.py` bundles export into self-contained HTML gallery with zero external assets; verified in `tests/test_standalone_html.py`. |
 
 ---
 
