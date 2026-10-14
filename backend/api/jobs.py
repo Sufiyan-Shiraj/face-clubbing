@@ -46,6 +46,7 @@ class JobManager:
                 current=self.current,
                 total=self.total,
                 percent=self.percent,
+                progress=round(self.percent / 100.0, 4),
                 current_file=self.current_file,
                 eta_seconds=self.eta_seconds,
                 message=self.message,
@@ -62,10 +63,18 @@ class JobManager:
                 self.current = payload["current"]
             if "total" in payload:
                 self.total = payload["total"]
-            if self.total > 0 and self.current > 0:
-                self.percent = round((self.current / self.total) * 100.0, 1)
-            elif self.stage == "complete":
+
+            if self.stage == "complete":
                 self.percent = 100.0
+                if self.total > 0:
+                    self.current = self.total
+            elif "percent" in payload:
+                self.percent = float(payload["percent"])
+            elif "progress" in payload:
+                self.percent = round(float(payload["progress"]) * 100.0, 1)
+            elif self.total > 0 and self.current >= 0:
+                self.percent = round((self.current / self.total) * 100.0, 1)
+
             if "file_name" in payload:
                 self.current_file = payload["file_name"]
             if "eta_seconds" in payload:
@@ -78,6 +87,7 @@ class JobManager:
                 "current": self.current,
                 "total": self.total,
                 "percent": self.percent,
+                "progress": round(self.percent / 100.0, 4),
                 "current_file": self.current_file,
                 "eta_seconds": self.eta_seconds,
                 "message": self.message,
@@ -187,12 +197,15 @@ class JobManager:
                     self.message = "Job was cancelled by organizer."
                 self._broadcast_progress({"stage": "cancelled", "message": self.message})
             except Exception as e:
+                import traceback
+                tb_str = traceback.format_exc()
+                traceback.print_exc()
                 with self._lock:
                     self.status = "failed"
                     self.stage = "failed"
-                    self.error = str(e)
+                    self.error = f"{e}\n{tb_str}"
                     self.message = f"Error: {e}"
-                self._broadcast_progress({"stage": "failed", "message": self.message, "error": str(e)})
+                self._broadcast_progress({"stage": "failed", "message": self.message, "error": self.error})
 
         self._thread = threading.Thread(target=worker, daemon=True)
         self._thread.start()

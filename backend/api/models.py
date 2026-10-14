@@ -46,6 +46,7 @@ class JobStatusResponse(BaseModel):
     current: int = 0
     total: int = 0
     percent: float = 0.0
+    progress: float = 0.0
     current_file: Optional[str] = None
     eta_seconds: Optional[float] = None
     message: str = ""

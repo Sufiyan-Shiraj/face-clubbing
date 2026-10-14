@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { Settings } from '../types';
-import { Sliders, RefreshCw, Key, HardDrive, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Sliders, RefreshCw, Key, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 interface SettingsScreenProps {
   onRerunComplete?: () => void;
@@ -34,7 +34,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete 
   const [apiKey, setApiKey] = useState(() => {
     return sessionStorage.getItem('drive_api_key_ephemeral') || '';
   });
-  const [storageLevel, setStorageLevel] = useState('local');
   const [isLoading, setIsLoading] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
   const [rerunResult, setRerunResult] = useState<{
@@ -307,10 +306,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete 
         </div>
       </div>
 
-      {/* Section 3: Google Drive API Key & Method 2 Storage Stub */}
+      {/* Section 3: Google Drive API Key */}
       <div className="glass-card p-6 rounded-2xl space-y-5">
         <h3 className="text-base font-semibold text-white border-b border-neutral-800 pb-3 flex items-center justify-between">
-          <span>Drive Integration & Storage</span>
+          <span>Google Drive API Key</span>
           <span className="px-2 py-0.5 rounded text-[10px] bg-neutral-800 text-neutral-400 font-semibold uppercase">
             Phase 6 Preview
           </span>
@@ -334,34 +333,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete 
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
             <span>Security guarantee: Stored in browser session memory only. Never written to git or backend files. Phase 6 will use it for Drive queries.</span>
           </div>
-        </div>
-
-        {/* Method 2 Storage-Level Selector marked "stub" */}
-        <div className="space-y-1.5 pt-2">
-          <div className="flex items-center justify-between">
-            <label htmlFor="setting-storage-level" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-              <HardDrive className="w-3.5 h-3.5 text-blue-400" />
-              <span>Storage Level (Method 2 Architecture)</span>
-            </label>
-            <span id="storage-selector-stub-badge" className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-bold border border-blue-500/30">
-              STUB
-            </span>
-          </div>
-          <select
-            id="setting-storage-level"
-            value={storageLevel}
-            onChange={(e) => setStorageLevel(e.target.value)}
-            className="w-full px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-accent"
-          >
-            <option value="local">Method 1: Local Only (default bundle export)</option>
-            <option value="drive-readonly">Drive Read-Only (Attendee download links only)</option>
-            <option value="drive-method2-stub" disabled>
-              Method 2: Google Drive Auto-Upload [STUB - Phase 6]
-            </option>
-          </select>
-          <p className="text-[11px] text-neutral-500">
-            Method 2 allows uploading generated bundles directly into the organizer's Google Drive folder.
-          </p>
         </div>
       </div>
 

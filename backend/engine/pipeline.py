@@ -69,16 +69,29 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             config.progress_callback(payload)
 
     # 1. Scan photos
-    notify({"stage": "scanning", "message": f"Scanning input: {input_p}"})
+    notify({"stage": "scanning", "current": 0, "total": 0, "percent": 0.0, "message": f"Scanning input: {input_p}"})
     with PhotoScanner(input_p) as scanner:
-        scanned_photos = scanner.scan()
+        def on_scan_progress(cur: int, tot: int, fname: str):
+            pct = round((cur / tot) * 100.0, 1) if tot > 0 else 0.0
+            notify({
+                "stage": "scanning",
+                "current": cur,
+                "total": tot,
+                "percent": pct,
+                "file_name": fname,
+                "message": f"Scanning photos: [{cur}/{tot}] {fname}",
+            })
+
+        scanned_photos = scanner.scan(progress_callback=on_scan_progress)
         total_photos = len(scanned_photos)
         if total_photos == 0:
             raise ValueError(f"No supported photos found in: {input_p}")
 
         notify({
             "stage": "scanned",
+            "current": total_photos,
             "total": total_photos,
+            "percent": 100.0 if total_photos > 0 else 0.0,
             "message": f"Found {total_photos} photos to process.",
         })
 
@@ -171,10 +184,12 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             avg_per_photo = elapsed / processed
             eta_seconds = (total_photos - processed) * avg_per_photo
 
+            pct = round((processed / total_photos) * 100.0, 1) if total_photos > 0 else 0.0
             notify({
                 "stage": "processing",
                 "current": processed,
                 "total": total_photos,
+                "percent": pct,
                 "photo_id": photo_id,
                 "file_name": item.file_name,
                 "faces_found": len(photos[photo_id].faces),
@@ -184,13 +199,13 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
 
         # 4. Clustering (with optional flip_average)
         if config.flip_average:
-            notify({"stage": "flip_averaging", "message": "Applying flip-averaged embeddings..."})
+            notify({"stage": "flip_averaging", "current": total_photos, "total": total_photos, "percent": 90.0, "message": "Applying flip-averaged embeddings..."})
             for photo in photos.values():
                 for face in photo.faces:
                     if face.embedding_flipped is not None:
                         face.embedding = face.embedding_flipped
 
-        notify({"stage": "clustering", "message": "Clustering faces by person with second-pass merge..."})
+        notify({"stage": "clustering", "current": total_photos, "total": total_photos, "percent": 92.0, "message": "Clustering faces by person with second-pass merge..."})
         clusterer = FaceClusterer(
             distance_threshold=config.distance_threshold,
             seed_min_face_size=config.seed_min_face_size or config.min_face_size,
@@ -262,7 +277,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         })
 
         # 5. Export Bundle
-        notify({"stage": "exporting", "message": f"Generating static export bundle in {out_p}..."})
+        notify({"stage": "exporting", "current": total_photos, "total": total_photos, "percent": 96.0, "message": f"Generating static export bundle in {out_p}..."})
         exporter = BundleExporter(
             output_dir=out_p,
             cache_dir=cache_p,
@@ -279,6 +294,9 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
 
         notify({
             "stage": "complete",
+            "current": total_photos,
+            "total": total_photos,
+            "percent": 100.0,
             "message": "Export complete!",
             "output_dir": str(out_p),
             "people_count": len(people),

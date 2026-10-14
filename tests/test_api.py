@@ -694,3 +694,97 @@ def test_api_photos_endpoint_and_remove_by_photo(api_setup):
     assert "f_anchor_04a" not in [f["face_id"] for f in target_after["faces"]]
 
 
+def test_job_progress_calculation_and_scanning(tmp_path: Path):
+    """TASK 2: Verify job.percent and progress calculation during scanning and detection stages."""
+    from backend.api.state import AppState
+    from backend.api.jobs import JobManager
+    from backend.engine.scanner import PhotoScanner
+    from PIL import Image
+
+    # 1. Test JobManager progress calculation logic
+    work_dir = tmp_path / "work"
+    state = AppState(work_dir=work_dir, output_dir=tmp_path / "export")
+    mgr = JobManager(state)
+    mgr.job_id = "test_job"
+    mgr.status = "running"
+
+    # Broadcast scanning progress
+    mgr._broadcast_progress({"stage": "scanning", "current": 50, "total": 200, "file_name": "test.jpg"})
+    st = mgr.get_status()
+    assert st.stage == "scanning"
+    assert st.current == 50
+    assert st.total == 200
+    assert st.percent == 25.0
+    assert st.progress == 0.25
+
+    # Broadcast detection progress (e.g. 202 of 271 photos)
+    mgr._broadcast_progress({"stage": "processing", "current": 202, "total": 271, "file_name": "IMG_2297.HEIC"})
+    st = mgr.get_status()
+    assert st.stage == "processing"
+    assert st.current == 202
+    assert st.total == 271
+    assert st.percent == 74.5
+    assert st.progress == 0.745
+
+    # Broadcast completion
+    mgr._broadcast_progress({"stage": "complete", "message": "Done"})
+    st = mgr.get_status()
+    assert st.stage == "complete"
+    assert st.percent == 100.0
+    assert st.progress == 1.0
+
+    # 2. Test PhotoScanner reporting scanning progress
+    photos_dir = tmp_path / "scan_test"
+    photos_dir.mkdir()
+    for i in range(5):
+        img_p = photos_dir / f"photo_{i}.jpg"
+        Image.new("RGB", (64, 64), color=(i * 20, 100, 100)).save(img_p)
+
+    scan_events = []
+    with PhotoScanner(photos_dir) as scanner:
+        scanned = scanner.scan(progress_callback=lambda cur, tot, fn: scan_events.append((cur, tot, fn)))
+
+    assert len(scanned) == 5
+    assert len(scan_events) == 5
+    assert scan_events[0][0] == 1
+    assert scan_events[0][1] == 5
+    assert scan_events[-1][0] == 5
+    assert scan_events[-1][1] == 5
+
+
+def test_pywebview_api_dialogs():
+    """TASK 4: Test pywebview WebviewApi native file and folder dialog bridges."""
+    from unittest.mock import MagicMock
+    from main import WebviewApi
+    import webview
+
+    mock_win = MagicMock()
+    api = WebviewApi(mock_win)
+
+    # 1. select_folder
+    mock_win.create_file_dialog.return_value = ["C:\\Photos\\Event2026"]
+    folder = api.select_folder("Choose Event Photos")
+    assert folder == "C:\\Photos\\Event2026"
+    mock_win.create_file_dialog.assert_called_with(
+        webview.FOLDER_DIALOG,
+        allow_multiple=False,
+    )
+
+    # 2. select_file
+    mock_win.create_file_dialog.return_value = ["C:\\Photos\\Event.zip"]
+    file_path = api.select_file("Choose Zip Archive")
+    assert file_path == "C:\\Photos\\Event.zip"
+
+    # 3. Cancelled dialog returns empty string
+    mock_win.create_file_dialog.return_value = None
+    assert api.select_folder() == ""
+    assert api.select_file() == ""
+
+    # 4. Windowless API returns empty string safely
+    windowless_api = WebviewApi(None)
+    assert windowless_api.select_folder() == ""
+    assert windowless_api.select_file() == ""
+
+
+
+

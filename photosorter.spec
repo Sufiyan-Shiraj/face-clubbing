@@ -11,6 +11,13 @@ datas = [
 # Collect any package data files for insightface and onnxruntime
 datas += collect_data_files('insightface')
 
+import insightface
+import os
+insightface_dir = os.path.dirname(insightface.__file__)
+objects_dir = os.path.join(insightface_dir, 'data', 'objects')
+if os.path.exists(objects_dir):
+    datas.append((objects_dir, 'objects'))
+
 hiddenimports = [
     'uvicorn.logging',
     'uvicorn.loops',

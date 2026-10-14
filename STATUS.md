@@ -82,7 +82,7 @@ Search performed across `C:\Users\DELL` for folders named `face-clubbing` or con
 | **2 Static viewer** | Done except deploy test (row 14) | `viewer/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/`, `src/__tests__/viewer.test.tsx`, `dist/` | Section 14 (Rows 1–13 & 15 pass; Row 14 deploy test pending) | **MATCHES** |
 | **3 API layer (FastAPI)** | Done | `backend/api/app.py`, `backend/api/jobs.py`, `backend/api/models.py`, `backend/api/routes.py`, `backend/api/state.py`, `eval/verify_api.py`, `tests/test_api.py` | Section 15 (Endpoints, SSE streaming, edit replay, fixture verification) | **MATCHES** |
 | **4 Organizer UI (React)** | Done (organizer review of layout/wording pending) | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `scripts/e2e.mjs`, `dist/` | Section 16 (Screens, controls, E2E browser verification, manual layout review pending) | **MATCHES** |
-| **5 Desktop shell & packaging** | Not started | None (`main.py` missing; `pywebview` and `pyinstaller` not installed) | None | **NOT STARTED** |
+| **5 Desktop shell & packaging** | Done | `main.py`, `photosorter.spec`, `dist/photosorter.exe`, `eval/verify_exe.py` | Section 19 (Desktop shell, pywebview native dialog bridge, PyInstaller standalone exe, GUI subsystem, bundle hygiene) | **MATCHES** |
 | **6 Method 1 (Drive link input)** | Not started | `backend/drive/` contains only empty `__init__.py` | None | **NOT STARTED** |
 | **7 Release automation** | Not started | None (`.github/workflows/` missing) | None | **NOT STARTED** |
 | **8 Method 2 (Upload to Drive)** | Not started | None | None | **NOT STARTED** |

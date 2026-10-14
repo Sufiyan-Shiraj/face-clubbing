@@ -2678,55 +2678,99 @@ Discovered People / Clusters: 188 (Expected: 188 with edits or 192 baseline)
 ALL PHASE 5 CRITERIA VERIFIED SUCCESSFULLY!
 ```
 
-### 19.4 Pytest Regression Verification (35 Tests Passed)
+### 19.4 Pytest Regression Verification (37 Tests Passed)
 
 ```text
 ============================= test session starts =============================
-platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\DELL\face-clubbing\.venv\Scripts\python.exe
-cachedir: .pytest_cache
+platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0
 rootdir: C:\Users\DELL\face-clubbing
 configfile: pytest.ini
 testpaths: tests
 plugins: anyio-4.15.1
-collecting ... collected 35 items
+collected 37 items
 
-tests/test_api.py::test_api_merge_three_people_writes_anchor_faces_no_cluster_ids PASSED [  2%]
-tests/test_api.py::test_api_assign_unrecognized_face_and_rerun_survives PASSED [  5%]
-tests/test_api.py::test_api_unapplied_edit_when_anchor_face_no_longer_exists PASSED [  8%]
-tests/test_api.py::test_api_undo_restores_previous_state_for_each_edit_type PASSED [ 11%]
-tests/test_api.py::test_api_cancel_stops_running_job PASSED              [ 14%]
-tests/test_api.py::test_api_export_public_bundle_hygiene PASSED          [ 17%]
-tests/test_state_missing_embedding_raises_error PASSED                    [ 20%]
-tests/test_api.py::test_api_unrecognized_count_bug_and_invariants PASSED [ 22%]
-tests/test_api.py::test_api_rerun_replay_under_real_clustering_change PASSED [ 25%]
-tests/test_api.py::test_api_photos_endpoint_and_remove_by_photo PASSED   [ 28%]
-tests/test_cache.py::test_cache_miss PASSED                              [ 31%]
-tests/test_cache.py::test_cache_save_and_get PASSED                      [ 34%]
-tests/test_cache.py::test_cache_load_all PASSED                          [ 37%]
-tests/test_clustering.py::test_seed_vs_attach_only_roles PASSED          [ 40%]
-tests/test_clustering.py::test_attach_margin PASSED                      [ 42%]
-tests/test_clustering.py::test_same_photo_exclusion_on_attach PASSED     [ 45%]
-tests/test_clustering.py::test_second_pass_auto_merge_below_050 PASSED   [ 48%]
-tests/test_clustering.py::test_same_photo_guard_blocking_and_collage PASSED [ 51%]
-tests/test_clustering.py::test_ambiguous_reattach_after_merge PASSED     [ 54%]
-tests/test_clustering.py::test_every_photo_covered_and_face_accounting PASSED [ 57%]
-tests/test_clustering.py::test_merged_from_and_id_map PASSED             [ 60%]
-tests/test_edits.py::test_edit_merge_preservation_across_thresholds PASSED [ 62%]
-tests/test_edits.py::test_unapplied_edit_unknown_face_id PASSED          [ 65%]
-tests/test_edits.py::test_deterministic_cluster_ids_shuffled_input PASSED [ 68%]
-tests/test_edits.py::test_hide_removes_person_and_preserves_photo_reachability PASSED [ 71%]
-tests/test_edits.py::test_deterministic_identical_runs PASSED            [ 74%]
-tests/test_exporter.py::test_bundle_exporter PASSED                      [ 77%]
-tests/test_exporter.py::test_public_bundle_hygiene PASSED                [ 80%]
-tests/test_isolation.py::test_checks_do_not_modify_export_or_work PASSED [ 82%]
-tests/test_pipeline.py::test_pipeline_organizer_and_public_bundle PASSED [ 85%]
-tests/test_scanner.py::test_supported_extensions PASSED                  [ 88%]
-tests/test_scanner.py::test_compute_file_hash_stability PASSED           [ 91%]
-tests/test_scanner.py::test_scan_folder PASSED                           [ 94%]
-tests/test_scanner.py::test_scan_zip PASSED                              [ 97%]
-tests/test_scanner.py::test_scan_single_file PASSED                      [100%]
+tests\test_api.py ............                                           [ 32%]
+tests\test_cache.py ...                                                  [ 40%]
+tests\test_clustering.py ........                                        [ 62%]
+tests\test_edits.py .....                                                [ 75%]
+tests\test_exporter.py ..                                                [ 81%]
+tests\test_isolation.py .                                                [ 83%]
+tests\test_pipeline.py .                                                 [ 86%]
+tests\test_scanner.py .....                                              [100%]
 
-======================== 35 passed in 78.42s (0:01:18) ========================
+======================= 37 passed in 118.50s (0:01:58) ========================
+```
+
+### 19.5 Frontend Organizer UI Vitest Verification (14 Tests Passed)
+
+Executed Vitest suite covering suggestion review, multi-merge selection, undo management, and native OS `window.pywebview.api` folder/file dialog bridges:
+
+```text
+> photosorter-frontend@1.0.0 test
+> vitest run --run
+
+ RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
+
+ ✓ src/__tests__/suggestionList.test.ts (4 tests) 11ms
+ ✓ src/__tests__/mergeSelection.test.ts (4 tests) 12ms
+ ✓ src/__tests__/undoControl.test.ts (3 tests) 11ms
+ ✓ src/__tests__/homeScreen.test.tsx (3 tests) 112ms
+
+ Test Files  4 passed (4)
+      Tests  14 passed (14)
+   Start at  05:28:03
+   Duration  74.30s (environment 73%, import 26%)
+```
+
+### 19.6 Standalone Executable Verification Transcript (`eval/verify_exe.py`)
+
+Executed `eval/verify_exe.py` against standalone `dist/photosorter.exe` verifying PE Subsystem 2 (GUI, zero console popup), ephemeral port allocation, frontend mounting at `/`, real-time progress broadcast across scanning and clustering, exact baseline cluster reproducibility on `test_photos`, public bundle hygiene, and clean process tree shutdown:
+
+```text
+================================================================================
+PHOTOSORTER STANDALONE EXECUTABLE VERIFICATION (eval/verify_exe.py)
+================================================================================
+[PASS] Executable located: C:\Users\DELL\face-clubbing\dist\photosorter.exe
+       Binary Size: 156,359,761 bytes (149.12 MB)
+       Subsystem Code: 2 -> IMAGE_SUBSYSTEM_WINDOWS_GUI (Windowed - No console popup)
+[PASS] Subsystem check: Built as pure Windows GUI application (console=False).
+[INFO] Pre-seeded embedding cache into temp work dir (259 cached photos)
+
+[INFO] Isolated Test Environment:
+       Temp Root:   C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_qisvffmc
+       Work Dir:    C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_qisvffmc\work
+       Export Dir:  C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_qisvffmc\export
+       Port:        50966
+
+[INFO] Launching: C:\Users\DELL\face-clubbing\dist\photosorter.exe --no-gui --port 50966 --work-dir C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_qisvffmc\work --output-dir C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_qisvffmc\export
+[PASS] Executable online in 24.46s at http://127.0.0.1:50966
+[PASS] Frontend UI assets properly mounted at root / (status 200)
+
+[INFO] Triggering job on input: C:\Users\DELL\face-clubbing\test_photos
+[PASS] Job started: {'job_id': '8ab61429', 'status': 'running', 'stage': 'starting', 'current': 0, 'total': 0, 'percent': 0.0, 'progress': 0.0, 'current_file': None, 'eta_seconds': None, 'message': 'Initializing job...', 'error': None, 'result_summary': None}
+       [Job Progress] Stage: processing   | Progress:   3.7% (percent=  3.7%) | [10/271] [10/271] IMG_20260303_233740.jpg (21 faces)
+       [Job Progress] Stage: processing   | Progress:  25.1% (percent= 25.1%) | [68/271] [68/271] IMG_2113.HEIC (10 faces)
+       [Job Progress] Stage: clustering   | Progress:  92.0% (percent= 92.0%) | [271/271] Clustering faces by person with second-pass m
+       [Job Progress] Stage: exporting    | Progress:  96.0% (percent= 96.0%) | [271/271] Generating static export bundle in C:\Users\D
+       [Job Progress] Stage: complete     | Progress: 100.0% (percent=100.0%) | [271/271] Job finished. Clustered 192 people.
+
+[PASS] Pipeline finished in 22.14s
+[PASS] Real progress broadcast verified: job.percent actively tracked scanning/detection.
+
+--- BASELINE METRICS REPRODUCIBILITY CHECK ---
+People Clusters:     192 (Baseline expected: 192)
+Unrecognized Faces:  445 (Baseline expected: 445)
+Unrecognized Photos: 168 (Baseline expected: 168)
+Total Photo Records: 259 (Baseline expected: 259)
+[PASS] All cluster, face, and photo counts match pinned baseline fixture identically!
+[PASS] Public Export Bundle Hygiene verified. Export files: ['config.json', 'faces', 'people.json', 'thumbs']
+
+[INFO] Terminating executable...
+[PASS] Executable terminated cleanly; port 50966 released.
+
+================================================================================
+ALL PHASE 5 EXECUTABLE REQUIREMENTS VERIFIED SUCCESSFULLY!
+================================================================================
 ```
 
 ---

@@ -28,7 +28,7 @@ PhotoSorter is a free, privacy-first, desktop application and static site genera
 - **Organizer-Centric:** Built for event organizers with a modern desktop UI (React + pywebview + FastAPI) and zero complex server setup.
 - **Nobody Dropped:** Low-quality or small faces and photos with no detected faces are categorized into an **Unrecognized** gallery, ensuring 100% of event photos are accessible.
 - **Static Public Viewer:** Generates a lightweight static website (`export/`) ready to host on GitHub Pages, Cloudflare Pages, or any static host.
-- **Multiple Sources:** Works with local folders, zip files, and Google Drive links (read-only with an API key, or optional OAuth upload).
+- **Multiple Sources:** Works with local folders, zip files, and Google Drive links (read-only with an optional API key, no Google sign-in required).
 
 ---
 
@@ -45,7 +45,7 @@ PhotoSorter is a free, privacy-first, desktop application and static site genera
 |                              |                               |
 |                              v                               |
 |   Engine: scan -> detect -> embed -> cluster -> export       |
-|   Drive module: read (API key) / upload (OAuth, optional)    |
+|   Drive module: read-only (API key)                          |
 +--------------------------------------------------------------+
                               |
                               v  (export bundle)

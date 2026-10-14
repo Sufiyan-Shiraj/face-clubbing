@@ -8,7 +8,7 @@ import tempfile
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Generator
+from typing import List, Optional, Generator, Callable
 
 SUPPORTED_EXTENSIONS = {
     ".jpg", ".jpeg", ".png", ".webp",
@@ -55,7 +55,7 @@ class PhotoScanner:
                 pass
             self.temp_dir = None
 
-    def scan(self) -> List[ScannedPhoto]:
+    def scan(self, progress_callback: Optional[Callable[[int, int, str], None]] = None) -> List[ScannedPhoto]:
         """Scan input path (folder or zip) and return list of ScannedPhoto objects."""
         if not self.input_path.exists():
             raise FileNotFoundError(f"Input path does not exist: {self.input_path}")
@@ -71,7 +71,7 @@ class PhotoScanner:
                 # Single photo file
                 if self.input_path.suffix.lower() in SUPPORTED_EXTENSIONS:
                     photo_id = compute_file_hash(self.input_path)
-                    return [
+                    res = [
                         ScannedPhoto(
                             photo_id=photo_id,
                             file_path=self.input_path,
@@ -79,29 +79,38 @@ class PhotoScanner:
                             relative_path=self.input_path.name,
                         )
                     ]
+                    if progress_callback:
+                        progress_callback(1, 1, self.input_path.name)
+                    return res
                 else:
                     raise ValueError(f"File {self.input_path} is neither a zip file nor a supported image.")
 
-        scanned: List[ScannedPhoto] = []
+        candidate_files = []
         for root, _, files in os.walk(source_dir):
             for file in files:
                 ext = Path(file).suffix.lower()
                 if ext in SUPPORTED_EXTENSIONS:
-                    file_path = Path(root) / file
-                    try:
-                        rel_path = file_path.relative_to(source_dir).as_posix()
-                    except ValueError:
-                        rel_path = file_path.name
+                    candidate_files.append((Path(root) / file, file))
 
-                    photo_id = compute_file_hash(file_path)
-                    scanned.append(
-                        ScannedPhoto(
-                            photo_id=photo_id,
-                            file_path=file_path,
-                            file_name=file,
-                            relative_path=rel_path,
-                        )
-                    )
+        total_candidates = len(candidate_files)
+        scanned: List[ScannedPhoto] = []
+        for idx, (file_path, file) in enumerate(candidate_files):
+            try:
+                rel_path = file_path.relative_to(source_dir).as_posix()
+            except ValueError:
+                rel_path = file_path.name
+
+            photo_id = compute_file_hash(file_path)
+            scanned.append(
+                ScannedPhoto(
+                    photo_id=photo_id,
+                    file_path=file_path,
+                    file_name=file,
+                    relative_path=rel_path,
+                )
+            )
+            if progress_callback:
+                progress_callback(idx + 1, total_candidates, file)
 
         # Sort stably by relative path
         scanned.sort(key=lambda x: x.relative_path)

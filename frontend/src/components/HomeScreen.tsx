@@ -101,7 +101,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <Folder className="w-4 h-4 text-blue-400" />
                 Local Folder or Zip Archive
               </span>
-              <span className="text-xs text-neutral-500 font-normal">Method 2 / Local Offline</span>
+              <span className="text-xs text-neutral-500 font-normal">Local / Offline</span>
             </label>
             <div className="flex flex-col sm:flex-row gap-2">
               <input

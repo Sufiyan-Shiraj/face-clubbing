@@ -49,6 +49,7 @@ def create_app(
 
     # Health check
     @app.get("/api/health")
+    @app.get("/health")
     def health():
         return {"status": "ok", "version": "1.0.0"}
 

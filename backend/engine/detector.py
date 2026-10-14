@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 from typing import List, Optional, Tuple
+from pathlib import Path
+import shutil
 import warnings
 import cv2
 import numpy as np
@@ -28,6 +30,9 @@ class FaceDetector:
         providers: Optional[List[str]] = None,
     ):
         self.model_name = model_name
+        if model_root is None:
+            # SPEC section 9 & 13: Models stored under ~/.photosorter/models
+            model_root = str(Path.home() / ".photosorter")
         self.model_root = model_root
         self.det_size = det_size
         self.min_det_score = min_det_score
@@ -47,10 +52,28 @@ class FaceDetector:
             if self.providers:
                 kwargs["providers"] = self.providers
 
-            app = FaceAnalysis(**kwargs)
-            # ctx_id=0, prepare with detection size
-            app.prepare(ctx_id=0, det_size=self.det_size)
-            self._app = app
+            target_model_dir = Path(self.model_root) / "models" / self.model_name
+            fallback_model_dir = Path.home() / ".insightface" / "models" / self.model_name
+
+            # If default target model directory doesn't exist, check fallback and migrate to ~/.photosorter/models
+            if self.model_root == str(Path.home() / ".photosorter") and not target_model_dir.exists() and fallback_model_dir.exists():
+                try:
+                    target_model_dir.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copytree(fallback_model_dir, target_model_dir)
+                except Exception:
+                    pass
+
+            try:
+                app = FaceAnalysis(**kwargs)
+                app.prepare(ctx_id=0, det_size=self.det_size)
+                self._app = app
+            except Exception as e:
+                if not target_model_dir.exists() or not any(target_model_dir.glob("*.onnx")):
+                    raise RuntimeError(
+                        f"InsightFace model '{self.model_name}' is not available at '{target_model_dir}' and automatic download failed. "
+                        f"Please ensure an internet connection on first run to download models to '{target_model_dir}', or manually place the model ONNX files."
+                    ) from e
+                raise RuntimeError(f"Failed to initialize FaceAnalysis model '{self.model_name}': {e}") from e
 
     def detect_and_embed(
         self,
@@ -139,9 +162,12 @@ class FaceDetector:
 
                 # 3D Landmark & Pose estimation: [pitch, yaw, roll]
                 if "landmark_3d_68" in self._app.models:
-                    self._app.models["landmark_3d_68"].get(orig_bgr, face_obj)
-                    if hasattr(face_obj, "pose") and face_obj.pose is not None:
-                        pose = [float(p) for p in face_obj.pose]
+                    try:
+                        self._app.models["landmark_3d_68"].get(orig_bgr, face_obj)
+                        if hasattr(face_obj, "pose") and face_obj.pose is not None:
+                            pose = [float(p) for p in face_obj.pose]
+                    except Exception:
+                        pass
 
             # 4. Quality filtering: score, min size, and extreme head pose
             face_w = orig_bbox[2] - orig_bbox[0]
