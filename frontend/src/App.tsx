@@ -8,15 +8,64 @@ import {
   SuggestionsData,
   JobStatus,
 } from './types';
-import { Header } from './components/Header';
+import { Header, RisoTheme } from './components/Header';
 import { HomeScreen } from './components/HomeScreen';
 import { ProgressScreen } from './components/ProgressScreen';
 import { ReviewPeopleScreen } from './components/ReviewPeopleScreen';
 import { ExportScreen } from './components/ExportScreen';
 import { SettingsScreen } from './components/SettingsScreen';
+import { Lock } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('people');
+  const [theme, setTheme] = useState<RisoTheme>(() => {
+    try {
+      const saved = localStorage.getItem('photosorter-theme');
+      if (saved === 't-paper' || saved === 't-navy' || saved === 't-dark') {
+        return saved;
+      }
+    } catch (e) {}
+    return 't-dark';
+  });
+
+  const handleThemeChange = (newTheme: RisoTheme, e?: React.MouseEvent) => {
+    if (newTheme === theme) return;
+
+    const x = e ? e.clientX : window.innerWidth - 80;
+    const y = e ? e.clientY : 32;
+
+    document.documentElement.style.setProperty('--click-x', `${x}px`);
+    document.documentElement.style.setProperty('--click-y', `${y}px`);
+
+    const update = () => {
+      setTheme(newTheme);
+      try {
+        localStorage.setItem('photosorter-theme', newTheme);
+      } catch (err) {}
+    };
+
+    if ('startViewTransition' in document) {
+      (document as any).startViewTransition(update);
+    } else {
+      update();
+    }
+  };
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    try {
+      const saved = localStorage.getItem('photosorter-active-tab');
+      if (saved && ['home', 'progress', 'people', 'export', 'settings'].includes(saved)) {
+        return saved as ActiveTab;
+      }
+    } catch (e) {}
+    return 'home';
+  });
+
+  const handleTabChange = (t: ActiveTab) => {
+    setActiveTab(t);
+    try {
+      localStorage.setItem('photosorter-active-tab', t);
+    } catch (e) {}
+  };
   const [people, setPeople] = useState<PersonCluster[]>([]);
   const [photos, setPhotos] = useState<Record<string, PhotoInfo>>({});
   const [unrecognized, setUnrecognized] = useState<UnrecognizedData>({
@@ -330,21 +379,38 @@ export const App: React.FC = () => {
   const unrecPhotosCount = unrecognized.total_unrecognized_photos || 0;
   const totalFacesCount = clusteredFacesCount + unrecFacesCount;
 
+  const handleOpenProject = async () => {
+    if (window.pywebview?.api?.select_folder) {
+      try {
+        const selected = await window.pywebview.api.select_folder('Open Photo Folder or Project');
+        if (selected) {
+          handleStartJob(selected);
+        }
+      } catch (err) {
+        console.error('Failed to open project folder:', err);
+      }
+    } else {
+      setActiveTab('home');
+    }
+  };
+
   if (isInitialLoading) {
     return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center font-sans">
-        <div className="w-9 h-9 border-3 border-neutral-800 border-t-blue-500 rounded-full animate-spin"></div>
-        <p className="mt-4 text-sm font-semibold tracking-tight text-neutral-100">PhotoSorter</p>
-        <p className="mt-1 text-xs text-neutral-500">Connecting to local engine...</p>
+      <div className={`app ${theme}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '28px', height: '28px', border: '2px solid var(--line)', borderTopColor: 'var(--accent)', borderRadius: '50%', margin: '0 auto', animation: 'dot-spin 0.8s linear infinite' }}></div>
+          <p style={{ marginTop: '14px', fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', letterSpacing: '0.05em' }}>ORGANIZER</p>
+          <p style={{ color: 'var(--muted)', fontSize: '12px' }}>Connecting to local engine...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans">
+    <div className={`app ${theme}`}>
       <Header
         activeTab={activeTab}
-        onTabChange={(t) => setActiveTab(t)}
+        onTabChange={(t) => handleTabChange(t)}
         peopleCount={people.length}
         unrecFacesCount={unrecFacesCount}
         unrecPhotosCount={unrecPhotosCount}
@@ -354,13 +420,74 @@ export const App: React.FC = () => {
         onUndo={handleUndo}
         onRefresh={loadAllData}
         isRefreshing={isRefreshing}
+        theme={theme}
+        onThemeChange={handleThemeChange}
+        onOpenProject={handleOpenProject}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Left Vertical Step Rail matching screenshot */}
+      <div className="rail" aria-label="Workflow Steps">
+        <div className="rail-steps">
+          <button
+            type="button"
+            onClick={() => handleTabChange('home')}
+            className={`step ${activeTab === 'home' ? 'on' : ''}`}
+          >
+            <b>01</b>
+            <span>Source</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('progress')}
+            className={`step ${activeTab === 'progress' ? 'on' : ''}`}
+          >
+            <b>02</b>
+            <span>Scan</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('people')}
+            className={`step ${activeTab === 'people' ? 'on' : ''}`}
+          >
+            <b>03</b>
+            <span>Review</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('export')}
+            className={`step ${activeTab === 'export' ? 'on' : ''}`}
+          >
+            <b>04</b>
+            <span>Publish</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('settings')}
+            className={`step ${activeTab === 'settings' ? 'on' : ''}`}
+          >
+            <b>05</b>
+            <span>Settings</span>
+          </button>
+        </div>
+
+        <div className="rail-footer">
+          <div style={{ fontWeight: 700, color: 'var(--text)', letterSpacing: '0.04em' }}>ORGANIZER</div>
+          <div>On-Device Engine</div>
+          <div style={{ color: 'var(--accent-ink)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)' }}></span>
+            <span>Local Mode</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Screen Content */}
+      <div className="main">
         {activeTab === 'home' && (
           <HomeScreen
             onStartJob={handleStartJob}
             isLoading={jobStatus.status === 'running'}
+            onNavigateTab={(t: any) => handleTabChange(t)}
+            theme={theme}
           />
         )}
 
@@ -404,7 +531,13 @@ export const App: React.FC = () => {
         {activeTab === 'settings' && (
           <SettingsScreen onRerunComplete={loadAllData} />
         )}
-      </main>
+      </div>
+
+      {/* Reassurance Footer matching screenshot */}
+      <div className="ftr">
+        <Lock className="w-3.5 h-3.5 text-[var(--accent)] flex-shrink-0" />
+        <span>Projects and credentials stay on this computer. Nothing is uploaded or shared.</span>
+      </div>
     </div>
   );
 };
