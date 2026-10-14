@@ -2904,6 +2904,8 @@ During the hygiene and isolation round on 13 Oct 2026 (Tasks 0 through 7, ending
 
 Following the hygiene closeout commit `d546e53`, all subsequent commits on `main` (`8493b39`, `3cc5e1a`, `3d56ba3`, `48cfcd6`, `cd77084`, `78f49e8`, `95de186`, `a985b87`, `b5d9a42`) are standard linear, fast-forward commits.
 
+**Audit Integrity Rule**: All pasted verification outputs in REPORT.md and STATUS.md must originate directly from an executed run saved to a raw file with its verified SHA-256 hash. Reconstructing or hand-editing run outputs is strictly prohibited.
+
 | Commit Hash (Current) | Previous Rewritten Hash | One-Line Summary | What Was Changed and Why |
 | :--- | :--- | :--- | :--- |
 | `da5cfaa` | `29424b3` | `feat(dx): add root package.json...` | Root `package.json` proxying across workspaces. |
@@ -2963,41 +2965,41 @@ Executed `dist/photosorter.exe` using `eval/verify_models_download.py` with:
 - Network enabled (downloading directly from InsightFace GitHub releases).
 - 20-photo subset from `test_photos/`.
 
-**Verbatim Execution Output**:
+**Verbatim Execution Output** (`scratch/models_run.txt`, SHA-256: `0AF53B175B1D58463CD6D818570933CDC6C60F6435441C0DA21FDE1A6C26BE75`):
 ```text
 ================================================================================
 PHOTOSORTER MODEL FIRST-RUN DOWNLOAD & COLD CACHE TEST
 ================================================================================
 [INFO] Executable:        C:\Users\DELL\face-clubbing\dist\photosorter.exe
-[INFO] Empty USERPROFILE: C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\userprofile
-[INFO] Cold Work Dir:     C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\work (cached files: 0)
-[INFO] 20-Photo Subset:   C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\photos_20 (20 photos)
-[PASS] Exe online in 13.38s at http://127.0.0.1:53067/api/health
+[INFO] Empty USERPROFILE: C:\Users\DELL\AppData\Local\Temp\test_models_download_jxlez770\userprofile
+[INFO] Cold Work Dir:     C:\Users\DELL\AppData\Local\Temp\test_models_download_jxlez770\work (cached files: 0)
+[INFO] 20-Photo Subset:   C:\Users\DELL\AppData\Local\Temp\test_models_download_jxlez770\photos_20 (20 photos)
+[PASS] Exe online in 11.42s at http://127.0.0.1:51331/api/health
 [INFO] Started sorting 20-photo subset on cold cache & cold models...
        [  0.51s] [running] stage=model_init     percent=  2.0% | Initializing InsightFace model...
-       [  1.02s] [running] stage=model_download percent=  2.0% | Downloading buffalo_l face model weights (~300MB) to ~/.photosorter/models... Please keep internet connected.
-       [ 37.36s] [running] stage=processing     percent=  6.3% | [1/20] IMG-20260226-WA0037.jpg (0 faces)
-       [ 37.88s] [running] stage=processing     percent= 10.6% | [2/20] IMG-20260226-WA0047.jpg (0 faces)
-       [ 39.39s] [running] stage=processing     percent= 14.9% | [3/20] IMG-20260227-WA0110.jpg (3 faces)
-       [ 41.40s] [running] stage=processing     percent= 19.2% | [4/20] IMG_20260227_220404.jpg (3 faces)
-       [ 47.94s] [running] stage=processing     percent= 23.5% | [5/20] IMG_20260227_220436.jpg (13 faces)
-       [ 50.96s] [running] stage=processing     percent= 27.8% | [6/20] IMG_20260227_220543.jpg (4 faces)
-       [ 54.98s] [running] stage=processing     percent= 32.1% | [7/20] IMG_20260227_222103.jpg (7 faces)
-       [ 66.55s] [running] stage=processing     percent= 36.4% | [8/20] IMG_20260303_233345.jpg (22 faces)
-       [ 81.68s] [running] stage=processing     percent= 40.7% | [9/20] IMG_20260303_233547.jpg (28 faces)
-       [ 92.78s] [running] stage=processing     percent= 45.0% | [10/20] IMG_20260303_233740.jpg (21 faces)
-       [102.35s] [running] stage=processing     percent= 49.3% | [11/20] IMG_20260303_234707.jpg (18 faces)
-       [121.97s] [running] stage=processing     percent= 53.6% | [12/20] IMG_20260304_000154.jpg (38 faces)
-       [122.98s] [running] stage=processing     percent= 57.9% | [13/20] IMG_20260304_000554.jpg (1 faces)
-       [138.08s] [running] stage=processing     percent= 62.2% | [14/20] IMG_20260304_001930.jpg (28 faces)
-       [147.16s] [running] stage=processing     percent= 66.5% | [15/20] IMG_20260304_002052.jpg (15 faces)
-       [168.86s] [running] stage=processing     percent= 70.8% | [16/20] IMG_20260304_002232.jpg (40 faces)
-       [185.02s] [running] stage=processing     percent= 75.1% | [17/20] IMG_20260304_002918.jpg (29 faces)
-       [196.60s] [running] stage=processing     percent= 79.4% | [18/20] IMG_20260304_080950.jpg (22 faces)
-       [199.11s] [running] stage=processing     percent= 83.7% | [19/20] IMG_20260309_211339.jpg (4 faces)
-       [203.65s] [running] stage=clustering     percent= 92.0% | Clustering faces by person with second-pass merge...
-       [205.17s] [running] stage=exporting      percent=100.0% | Generating static export bundle in C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\export...
-       [205.68s] [completed] stage=complete       percent=100.0% | Job finished. Clustered 62 people.
+       [  1.01s] [running] stage=model_download percent=  2.0% | Downloading buffalo_l face model weights (~300MB) to ~/.photosorter/models... Please keep internet connected.
+       [ 32.24s] [running] stage=processing     percent=  6.3% | [1/20] IMG-20260226-WA0037.jpg (0 faces)
+       [ 32.74s] [running] stage=processing     percent= 10.6% | [2/20] IMG-20260226-WA0047.jpg (0 faces)
+       [ 34.25s] [running] stage=processing     percent= 14.9% | [3/20] IMG-20260227-WA0110.jpg (3 faces)
+       [ 36.26s] [running] stage=processing     percent= 19.2% | [4/20] IMG_20260227_220404.jpg (3 faces)
+       [ 42.30s] [running] stage=processing     percent= 23.5% | [5/20] IMG_20260227_220436.jpg (13 faces)
+       [ 44.82s] [running] stage=processing     percent= 27.8% | [6/20] IMG_20260227_220543.jpg (4 faces)
+       [ 48.86s] [running] stage=processing     percent= 32.1% | [7/20] IMG_20260227_222103.jpg (7 faces)
+       [ 58.92s] [running] stage=processing     percent= 36.4% | [8/20] IMG_20260303_233345.jpg (22 faces)
+       [ 72.04s] [running] stage=processing     percent= 40.7% | [9/20] IMG_20260303_233547.jpg (28 faces)
+       [ 81.60s] [running] stage=processing     percent= 45.0% | [10/20] IMG_20260303_233740.jpg (21 faces)
+       [ 90.65s] [running] stage=processing     percent= 49.3% | [11/20] IMG_20260303_234707.jpg (18 faces)
+       [108.26s] [running] stage=processing     percent= 53.6% | [12/20] IMG_20260304_000154.jpg (38 faces)
+       [109.27s] [running] stage=processing     percent= 57.9% | [13/20] IMG_20260304_000554.jpg (1 faces)
+       [122.34s] [running] stage=processing     percent= 62.2% | [14/20] IMG_20260304_001930.jpg (28 faces)
+       [129.90s] [running] stage=processing     percent= 66.5% | [15/20] IMG_20260304_002052.jpg (15 faces)
+       [149.08s] [running] stage=processing     percent= 70.8% | [16/20] IMG_20260304_002232.jpg (40 faces)
+       [162.66s] [running] stage=processing     percent= 75.1% | [17/20] IMG_20260304_002918.jpg (29 faces)
+       [173.74s] [running] stage=processing     percent= 79.4% | [18/20] IMG_20260304_080950.jpg (22 faces)
+       [175.75s] [running] stage=processing     percent= 83.7% | [19/20] IMG_20260309_211339.jpg (4 faces)
+       [179.27s] [running] stage=clustering     percent= 92.0% | Clustering faces by person with second-pass merge...
+       [180.87s] [running] stage=exporting      percent=100.0% | Generating static export bundle in C:\Users\DELL\AppData\Local\Temp\test_models_download_jxlez770\export...
+       [181.37s] [completed] stage=complete       percent=100.0% | Job finished. Clustered 62 people.
 
 [PASS] Legacy ~/.insightface fallback was NOT used.
 [PASS] Models downloaded to ~/.photosorter/models/buffalo_l: 5 ONNX files found:
@@ -3012,11 +3014,11 @@ PHOTOSORTER MODEL FIRST-RUN DOWNLOAD & COLD CACHE TEST
 ============================================================
 COLD CACHE & FIRST-RUN MODEL DOWNLOAD AUDIT RESULTS:
 ============================================================
-Time to /api/health:        13.38 s
-Model Download Time:        ~26.0 s (281,857 KB downloaded at ~10.5 MB/s)
-Model Load Time:            36.86 s
-Total Detection Time:       166.28 s
-Per-Photo Detect Time:      8.31 s/photo
+Time to /api/health:        11.42 s
+Model Download Time:        0.00 s
+Model Load Time:            31.73 s
+Total Detection Time:       147.03 s
+Per-Photo Detect Time:      7.35 s/photo
 ------------------------------------------------------------
 Total Photos Processed:     20
 Total Faces Detected:       302
@@ -3030,7 +3032,7 @@ Unrecognized Photos Count:  17
 
 **Key Invariants, Target Independence & Cold-Run Speed**:
 - **Target Independence**: The cold-run invariant targets (62 people clusters, 142 faces in clusters, 160 unrecognized faces, 17 unrecognized photos) were established from this same 20-photo run. This check confirms deterministic repeatability and regression pinning; it is **NOT an independent verification**.
-- **Cold-Run Speed vs SPEC**: SPEC Section 14 originally estimated ~1 to 1.5 s per photo on CPU. Measured speed on dense multi-face event photos is **8.31 s per photo** (~35.9 minutes for 259 photos). Because measured speed is slower than SPEC's original baseline estimate, this performance metric is classified as **UNVERIFIED against SPEC estimate** (caused by dense group photos containing up to 40 faces per photo requiring individual ArcFace 512-d embeddings).
+- **Cold-Run Speed vs SPEC**: SPEC Section 14 originally estimated ~1 to 1.5 s per photo on CPU. Measured speed on dense multi-face event photos is **7.35 s per photo** (~31.7 minutes for 259 photos; previously measured 8.31 s/photo). Because measured speed is slower than SPEC's original baseline estimate, this performance metric is classified as **UNVERIFIED against SPEC estimate** (caused by dense group photos containing up to 40 faces per photo requiring individual ArcFace 512-d embeddings).
 - **Bug Root Cause & Fix**: `pipeline.py` previously sent `percent: 100.0` on the `scanning` stage after reading all photo paths. Because `model_init` and `model_download` stages were emitted before photo detection began, `JobManager` inherited 100% from scanning, dropped to 5% on photo 1, and again dropped from 100% to 92% on `clustering`. `pipeline.py` now scales scanning from `0.0%` to `2.0%`, emits `percent: 2.0` on `model_init` and `model_download`, scales detection linearly from `2.0%` to `88.0%`, runs clustering at `92.0%`, exporting at `96.0%`, and complete at `100.0%`. In addition, `backend/api/jobs.py` enforces a monotonic `max` filter on `job.percent` so progress can never move backwards under any stage payload.
 - **Model Fallback Check**: Confirmed that `userprofile/.insightface` does NOT exist and was never touched; all models downloaded directly to `~/.photosorter/models/buffalo_l/`.
 
