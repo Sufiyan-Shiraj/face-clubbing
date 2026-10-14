@@ -230,13 +230,18 @@ def run_model_download_and_cold_cache_test():
                 # Track timing milestones
                 if stage == "model_download" and t_download_start is None:
                     t_download_start = now
-                if stage == "model_init":
-                    if t_download_end is None and t_download_start is not None:
+                if t_download_start is not None and t_download_end is None:
+                    if target_photosorter_models.exists() and len(list(target_photosorter_models.glob("*.onnx"))) >= 5:
+                        t_download_end = now
+                        t_load_start = now
+                if stage == "model_init" and t_load_start is None:
+                    t_load_start = now
+                if stage == "processing":
+                    if t_download_start is not None and t_download_end is None:
                         t_download_end = now
                     if t_load_start is None:
-                        t_load_start = now
-                if stage == "processing":
-                    if t_load_end is None and t_load_start is not None:
+                        t_load_start = t_download_end if t_download_end is not None else now
+                    if t_load_end is None:
                         t_load_end = now
                     if t_detect_start is None:
                         t_detect_start = now
@@ -302,6 +307,7 @@ def run_model_download_and_cold_cache_test():
             print(f"Time to /api/health:        {time_to_health:.2f} s")
             print(f"Model Download Time:        {download_time:.2f} s")
             print(f"Model Load Time:            {load_time:.2f} s")
+            print(f"Model Download + Load Time: {(download_time + load_time):.2f} s")
             print(f"Total Detection Time:       {detect_time:.2f} s")
             print(f"Per-Photo Detect Time:      {per_photo_detect:.2f} s/photo")
             print("-" * 60)

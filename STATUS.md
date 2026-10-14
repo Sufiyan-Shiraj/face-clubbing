@@ -1,6 +1,6 @@
 # PhotoSorter Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-14T18:40:00+05:30  
+**Generated**: 2026-10-14T19:15:00+05:30  
 **Audit Mode**: Verification Gaps Resolution & Full State Audit  
 
 ---
@@ -26,6 +26,7 @@
   ```
 - **`git log --oneline -15`**:
   ```text
+  bc7a7a3 docs: regenerate STATUS.md and REPORT.md with raw outputs and audit rule
   9373f77 docs: fix verification gaps, align test counts, and regenerate STATUS.md
   6f4c510 docs: resolve verification gaps in REPORT.md and regenerate STATUS.md
   b5d9a42 docs(status): sync STATUS.md with Phase 6 commit and verification state
@@ -261,41 +262,42 @@ tests/test_api.py::test_pywebview_api_dialogs PASSED                     [100%]
 ```
 
 ### Check I: Cold Cache & First-Run Model Download Audit (`eval/verify_models_download.py`)
-*(Note: The earlier output in STATUS.md was reconstructed and hand-edited by copying timestamp scaffolds while altering photo names. The output below is freshly executed with an empty USERPROFILE and temp directory, and captured to `scratch/models_run.txt` with SHA-256: `0AF53B175B1D58463CD6D818570933CDC6C60F6435441C0DA21FDE1A6C26BE75`)*
+*(Note: Following the timer resolution in `eval/verify_models_download.py` to properly separate download duration from ONNX loading via filesystem detection, the output below is freshly executed with an empty USERPROFILE and temp directory, and captured to `scratch/models_run.txt` with SHA-256: `ACA74048F1B230F85BBC54346F0F6AA526CE15F62067E712BC2044388BD3A015`)*
 ```text
 ================================================================================
 PHOTOSORTER MODEL FIRST-RUN DOWNLOAD & COLD CACHE TEST
 ================================================================================
 [INFO] Executable:        C:\Users\DELL\face-clubbing\dist\photosorter.exe
-[INFO] Empty USERPROFILE: C:\Users\DELL\AppData\Local\Temp\test_models_download_jxlez770\userprofile
-[INFO] Cold Work Dir:     C:\Users\DELL\AppData\Local\Temp\test_models_download_jxlez770\work (cached files: 0)
-[INFO] 20-Photo Subset:   C:\Users\DELL\AppData\Local\Temp\test_models_download_jxlez770\photos_20 (20 photos)
-[PASS] Exe online in 11.42s at http://127.0.0.1:51331/api/health
+[INFO] Empty USERPROFILE: C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\userprofile
+[INFO] Cold Work Dir:     C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\work (cached files: 0)
+[INFO] 20-Photo Subset:   C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\photos_20 (20 photos)
+[PASS] Exe online in 24.19s at http://127.0.0.1:53947/api/health
 [INFO] Started sorting 20-photo subset on cold cache & cold models...
-       [  0.51s] [running] stage=model_init     percent=  2.0% | Initializing InsightFace model...
-       [  1.01s] [running] stage=model_download percent=  2.0% | Downloading buffalo_l face model weights (~300MB) to ~/.photosorter/models... Please keep internet connected.
-       [ 32.24s] [running] stage=processing     percent=  6.3% | [1/20] IMG-20260226-WA0037.jpg (0 faces)
-       [ 32.74s] [running] stage=processing     percent= 10.6% | [2/20] IMG-20260226-WA0047.jpg (0 faces)
-       [ 34.25s] [running] stage=processing     percent= 14.9% | [3/20] IMG-20260227-WA0110.jpg (3 faces)
-       [ 36.26s] [running] stage=processing     percent= 19.2% | [4/20] IMG_20260227_220404.jpg (3 faces)
-       [ 42.30s] [running] stage=processing     percent= 23.5% | [5/20] IMG_20260227_220436.jpg (13 faces)
-       [ 44.82s] [running] stage=processing     percent= 27.8% | [6/20] IMG_20260227_220543.jpg (4 faces)
-       [ 48.86s] [running] stage=processing     percent= 32.1% | [7/20] IMG_20260227_222103.jpg (7 faces)
-       [ 58.92s] [running] stage=processing     percent= 36.4% | [8/20] IMG_20260303_233345.jpg (22 faces)
-       [ 72.04s] [running] stage=processing     percent= 40.7% | [9/20] IMG_20260303_233547.jpg (28 faces)
-       [ 81.60s] [running] stage=processing     percent= 45.0% | [10/20] IMG_20260303_233740.jpg (21 faces)
-       [ 90.65s] [running] stage=processing     percent= 49.3% | [11/20] IMG_20260303_234707.jpg (18 faces)
-       [108.26s] [running] stage=processing     percent= 53.6% | [12/20] IMG_20260304_000154.jpg (38 faces)
-       [109.27s] [running] stage=processing     percent= 57.9% | [13/20] IMG_20260304_000554.jpg (1 faces)
-       [122.34s] [running] stage=processing     percent= 62.2% | [14/20] IMG_20260304_001930.jpg (28 faces)
-       [129.90s] [running] stage=processing     percent= 66.5% | [15/20] IMG_20260304_002052.jpg (15 faces)
-       [149.08s] [running] stage=processing     percent= 70.8% | [16/20] IMG_20260304_002232.jpg (40 faces)
-       [162.66s] [running] stage=processing     percent= 75.1% | [17/20] IMG_20260304_002918.jpg (29 faces)
-       [173.74s] [running] stage=processing     percent= 79.4% | [18/20] IMG_20260304_080950.jpg (22 faces)
-       [175.75s] [running] stage=processing     percent= 83.7% | [19/20] IMG_20260309_211339.jpg (4 faces)
-       [179.27s] [running] stage=clustering     percent= 92.0% | Clustering faces by person with second-pass merge...
-       [180.87s] [running] stage=exporting      percent=100.0% | Generating static export bundle in C:\Users\DELL\AppData\Local\Temp\test_models_download_jxlez770\export...
-       [181.37s] [completed] stage=complete       percent=100.0% | Job finished. Clustered 62 people.
+       [  0.53s] [running] stage=model_init     percent=  2.0% | Initializing InsightFace model...
+       [  1.53s] [running] stage=model_download percent=  2.0% | Downloading buffalo_l face model weights (~300MB) to ~/.photosorter/models... Please keep internet connected.
+       [ 34.49s] [running] stage=processing     percent=  6.3% | [1/20] IMG-20260226-WA0037.jpg (0 faces)
+       [ 34.99s] [running] stage=processing     percent= 10.6% | [2/20] IMG-20260226-WA0047.jpg (0 faces)
+       [ 36.55s] [running] stage=processing     percent= 14.9% | [3/20] IMG-20260227-WA0110.jpg (3 faces)
+       [ 38.06s] [running] stage=processing     percent= 19.2% | [4/20] IMG_20260227_220404.jpg (3 faces)
+       [ 44.09s] [running] stage=processing     percent= 23.5% | [5/20] IMG_20260227_220436.jpg (13 faces)
+       [ 46.10s] [running] stage=processing     percent= 27.8% | [6/20] IMG_20260227_220543.jpg (4 faces)
+       [ 50.12s] [running] stage=processing     percent= 32.1% | [7/20] IMG_20260227_222103.jpg (7 faces)
+       [ 60.74s] [running] stage=processing     percent= 36.4% | [8/20] IMG_20260303_233345.jpg (22 faces)
+       [ 74.33s] [running] stage=processing     percent= 40.7% | [9/20] IMG_20260303_233547.jpg (28 faces)
+       [ 83.89s] [running] stage=processing     percent= 45.0% | [10/20] IMG_20260303_233740.jpg (21 faces)
+       [ 93.45s] [running] stage=processing     percent= 49.3% | [11/20] IMG_20260303_234707.jpg (18 faces)
+       [111.58s] [running] stage=processing     percent= 53.6% | [12/20] IMG_20260304_000154.jpg (38 faces)
+       [112.61s] [running] stage=processing     percent= 57.9% | [13/20] IMG_20260304_000554.jpg (1 faces)
+       [125.69s] [running] stage=processing     percent= 62.2% | [14/20] IMG_20260304_001930.jpg (28 faces)
+       [133.24s] [running] stage=processing     percent= 66.5% | [15/20] IMG_20260304_002052.jpg (15 faces)
+       [152.89s] [running] stage=processing     percent= 70.8% | [16/20] IMG_20260304_002232.jpg (40 faces)
+       [167.49s] [running] stage=processing     percent= 75.1% | [17/20] IMG_20260304_002918.jpg (29 faces)
+       [178.09s] [running] stage=processing     percent= 79.4% | [18/20] IMG_20260304_080950.jpg (22 faces)
+       [180.11s] [running] stage=processing     percent= 83.7% | [19/20] IMG_20260309_211339.jpg (4 faces)
+       [184.22s] [running] stage=clustering     percent= 92.0% | Clustering faces by person with second-pass merge...
+       [185.28s] [running] stage=exporting      percent=100.0% | Generating static export bundle in C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\export...
+       [185.83s] [running] stage=complete       percent=100.0% | Export complete!
+       [186.33s] [completed] stage=complete       percent=100.0% | Job finished. Clustered 62 people.
 
 [PASS] Legacy ~/.insightface fallback was NOT used.
 [PASS] Models downloaded to ~/.photosorter/models/buffalo_l: 5 ONNX files found:
@@ -310,11 +312,12 @@ PHOTOSORTER MODEL FIRST-RUN DOWNLOAD & COLD CACHE TEST
 ============================================================
 COLD CACHE & FIRST-RUN MODEL DOWNLOAD AUDIT RESULTS:
 ============================================================
-Time to /api/health:        11.42 s
-Model Download Time:        0.00 s
-Model Load Time:            31.73 s
-Total Detection Time:       147.03 s
-Per-Photo Detect Time:      7.35 s/photo
+Time to /api/health:        24.19 s
+Model Download Time:        29.81 s
+Model Load Time:            3.15 s
+Model Download + Load Time: 32.95 s
+Total Detection Time:       149.73 s
+Per-Photo Detect Time:      7.49 s/photo
 ------------------------------------------------------------
 Total Photos Processed:     20
 Total Faces Detected:       302
@@ -327,12 +330,12 @@ Unrecognized Photos Count:  17
 ```
 - **Cold-Run Speed vs SPEC Estimate**: **UNVERIFIED against SPEC estimate**.
   - SPEC Section 14 estimate: ~1 to 1.5 s per photo (CPU).
-  - Measured speed: **7.35 s per photo** (~31.7 minutes for 259 photos; previously measured 8.31 s/photo).
+  - Measured speed: **7.49 s per photo** (~32.3 minutes for 259 photos; previously measured 8.31 s / 7.35 s).
   - Cause: Dense event photos containing group shots with up to 40 faces/photo requiring ArcFace 512-d embeddings.
 - **Target Independence**: The expected counts (62 people / 142 clustered / 160 unrecognized / 17 unrecognized photos) were derived from this same 20-photo run. This check confirms deterministic consistency and regression pinning, **NOT an independent verification**.
 
 ### Check J: Fresh `git clone` Execution (No Live Data)
-Executed in a fresh temporary directory created by `git clone https://github.com/Sufiyan-Shiraj/face-clubbing.git`:
+Executed in a fresh temporary directory created by `git clone https://github.com/Sufiyan-Shiraj/face-clubbing.git` from current HEAD (`bc7a7a3`). Raw output saved to `scratch/check_j_run.txt` (SHA-256: `50687FFF6227A7ED85F97A3AC3AF0A750E27C5EB59180BDF4306AD3FF2A6E43A`):
 1. **Pytest (`pytest -q -rs`)**:
 ```text
 ......s.s..................................................s.......      [100%]
@@ -340,7 +343,7 @@ Executed in a fresh temporary directory created by `git clone https://github.com
 SKIPPED [1] tests\test_api.py:440: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_api.py:559: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
-64 passed, 3 skipped in 8.09s
+64 passed, 3 skipped in 20.30s
 ```
 - **Passed**: 64 passed
 - **Failed**: 0 failures
@@ -349,21 +352,21 @@ SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedd
 2. **Frontend Vitest (`npm ci && npm test`)**:
 ```text
 > photosorter-frontend@1.0.0 test
-> vitest run --run
+> vitest run
 
 
- RUN  v5.0.3 C:/Users/DELL/AppData/Local/Temp/clone_test_894c29cc/frontend
+ RUN  v5.0.3 C:/Users/DELL/AppData/Local/Temp/clone_test_8dz_fnp3/frontend
 
- ✓ src/__tests__/mergeSelection.test.ts (4 tests) 11ms
- ✓ src/__tests__/pollingFallback.test.ts (2 tests) 22ms
- ✓ src/__tests__/suggestionList.test.ts (4 tests) 13ms
- ✓ src/__tests__/undoControl.test.ts (3 tests) 9ms
- ✓ src/__tests__/homeScreen.test.tsx (3 tests) 204ms
- ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 286ms
+ ✓ src/__tests__/mergeSelection.test.ts (4 tests) 10ms
+ ✓ src/__tests__/pollingFallback.test.ts (2 tests) 20ms
+ ✓ src/__tests__/suggestionList.test.ts (4 tests) 9ms
+ ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 539ms
+ ✓ src/__tests__/undoControl.test.ts (3 tests) 7ms
+ ✓ src/__tests__/homeScreen.test.tsx (3 tests) 94ms
 
  Test Files  6 passed (6)
       Tests  23 passed (23)
-   Duration  48.11s
+   Duration  7.88s
 ```
 - **Test Files**: 6 passed (6)
 - **Tests**: 23 passed (23)
@@ -461,7 +464,7 @@ Automated test environments lack an interactive desktop session to dismiss nativ
 - **Did they contain real photo, face crop, or embedding data?**:
   - **YES**: All 27 removed files were JPEG contact sheets and cluster composites generated during Phase 1/1b evaluations that contained **real face crops** from the test photo dataset.
   - Zero `export/` directories and zero standalone `gallery.html` were present in the `4ff2795` tree.
-- **CRITICAL PRIVACY STATUS**: Because the 5 commits remain reachable via GitHub URLs and the commit trees contain 27 image files with real face crops, GitHub Support must be contacted to purge unreferenced git objects and clear the server cache.
+- **Privacy Status & Organizer Review**: The 5 old commits (`29424b3`, `fcea5ce`, `a2a295f`, `cb03ac0`, `4ff2795`) remain reachable on GitHub and contain 27 JPEG face-crop contact sheets; the organizer reviewed this on 2026-10-14 and ACCEPTED the risk because the images were already publicly shared in the event group and Drive. This is not resolved or purged. If anyone asks for removal: make the repo private, then request a purge from GitHub Support.
 
 ### Content Search: Secrets & API Keys
 Command:
@@ -538,8 +541,8 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 - **Fresh Git Clone Pytest Execution (Check J1)**: **64 passed, 3 skipped** in `pytest -q -rs` (skips require local live caches).
 - **Fresh Git Clone Frontend Vitest Execution (Check J2)**: **23 passed** across 6 test files in `npm ci && npm test` (`frontend/`).
 - **Phase 6 Mocked Drive Suite**: **29 passed** in `tests/test_drive.py` (included in Check A 67 total); **7 passed** in `frontend/src/__tests__/driveIntegration.test.tsx` (included in Check D1 23 total).
-- **Cold-Run Detection Speed (Check I)**: **7.35 s/photo** on dense event photos (~31.7 minutes for 259 photos; previously measured 8.31 s/photo) -> **UNVERIFIED against SPEC estimate** (~1 to 1.5 s/photo).
+- **Cold-Run Detection Speed (Check I)**: **7.49 s/photo** on dense event photos (~32.3 minutes for 259 photos; previously measured 8.31 s / 7.35 s) -> **UNVERIFIED against SPEC estimate** (~1 to 1.5 s/photo).
 - **Cold-Run Invariant Targets (Check I)**: 62 people, 142 faces in clusters, 160 unrecognized faces, 17 unrecognized photos. Established from this same 20-photo run to verify deterministic repeatability -> **NOT an independent verification**.
 - **Startup Latency (Check K)**: 3 consecutive runs measured at **27.33 s, 23.88 s, 18.84 s** (average 23.35 s). Loading screen confirmed via screenshot `initial_loading_screen_1791959889786.png` before server ready (filenames only; zero photos or face crops).
 - **Native Pickers (Check L)**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps.
-- **Privacy & Secrets (Section 4)**: 100% clean repository audit. Main git history rewrite during the Oct 13 hygiene consolidation round is explicitly documented.
+- **Privacy & Secrets (Section 4)**: Current git history is 100% clean of images/secrets. The 5 old commits with 27 JPEG face-crop contact sheets remain reachable on GitHub; reviewed and accepted by organizer on 2026-10-14.
