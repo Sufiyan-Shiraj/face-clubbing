@@ -68,6 +68,7 @@ class PhotoRecord:
     width: int
     height: int
     download_url: Optional[str] = None
+    drive_file_id: Optional[str] = None
     faces: List[FaceDetection] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -78,6 +79,7 @@ class PhotoRecord:
             "width": self.width,
             "height": self.height,
             "download_url": self.download_url,
+            "drive_file_id": self.drive_file_id,
             "faces": [f.to_dict() for f in self.faces],
         }
 
@@ -91,6 +93,7 @@ class PhotoRecord:
             width=data["width"],
             height=data["height"],
             download_url=data.get("download_url"),
+            drive_file_id=data.get("drive_file_id"),
             faces=faces,
         )
 

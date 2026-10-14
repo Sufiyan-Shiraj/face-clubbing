@@ -134,6 +134,9 @@ export interface Settings {
   include_maybe: boolean;
   event_title: string;
   event_subtitle: string;
+  drive_api_key?: string | null;
+  drive_api_key_masked?: string | null;
+  drive_api_key_configured?: boolean;
 }
 
 export interface PhotoInfo {

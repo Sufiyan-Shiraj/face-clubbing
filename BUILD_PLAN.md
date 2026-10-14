@@ -19,7 +19,7 @@
 | 3 API layer (FastAPI) | Done |
 | 4 Organizer UI (React) | Done (organizer review of layout/wording pending) |
 | 5 Desktop shell + first package | In verification (headless exe run verified; windowed launch, native pickers, model availability on a clean machine not yet) |
-| 6 Method 1 (Drive link) | Not started |
+| 6 Method 1 (Drive link) | In verification (mocked suite complete; live verification on public folder pending user-provided link and key) |
 | 7 Release automation | Not started |
 | 8 | Removed (2026-10-13) |
 | 9 Polish / extras | Not started |

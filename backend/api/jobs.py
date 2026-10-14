@@ -124,7 +124,7 @@ class JobManager:
             for k, v in req.settings.model_dump(exclude_unset=True).items():
                 if hasattr(self.state.settings, k) and v is not None:
                     setattr(self.state.settings, k, v)
-        chosen_input = req.input_path or req.source_path
+        chosen_input = req.drive_folder or req.input_path or req.source_path
         if chosen_input:
             self.state.settings.input_path = chosen_input
         env_out = os.environ.get("PHOTOSORTER_OUTPUT_DIR")
@@ -136,16 +136,27 @@ class JobManager:
             self.state.settings.cache_dir = req.cache_dir
 
         raw_input = self.state.settings.input_path or "test_photos"
-        input_candidate = Path(raw_input)
-        if not input_candidate.is_absolute():
-            if (Path.cwd() / input_candidate).exists():
-                resolved_input = str((Path.cwd() / input_candidate).resolve())
-            elif (self.state.repo_root / input_candidate).exists():
-                resolved_input = str((self.state.repo_root / input_candidate).resolve())
-            else:
-                resolved_input = str(input_candidate.resolve())
+        from backend.drive import is_drive_folder_input, get_drive_api_key
+        if is_drive_folder_input(raw_input):
+            resolved_input = raw_input
         else:
-            resolved_input = str(input_candidate)
+            input_candidate = Path(raw_input)
+            if not input_candidate.is_absolute():
+                if (Path.cwd() / input_candidate).exists():
+                    resolved_input = str((Path.cwd() / input_candidate).resolve())
+                elif (self.state.repo_root / input_candidate).exists():
+                    resolved_input = str((self.state.repo_root / input_candidate).resolve())
+                else:
+                    resolved_input = str(input_candidate.resolve())
+            else:
+                resolved_input = str(input_candidate)
+
+        drive_key = (
+            req.drive_api_key
+            or (req.settings.drive_api_key if req.settings else None)
+            or self.state.settings.drive_api_key
+            or get_drive_api_key()
+        )
 
         config = EngineConfig(
             input_path=resolved_input,
@@ -170,6 +181,7 @@ class JobManager:
             include_maybe=self.state.settings.include_maybe,
             event_title=self.state.settings.event_title,
             event_subtitle=self.state.settings.event_subtitle,
+            drive_api_key=drive_key,
             progress_callback=self._broadcast_progress,
             cancel_check=lambda: self._cancel_event.is_set(),
         )

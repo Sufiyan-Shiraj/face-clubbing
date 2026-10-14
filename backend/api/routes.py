@@ -140,15 +140,33 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
     # 7. Settings Endpoints
     @router.get("/settings", response_model=SettingsModel)
     def get_settings():
-        return state.settings
+        from backend.drive import get_drive_api_key, mask_api_key
+        current = state.settings.model_copy()
+        raw_key = get_drive_api_key()
+        current.drive_api_key = None  # Never expose raw key
+        current.drive_api_key_masked = mask_api_key(raw_key)
+        current.drive_api_key_configured = bool(raw_key)
+        return current
 
     @router.post("/settings", response_model=SettingsModel)
     def update_settings(settings: SettingsModel):
-        for k, v in settings.model_dump(exclude_unset=True).items():
-            if hasattr(state.settings, k) and v is not None:
+        from backend.drive import set_drive_api_key, get_drive_api_key, mask_api_key
+        dump = settings.model_dump(exclude_unset=True)
+        new_key = dump.pop("drive_api_key", None)
+        if new_key and isinstance(new_key, str) and "..." not in new_key and new_key.strip():
+            set_drive_api_key(new_key.strip())
+
+        for k, v in dump.items():
+            if hasattr(state.settings, k) and v is not None and k not in ("drive_api_key", "drive_api_key_masked", "drive_api_key_configured"):
                 setattr(state.settings, k, v)
                 if k == "work_dir":
                     state.set_work_dir(v)
-        return state.settings
+
+        current = state.settings.model_copy()
+        raw_key = get_drive_api_key()
+        current.drive_api_key = None
+        current.drive_api_key_masked = mask_api_key(raw_key)
+        current.drive_api_key_configured = bool(raw_key)
+        return current
 
     return router

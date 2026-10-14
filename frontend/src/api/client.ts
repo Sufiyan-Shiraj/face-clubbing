@@ -40,11 +40,18 @@ export const api = {
     return fetchJson(`${BASE_URL}/jobs/status`);
   },
 
-  async startJob(inputPath?: string, outputDir: string = 'export'): Promise<JobStatus> {
+  async startJob(
+    inputPath?: string,
+    outputDir: string = 'export',
+    driveFolder?: string,
+    driveApiKey?: string
+  ): Promise<JobStatus> {
     return fetchJson(`${BASE_URL}/jobs/start`, {
       method: 'POST',
       body: JSON.stringify({
-        input_path: inputPath || 'test_photos',
+        input_path: driveFolder ? undefined : (inputPath || 'test_photos'),
+        drive_folder: driveFolder || undefined,
+        drive_api_key: driveApiKey || undefined,
         output_dir: outputDir,
       }),
     });

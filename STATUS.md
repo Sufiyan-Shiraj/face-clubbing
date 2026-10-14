@@ -64,7 +64,7 @@
 | **3 API layer (FastAPI)** | Done | `backend/api/app.py`, `backend/api/jobs.py`, `backend/api/models.py`, `backend/api/routes.py`, `backend/api/state.py`, `eval/verify_api.py`, `tests/test_api.py` | Section 15 (Endpoints, SSE streaming, edit replay, fixture verification) | **MATCHES** |
 | **4 Organizer UI (React)** | Done | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `scripts/e2e.mjs`, `dist/` | Section 16 (Screens, controls, E2E browser verification) | **MATCHES** |
 | **5 Desktop shell & packaging** | Complete | `main.py`, `photosorter.spec`, `dist/photosorter.exe`, `eval/verify_exe.py`, `eval/verify_windowed.py`, `eval/verify_models_cold.py` | Section 19 (Pywebview shell, native dialogs, PyInstaller exe, GUI subsystem, bundle hygiene, windowed verification, cold cache run) | **MATCHES** |
-| **6 Method 1 (Drive link input)** | Not started | `backend/drive/` contains empty `__init__.py` | None | **NOT STARTED** |
+| **6 Method 1 (Drive link input)** | In verification | `backend/drive/parser.py`, `client.py`, `config.py`, `tests/test_drive.py`, `eval/verify_drive_phase6.py`, `frontend/src/__tests__/driveIntegration.test.tsx` | Section 20 (All 7 tasks implemented; 29/29 pytest passed, 23/23 Vitest passed; live check pending folder and key) | **IN VERIFICATION** |
 | **7 Release automation** | Not started | None | None | **NOT STARTED** |
 | **8 Method 2 (Upload to Drive)** | Removed | None (Purged in Rev 3) | None | **REMOVED** |
 | **9 Polish / extras** | Not started | None | None | **NOT STARTED** |

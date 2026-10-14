@@ -297,9 +297,9 @@ export const App: React.FC = () => {
   };
 
   // Start job
-  const handleStartJob = async (inputPath: string) => {
+  const handleStartJob = async (inputPath?: string, driveFolder?: string, driveApiKey?: string) => {
     try {
-      const st = await api.startJob(inputPath);
+      const st = await api.startJob(inputPath, driveFolder, driveApiKey);
       setJobStatus(st);
       setProgressHistory([st]);
       setActiveTab('progress');

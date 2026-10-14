@@ -29,11 +29,16 @@ class SettingsModel(BaseModel):
     include_maybe: bool = False
     event_title: str = "Event Gallery"
     event_subtitle: str = "Photos grouped by person"
+    drive_api_key: Optional[str] = None
+    drive_api_key_masked: Optional[str] = None
+    drive_api_key_configured: bool = False
 
 
 class JobStartRequest(BaseModel):
     input_path: Optional[str] = None
     source_path: Optional[str] = None
+    drive_folder: Optional[str] = None
+    drive_api_key: Optional[str] = None
     output_dir: Optional[str] = "export"
     cache_dir: Optional[str] = None
     settings: Optional[SettingsModel] = None

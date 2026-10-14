@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { Settings } from '../types';
-import { Sliders, RefreshCw, Key, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Sliders, RefreshCw, Key, CheckCircle2, AlertTriangle, ShieldCheck, HelpCircle, ExternalLink, Save, Trash2 } from 'lucide-react';
 
 interface SettingsScreenProps {
   onRerunComplete?: () => void;
@@ -31,9 +31,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete 
     event_subtitle: 'Auto-sorted face albums and photo gallery',
   });
 
-  const [apiKey, setApiKey] = useState(() => {
-    return sessionStorage.getItem('drive_api_key_ephemeral') || '';
-  });
+  const [driveKeyInput, setDriveKeyInput] = useState('');
+  const [isSavingKey, setIsSavingKey] = useState(false);
+  const [keySavedMessage, setKeySavedMessage] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
   const [rerunResult, setRerunResult] = useState<{
@@ -54,13 +55,40 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete 
       .finally(() => setIsLoading(false));
   }, []);
 
-  const handleApiKeyChange = (val: string) => {
-    setApiKey(val);
-    // Never persist to backend; store only in browser session storage
-    if (val) {
-      sessionStorage.setItem('drive_api_key_ephemeral', val);
-    } else {
-      sessionStorage.removeItem('drive_api_key_ephemeral');
+  const handleSaveDriveKey = async () => {
+    if (!driveKeyInput.trim()) return;
+    setIsSavingKey(true);
+    setError(null);
+    setKeySavedMessage(null);
+    try {
+      await api.updateSettings({ drive_api_key: driveKeyInput.trim() });
+      const updated = await api.getSettings();
+      setSettings((prev) => ({ ...prev, ...updated }));
+      setDriveKeyInput('');
+      setKeySavedMessage('Drive API key saved to ~/.photosorter/settings.json (outside repository).');
+      setTimeout(() => setKeySavedMessage(null), 5000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save Drive API key');
+    } finally {
+      setIsSavingKey(false);
+    }
+  };
+
+  const handleClearDriveKey = async () => {
+    setIsSavingKey(true);
+    setError(null);
+    setKeySavedMessage(null);
+    try {
+      await api.updateSettings({ drive_api_key: '' });
+      const updated = await api.getSettings();
+      setSettings((prev) => ({ ...prev, ...updated }));
+      setDriveKeyInput('');
+      setKeySavedMessage('Drive API key removed from local settings.');
+      setTimeout(() => setKeySavedMessage(null), 5000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to clear Drive API key');
+    } finally {
+      setIsSavingKey(false);
     }
   };
 
@@ -308,31 +336,149 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete 
 
       {/* Section 3: Google Drive API Key */}
       <div className="glass-card p-6 rounded-2xl space-y-5">
-        <h3 className="text-base font-semibold text-white border-b border-neutral-800 pb-3 flex items-center justify-between">
-          <span>Google Drive API Key</span>
-          <span className="px-2 py-0.5 rounded text-[10px] bg-neutral-800 text-neutral-400 font-semibold uppercase">
-            Phase 6 Preview
-          </span>
-        </h3>
-
-        {/* API Key */}
-        <div className="space-y-1.5">
-          <label htmlFor="setting-api-key" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-            <Key className="w-3.5 h-3.5 text-amber-400" />
-            <span>Google Drive API Key</span>
-          </label>
-          <input
-            id="setting-api-key"
-            type="password"
-            value={apiKey}
-            onChange={(e) => handleApiKeyChange(e.target.value)}
-            placeholder="AIzaSy... (Client-only / Ephemeral)"
-            className="w-full px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-accent font-mono"
-          />
-          <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 pt-0.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-            <span>Security guarantee: Stored in browser session memory only. Never written to git or backend files. Phase 6 will use it for Drive queries.</span>
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="flex items-center gap-2">
+            <Key className="w-5 h-5 text-amber-400" />
+            <h3 className="text-base font-semibold text-white">Google Drive API Key</h3>
           </div>
+          {settings.drive_api_key_configured ? (
+            <span
+              id="drive-key-status-badge"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Configured ({settings.drive_api_key_masked || 'Active'})</span>
+            </span>
+          ) : (
+            <span
+              id="drive-key-status-badge"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-400 border border-amber-800"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>Not Configured</span>
+            </span>
+          )}
+        </div>
+
+        {keySavedMessage && (
+          <div
+            id="drive-key-saved-message"
+            className="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs flex items-center gap-2 animate-fadeIn"
+          >
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <span>{keySavedMessage}</span>
+          </div>
+        )}
+
+        {/* API Key Input and Action Buttons */}
+        <div className="space-y-3">
+          <label htmlFor="setting-drive-api-key" className="block text-xs font-semibold uppercase tracking-wider text-neutral-400">
+            {settings.drive_api_key_configured ? 'Update API Key' : 'Enter API Key'}
+          </label>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              id="setting-drive-api-key"
+              type="password"
+              value={driveKeyInput}
+              onChange={(e) => setDriveKeyInput(e.target.value)}
+              placeholder={
+                settings.drive_api_key_configured
+                  ? `Configured (${settings.drive_api_key_masked || 'Hidden'}) - paste new key to update`
+                  : 'AIzaSy... (free Google Cloud API key)'
+              }
+              className="flex-1 px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-accent font-mono placeholder:text-neutral-600"
+            />
+            <div className="flex gap-2">
+              <button
+                id="save-drive-key-btn"
+                type="button"
+                onClick={handleSaveDriveKey}
+                disabled={isSavingKey || !driveKeyInput.trim()}
+                className={`px-4 py-2.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all shadow-md ${
+                  isSavingKey || !driveKeyInput.trim()
+                    ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                    : 'bg-accent text-white hover:brightness-110 shadow-accent/20 cursor-pointer'
+                }`}
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{isSavingKey ? 'Saving...' : 'Save Key'}</span>
+              </button>
+              {settings.drive_api_key_configured && (
+                <button
+                  id="clear-drive-key-btn"
+                  type="button"
+                  onClick={handleClearDriveKey}
+                  disabled={isSavingKey}
+                  className="px-3.5 py-2.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 bg-red-950/40 hover:bg-red-950/80 text-red-300 border border-red-800/80 transition-all cursor-pointer"
+                  title="Remove saved key from local settings"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remove</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Security Guarantee */}
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800/80 text-[11px] text-neutral-400">
+          <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <span className="font-semibold text-neutral-300">Security Guarantee: </span>
+            Stored only in your local profile (<code className="text-neutral-300">~/.photosorter/settings.json</code>) or read from the <code className="text-neutral-300">DRIVE_API_KEY</code> environment variable. Never committed to git, never written to project files, never included in exports or client bundles, and masked in logs.
+          </div>
+        </div>
+
+        {/* In-App Guide */}
+        <div className="border border-neutral-800 rounded-xl overflow-hidden bg-neutral-900/40">
+          <button
+            type="button"
+            onClick={() => setShowGuide(!showGuide)}
+            className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-neutral-300 hover:text-white transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <HelpCircle className="w-4 h-4 text-accent" />
+              <span>How to get a free Google Drive API Key (3 minutes)</span>
+            </span>
+            <span className="text-[11px] text-neutral-500">{showGuide ? 'Hide Guide' : 'Show Guide'}</span>
+          </button>
+
+          {showGuide && (
+            <div className="px-4 pb-4 pt-1 space-y-2.5 text-xs text-neutral-400 border-t border-neutral-800/60">
+              <ol className="list-decimal list-inside space-y-2">
+                <li>
+                  Go to the{' '}
+                  <a
+                    href="https://console.cloud.google.com/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent hover:underline inline-flex items-center gap-1 font-medium"
+                  >
+                    Google Cloud Console <ExternalLink className="w-3 h-3" />
+                  </a>{' '}
+                  and sign in with any Google account.
+                </li>
+                <li>
+                  Click the project selector at the top and click <strong className="text-neutral-200">New Project</strong> (e.g. name it <code className="text-neutral-200">PhotoSorter</code>).
+                </li>
+                <li>
+                  Go to <strong className="text-neutral-200">APIs &amp; Services &gt; Library</strong>, search for <strong className="text-neutral-200">Google Drive API</strong>, and click <strong className="text-neutral-200">Enable</strong>.
+                </li>
+                <li>
+                  Go to <strong className="text-neutral-200">APIs &amp; Services &gt; Credentials</strong>, click <strong className="text-neutral-200">+ Create Credentials</strong>, and select <strong className="text-neutral-200">API key</strong>.
+                </li>
+                <li>
+                  <strong className="text-neutral-300">(Recommended)</strong> Click <strong className="text-neutral-200">Edit API key</strong>, under <em className="text-neutral-300">API restrictions</em> select <strong className="text-neutral-200">Restrict key</strong> and choose <strong className="text-neutral-200">Google Drive API</strong>.
+                </li>
+                <li>
+                  Paste the generated key above and click <strong className="text-neutral-200">Save Key</strong>, or set the <code className="text-neutral-200">DRIVE_API_KEY</code> environment variable.
+                </li>
+              </ol>
+              <p className="text-[11px] text-neutral-500 pt-1">
+                Note: Standard Google Cloud free tier includes hundreds of thousands of Drive API requests per day at zero cost.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
