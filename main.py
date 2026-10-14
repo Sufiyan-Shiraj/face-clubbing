@@ -142,6 +142,7 @@ def main():
     work_path = Path(args.work_dir) if args.work_dir else None
     out_path = Path(args.output_dir) if args.output_dir else None
 
+    t0_startup = time.time()
     app = create_app(work_dir=work_path, output_dir=out_path)
 
     server_thread = ServerThread(app=app, host=host, port=port)
@@ -152,7 +153,9 @@ def main():
         server_thread.stop()
         sys.exit(1)
 
+    dt_health = time.time() - t0_startup
     url = f"http://{host}:{port}"
+    print(f"[STARTUP] Server healthy at {dt_health:.2f}s: {url}")
 
     if args.no_gui:
         print(f"PhotoSorter server running at {url} (Ctrl+C to stop)")
@@ -177,6 +180,12 @@ def main():
         background_color="#0a0a0a",
     )
     api.set_window(window)
+
+    def on_window_shown():
+        dt_shown = time.time() - t0_startup
+        print(f"[STARTUP] Native window visible at {dt_shown:.2f}s (backend healthy at {dt_health:.2f}s)")
+
+    window.events.shown += on_window_shown
 
     try:
         webview.start(debug=False)

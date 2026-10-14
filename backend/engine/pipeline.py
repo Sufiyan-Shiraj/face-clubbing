@@ -73,7 +73,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     notify({"stage": "scanning", "current": 0, "total": 0, "percent": 0.0, "message": f"Scanning input: {input_p}"})
     with PhotoScanner(input_p) as scanner:
         def on_scan_progress(cur: int, tot: int, fname: str):
-            pct = round((cur / tot) * 100.0, 1) if tot > 0 else 0.0
+            pct = round((cur / tot) * 2.0, 1) if tot > 0 else 0.0
             notify({
                 "stage": "scanning",
                 "current": cur,
@@ -90,9 +90,9 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
 
         notify({
             "stage": "scanned",
-            "current": total_photos,
+            "current": 0,
             "total": total_photos,
-            "percent": 100.0 if total_photos > 0 else 0.0,
+            "percent": 2.0,
             "message": f"Found {total_photos} photos to process.",
         })
 
@@ -137,7 +137,13 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                         gc.collect()
             else:
                 if detector is None:
-                    notify({"stage": "model_init", "message": "Initializing InsightFace model..."})
+                    notify({
+                        "stage": "model_init",
+                        "current": 0,
+                        "total": total_photos,
+                        "percent": 2.0,
+                        "message": "Initializing InsightFace model...",
+                    })
                     detector = FaceDetector(
                         model_name="buffalo_l",
                         model_root=config.model_root,
@@ -187,7 +193,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             avg_per_photo = elapsed / processed
             eta_seconds = (total_photos - processed) * avg_per_photo
 
-            pct = round((processed / total_photos) * 100.0, 1) if total_photos > 0 else 0.0
+            # Scale detection/embedding phase from 2% to 88% so subsequent stages (clustering, export) never go backwards
+            pct = round(2.0 + (processed / total_photos) * 86.0, 1) if total_photos > 0 else 2.0
             notify({
                 "stage": "processing",
                 "current": processed,

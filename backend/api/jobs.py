@@ -69,11 +69,11 @@ class JobManager:
                 if self.total > 0:
                     self.current = self.total
             elif "percent" in payload:
-                self.percent = float(payload["percent"])
+                self.percent = max(self.percent, float(payload["percent"]))
             elif "progress" in payload:
-                self.percent = round(float(payload["progress"]) * 100.0, 1)
+                self.percent = max(self.percent, round(float(payload["progress"]) * 100.0, 1))
             elif self.total > 0 and self.current >= 0:
-                self.percent = round((self.current / self.total) * 100.0, 1)
+                self.percent = max(self.percent, round((self.current / self.total) * 100.0, 1))
 
             if "file_name" in payload:
                 self.current_file = payload["file_name"]

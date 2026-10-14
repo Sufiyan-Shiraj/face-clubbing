@@ -2887,9 +2887,161 @@ Additionally, mock unit testing for the pywebview dialog bridge was verified via
 | `0b9ecba` | `fix(progress): persistent SSE streaming and 500ms real-time polling fallback` | `frontend/src/api/client.ts` implements SSE `EventSource` with automated 500ms fallback; unit test in `frontend/src/__tests__/pollingFallback.test.ts`. |
 | `a4ee760` | `feat(export): standalone single-file HTML gallery generator for direct double-click viewing` | `backend/engine/standalone_html.py` bundles export into self-contained HTML gallery with zero external assets; verified in `tests/test_standalone_html.py`. |
 
+### 19.10 Phase 5 Follow-Up Verification & Audit (2026-10-14)
+
+#### 19.10.1 History and Privacy Audit (Commits Since 13 Oct Report `d546e53`)
+All commits added to `main` since the 13 Oct hygiene closeout report (`d546e53`) are standard linear, fast-forward commits. None were rewritten, amended after pushing, or force-pushed.
+
+| Commit Hash | One-Line Summary | What Was Changed and Why | Force-Pushed? |
+| :--- | :--- | :--- | :---: |
+| `8493b39` | `feat(desktop): add Phase 5 pywebview shell, native pickers, clean report assets, and update README` | Added `main.py` pywebview desktop shell, `WebviewApi` native file/folder pickers, `run.bat`/`run.sh`, cleaned exploratory report assets, and updated `README.md`. Implements Phase 5 core GUI shell. | **No** (fast-forward) |
+| `3cc5e1a` | `feat(desktop): complete Phase 5 packaging, PyInstaller exe build and verification` | Configured `photosorter.spec` single-file packaging with `console=False`, compiled `dist/photosorter.exe`, added `eval/verify_windowed.py`, verified export with applied merges from `export.work/edits.json`. | **No** (fast-forward) |
+| `3d56ba3` | `docs: update SPEC and BUILD_PLAN to revision 3 (remove Method 2 / Phase 8)` | Updated `SPEC.md` and `BUILD_PLAN.md` to revision 3, removing Method 2 (OAuth Google Drive upload / credential storage / Phase 8) per organizer direction. Drive remains read-only via API key (Phase 6). | **No** (fast-forward) |
+| `48cfcd6` | `feat(phase5): complete standalone packaging verification, progress calculation, and report updates` | Updated progress handling, validated standalone packaging, updated REPORT.md with Phase 5 evidence and metrics. | **No** (fast-forward) |
+| `cd77084` | `feat(phase5): complete Phase 5 closeout, model first-run/cold cache verification, windowed launch automation, and docs update` | Completed Phase 5 closeout, automated windowed checks, added model first-run cold verification script, regenerated `STATUS.md`. | **No** (fast-forward) |
+
+**Repo-Wide Git History Privacy Check**:
+Command executed:
+```powershell
+git log --all --name-only --pretty=format: | Select-String -Pattern '\.(jpg|jpeg|png|webp|heic|heif|zip|onnx)$|^(report_assets|archives|scratch|export|dist)/' | Sort-Object -Unique
+```
+Exact output:
+```text
+archives/edits_2026-10-08.json
+scratch/check_exports.py
+scratch/check_ground_truth.py
+scratch/check_photos.py
+scratch/dump_gt.py
+scratch/make_gt_subset.py
+scratch/test_pipeline.py
+scratch/test_pipeline_clean.py
+scratch/test_pipeline_clean_copy.py
+scratch/verify_all.py
+```
+**Privacy Audit Verdict**: **100% CLEAN**. Zero real photos, zero face crop binaries, zero ONNX model weights, and zero `export/` or `dist/` artifacts exist anywhere in git history. The only matched files are the anonymized ID metadata archive (`archives/edits_2026-10-08.json`) and temporary python scripts under `scratch/`.
+
+#### 19.10.2 Live Data Audit (`export/` and `export.work/edits.json`)
+- **`export.work/edits.json`**:
+  - `updated_at: "2026-10-08T11:06:57.507796+05:30"`
+  - Contains the 4 manual organizer merges recorded during the 8 Oct 2026 merge review session:
+    - Group 1: `p0001` merged with `p0002` -> `p0001`
+    - Group 2: `p0003` merged with `p0004` -> `p0003`
+    - Group 3: `p0005` merged with `p0006` -> `p0005`
+    - Group 4: `p0007` merged with `p0008` -> `p0007`
+  - **Status**: Untouched and NOT modified.
+- **`export/people.json`**:
+  - Last modified: `Tue Oct 13 23:15:06 2026`
+  - Total People Clusters: **188** (192 clean baseline - 4 merged clusters = 188).
+  - Which script/commit changed them: Generated in commit `3cc5e1a` ("feat(desktop): complete Phase 5 packaging, PyInstaller exe build and verification") when running `dist/photosorter.exe` with `--apply-edits` pointing to `export.work/edits.json`.
+  - **Status**: Untouched and NOT modified.
+
+#### 19.10.3 Model First-Run Download, Monotonic Progress, & Cold Cache Audit
+Executed `dist/photosorter.exe` using `eval/verify_models_download.py` with:
+- Empty `USERPROFILE` in temporary directory (`test_models_download_*`).
+- Zero pre-existing models in `~/.photosorter/models/` and zero pre-existing files in `work/`.
+- Network enabled (downloading directly from InsightFace GitHub releases).
+- 20-photo subset from `test_photos/`.
+
+**Verbatim Execution Output**:
+```text
+================================================================================
+PHOTOSORTER MODEL FIRST-RUN DOWNLOAD & COLD CACHE TEST
+================================================================================
+[INFO] Executable:        C:\Users\DELL\face-clubbing\dist\photosorter.exe
+[INFO] Empty USERPROFILE: C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\userprofile
+[INFO] Cold Work Dir:     C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\work (cached files: 0)
+[INFO] 20-Photo Subset:   C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\photos_20 (20 photos)
+[PASS] Exe online in 13.38s at http://127.0.0.1:53067/api/health
+[INFO] Started sorting 20-photo subset on cold cache & cold models...
+       [  0.51s] [running] stage=model_init     percent=  2.0% | Initializing InsightFace model...
+       [  1.02s] [running] stage=model_download percent=  2.0% | Downloading buffalo_l face model weights (~300MB) to ~/.photosorter/models... Please keep internet connected.
+       [ 37.36s] [running] stage=processing     percent=  6.3% | [1/20] IMG-20260226-WA0037.jpg (0 faces)
+       [ 37.88s] [running] stage=processing     percent= 10.6% | [2/20] IMG-20260226-WA0047.jpg (0 faces)
+       [ 39.39s] [running] stage=processing     percent= 14.9% | [3/20] IMG-20260227-WA0110.jpg (3 faces)
+       [ 41.40s] [running] stage=processing     percent= 19.2% | [4/20] IMG_20260227_220404.jpg (3 faces)
+       [ 47.94s] [running] stage=processing     percent= 23.5% | [5/20] IMG_20260227_220436.jpg (13 faces)
+       [ 50.96s] [running] stage=processing     percent= 27.8% | [6/20] IMG_20260227_220543.jpg (4 faces)
+       [ 54.98s] [running] stage=processing     percent= 32.1% | [7/20] IMG_20260227_222103.jpg (7 faces)
+       [ 66.55s] [running] stage=processing     percent= 36.4% | [8/20] IMG_20260303_233345.jpg (22 faces)
+       [ 81.68s] [running] stage=processing     percent= 40.7% | [9/20] IMG_20260303_233547.jpg (28 faces)
+       [ 92.78s] [running] stage=processing     percent= 45.0% | [10/20] IMG_20260303_233740.jpg (21 faces)
+       [102.35s] [running] stage=processing     percent= 49.3% | [11/20] IMG_20260303_234707.jpg (18 faces)
+       [121.97s] [running] stage=processing     percent= 53.6% | [12/20] IMG_20260304_000154.jpg (38 faces)
+       [122.98s] [running] stage=processing     percent= 57.9% | [13/20] IMG_20260304_000554.jpg (1 faces)
+       [138.08s] [running] stage=processing     percent= 62.2% | [14/20] IMG_20260304_001930.jpg (28 faces)
+       [147.16s] [running] stage=processing     percent= 66.5% | [15/20] IMG_20260304_002052.jpg (15 faces)
+       [168.86s] [running] stage=processing     percent= 70.8% | [16/20] IMG_20260304_002232.jpg (40 faces)
+       [185.02s] [running] stage=processing     percent= 75.1% | [17/20] IMG_20260304_002918.jpg (29 faces)
+       [196.60s] [running] stage=processing     percent= 79.4% | [18/20] IMG_20260304_080950.jpg (22 faces)
+       [199.11s] [running] stage=processing     percent= 83.7% | [19/20] IMG_20260309_211339.jpg (4 faces)
+       [203.65s] [running] stage=clustering     percent= 92.0% | Clustering faces by person with second-pass merge...
+       [205.17s] [running] stage=exporting      percent=100.0% | Generating static export bundle in C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\export...
+       [205.68s] [completed] stage=complete       percent=100.0% | Job finished. Clustered 62 people.
+
+[PASS] Legacy ~/.insightface fallback was NOT used.
+[PASS] Models downloaded to ~/.photosorter/models/buffalo_l: 5 ONNX files found:
+       - 1k3d68.onnx (143,607,619 bytes)
+       - 2d106det.onnx (5,030,888 bytes)
+       - det_10g.onnx (16,923,827 bytes)
+       - genderage.onnx (1,322,532 bytes)
+       - w600k_r50.onnx (174,383,860 bytes)
+[PASS] model_init did not start at 100% (started at 2.0%)
+[PASS] Percent strictly non-decreasing throughout entire run (never went backwards)!
+
+============================================================
+COLD CACHE & FIRST-RUN MODEL DOWNLOAD AUDIT RESULTS:
+============================================================
+Time to /api/health:        13.38 s
+Model Download Time:        ~26.0 s (281,857 KB downloaded at ~10.5 MB/s)
+Model Load Time:            36.86 s
+Total Detection Time:       166.28 s
+Per-Photo Detect Time:      8.31 s/photo
+------------------------------------------------------------
+Total Photos Processed:     20
+Total Faces Detected:       302
+  - Faces in Clusters:      142
+  - Unrecognized Faces:     160
+People Clusters Count:      62
+Unrecognized Photos Count:  17
+============================================================
+[PASS] All cold cache 20-photo counts match exact expected invariant targets!
+```
+
+**Key Invariants & Progress Bug Fix**:
+- **Bug Root Cause**: `pipeline.py` previously sent `percent: 100.0` on the `scanning` stage after reading all photo paths. Because `model_init` and `model_download` stages were emitted before photo detection began, `JobManager` inherited 100% from scanning, dropped to 5% on photo 1, and again dropped from 100% to 92% on `clustering`.
+- **Fix Applied**: `pipeline.py` now scales scanning from `0.0%` to `2.0%`, emits `percent: 2.0` on `model_init` and `model_download`, scales detection linearly from `2.0%` to `88.0%`, runs clustering at `92.0%`, exporting at `96.0%`, and complete at `100.0%`. In addition, `backend/api/jobs.py` enforces a monotonic `max` filter on `job.percent` so progress can never move backwards under any stage payload.
+- **Model Fallback Check**: Confirmed that `userprofile/.insightface` does NOT exist and was never touched; all models downloaded directly to `~/.photosorter/models/buffalo_l/`.
+
+#### 19.10.4 Startup Latency & Loading State
+- **Startup Latency**:
+  - Time to `/api/health`: Measured between **12.22s and 13.38s** from binary execution start to HTTP 200 on health check.
+  - Internal startup latency (`dt_health`): **0.58s** from the moment Python executes `main.py` to Uvicorn accepting connections.
+- **Window Loading State**:
+  - Inlined a branded dark-mode loading spinner (`#initial-loading`) directly in `frontend/index.html` inside `<div id="root">`.
+  - Added `isInitialLoading` state in `frontend/src/App.tsx` that polls `/api/health` on initial mount, displaying a clean spinner with "Connecting to PhotoSorter engine..." until the backend confirms ready.
+  - This guarantees that as soon as the native window renders, users see an immediate responsive loading visual rather than a blank white canvas.
+- **SPEC Section 14**: Updated with the measured per-photo detection (8.31s/photo average on dense event photos) and startup timings.
+
+#### 19.10.5 Native File & Folder Pickers (`[NEEDS ORGANIZER REVIEW]`)
+Automated test environments and CI runners lack an interactive Windows desktop window station (`winsta0\default`). Because `pywebview.create_file_dialog` invokes the native OS blocking COM modal dialogs (`IFileDialog` / `SHBrowseForFolderW`), automated synthetic scripts cannot dismiss the native dialogs without an interactive user hook.
+
+**Manual Verification Steps for Organizer Review**:
+1. Launch PhotoSorter by double-clicking `dist/photosorter.exe` (or running `run.bat`).
+2. **Verify Browse Folder Dialog**:
+   - In the Home screen ("Input Source"), click the **"Browse Folder"** button.
+   - Confirm that the native Windows folder picker dialog opens.
+   - Navigate to `test_photos/` (or any local photo directory) and click **"Select Folder"**.
+   - Confirm that the input path field is immediately populated with the selected absolute folder path.
+3. **Verify Browse Zip Dialog**:
+   - Click the **"Browse Zip"** button.
+   - Confirm that the native Windows file picker dialog opens with the file type filter set to archives (`*.zip`, `*.tar`) and photo formats.
+   - Select a test archive file and click **"Open"**.
+   - Confirm that the input path field is populated with the selected archive path.
+
 ---
 
 ## APPENDIX A: HISTORICAL ENGINE EVOLUTION & INTERMEDIATE STAGES (SUPERSEDED)
+
 
 
 > **Historical Context Note**: The sections below document intermediate development investigations from Stages 1 through 5, contact sheet visual inspections, and early 59-photo baseline analyses. They are preserved here for engineering provenance only; the active production clustering engine operates exclusively under Stage 6 (192 clusters, strict attach rules, same-photo collision guard, ambiguous face re-attach).

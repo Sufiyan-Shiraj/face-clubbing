@@ -278,42 +278,101 @@ ALL WINDOWED LAUNCH CHECKS PASSED AUTOMATICALLY:
 ================================================================================
 ```
 
-### Check I: `python eval/verify_models_cold.py`
-Ran with `.venv\Scripts\python.exe -u eval/verify_models_cold.py`:
+### Check I: `python eval/verify_models_download.py`
+Ran with `.venv\Scripts\python.exe -u eval/verify_models_download.py`:
 ```text
 ================================================================================
-VERIFY MODELS & COLD EMBEDDING CACHE RUN
+PHOTOSORTER MODEL FIRST-RUN DOWNLOAD & COLD CACHE TEST
 ================================================================================
---- TEST 1: Model folder unavailable & offline download failure ---
-[PASS] Clear offline error verified when model folder is unavailable!
+[INFO] Executable:        C:\Users\DELL\face-clubbing\dist\photosorter.exe
+[INFO] Empty USERPROFILE: C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\userprofile
+[INFO] Cold Work Dir:     C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\work (cached files: 0)
+[INFO] 20-Photo Subset:   C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\photos_20 (20 photos)
+[PASS] Exe online in 13.38s at http://127.0.0.1:53067/api/health
+[INFO] Started sorting 20-photo subset on cold cache & cold models...
+       [  0.51s] [running] stage=model_init     percent=  2.0% | Initializing InsightFace model...
+       [  1.02s] [running] stage=model_download percent=  2.0% | Downloading buffalo_l face model weights (~300MB) to ~/.photosorter/models... Please keep internet connected.
+       [ 37.36s] [running] stage=processing     percent=  6.3% | [1/20] IMG-20260226-WA0037.jpg (0 faces)
+       [ 37.88s] [running] stage=processing     percent= 10.6% | [2/20] IMG-20260226-WA0047.jpg (0 faces)
+       [ 39.39s] [running] stage=processing     percent= 14.9% | [3/20] IMG-20260227-WA0110.jpg (3 faces)
+       [ 41.40s] [running] stage=processing     percent= 19.2% | [4/20] IMG_20260227_220404.jpg (3 faces)
+       [ 47.94s] [running] stage=processing     percent= 23.5% | [5/20] IMG_20260227_220436.jpg (13 faces)
+       [ 50.96s] [running] stage=processing     percent= 27.8% | [6/20] IMG_20260227_220543.jpg (4 faces)
+       [ 54.98s] [running] stage=processing     percent= 32.1% | [7/20] IMG_20260227_222103.jpg (7 faces)
+       [ 66.55s] [running] stage=processing     percent= 36.4% | [8/20] IMG_20260303_233345.jpg (22 faces)
+       [ 81.68s] [running] stage=processing     percent= 40.7% | [9/20] IMG_20260303_233547.jpg (28 faces)
+       [ 92.78s] [running] stage=processing     percent= 45.0% | [10/20] IMG_20260303_233740.jpg (21 faces)
+       [102.35s] [running] stage=processing     percent= 49.3% | [11/20] IMG_20260303_234707.jpg (18 faces)
+       [121.97s] [running] stage=processing     percent= 53.6% | [12/20] IMG_20260304_000154.jpg (38 faces)
+       [122.98s] [running] stage=processing     percent= 57.9% | [13/20] IMG_20260304_000554.jpg (1 faces)
+       [138.08s] [running] stage=processing     percent= 62.2% | [14/20] IMG_20260304_001930.jpg (28 faces)
+       [147.16s] [running] stage=processing     percent= 66.5% | [15/20] IMG_20260304_002052.jpg (15 faces)
+       [168.86s] [running] stage=processing     percent= 70.8% | [16/20] IMG_20260304_002232.jpg (40 faces)
+       [185.02s] [running] stage=processing     percent= 75.1% | [17/20] IMG_20260304_002918.jpg (29 faces)
+       [196.60s] [running] stage=processing     percent= 79.4% | [18/20] IMG_20260304_080950.jpg (22 faces)
+       [199.11s] [running] stage=processing     percent= 83.7% | [19/20] IMG_20260309_211339.jpg (4 faces)
+       [203.65s] [running] stage=clustering     percent= 92.0% | Clustering faces by person with second-pass merge...
+       [205.17s] [running] stage=exporting      percent=100.0% | Generating static export bundle in C:\Users\DELL\AppData\Local\Temp\test_models_download_3915bu8b\export...
+       [205.68s] [completed] stage=complete       percent=100.0% | Job finished. Clustered 62 people.
 
---- TEST 2: COLD embedding cache on 20-photo subset ---
-[OK] Verified COLD embedding cache in C:\Users\DELL\AppData\Local\Temp\test_cold_cache_84e_dz1v\work (0 pre-seeded files)
-[OK] Server started on port 63710
-[completed] stage=complete percent=100.0% msg=Job finished. Clustered 62 people.
-[PASS] Cold run on 20 photos completed in 185.51s
+[PASS] Legacy ~/.insightface fallback was NOT used.
+[PASS] Models downloaded to ~/.photosorter/models/buffalo_l: 5 ONNX files found:
+       - 1k3d68.onnx (143,607,619 bytes)
+       - 2d106det.onnx (5,030,888 bytes)
+       - det_10g.onnx (16,923,827 bytes)
+       - genderage.onnx (1,322,532 bytes)
+       - w600k_r50.onnx (174,383,860 bytes)
+[PASS] model_init did not start at 100% (started at 2.0%)
+[PASS] Percent strictly non-decreasing throughout entire run (never went backwards)!
 
-==================================================
-COLD CACHE RUN RESULTS (20 Photos):
+============================================================
+COLD CACHE & FIRST-RUN MODEL DOWNLOAD AUDIT RESULTS:
+============================================================
+Time to /api/health:        13.38 s
+Model Download Time:        ~26.0 s (281,857 KB downloaded at ~10.5 MB/s)
+Model Load Time:            36.86 s
+Total Detection Time:       166.28 s
+Per-Photo Detect Time:      8.31 s/photo
+------------------------------------------------------------
 Total Photos Processed:     20
 Total Faces Detected:       302
   - Faces in Clusters:      142
   - Unrecognized Faces:     160
 People Clusters Count:      62
 Unrecognized Photos Count:  17
-==================================================
-[PASS] Cold embedding cache test on 20 photos verified successfully!
+============================================================
+[PASS] All cold cache 20-photo counts match exact expected invariant targets!
 ```
+
+### Check J: Fresh `git clone` Test Suite Execution (No Live Data)
+Executed in a fresh temporary `git clone` without `export/`, `export.work/`, or `test_photos/`:
+Command:
+```powershell
+python -m pytest -q -rs
+```
+Verbatim Output:
+```text
+......s.s...............................                                 [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_api.py:440: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_api.py:559: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_isolation.py:23: Requires export/ and export.work/ embedding cache
+35 passed, 3 skipped in 6.42s
+```
+- **Passed**: 35 passed
+- **Failed**: 0 failures
+- **Skipped**: 3 skipped (all cleanly skipped with explicit reasons requiring local live embedding caches)
 
 ---
 
 ## 4. PRIVACY & REPOSITORY HYGIENE AUDIT
 
 - **GitHub Visibility**: `gh repo view --json visibility,url` confirmed `public` repository (`https://github.com/Sufiyan-Shiraj/face-clubbing`).
+- **All Git History Check**:
+  `git log --all --name-only --pretty=format: | Select-String -Pattern '\.(jpg|jpeg|png|webp|heic|heif|zip|onnx)$|^(report_assets|archives|scratch|export|dist)/' | Sort-Object -Unique`
+  returned **zero real photos, zero onnx weights, zero face data**. Only `archives/edits_2026-10-08.json` (ID metadata) and scratch python scripts exist.
 - **Tracked Files Check**:
   `git ls-files | Select-String -Pattern 'gallery.html|export/|dist/|\.jpg|\.jpeg|\.png|\.webp|\.heic'` returned **0 matches**.
-- **Historical Git Log Check**:
-  `git log --all --oneline -- export/gallery.html export/faces export/thumbs` returned **0 matches**.
 - **Embedded Face/Photo Data**:
   `git grep -I 'data:image/'` returned only inline SVG placeholder vector graphics. Zero actual face crops, photo data, or embeddings are embedded or tracked.
 - **Cluster ID Policy**:
@@ -324,4 +383,5 @@ Unrecognized Photos Count:  17
 ## 5. CLOSEOUT VERDICT
 
 **Phase 5 Desktop Shell & Windows Packaging is COMPLETE.**  
-All technical, hygiene, documentation, and verification requirements are 100% satisfied. Ready for Phase 6 (Method 1 Google Drive link input) upon explicit organizer direction.
+All technical, hygiene, documentation, progress monotonicity, model first-run download, and verification requirements are 100% satisfied. Ready for Phase 6 (Method 1 Google Drive link input) upon explicit organizer direction.
+

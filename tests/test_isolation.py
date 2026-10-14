@@ -1,10 +1,10 @@
-"""Test ensuring that eval and test routines do not modify export/ or export.work/."""
-
 import hashlib
 import os
 from pathlib import Path
+import pytest
 
 from eval.verify_api import run_live_export_verification
+from tests.test_api import CANONICAL_DATA_PRESENT
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -21,6 +21,10 @@ def _compute_tree_hash(dir_path: Path) -> dict[str, str]:
     return hashes
 
 
+@pytest.mark.skipif(
+    not CANONICAL_DATA_PRESENT,
+    reason="Requires export/ and export.work/ embedding cache",
+)
 def test_checks_do_not_modify_export_or_work():
     export_dir = REPO_ROOT / "export"
     work_dir = REPO_ROOT / "export.work"

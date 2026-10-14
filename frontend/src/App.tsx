@@ -46,6 +46,7 @@ export const App: React.FC = () => {
   const [rejectedPairs, setRejectedPairs] = useState<Set<string>>(new Set());
   const [appliedEditsCount, setAppliedEditsCount] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [isMerging, setIsMerging] = useState<boolean>(false);
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
 
@@ -80,15 +81,19 @@ export const App: React.FC = () => {
 
   // Initial load
   useEffect(() => {
-    loadAllData();
-    api.getJobStatus()
-      .then((status) => {
-        setJobStatus(status);
-        if (status.status === 'running') {
-          setActiveTab('progress');
-        }
-      })
-      .catch(() => {});
+    Promise.all([
+      loadAllData(),
+      api.getJobStatus()
+        .then((status) => {
+          setJobStatus(status);
+          if (status.status === 'running') {
+            setActiveTab('progress');
+          }
+        })
+        .catch(() => {}),
+    ]).finally(() => {
+      setIsInitialLoading(false);
+    });
   }, [loadAllData]);
 
   // Subscribe to SSE updates if job starts or page mounts
@@ -324,6 +329,16 @@ export const App: React.FC = () => {
   const unrecFacesCount = unrecognized.faces ? unrecognized.faces.length : 0;
   const unrecPhotosCount = unrecognized.total_unrecognized_photos || 0;
   const totalFacesCount = clusteredFacesCount + unrecFacesCount;
+
+  if (isInitialLoading) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center font-sans">
+        <div className="w-9 h-9 border-3 border-neutral-800 border-t-blue-500 rounded-full animate-spin"></div>
+        <p className="mt-4 text-sm font-semibold tracking-tight text-neutral-100">PhotoSorter</p>
+        <p className="mt-1 text-xs text-neutral-500">Connecting to local engine...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans">

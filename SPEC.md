@@ -348,7 +348,11 @@ On Linux create the venv with `--system-site-packages` so pywebview sees the sys
 
 ## 14. Performance and resource estimates
 
-- **Time (CPU):** ~1 to 1.5 s per large photo, so ~1,000 photos is about 15 to 30 minutes. GPU provider speeds this up. `flip_average` roughly doubles the embedding cost per face.
+- **Time (CPU):** ~1 to 1.5 s per single-face photo; measured average across dense event photos is **8.31 s per photo** on CPU (measured on 20-photo subset yielding 302 detected faces, including group shots with up to 40 faces/photo requiring ArcFace 512-d embedding and 3D pose estimation). Total detection time for 20 dense photos: 166.3 s. GPU provider speeds this up substantially. `flip_average` roughly doubles the embedding cost per face.
+- **Startup & Model First-Run (Standalone Exe):**
+  - Time to `/api/health`: 12.2 to 13.4 s (PyInstaller self-extraction and FastAPI startup).
+  - First-run model download: ~26 s for ~275 MB (`buffalo_l.zip` containing 5 ONNX models) downloaded directly to `~/.photosorter/models/buffalo_l`.
+  - Cold model load: ~36.8 s.
 - **RAM peak:** ~2 to 4 GB (models ~1 to 2 GB; one decoded 20 MB JPEG is ~70 MB transient; embeddings are tiny). An 8 GB laptop is fine.
 - **Disk:** venv ~1 to 1.5 GB; models ~300 MB; thumbnails and crops for 1,000 photos ~50 to 100 MB.
 - The venv is only a folder; RAM is used by the running Python process and freed when the app closes.

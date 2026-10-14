@@ -71,8 +71,8 @@ class FaceDetector:
                         "stage": "model_download",
                         "current": 0,
                         "total": 1,
-                        "percent": 0.0,
-                        "progress": 0.0,
+                        "percent": 2.0,
+                        "progress": 0.02,
                         "message": f"Downloading {self.model_name} face model weights (~300MB) to ~/.photosorter/models... Please keep internet connected.",
                     })
 
