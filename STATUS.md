@@ -1,7 +1,7 @@
 # PhotoSorter Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-14T06:45:00+05:30  
-**Audit Mode**: State Verification & Phase 5 Closeout Audit  
+**Generated**: 2026-10-14T08:47:00+05:30  
+**Audit Mode**: Phase 6 Method 1 In-Verification State Audit  
 
 ---
 
@@ -26,6 +26,10 @@
   ```
 - **`git log --oneline -15`**:
   ```text
+  a985b87 feat(drive): implement Phase 6 Google Drive read-only integration, UI link input, and mocked test suite
+  95de186 docs: align Check J fresh clone pytest summary between REPORT.md and STATUS.md
+  78f49e8 feat(phase5): complete Phase 5 follow-up, model download verification, progress monotonic fix, and fresh clone audit
+  cd77084 feat(phase5): complete Phase 5 closeout, model first-run/cold cache verification, windowed launch automation, and docs update
   48cfcd6 feat(phase5): complete standalone packaging verification, progress calculation, and report updates
   3d56ba3 docs: update SPEC and BUILD_PLAN to revision 3 (remove Method 2 / Phase 8)
   3cc5e1a feat(desktop): complete Phase 5 packaging, PyInstaller exe build and verification
@@ -37,10 +41,6 @@
   9957c57 feat(eval): execute full pytest suite in verify_export Check 6
   c071205 feat(eval): isolate test suites, verify scripts, and e2e from live organizer data
   72c1499 feat(eval): add pinned baseline fixture, documentation, and check_baseline validation script
-  53851c6 chore(archives): preserve live organizer edits in archives/edits_2026-10-08.json
-  a4ee760 feat(export): standalone single-file HTML gallery generator for direct double-click viewing
-  0b9ecba fix(progress): persistent SSE streaming and 500ms real-time polling fallback
-  13e4e9b fix(engine): suppress upstream scikit-image FutureWarning from insightface face_align
   ```
 
 ---
@@ -383,5 +383,11 @@ SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedd
 ## 5. CLOSEOUT VERDICT
 
 **Phase 5 Desktop Shell & Windows Packaging is COMPLETE.**  
-All technical, hygiene, documentation, progress monotonicity, model first-run download, and verification requirements are 100% satisfied. Ready for Phase 6 (Method 1 Google Drive link input) upon explicit organizer direction.
+**Phase 6 Method 1 (Google Drive Read-Only Integration) is IN VERIFICATION.**  
+- All 7 Phase 6 tasks implemented (`backend/drive/parser.py`, `client.py`, `config.py`, UI link input, in-app key guide, background SSE progress).
+- 29/29 mocked tests passing in `tests/test_drive.py`.
+- 23/23 Vitest tests passing in `frontend/`.
+- Full backend test suite: 67/67 passing.
+- Early live verification is ready to execute via `eval/verify_drive_phase6.py` pending user-provided `DRIVE_API_KEY` and public ~20-photo Drive folder URL.
+- Zero photos, faces, API keys, or secrets committed; git history 100% clean.
 
