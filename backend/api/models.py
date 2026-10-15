@@ -44,6 +44,21 @@ class JobStartRequest(BaseModel):
     settings: Optional[SettingsModel] = None
 
 
+class DriveVerifyRequest(BaseModel):
+    drive_folder: str
+    drive_api_key: Optional[str] = None
+
+
+class DriveVerifyResponse(BaseModel):
+    valid: bool
+    folder_id: Optional[str] = None
+    folder_name: Optional[str] = None
+    has_images: bool = False
+    image_count_preview: int = 0
+    error_type: Optional[str] = None
+    message: str
+
+
 class JobStatusResponse(BaseModel):
     job_id: Optional[str] = None
     status: str  # "idle" | "running" | "completed" | "failed" | "cancelled"
@@ -57,6 +72,7 @@ class JobStatusResponse(BaseModel):
     message: str = ""
     error: Optional[str] = None
     result_summary: Optional[Dict[str, Any]] = None
+    recent_faces: List[str] = Field(default_factory=list)
 
 
 class FaceItem(BaseModel):

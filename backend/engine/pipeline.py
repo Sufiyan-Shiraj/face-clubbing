@@ -284,6 +284,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
 
         # Scale detection/embedding phase from 2% to 88% so subsequent stages (clustering, export) never go backwards
         pct = round(2.0 + (processed / total_photos) * 86.0, 1) if total_photos > 0 else 2.0
+        face_ids_found = [f.face_id for f in photos[photo_id].faces if getattr(f, "face_id", None)]
         notify({
             "stage": "processing",
             "current": processed,
@@ -292,6 +293,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             "photo_id": photo_id,
             "file_name": item.file_name,
             "faces_found": len(photos[photo_id].faces),
+            "new_faces": face_ids_found,
             "eta_seconds": round(eta_seconds, 1),
             "message": f"[{processed}/{total_photos}] {item.file_name} ({len(photos[photo_id].faces)} faces)",
         })

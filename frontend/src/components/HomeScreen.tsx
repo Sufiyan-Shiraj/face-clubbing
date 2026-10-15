@@ -1,13 +1,35 @@
-import React, { useState, useMemo } from 'react';
-import { AlertCircle, Folder, FolderArchive, Zap, Info } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { AlertCircle, Folder, FolderArchive, Zap, Info, Check, Key, X, Loader2 } from 'lucide-react';
 import { RisoTheme } from './Header';
+import { api } from '../api/client';
 
-interface HomeScreenProps {
+export interface HomeScreenProps {
   onStartJob: (inputPath?: string, driveFolder?: string, driveApiKey?: string) => void;
   isLoading?: boolean;
   currentInputPath?: string;
   onNavigateTab?: (tab: string) => void;
   theme?: RisoTheme;
+
+  // Lifted & Persisted state
+  sourceMode?: 'drive' | 'local' | 'zip';
+  onSourceModeChange?: (mode: 'drive' | 'local' | 'zip') => void;
+  folderPath?: string;
+  onFolderPathChange?: (path: string) => void;
+  driveLink?: string;
+  onDriveLinkChange?: (link: string) => void;
+  driveVerified?: boolean;
+  verifiedFolderId?: string | null;
+  verifiedFolderName?: string | null;
+  verifiedImageCount?: number;
+  onDriveVerifiedChange?: (
+    verified: boolean,
+    folderId?: string | null,
+    folderName?: string | null,
+    imageCount?: number
+  ) => void;
+  discoveredFaceCrops?: string[];
+  onApiKeySaved?: () => void;
+  isApiKeyConfigured?: boolean;
 }
 
 // Drive triangle icon matching the reference image
@@ -46,17 +68,101 @@ export function extractDriveFolderId(input: string): string | null {
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onStartJob,
-  isLoading,
+  isLoading = false,
   currentInputPath = 'test_photos',
   theme = 't-dark',
+  sourceMode: controlledSourceMode,
+  onSourceModeChange,
+  folderPath: controlledFolderPath,
+  onFolderPathChange,
+  driveLink: controlledDriveLink,
+  onDriveLinkChange,
+  driveVerified: controlledDriveVerified,
+  verifiedFolderId: controlledVerifiedFolderId,
+  verifiedFolderName: controlledVerifiedFolderName,
+  verifiedImageCount: controlledVerifiedImageCount,
+  onDriveVerifiedChange,
+  discoveredFaceCrops = [],
+  onApiKeySaved,
+  isApiKeyConfigured: controlledApiKeyConfigured,
 }) => {
-  const [sourceMode, setSourceMode] = useState<'drive' | 'local' | 'zip'>('drive');
-  const [folderPath, setFolderPath] = useState<string>(currentInputPath || 'test_photos');
-  const [driveLink, setDriveLink] = useState<string>('');
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Support both controlled (lifted to App.tsx) and internal fallback state
+  const [internalSourceMode, setInternalSourceMode] = useState<'drive' | 'local' | 'zip'>('drive');
+  const sourceMode = controlledSourceMode !== undefined ? controlledSourceMode : internalSourceMode;
+  const setSourceMode = (mode: 'drive' | 'local' | 'zip') => {
+    setInternalSourceMode(mode);
+    onSourceModeChange?.(mode);
+  };
 
-  const extractedFolderId = useMemo(() => extractDriveFolderId(driveLink), [driveLink]);
-  const hasExtractedId = Boolean(extractedFolderId);
+  const [internalFolderPath, setInternalFolderPath] = useState<string>(currentInputPath || 'test_photos');
+  const folderPath = controlledFolderPath !== undefined ? controlledFolderPath : internalFolderPath;
+  const setFolderPath = (p: string) => {
+    setInternalFolderPath(p);
+    onFolderPathChange?.(p);
+  };
+
+  const [internalDriveLink, setInternalDriveLink] = useState<string>('');
+  const driveLink = controlledDriveLink !== undefined ? controlledDriveLink : internalDriveLink;
+  const setDriveLink = (l: string) => {
+    setInternalDriveLink(l);
+    onDriveLinkChange?.(l);
+  };
+
+  const [internalDriveVerified, setInternalDriveVerified] = useState<boolean>(false);
+  const driveVerified = controlledDriveVerified !== undefined ? controlledDriveVerified : internalDriveVerified;
+
+  const [internalVerifiedFolderId, setInternalVerifiedFolderId] = useState<string | null>(null);
+  const verifiedFolderId = controlledVerifiedFolderId !== undefined ? controlledVerifiedFolderId : internalVerifiedFolderId;
+
+  const [internalVerifiedFolderName, setInternalVerifiedFolderName] = useState<string | null>(null);
+  const verifiedFolderName = controlledVerifiedFolderName !== undefined ? controlledVerifiedFolderName : internalVerifiedFolderName;
+
+  const [internalVerifiedImageCount, setInternalVerifiedImageCount] = useState<number>(0);
+  const verifiedImageCount = controlledVerifiedImageCount !== undefined ? controlledVerifiedImageCount : internalVerifiedImageCount;
+
+  const [internalApiKeyConfigured, setInternalApiKeyConfigured] = useState<boolean>(false);
+  const isApiKeyConfigured = controlledApiKeyConfigured !== undefined ? controlledApiKeyConfigured : internalApiKeyConfigured;
+
+  useEffect(() => {
+    let mounted = true;
+    try {
+      const p = api?.getSettings?.();
+      if (p && typeof p.then === 'function') {
+        p.then((s) => {
+          if (mounted && s) {
+            setInternalApiKeyConfigured(Boolean(s.drive_api_key_configured));
+          }
+        }).catch(() => {});
+      }
+    } catch (e) {}
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const setVerifiedState = (
+    verified: boolean,
+    folderId?: string | null,
+    folderName?: string | null,
+    imgCount?: number
+  ) => {
+    setInternalDriveVerified(verified);
+    setInternalVerifiedFolderId(folderId || null);
+    setInternalVerifiedFolderName(folderName || null);
+    setInternalVerifiedImageCount(imgCount || 0);
+    onDriveVerifiedChange?.(verified, folderId || null, folderName || null, imgCount || 0);
+  };
+
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState<boolean>(false);
+  const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
+  const [apiKeyInput, setApiKeyInput] = useState<string>('');
+  const [isSavingApiKey, setIsSavingApiKey] = useState<boolean>(false);
+
+  // Extracted folder ID for character cells (only active when verified)
+  const activeFolderId = verifiedFolderId || extractDriveFolderId(driveLink);
+
+  const cellRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleBrowseFolder = async () => {
     if (window.pywebview?.api?.select_folder) {
@@ -120,25 +226,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const handleClearDriveLink = () => {
     setDriveLink('');
+    setVerifiedState(false, null, null, 0);
     setErrorMsg(null);
   };
 
-  const cellRefs = React.useRef<(HTMLInputElement | null)[]>([]);
-
   const handleCellChange = (index: number, value: string) => {
-    if (!extractedFolderId) return;
+    if (!activeFolderId) return;
     const char = value.slice(-1);
     if (!char) return;
 
-    const chars = extractedFolderId.split('');
+    const chars = activeFolderId.split('');
     chars[index] = char;
     const newId = chars.join('');
 
-    if (driveLink.includes(extractedFolderId)) {
-      setDriveLink(driveLink.replace(extractedFolderId, newId));
+    if (driveLink.includes(activeFolderId)) {
+      setDriveLink(driveLink.replace(activeFolderId, newId));
     } else {
       setDriveLink(newId);
     }
+    setVerifiedState(true, newId, verifiedFolderName, verifiedImageCount);
 
     if (index < chars.length - 1) {
       const nextInput = cellRefs.current[index + 1];
@@ -150,19 +256,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   const handleCellKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!extractedFolderId) return;
+    if (!activeFolderId) return;
 
     if (e.key === 'Backspace') {
       e.preventDefault();
-      const chars = extractedFolderId.split('');
+      const chars = activeFolderId.split('');
       chars.splice(index, 1);
       const newId = chars.join('');
 
-      if (driveLink.includes(extractedFolderId)) {
-        setDriveLink(driveLink.replace(extractedFolderId, newId));
+      if (driveLink.includes(activeFolderId)) {
+        setDriveLink(driveLink.replace(activeFolderId, newId));
       } else {
         setDriveLink(newId);
       }
+      setVerifiedState(true, newId, verifiedFolderName, verifiedImageCount);
 
       const prevIdx = Math.max(0, index - 1);
       setTimeout(() => {
@@ -174,20 +281,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       }, 0);
     } else if (e.key === 'Delete') {
       e.preventDefault();
-      const chars = extractedFolderId.split('');
+      const chars = activeFolderId.split('');
       chars.splice(index, 1);
       const newId = chars.join('');
 
-      if (driveLink.includes(extractedFolderId)) {
-        setDriveLink(driveLink.replace(extractedFolderId, newId));
+      if (driveLink.includes(activeFolderId)) {
+        setDriveLink(driveLink.replace(activeFolderId, newId));
       } else {
         setDriveLink(newId);
       }
+      setVerifiedState(true, newId, verifiedFolderName, verifiedImageCount);
     } else if (e.key === 'ArrowLeft' && index > 0) {
       e.preventDefault();
       cellRefs.current[index - 1]?.focus();
       cellRefs.current[index - 1]?.select();
-    } else if (e.key === 'ArrowRight' && index < extractedFolderId.length - 1) {
+    } else if (e.key === 'ArrowRight' && index < activeFolderId.length - 1) {
       e.preventDefault();
       cellRefs.current[index + 1]?.focus();
       cellRefs.current[index + 1]?.select();
@@ -199,6 +307,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     const pasted = e.clipboardData.getData('text');
     if (pasted) {
       setDriveLink(pasted.trim());
+      setVerifiedState(false, null, null, 0);
       setErrorMsg(null);
     }
   };
@@ -222,13 +331,71 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     return null;
   };
 
-  const handleStart = (e: React.FormEvent) => {
+  // Check link button action: verifies Google Drive link and API key
+  const handleCheckDrive = async (apiKeyOverride?: string) => {
+    const trimmed = driveLink.trim();
+    const validationError = validateDriveInput(trimmed);
+    if (validationError) {
+      setErrorMsg(validationError);
+      setVerifiedState(false, null, null, 0);
+      return false;
+    }
+
+    setIsChecking(true);
+    setErrorMsg(null);
+    try {
+      const res = await api.verifyDriveFolder(trimmed, apiKeyOverride);
+      if (res.valid) {
+        setVerifiedState(true, res.folder_id, res.folder_name, res.image_count_preview || 0);
+        setErrorMsg(null);
+        setInternalApiKeyConfigured(true);
+        return true;
+      } else {
+        setVerifiedState(false, null, null, 0);
+        setErrorMsg(res.message || 'Verification failed.');
+        if (res.error_type === 'api_key_missing' || res.error_type === 'api_key_invalid') {
+          setInternalApiKeyConfigured(false);
+          setShowApiKeyModal(true);
+        }
+        return false;
+      }
+    } catch (err: any) {
+      setVerifiedState(false, null, null, 0);
+      setErrorMsg(err.message || 'Failed to verify Google Drive folder.');
+      return false;
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  // Save API Key modal handler
+  const handleSaveApiKey = async () => {
+    if (!apiKeyInput.trim()) return;
+    setIsSavingApiKey(true);
+    try {
+      const key = apiKeyInput.trim();
+      await api.updateSettings({ drive_api_key: key });
+      setInternalApiKeyConfigured(true);
+      onApiKeySaved?.();
+      setShowApiKeyModal(false);
+      setApiKeyInput('');
+      // Re-trigger verification immediately with the newly entered key
+      await handleCheckDrive(key);
+    } catch (err: any) {
+      setErrorMsg(`Failed to save API key: ${err.message || err}`);
+    } finally {
+      setIsSavingApiKey(false);
+    }
+  };
+
+  // Start Job handler
+  const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
     if (sourceMode === 'drive') {
-      const validationError = validateDriveInput(driveLink);
-      if (validationError) {
-        setErrorMsg(validationError);
-        return;
+      // If not yet verified, check first!
+      if (!driveVerified) {
+        const ok = await handleCheckDrive();
+        if (!ok) return;
       }
       setErrorMsg(null);
       const ephemeralKey = sessionStorage.getItem('drive_api_key_ephemeral') || undefined;
@@ -243,9 +410,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   };
 
+  const isDriveReady = driveVerified && Boolean(activeFolderId);
+  const isLocalReady = Boolean(folderPath.trim());
+  const canStartScan = sourceMode === 'drive' ? isDriveReady : isLocalReady;
+
   return (
     <div className="main-content-flow">
-      <div className={`home-stage-container ${sourceMode === 'drive' && hasExtractedId ? 'stage-expanded' : ''}`}>
+      <div className={`home-stage-container ${sourceMode === 'drive' && driveVerified ? 'stage-expanded' : ''}`}>
         {/* Headline & Supporting Sentence with Image Title */}
         <div className="headline-group">
           <h1 className="h1 h1-title-container">
@@ -253,10 +424,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <img
               src={
                 theme === 't-paper'
-                  ? '/textures/title-paper.png?v=uncut-v6'
+                  ? '/textures/title-paper.png?v=custom-v5'
                   : theme === 't-navy'
-                  ? '/textures/title-navy.png?v=uncut-v6'
-                  : '/textures/title-dark.png?v=uncut-v6'
+                    ? '/textures/title-navy.png?v=custom-v5'
+                    : '/textures/title-dark.png?v=custom-v5'
               }
               alt="Who was at the event?"
               className="h1-img"
@@ -316,8 +487,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Main Source Selection Form */}
         <form onSubmit={handleStart} className="source-form">
           {sourceMode === 'drive' ? (
-            hasExtractedId && extractedFolderId ? (
-              /* State 2: Valid Google Drive Folder ID Extracted */
+            driveVerified && activeFolderId ? (
+              /* State 2: Verified Google Drive Folder ID with Cell Structure */
               <div className="drive-extracted-view">
                 {/* Hidden input for testids & accessible form synchronization */}
                 <input
@@ -327,20 +498,36 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   value={driveLink}
                   onChange={(e) => {
                     setDriveLink(e.target.value);
+                    setVerifiedState(false, null, null, 0);
                     setErrorMsg(null);
                   }}
                   style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px' }}
                   aria-hidden="true"
                 />
 
+                {/* Prominent Drive Folder Name Header */}
+                <div className="drive-verified-banner">
+                  <div className="drive-folder-title">
+                    <span className="folder-label">DRIVE FOLDER</span>
+                    <span className="folder-name">{verifiedFolderName || 'Google Drive Folder'}</span>
+                    <span className="badge-verified">
+                      <Check className="w-3.5 h-3.5" />
+                      Verified
+                    </span>
+                  </div>
+                  {verifiedImageCount > 0 && (
+                    <div className="folder-img-count">{verifiedImageCount}+ images detected</div>
+                  )}
+                </div>
+
                 <div className="drive-id-header">
-                  <span>DRIVE FOLDER ID</span>
+                  <span>FOLDER ID CELLS</span>
                   <Info className="w-3.5 h-3.5 opacity-75" aria-label="Drive Folder ID Info" />
                 </div>
 
-                {/* Individual outlined character cells (editable) */}
-                <div className="char-cells-row" aria-label={`Drive Folder ID: ${extractedFolderId}`}>
-                  {extractedFolderId.split('').map((char, idx) => (
+                {/* Individual outlined character cells */}
+                <div className="char-cells-row" aria-label={`Drive Folder ID: ${activeFolderId}`}>
+                  {activeFolderId.split('').map((char, idx) => (
                     <input
                       key={idx}
                       ref={(el) => {
@@ -364,8 +551,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 {/* Status line & action row */}
                 <div className="drive-detected-bar">
                   <div className="drive-detected-text">
-                    <span>Detected Drive link. Folder: </span>
-                    <span className="drive-detected-id">{extractedFolderId}</span>
+                    <span>Folder: </span>
+                    <span className="drive-detected-id">{verifiedFolderName || activeFolderId}</span>
                   </div>
                   <div className="drive-detected-actions">
                     <button
@@ -374,13 +561,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       className="btn-clear-link"
                       title="Clear entered link"
                     >
-                      Clear
+                      Change link
                     </button>
                     <button
                       id="start-job-btn"
                       data-testid="start-job-btn"
                       type="submit"
-                      disabled={isLoading}
+                      disabled={isLoading || !canStartScan}
                       className="btn pri"
                     >
                       {isLoading ? 'Scanning...' : 'Scan folder'}
@@ -389,7 +576,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
               </div>
             ) : (
-              /* State 1: Initial URL input row */
+              /* State 1: Input URL row with explicit Check Link button */
               <div className="drive-initial-view">
                 <div className="field">
                   <input
@@ -401,23 +588,64 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       setDriveLink(e.target.value);
                       setErrorMsg(null);
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCheckDrive();
+                      }
+                    }}
                     placeholder="Paste a Google Drive folder link... (drive.google.com/drive/folders/...)"
                     className="input"
                     aria-label="Google Drive folder link"
                   />
                   <button
+                    type="button"
+                    id="btn-check-drive"
+                    data-testid="btn-check-drive"
+                    onClick={() => handleCheckDrive()}
+                    disabled={isChecking || !driveLink.trim()}
+                    className="btn sec"
+                    title="Check if API key and Drive folder are valid"
+                  >
+                    {isChecking ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Checking...</span>
+                      </>
+                    ) : (
+                      <span>Check link</span>
+                    )}
+                  </button>
+                  <button
                     id="start-job-btn"
                     data-testid="start-job-btn"
                     type="submit"
-                    disabled={isLoading}
+                    disabled={isLoading || !canStartScan}
                     className="btn pri"
+                    title={!canStartScan ? 'Verify link before starting scan' : 'Start scanning folder'}
                   >
                     {isLoading ? 'Scanning...' : 'Scan folder'}
                   </button>
                 </div>
-                <p className="hint">
-                  Folder must be shared as &apos;Anyone with the link&apos;.
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '8px' }}>
+                  <p className="hint" style={{ margin: 0 }}>
+                    Click &apos;Check link&apos; to verify Google Drive folder. Folder must be shared as &apos;Anyone with the link&apos;.
+                  </p>
+                  {!isApiKeyConfigured && (
+                    <button
+                      type="button"
+                      id="btn-set-api-key"
+                      data-testid="btn-set-api-key"
+                      onClick={() => setShowApiKeyModal(true)}
+                      className="text-xs text-[var(--accent)] hover:underline inline-flex items-center gap-1 flex-shrink-0 ml-2"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                      title="Set Google Drive API key"
+                    >
+                      <Key className="w-3 h-3" />
+                      <span>Set API key</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )
           ) : sourceMode === 'local' ? (
@@ -520,7 +748,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </div>
           )}
 
-          {/* Test support: Hidden triggers when in drive mode so homeScreen.test.tsx can test pickers without prior mode switch */}
+          {/* Test support: Hidden triggers when in drive mode so tests can test pickers without prior mode switch */}
           {sourceMode === 'drive' && (
             <>
               <button
@@ -542,36 +770,128 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </>
           )}
 
-          {/* Error Message */}
+          {/* Error Message Alert */}
           {errorMsg && (
-            <div className="error-alert-box">
+            <div className="error-alert-box" role="alert">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
         </form>
 
-        {/* Animated Transition: Divider & Empty Face Preview Frames */}
+        {/* Faces Preview Section: Persists and populates with real detected faces */}
         <div
-          className={`faces-preview-section ${
-            sourceMode === 'drive' && hasExtractedId ? 'visible' : 'hidden'
-          }`}
-          aria-hidden={!(sourceMode === 'drive' && hasExtractedId)}
+          className={`faces-preview-section ${(sourceMode === 'drive' && driveVerified) ||
+            sourceMode === 'local' ||
+            (discoveredFaceCrops && discoveredFaceCrops.length > 0)
+            ? 'visible'
+            : 'hidden'
+            }`}
+          aria-hidden={
+            !(
+              (sourceMode === 'drive' && driveVerified) ||
+              sourceMode === 'local' ||
+              (discoveredFaceCrops && discoveredFaceCrops.length > 0)
+            )
+          }
         >
           <hr className="source-divider" />
           <div className="faces-preview-container">
             <div className="faces-row">
-              {Array.from({ length: 11 }).map((_, idx) => (
-                <div key={idx} className="face empty" />
-              ))}
+              {Array.from({ length: 11 }).map((_, idx) => {
+                const cropUrl = discoveredFaceCrops[idx];
+                if (cropUrl) {
+                  return (
+                    <div key={idx} className="face has-img" title={`Detected face ${idx + 1}`}>
+                      <img
+                        src={cropUrl}
+                        alt={`Detected face ${idx + 1}`}
+                        onError={(e) => {
+                          // Fallback to empty box if image not yet ready
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  );
+                }
+                return <div key={idx} className="face empty" />;
+              })}
             </div>
-            <div className="faces-more-dots">...</div>
+            <div className="faces-more-dots">
+              {discoveredFaceCrops.length > 11 ? `+${discoveredFaceCrops.length - 11}` : '...'}
+            </div>
           </div>
           <p className="hint" style={{ marginTop: '14px' }}>
-            Faces will appear here as the scan runs.
+            {discoveredFaceCrops.length > 0
+              ? `${discoveredFaceCrops.length} face${discoveredFaceCrops.length === 1 ? '' : 's'} detected. Faces update as the scan runs.`
+              : 'Faces will appear here as the scan runs.'}
           </p>
         </div>
       </div>
+
+      {/* Google Drive API Key Modal / Card */}
+      {showApiKeyModal && (
+        <div className="api-key-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="api-key-title">
+          <div className="api-key-modal-card">
+            <div className="api-key-modal-header">
+              <div className="api-key-modal-title" id="api-key-title">
+                <Key className="w-4 h-4 text-[var(--accent)]" />
+                <span>Google Drive API Key</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowApiKeyModal(false)}
+                className="text-[var(--muted)] hover:text-[var(--text)] transition-colors p-1"
+                aria-label="Close modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="api-key-modal-desc">
+              A free Google Drive API key is required to scan Google Drive folders. The key will be saved securely in your local settings (<code className="text-xs">~/.photosorter/settings.json</code>) and can also be viewed in the Settings tab.
+            </p>
+
+            <input
+              id="input-drive-api-key"
+              data-testid="input-drive-api-key"
+              type="password"
+              value={apiKeyInput}
+              onChange={(e) => setApiKeyInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSaveApiKey();
+                }
+              }}
+              placeholder="Paste Google Drive API Key (AIzaSy...)"
+              className="api-key-modal-input"
+              autoFocus
+            />
+
+            <div className="api-key-modal-actions">
+              <button
+                type="button"
+                onClick={() => setShowApiKeyModal(false)}
+                className="btn sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                id="btn-save-api-key"
+                data-testid="btn-save-api-key"
+                onClick={handleSaveApiKey}
+                disabled={!apiKeyInput.trim() || isSavingApiKey}
+                className="btn pri"
+                style={{ height: '36px', padding: '0 18px', fontSize: '13px' }}
+              >
+                {isSavingApiKey ? 'Saving...' : 'Save & Verify'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -10,6 +10,7 @@ vi.mock('../api/client', () => ({
     getSettings: vi.fn(),
     updateSettings: vi.fn(),
     rerun: vi.fn(),
+    verifyDriveFolder: vi.fn(),
   },
 }));
 
@@ -35,8 +36,16 @@ describe('Phase 6 UI: HomeScreen Drive Mode & Link Input', () => {
     expect(driveInput.placeholder).toContain('drive.google.com/drive/folders');
   });
 
-  it('validates and submits Drive folder link when Start is clicked', async () => {
+  it('validates and submits Drive folder link when verified and Start is clicked', async () => {
     const handleStartJob = vi.fn();
+    vi.mocked(api.verifyDriveFolder).mockResolvedValue({
+      valid: true,
+      folder_id: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs',
+      folder_name: 'Summer Gala 2026',
+      has_images: true,
+      image_count_preview: 25,
+    });
+
     render(<HomeScreen onStartJob={handleStartJob} />);
 
     // Switch to Drive mode
@@ -47,10 +56,27 @@ describe('Phase 6 UI: HomeScreen Drive Mode & Link Input', () => {
       target: { value: 'https://drive.google.com/drive/folders/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs?usp=sharing' },
     });
 
-    const startBtn = screen.getByTestId('start-job-btn');
-    expect(startBtn).toBeTruthy();
+    // Start button is grayed out before verification
+    const startBtn = screen.getByTestId('start-job-btn') as HTMLButtonElement;
+    expect(startBtn.disabled).toBe(true);
 
-    fireEvent.click(startBtn);
+    // Click Check link button
+    const checkBtn = screen.getByTestId('btn-check-drive');
+    fireEvent.click(checkBtn);
+
+    await waitFor(() => {
+      expect(api.verifyDriveFolder).toHaveBeenCalledWith(
+        'https://drive.google.com/drive/folders/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs?usp=sharing',
+        undefined
+      );
+      expect(screen.getAllByText('Summer Gala 2026').length).toBeGreaterThan(0);
+    });
+
+    // Start button is now enabled
+    const scanBtn = screen.getByTestId('start-job-btn') as HTMLButtonElement;
+    expect(scanBtn.disabled).toBe(false);
+
+    fireEvent.click(scanBtn);
 
     await waitFor(() => {
       expect(handleStartJob).toHaveBeenCalledTimes(1);
@@ -71,8 +97,8 @@ describe('Phase 6 UI: HomeScreen Drive Mode & Link Input', () => {
     const driveInput = screen.getByTestId('input-drive-link') as HTMLInputElement;
     fireEvent.change(driveInput, { target: { value: 'invalid_drive_input!!' } });
 
-    const startBtn = screen.getByTestId('start-job-btn');
-    fireEvent.click(startBtn);
+    const checkBtn = screen.getByTestId('btn-check-drive');
+    fireEvent.click(checkBtn);
 
     expect(handleStartJob).not.toHaveBeenCalled();
     expect(screen.getByText(/Invalid Google Drive folder link or folder ID/i)).toBeTruthy();
@@ -89,8 +115,8 @@ describe('Phase 6 UI: HomeScreen Drive Mode & Link Input', () => {
       target: { value: 'https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs/view' },
     });
 
-    const startBtn = screen.getByTestId('start-job-btn');
-    fireEvent.click(startBtn);
+    const checkBtn = screen.getByTestId('btn-check-drive');
+    fireEvent.click(checkBtn);
 
     expect(handleStartJob).not.toHaveBeenCalled();
     expect(screen.getByText(/You entered a Google Drive file link, but a folder link or folder ID is required/i)).toBeTruthy();

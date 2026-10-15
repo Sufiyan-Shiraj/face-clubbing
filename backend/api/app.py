@@ -53,25 +53,45 @@ def create_app(
     def health():
         return {"status": "ok", "version": "1.0.0"}
 
-    # Serve face crops and thumbnails dynamically from output_dir or export/
+    # Serve face crops and thumbnails dynamically from output_dir, work_dir, cache_dir, or export/
     @app.get("/faces/{file_path:path}")
     def serve_face(file_path: str):
         out_dir = Path(state.settings.output_dir).resolve() if state.settings.output_dir else repo_root / "export"
-        p = out_dir / "faces" / file_path
-        if not p.exists():
-            p = repo_root / "export" / "faces" / file_path
-        if p.exists() and p.is_file():
-            return FileResponse(str(p))
+        candidates = [
+            out_dir / "faces" / file_path,
+            repo_root / "export" / "faces" / file_path,
+        ]
+        if state.settings.cache_dir:
+            candidates.append(Path(state.settings.cache_dir).resolve() / "crops" / file_path)
+            candidates.append(Path(state.settings.cache_dir).resolve() / ".cache" / "crops" / file_path)
+        if state.work_dir:
+            candidates.append(state.work_dir / "crops" / file_path)
+            candidates.append(state.work_dir / ".cache" / "crops" / file_path)
+        candidates.append(repo_root / "export.work" / "crops" / file_path)
+
+        for p in candidates:
+            if p.exists() and p.is_file():
+                return FileResponse(str(p))
         raise HTTPException(status_code=404, detail="Face crop not found")
 
     @app.get("/thumbs/{file_path:path}")
     def serve_thumb(file_path: str):
         out_dir = Path(state.settings.output_dir).resolve() if state.settings.output_dir else repo_root / "export"
-        p = out_dir / "thumbs" / file_path
-        if not p.exists():
-            p = repo_root / "export" / "thumbs" / file_path
-        if p.exists() and p.is_file():
-            return FileResponse(str(p))
+        candidates = [
+            out_dir / "thumbs" / file_path,
+            repo_root / "export" / "thumbs" / file_path,
+        ]
+        if state.settings.cache_dir:
+            candidates.append(Path(state.settings.cache_dir).resolve() / "thumbs" / file_path)
+            candidates.append(Path(state.settings.cache_dir).resolve() / ".cache" / "thumbs" / file_path)
+        if state.work_dir:
+            candidates.append(state.work_dir / "thumbs" / file_path)
+            candidates.append(state.work_dir / ".cache" / "thumbs" / file_path)
+        candidates.append(repo_root / "export.work" / "thumbs" / file_path)
+
+        for p in candidates:
+            if p.exists() and p.is_file():
+                return FileResponse(str(p))
         raise HTTPException(status_code=404, detail="Thumbnail not found")
 
     # Serve static UI at / (BUILD_PLAN Phase 3 / Phase 4)

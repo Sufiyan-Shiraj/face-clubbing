@@ -6,6 +6,7 @@ import {
   EditResponse,
   Settings,
   PhotoInfo,
+  DriveVerifyResult,
 } from '../types';
 
 const BASE_URL = '/api';
@@ -60,6 +61,19 @@ export const api = {
   async cancelJob(): Promise<JobStatus> {
     return fetchJson(`${BASE_URL}/jobs/cancel`, {
       method: 'POST',
+    });
+  },
+
+  async verifyDriveFolder(
+    driveFolder: string,
+    driveApiKey?: string
+  ): Promise<DriveVerifyResult> {
+    return fetchJson(`${BASE_URL}/drive/verify`, {
+      method: 'POST',
+      body: JSON.stringify({
+        drive_folder: driveFolder,
+        drive_api_key: driveApiKey || undefined,
+      }),
     });
   },
 

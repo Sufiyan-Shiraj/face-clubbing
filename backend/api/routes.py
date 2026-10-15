@@ -8,6 +8,8 @@ from backend.api.models import (
     SettingsModel,
     JobStartRequest,
     JobStatusResponse,
+    DriveVerifyRequest,
+    DriveVerifyResponse,
     PersonClusterResponse,
     UnrecognizedResponse,
     SuggestionsResponse,
@@ -54,6 +56,150 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                 "X-Accel-Buffering": "no",
             },
         )
+
+    # 1b. Google Drive Verification Endpoint
+    @router.post("/drive/verify", response_model=DriveVerifyResponse)
+    def verify_drive_folder(req: DriveVerifyRequest):
+        import requests
+        from backend.drive.parser import parse_drive_folder_id
+        from backend.drive.config import get_drive_api_key
+
+        # 1. Parse folder ID from link or raw ID
+        try:
+            folder_id = parse_drive_folder_id(req.drive_folder)
+        except ValueError as e:
+            return DriveVerifyResponse(
+                valid=False,
+                error_type="invalid_link",
+                message=str(e),
+            )
+
+        # 2. Check API key presence
+        api_key = (req.drive_api_key or "").strip() or get_drive_api_key()
+        if not api_key:
+            return DriveVerifyResponse(
+                valid=False,
+                folder_id=folder_id,
+                error_type="api_key_missing",
+                message="Google Drive API key is missing. Please provide your API key to check Google Drive.",
+            )
+
+        # 3. Check folder existence and metadata via Drive API v3
+        try:
+            meta_url = f"https://www.googleapis.com/drive/v3/files/{folder_id}"
+            meta_resp = requests.get(
+                meta_url,
+                params={
+                    "fields": "id,name,mimeType,trashed",
+                    "key": api_key,
+                    "supportsAllDrives": "true",
+                },
+                timeout=8,
+            )
+
+            if meta_resp.status_code == 400 or "API key not valid" in meta_resp.text:
+                return DriveVerifyResponse(
+                    valid=False,
+                    folder_id=folder_id,
+                    error_type="api_key_invalid",
+                    message="Invalid Google Drive API key. Please check and re-enter your API key.",
+                )
+            if meta_resp.status_code == 404:
+                return DriveVerifyResponse(
+                    valid=False,
+                    folder_id=folder_id,
+                    error_type="folder_not_found",
+                    message=f"Google Drive folder '{folder_id}' was not found. Please verify the link.",
+                )
+            if meta_resp.status_code == 403:
+                return DriveVerifyResponse(
+                    valid=False,
+                    folder_id=folder_id,
+                    error_type="folder_permission_denied",
+                    message="Google Drive folder is private or inaccessible. Ensure the folder is shared with 'Anyone with the link' (Viewer access).",
+                )
+            if meta_resp.status_code != 200:
+                return DriveVerifyResponse(
+                    valid=False,
+                    folder_id=folder_id,
+                    error_type="other",
+                    message=f"Google Drive API error (HTTP {meta_resp.status_code}).",
+                )
+
+            meta_data = meta_resp.json()
+            if meta_data.get("trashed"):
+                return DriveVerifyResponse(
+                    valid=False,
+                    folder_id=folder_id,
+                    error_type="folder_not_found",
+                    message="This Google Drive folder is in trash.",
+                )
+            if meta_data.get("mimeType") != "application/vnd.google-apps.folder":
+                return DriveVerifyResponse(
+                    valid=False,
+                    folder_id=folder_id,
+                    error_type="invalid_link",
+                    message="The provided link is for a file, not a Google Drive folder.",
+                )
+
+            folder_name = meta_data.get("name", "Google Drive Folder")
+
+            # 4. Check if there are images in the folder
+            query = f"'{folder_id}' in parents and trashed = false and (mimeType contains 'image/' or name contains '.jpg' or name contains '.jpeg' or name contains '.png' or name contains '.webp' or name contains '.heic')"
+            list_url = "https://www.googleapis.com/drive/v3/files"
+            list_resp = requests.get(
+                list_url,
+                params={
+                    "q": query,
+                    "pageSize": 10,
+                    "fields": "files(id,name,mimeType)",
+                    "key": api_key,
+                    "supportsAllDrives": "true",
+                    "includeItemsFromAllDrives": "true",
+                },
+                timeout=8,
+            )
+
+            has_images = False
+            image_count = 0
+            if list_resp.status_code == 200:
+                files = list_resp.json().get("files", [])
+                image_count = len(files)
+                has_images = image_count > 0
+
+            if not has_images:
+                return DriveVerifyResponse(
+                    valid=False,
+                    folder_id=folder_id,
+                    folder_name=folder_name,
+                    has_images=False,
+                    image_count_preview=0,
+                    error_type="no_images",
+                    message=f"Folder '{folder_name}' was found, but it contains no image files.",
+                )
+
+            return DriveVerifyResponse(
+                valid=True,
+                folder_id=folder_id,
+                folder_name=folder_name,
+                has_images=True,
+                image_count_preview=image_count,
+                message=f"Verified: '{folder_name}' ({image_count}+ images found)",
+            )
+        except requests.exceptions.RequestException as e:
+            return DriveVerifyResponse(
+                valid=False,
+                folder_id=folder_id,
+                error_type="other",
+                message=f"Network error connecting to Google Drive API: {e}",
+            )
+        except Exception as e:
+            return DriveVerifyResponse(
+                valid=False,
+                folder_id=folder_id,
+                error_type="other",
+                message=f"Verification failed: {e}",
+            )
 
     # 2. People & Unrecognized Endpoints
     @router.get("/people", response_model=List[PersonClusterResponse])

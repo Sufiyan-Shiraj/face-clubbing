@@ -23,12 +23,14 @@ export const App: React.FC = () => {
       if (saved === 't-paper' || saved === 't-navy' || saved === 't-dark') {
         return saved;
       }
-    } catch (e) {}
+    } catch (e) { }
     return 't-dark';
   });
 
+  const [isThemeTransitioning, setIsThemeTransitioning] = useState(false);
+
   const handleThemeChange = (newTheme: RisoTheme, e?: React.MouseEvent) => {
-    if (newTheme === theme) return;
+    if (newTheme === theme || isThemeTransitioning) return;
 
     const x = e ? e.clientX : window.innerWidth - 80;
     const y = e ? e.clientY : 32;
@@ -40,11 +42,26 @@ export const App: React.FC = () => {
       setTheme(newTheme);
       try {
         localStorage.setItem('photosorter-theme', newTheme);
-      } catch (err) {}
+      } catch (err) { }
     };
 
     if ('startViewTransition' in document) {
-      (document as any).startViewTransition(update);
+      setIsThemeTransitioning(true);
+      try {
+        const transition = (document as any).startViewTransition(update);
+        if (transition && transition.finished) {
+          transition.finished
+            .catch(() => { })
+            .finally(() => {
+              setIsThemeTransitioning(false);
+            });
+        } else {
+          setTimeout(() => setIsThemeTransitioning(false), 550);
+        }
+      } catch (err) {
+        update();
+        setIsThemeTransitioning(false);
+      }
     } else {
       update();
     }
@@ -56,7 +73,7 @@ export const App: React.FC = () => {
       if (saved && ['home', 'progress', 'people', 'export', 'settings'].includes(saved)) {
         return saved as ActiveTab;
       }
-    } catch (e) {}
+    } catch (e) { }
     return 'home';
   });
 
@@ -64,7 +81,7 @@ export const App: React.FC = () => {
     setActiveTab(t);
     try {
       localStorage.setItem('photosorter-active-tab', t);
-    } catch (e) {}
+    } catch (e) { }
   };
   const [people, setPeople] = useState<PersonCluster[]>([]);
   const [photos, setPhotos] = useState<Record<string, PhotoInfo>>({});
@@ -99,11 +116,107 @@ export const App: React.FC = () => {
   const [isMerging, setIsMerging] = useState<boolean>(false);
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
 
+  // Persistent Home Screen State
+  const [sourceMode, setSourceMode] = useState<'drive' | 'local' | 'zip'>(() => {
+    try {
+      const saved = localStorage.getItem('photosorter-source-mode');
+      if (saved === 'drive' || saved === 'local' || saved === 'zip') return saved;
+    } catch (e) { }
+    return 'drive';
+  });
+
+  const [folderPath, setFolderPath] = useState<string>(() => {
+    try {
+      return localStorage.getItem('photosorter-folder-path') || 'test_photos';
+    } catch (e) { }
+    return 'test_photos';
+  });
+
+  const [driveLink, setDriveLink] = useState<string>(() => {
+    try {
+      return localStorage.getItem('photosorter-drive-link') || '';
+    } catch (e) { }
+    return '';
+  });
+
+  const [driveVerified, setDriveVerified] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('photosorter-drive-verified') === 'true';
+    } catch (e) { }
+    return false;
+  });
+
+  const [verifiedFolderId, setVerifiedFolderId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('photosorter-verified-folder-id') || null;
+    } catch (e) { }
+    return null;
+  });
+
+  const [verifiedFolderName, setVerifiedFolderName] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('photosorter-verified-folder-name') || null;
+    } catch (e) { }
+    return null;
+  });
+
+  const [verifiedImageCount, setVerifiedImageCount] = useState<number>(() => {
+    try {
+      const val = localStorage.getItem('photosorter-verified-img-count');
+      return val ? parseInt(val, 10) : 0;
+    } catch (e) { }
+    return 0;
+  });
+
+  const [discoveredFaceIds, setDiscoveredFaceIds] = useState<string[]>([]);
+  const [isApiKeyConfigured, setIsApiKeyConfigured] = useState<boolean>(false);
+
+  const handleSourceModeChange = (mode: 'drive' | 'local' | 'zip') => {
+    setSourceMode(mode);
+    try {
+      localStorage.setItem('photosorter-source-mode', mode);
+    } catch (e) { }
+  };
+
+  const handleFolderPathChange = (path: string) => {
+    setFolderPath(path);
+    try {
+      localStorage.setItem('photosorter-folder-path', path);
+    } catch (e) { }
+  };
+
+  const handleDriveLinkChange = (link: string) => {
+    setDriveLink(link);
+    try {
+      localStorage.setItem('photosorter-drive-link', link);
+    } catch (e) { }
+  };
+
+  const handleDriveVerifiedChange = (
+    verified: boolean,
+    folderId?: string | null,
+    folderName?: string | null,
+    imageCount?: number
+  ) => {
+    setDriveVerified(verified);
+    setVerifiedFolderId(folderId || null);
+    setVerifiedFolderName(folderName || null);
+    setVerifiedImageCount(imageCount || 0);
+    try {
+      localStorage.setItem('photosorter-drive-verified', String(verified));
+      if (folderId) localStorage.setItem('photosorter-verified-folder-id', folderId);
+      else localStorage.removeItem('photosorter-verified-folder-id');
+      if (folderName) localStorage.setItem('photosorter-verified-folder-name', folderName);
+      else localStorage.removeItem('photosorter-verified-folder-name');
+      localStorage.setItem('photosorter-verified-img-count', String(imageCount || 0));
+    } catch (e) { }
+  };
+
   // Load all data from API
   const loadAllData = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const [peopleData, unrecData, sugData, photoData] = await Promise.all([
+      const [peopleData, unrecData, sugData, photoData, settingsData] = await Promise.all([
         api.getPeople().catch(() => []),
         api.getUnrecognized().catch(() => ({ total_unrecognized_photos: 0, no_face_photos: [], faces: [] })),
         api.getSuggestions().catch(() => ({
@@ -115,12 +228,16 @@ export const App: React.FC = () => {
           ambiguous_faces: [],
         })),
         api.getPhotos().catch(() => ({})),
+        api.getSettings().catch(() => null),
       ]);
 
       setPeople(peopleData);
       setUnrecognized(unrecData);
       setSuggestions(sugData);
       setPhotos(photoData);
+      if (settingsData) {
+        setIsApiKeyConfigured(Boolean(settingsData.drive_api_key_configured));
+      }
     } catch (err) {
       console.error('Failed to load dataset from API:', err);
     } finally {
@@ -135,11 +252,18 @@ export const App: React.FC = () => {
       api.getJobStatus()
         .then((status) => {
           setJobStatus(status);
+          if (status.recent_faces && status.recent_faces.length > 0) {
+            setDiscoveredFaceIds((prev) => {
+              const s = new Set(prev);
+              status.recent_faces!.forEach((fid) => s.add(fid));
+              return Array.from(s);
+            });
+          }
           if (status.status === 'running') {
             setActiveTab('progress');
           }
         })
-        .catch(() => {}),
+        .catch(() => { }),
     ]).finally(() => {
       setIsInitialLoading(false);
     });
@@ -149,6 +273,13 @@ export const App: React.FC = () => {
   useEffect(() => {
     const unsubscribe = api.subscribeProgress((status) => {
       setJobStatus(status);
+      if (status.recent_faces && status.recent_faces.length > 0) {
+        setDiscoveredFaceIds((prev) => {
+          const s = new Set(prev);
+          status.recent_faces!.forEach((fid) => s.add(fid));
+          return Array.from(s);
+        });
+      }
       setProgressHistory((prev) => {
         const last = prev[prev.length - 1];
         if (last && last.current === status.current && last.stage === status.stage && last.status === status.status && last.percent === status.percent) {
@@ -172,6 +303,13 @@ export const App: React.FC = () => {
         try {
           const st = await api.getJobStatus();
           setJobStatus(st);
+          if (st.recent_faces && st.recent_faces.length > 0) {
+            setDiscoveredFaceIds((prev) => {
+              const s = new Set(prev);
+              st.recent_faces!.forEach((fid) => s.add(fid));
+              return Array.from(s);
+            });
+          }
           setProgressHistory((prev) => {
             const last = prev[prev.length - 1];
             if (last && last.current === st.current && last.stage === st.stage && last.status === st.status && last.percent === st.percent) {
@@ -189,6 +327,45 @@ export const App: React.FC = () => {
       return () => clearInterval(timer);
     }
   }, [jobStatus.status, isCancelling, activeTab, loadAllData]);
+
+  // Aggregate all discovered face crop URLs
+  const allDiscoveredFaces = useMemo(() => {
+    const list: string[] = [];
+    const seen = new Set<string>();
+
+    const addCrop = (raw: string | undefined | null) => {
+      if (!raw) return;
+      const clean = raw.startsWith('/') || raw.startsWith('faces/') ? `/${raw.replace(/^\//, '')}` : `/faces/${raw}`;
+      if (!seen.has(clean)) {
+        seen.add(clean);
+        list.push(clean);
+      }
+    };
+
+    discoveredFaceIds.forEach((fid) => {
+      addCrop(`/faces/${fid}.jpg`);
+    });
+
+    // 1. First add representative face for each person so preview row shows distinct people
+    people.forEach((p) => {
+      addCrop(p.face);
+    });
+
+    // 2. Then add all other individual face crops for each person
+    people.forEach((p) => {
+      p.faces?.forEach((f) => {
+        if (f.face_id) addCrop(`/faces/${f.face_id}.jpg`);
+      });
+    });
+
+    // 3. Add unrecognized faces
+    unrecognized.faces?.forEach((uf) => {
+      if (uf.face) addCrop(uf.face);
+      else if (uf.face_id) addCrop(`/faces/${uf.face_id}.jpg`);
+    });
+
+    return list;
+  }, [discoveredFaceIds, people, unrecognized]);
 
   // Multi-select helpers
   const handleToggleSelect = (personId: string) => {
@@ -488,6 +665,20 @@ export const App: React.FC = () => {
             isLoading={jobStatus.status === 'running'}
             onNavigateTab={(t: any) => handleTabChange(t)}
             theme={theme}
+            sourceMode={sourceMode}
+            onSourceModeChange={handleSourceModeChange}
+            folderPath={folderPath}
+            onFolderPathChange={handleFolderPathChange}
+            driveLink={driveLink}
+            onDriveLinkChange={handleDriveLinkChange}
+            driveVerified={driveVerified}
+            verifiedFolderId={verifiedFolderId}
+            verifiedFolderName={verifiedFolderName}
+            verifiedImageCount={verifiedImageCount}
+            onDriveVerifiedChange={handleDriveVerifiedChange}
+            discoveredFaceCrops={allDiscoveredFaces}
+            onApiKeySaved={loadAllData}
+            isApiKeyConfigured={isApiKeyConfigured}
           />
         )}
 

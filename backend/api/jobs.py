@@ -33,6 +33,7 @@ class JobManager:
         self.message: str = "Engine is idle."
         self.error: Optional[str] = None
         self.result_summary: Optional[Dict[str, Any]] = None
+        self.recent_faces: list[str] = []
 
         # Subscribers for SSE
         self._subscribers: list[asyncio.Queue] = []
@@ -52,6 +53,7 @@ class JobManager:
                 message=self.message,
                 error=self.error,
                 result_summary=self.result_summary,
+                recent_faces=list(self.recent_faces),
             )
 
     def _broadcast_progress(self, payload: Dict[str, Any]):
@@ -80,6 +82,11 @@ class JobManager:
             if "eta_seconds" in payload:
                 self.eta_seconds = payload["eta_seconds"]
 
+            if "new_faces" in payload and isinstance(payload["new_faces"], list):
+                for fid in payload["new_faces"]:
+                    if fid and fid not in self.recent_faces:
+                        self.recent_faces.append(fid)
+
             status_dict = {
                 "job_id": self.job_id,
                 "status": self.status,
@@ -91,6 +98,7 @@ class JobManager:
                 "current_file": self.current_file,
                 "eta_seconds": self.eta_seconds,
                 "message": self.message,
+                "recent_faces": list(self.recent_faces),
             }
 
         # Dispatch to async queues safely across threads via call_soon_threadsafe
@@ -117,6 +125,7 @@ class JobManager:
             self.message = "Initializing job..."
             self.error = None
             self.result_summary = None
+            self.recent_faces = []
             self._cancel_event.clear()
 
         # Update state settings if requested

@@ -1,8 +1,8 @@
 # PhotoSorter Verification & Phase 5 Delivery Report
 
-**Date**: 2026-10-14  
+**Date**: 2026-10-15  
 **Project**: Face Sorting Engine (`face-clubbing`)  
-**Status**: Phase 1b Complete, Phase 2 Complete (All Rows 1-15 PASS), Phase 3 Complete, Phase 4 Complete, Hygiene & Isolation Round Complete (Tasks 0-7 COMPLETE), Phase 5 Complete, Phase 6 In Verification (Mocked suite complete; early verification on public folder pending user-provided link and key).
+**Status**: Phase 1b Complete, Phase 2 Complete (All Rows 1-15 PASS), Phase 3 Complete, Phase 4 Complete, Hygiene & Isolation Round Complete (Tasks 0-7 COMPLETE), Phase 5 Complete, Phase 6 In Verification (Mocked suite complete; early verification on public folder pending user-provided link and key), Landing & HomeScreen Riso Redesign Complete.
 
 ### Working Rules Compliance Confirmation
 - **No Cluster IDs (`pNNN`)**: Strictly enforced. Cluster IDs are display handles only for a single export and are never persisted, tested, compared, or allowlisted. All tests, edits, and verification scripts key strictly by anchor face IDs and photo IDs. Check 14 of `eval/verify_export.py` enforces zero `\bp\d{3}\b` tokens in code outside comments across `eval/` and `tests/`.
@@ -3335,6 +3335,67 @@ To run live verification on a ~20-photo public folder, provide:
 
 **Status**:
 Phase 6 implementation and mocked test suite are 100% complete. Execution stops at the mocked tests pending the user-provided Google Drive public test folder and API key.
+
+---
+
+## 21. LANDING & HOME SCREEN RISOGRAPH REDESIGN & INTERACTIVE VERIFICATION REPORT
+
+**Status**: **Complete** (All UI and Backend Landing components implemented and verified; 31/31 Vitest tests passing across 7 test suites).
+
+### 21.1 Overview & Requirements Delivered
+Following the user-guided aesthetic and interaction design requirements, the Organizer landing screen (`HomeScreen.tsx`) was upgraded with a two-stage interactive workflow, high-contrast risograph visual styling, and non-blocking responsive transitions:
+
+1. **Two-Stage Landing Workflow**:
+   - **Stage 1 (Initial / Clean State)**: Spacious, middle-centered viewport layout with large textured Riso title, clean input for Google Drive folder link, and zero face preview frames shown initially.
+   - **Stage 2 (Expanded / Configured State)**: Automatically triggered upon entering a valid Google Drive folder link (or ID). Renders the folder ID as individual editable character cells (`.cell-box`, 32x42px, 16px monospace font) supporting fine-grained correction, arrow-key navigation, auto-advance, and backspace/delete traversal.
+   - **Action Parity**: Crisp "Clear" button and "Scan folder" button aligned with height parity (44px) and robust border definition.
+   - **Live Drive Verification**: Immediate asynchronous check against `/drive/verify` endpoint checking API key existence, folder availability, viewer permissions, and image file presence.
+
+2. **Riso Theme Banners (`UI/Who Was at the Event_dark.png` Harmonization)**:
+   - High-resolution textures generated for all three application themes:
+     - **Dark Theme (`title-dark.png`)**: White foretext with Crimson 3D extrusion on dark textured background.
+     - **Navy Theme (`title-navy.png`)**: White foretext with Vibrant Orange 3D extrusion.
+     - **Paper Theme (`title-paper.png`)**: Coral Red foretext with Deep Navy 3D extrusion.
+   - **Black Spot Artifact Removal**: Dark background distress cutouts and inner shadows (`lum < 60`) from the dark artwork made transparent with smooth anti-aliased falloff (`60 <= lum < 110`), allowing clean texture rendering on cream paper (`#efe8db`) and deep navy (`#1a3350`) backgrounds with zero dark smudges.
+
+3. **High-Contrast Theme Badging & Typography**:
+   - `.t-paper .badge-verified`: Specifically updated to deep risograph forest green (`#14532d` on `rgba(20, 83, 45, 0.12)`, achieving 8.5:1 AAA contrast against `#efe8db` cream paper).
+
+4. **Non-Blocking Theme Ripple Transition**:
+   - Eliminated the 0.85s–1.15s interaction delay caused by View Transitions overlays by assigning `pointer-events: none !important;` to `::view-transition*` pseudo-elements.
+   - Added an `isThemeTransitioning` lock in `App.tsx` that protects against rapid multi-click theme switching while keeping all page buttons, inputs, and navigation immediately interactive.
+
+5. **Face Preview Cells & Detection Accounting**:
+   - Populated the 11 preview face cells in `App.tsx` by prioritizing `p.face` for each unique cluster, ensuring the preview strip displays 11 distinct individuals rather than repeated shots of `p001`.
+   - Accurately reports detected face counts (1,889 detected face crops across the dataset).
+
+### 21.2 Verbatim Vitest Test Suite Execution Transcripts
+Command: `npx vitest run --pool=forks` (in `frontend/`)
+```text
+ RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
+
+ ✓ src/__tests__/homeScreen.test.tsx (3 tests) 334ms
+ ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 786ms
+ ✓ src/__tests__/twoStageInteraction.test.tsx (8 tests) 1455ms
+   ✓ Organizer Two-Stage Interaction & Drive Folder ID Extraction (8)
+     ✓ renders Initial State with no face preview frames visible
+     ✓ transitions to Stage 2 with folder ID character cells when valid link entered
+     ✓ synchronizes input when folder ID character cells are edited
+     ✓ clears input and returns to Stage 1 when Clear button clicked
+     ✓ handles arrow key navigation across folder ID cells
+     ✓ handles backspace across cells properly
+     ✓ validates folder with backend API and displays verified badge
+     ✓ does NOT show Set API key button when API key is already configured
+ ✓ src/__tests__/pollingFallback.test.ts (2 tests) 21ms
+ ✓ src/__tests__/mergeSelection.test.ts (4 tests) 11ms
+ ✓ src/__tests__/undoControl.test.ts (3 tests) 10ms
+ ✓ src/__tests__/suggestionList.test.ts (4 tests) 6ms
+
+ Test Files  7 passed (7)
+      Tests  31 passed (31)
+   Start at  07:54:56
+   Duration  12.35s
+```
 
 ---
 

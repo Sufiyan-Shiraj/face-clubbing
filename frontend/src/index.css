@@ -236,26 +236,26 @@ html, body {
 .themes {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .sw {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 2px solid var(--line);
   padding: 0;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .sw:hover {
-  transform: scale(1.15);
+  transform: scale(1.12);
 }
 
 .sw.on {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  box-shadow: 0 0 0 2.5px var(--bg), 0 0 0 5px var(--accent);
 }
 
 .s-dark { background: #121110; }
@@ -959,6 +959,193 @@ html, body {
   display: none;
 }
 
+.face.has-img {
+  background: var(--card-bg, #1a1816);
+  border: 1.5px solid var(--accent);
+}
+
+.face.has-img::before,
+.face.has-img::after {
+  display: none !important;
+}
+
+.face.has-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Verified Drive Folder Banner */
+.drive-verified-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  background: var(--card-bg, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--line);
+  padding: 12px 20px;
+  border-radius: 4px;
+  width: 100%;
+  max-width: 860px;
+}
+
+.drive-folder-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.folder-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.folder-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.badge-verified {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  color: #4ade80;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.04em;
+}
+
+.t-paper .badge-verified {
+  background: rgba(20, 83, 45, 0.12);
+  border: 1px solid rgba(20, 83, 45, 0.4);
+  color: #14532d;
+}
+
+.t-navy .badge-verified {
+  background: rgba(52, 211, 153, 0.18);
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  color: #6ee7b7;
+}
+
+.t-dark .badge-verified {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  color: #4ade80;
+}
+
+.folder-img-count {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Secondary Button (e.g. Check Folder button) */
+.btn.sec {
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn.sec:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--accent);
+}
+
+.btn.sec:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* API Key Modal */
+.api-key-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.api-key-modal-card {
+  background: var(--card-bg, #1a1816);
+  border: 1.5px solid var(--accent);
+  border-radius: 4px;
+  max-width: 480px;
+  width: 100%;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.api-key-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.api-key-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.api-key-modal-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.api-key-modal-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--input, rgba(0, 0, 0, 0.5));
+  border: 1.5px solid var(--line);
+  border-radius: 2px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.api-key-modal-input:focus {
+  border-color: var(--accent);
+}
+
+.api-key-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .f1 { --tone: #c98f6b; }
 .f2 { --tone: #8fa6b8; }
 .f3 { --tone: #b8a15f; }
@@ -1121,13 +1308,8 @@ html, body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-::-webkit-scrollbar-thumb {
-  background: var(--line);
-  border-radius: 3px;
-}
-
 /* ==========================================================================
-   Expanding Circular Theme Transition
+   Expanding Circular Theme Transition (Non-blocking: pointer-events: none)
    ========================================================================== */
 @keyframes theme-expand {
   from {
@@ -1138,14 +1320,23 @@ html, body {
   }
 }
 
+::view-transition,
+::view-transition-group(root),
+::view-transition-image-pair(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  pointer-events: none !important;
+}
+
 ::view-transition-old(root) {
   animation: none;
   z-index: 1;
 }
 
 ::view-transition-new(root) {
-  animation: theme-expand 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: theme-expand 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   z-index: 2;
   mix-blend-mode: normal;
 }
+
 

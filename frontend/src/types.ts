@@ -97,6 +97,17 @@ export interface JobStatus {
   message: string;
   error?: string | null;
   result_summary?: Record<string, any> | null;
+  recent_faces?: string[];
+}
+
+export interface DriveVerifyResult {
+  valid: boolean;
+  folder_id?: string;
+  folder_name?: string;
+  has_images?: boolean;
+  image_count_preview?: number;
+  error_type?: string;
+  message?: string;
 }
 
 export interface EditResponse {

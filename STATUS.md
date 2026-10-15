@@ -1,7 +1,7 @@
 # PhotoSorter Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-14T19:15:00+05:30  
-**Audit Mode**: Verification Gaps Resolution & Full State Audit  
+**Generated**: 2026-10-15T08:10:00+05:30  
+**Audit Mode**: Landing & HomeScreen Riso Redesign Closeout & Full State Audit  
 
 ---
 
@@ -64,7 +64,7 @@
 | **1b Engine amendments** | Done | `backend/engine/edits.py`, `exporter.py`, `eval/verify_export.py`, `eval/ground_truth.json`, `eval/recall_table.py`, `tests/test_clustering.py` | Section 13 (Tasks 1–11 documented with test outputs) | **MATCHES** |
 | **2 Static viewer** | Done | `viewer/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/`, `src/__tests__/viewer.test.tsx`, `dist/` | Section 14 (All Rows 1–15 pass) | **MATCHES** |
 | **3 API layer (FastAPI)** | Done | `backend/api/app.py`, `backend/api/jobs.py`, `backend/api/models.py`, `backend/api/routes.py`, `backend/api/state.py`, `eval/verify_api.py`, `tests/test_api.py` | Section 15 (Endpoints, SSE streaming, edit replay, fixture verification) | **MATCHES** |
-| **4 Organizer UI (React)** | Done | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `scripts/e2e.mjs`, `dist/` | Section 16 (Screens, controls, E2E browser verification) | **MATCHES** |
+| **4 Organizer UI (React)** | Done (Landing & HomeScreen Riso Redesign Complete) | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `scripts/e2e.mjs`, `dist/` | Section 16 & 21 (Screens, two-stage landing, folder ID cell strip, live Drive verify, riso title banners, 31/31 Vitest passed) | **MATCHES** |
 | **5 Desktop shell & packaging** | Complete | `main.py`, `photosorter.spec`, `dist/photosorter.exe`, `eval/verify_exe.py`, `eval/verify_windowed.py`, `eval/verify_models_cold.py` | Section 19 (Pywebview shell, native dialogs, PyInstaller exe, GUI subsystem, bundle hygiene, windowed verification, cold cache run) | **MATCHES** |
 | **6 Method 1 (Drive link input)** | In verification | `backend/drive/parser.py`, `client.py`, `config.py`, `tests/test_drive.py`, `eval/verify_drive_phase6.py`, `frontend/src/__tests__/driveIntegration.test.tsx` | Section 20 (All 7 tasks implemented; 29/29 pytest passed, 7/7 Vitest passed; live check pending folder and key) | **IN VERIFICATION** |
 | **7 Release automation** | Not started | None | None | **NOT STARTED** |
@@ -159,23 +159,23 @@ LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
 #### 1. `frontend/` (`npm test`)
 ```text
 > photosorter-frontend@1.0.0 test
-> vitest run --run
-
+> vitest run --pool=forks
 
  RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
 
- ✓ src/__tests__/pollingFallback.test.ts (2 tests) 24ms
- ✓ src/__tests__/mergeSelection.test.ts (4 tests) 9ms
- ✓ src/__tests__/suggestionList.test.ts (4 tests) 12ms
- ✓ src/__tests__/undoControl.test.ts (3 tests) 8ms
- ✓ src/__tests__/homeScreen.test.tsx (3 tests) 198ms
- ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 341ms
+ ✓ src/__tests__/homeScreen.test.tsx (3 tests) 334ms
+ ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 786ms
+ ✓ src/__tests__/twoStageInteraction.test.tsx (8 tests) 1455ms
+ ✓ src/__tests__/pollingFallback.test.ts (2 tests) 21ms
+ ✓ src/__tests__/mergeSelection.test.ts (4 tests) 11ms
+ ✓ src/__tests__/undoControl.test.ts (3 tests) 10ms
+ ✓ src/__tests__/suggestionList.test.ts (4 tests) 6ms
 
- Test Files  6 passed (6)
-      Tests  23 passed (23)
-   Duration  85.49s
+ Test Files  7 passed (7)
+      Tests  31 passed (31)
+   Duration  12.35s
 ```
-*(Note on previous stale status: STATUS §3 had previously recorded 16 passed across 5 files from the Phase 5 closeout. Phase 6 added `frontend/src/__tests__/driveIntegration.test.tsx` containing 7 tests, bringing the total frontend Vitest suite to 23 passed across 6 files.)*
+*(Note: Updated from 23 passed across 6 files to 31 passed across 7 files following the implementation of `frontend/src/__tests__/twoStageInteraction.test.tsx` for the two-stage landing flow, Google Drive folder ID editable character cell extraction, live verification badge, and responsive theme styling.)*
 
 #### 2. `viewer/` (`npm test`)
 ```text
@@ -536,11 +536,12 @@ git grep -I "data:image/" $(git rev-list --all)
 
 Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 - **Full Backend Test Suite (Check A)**: **67 passed**, 0 failed, 0 skipped in `pytest -q -rs`.
-- **Frontend Vitest Suite (Check D1)**: **23 passed**, 0 failed across 6 test files in `npm test` (`frontend/`).
+- **Frontend Vitest Suite (Check D1)**: **31 passed**, 0 failed across 7 test files in `npm test` (`frontend/`). Includes 8 new tests in `twoStageInteraction.test.tsx` verifying the two-stage landing flow, Google Drive link extraction, editable character cells, Clear button, and verified badge.
 - **Viewer Vitest Suite (Check D2)**: **6 passed**, 0 failed across 1 test file in `npm test` (`viewer/`).
 - **Fresh Git Clone Pytest Execution (Check J1)**: **64 passed, 3 skipped** in `pytest -q -rs` (skips require local live caches).
-- **Fresh Git Clone Frontend Vitest Execution (Check J2)**: **23 passed** across 6 test files in `npm ci && npm test` (`frontend/`).
-- **Phase 6 Mocked Drive Suite**: **29 passed** in `tests/test_drive.py` (included in Check A 67 total); **7 passed** in `frontend/src/__tests__/driveIntegration.test.tsx` (included in Check D1 23 total).
+- **Fresh Git Clone Frontend Vitest Execution (Check J2)**: **31 passed** across 7 test files in `npm ci && npm test` (`frontend/`).
+- **Phase 6 Mocked Drive Suite**: **29 passed** in `tests/test_drive.py` (included in Check A 67 total); **7 passed** in `frontend/src/__tests__/driveIntegration.test.tsx` (included in Check D1 31 total).
+- **Landing & Home Screen Riso Redesign**: **COMPLETE**. Two-stage interaction, 1-44 character editable cells, non-blocking View Transitions (`pointer-events: none !important`), Riso title banners with transparent cutouts for Dark/Navy/Paper, AAA verified badge contrast on Paper, and 11 distinct face thumbnails.
 - **Cold-Run Detection Speed (Check I)**: **7.49 s/photo** on dense event photos (~32.3 minutes for 259 photos; previously measured 8.31 s / 7.35 s) -> **UNVERIFIED against SPEC estimate** (~1 to 1.5 s/photo).
 - **Cold-Run Invariant Targets (Check I)**: 62 people, 142 faces in clusters, 160 unrecognized faces, 17 unrecognized photos. Established from this same 20-photo run to verify deterministic repeatability -> **NOT an independent verification**.
 - **Startup Latency (Check K)**: 3 consecutive runs measured at **27.33 s, 23.88 s, 18.84 s** (average 23.35 s). Loading screen confirmed via screenshot `initial_loading_screen_1791959889786.png` before server ready (filenames only; zero photos or face crops).
