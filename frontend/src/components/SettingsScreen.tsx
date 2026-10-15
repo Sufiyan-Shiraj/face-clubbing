@@ -1,11 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { Settings } from '../types';
-import { Sliders, RefreshCw, Key, CheckCircle2, AlertTriangle, ShieldCheck, HelpCircle, ExternalLink, Save, Trash2 } from 'lucide-react';
+import {
+  Sliders,
+  RefreshCw,
+  Key,
+  CheckCircle2,
+  AlertTriangle,
+  ShieldCheck,
+  HelpCircle,
+  ExternalLink,
+  Save,
+  Trash2,
+  RotateCcw,
+  Sparkles,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
+import {
+  OrbitalClusterVisualizer,
+  MergeFusionVisualizer,
+  RadarSuggestionVisualizer,
+  PhotoCollisionShieldVisualizer,
+  DimensionPreviewVisualizer,
+} from './SliderVisualizers';
 
 interface SettingsScreenProps {
   onRerunComplete?: () => void;
 }
+
+const SPEC_6_2_DEFAULTS: Partial<Settings> = {
+  distance_threshold: 0.50,
+  merge_threshold: 0.50,
+  maybe_threshold: 0.65,
+  same_photo_merge_max: 0.40,
+  second_pass_merge: true,
+  flip_average: false,
+  thumb_size: 400,
+  face_crop_size: 256,
+};
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete }) => {
   const [settings, setSettings] = useState<Settings>({
@@ -34,7 +68,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete 
   const [driveKeyInput, setDriveKeyInput] = useState('');
   const [isSavingKey, setIsSavingKey] = useState(false);
   const [keySavedMessage, setKeySavedMessage] = useState<string | null>(null);
-  const [showGuide, setShowGuide] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
   const [rerunResult, setRerunResult] = useState<{
@@ -92,6 +126,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete 
     }
   };
 
+  const handleResetDefaults = () => {
+    setSettings((prev) => ({
+      ...prev,
+      ...SPEC_6_2_DEFAULTS,
+    }));
+  };
+
   const handleSaveAndRerun = async () => {
     setIsRerunning(true);
     setError(null);
@@ -126,440 +167,602 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete 
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn pb-24">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-          <Sliders className="w-6 h-6 text-accent" />
-          Clustering & Pipeline Settings
-        </h2>
-        <p className="text-sm text-neutral-400 mt-1">
-          Tune clustering parameters (SPEC 6.2 defaults). Changing any clustering parameter triggers an automatic re-clustering with full edit replay.
-        </p>
-      </div>
-
-      {/* Section 1: Clustering Sensitivity (SPEC 6.2 parameters) */}
-      <div className="glass-card p-6 rounded-2xl space-y-6">
-        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-          <h3 className="text-base font-semibold text-white">Clustering Sensitivity (SPEC 6.2)</h3>
-          <span className="text-xs text-neutral-500 font-mono">Agglomerative Average Linkage</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Distance Threshold */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <label htmlFor="setting-distance-threshold" className="font-semibold text-neutral-300">
-                Primary Distance Cutoff (`distance_threshold`)
-              </label>
-              <span id="setting-distance-threshold-val" className="font-mono text-accent font-bold">
-                {settings.distance_threshold.toFixed(2)}
-              </span>
-            </div>
-            <input
-              id="setting-distance-threshold"
-              type="range"
-              min="0.30"
-              max="0.65"
-              step="0.01"
-              value={settings.distance_threshold}
-              onChange={(e) =>
-                setSettings({ ...settings, distance_threshold: parseFloat(e.target.value) })
-              }
-              className="w-full accent-accent h-1.5 bg-neutral-800 rounded-lg cursor-pointer"
-            />
-            <p className="text-[11px] text-neutral-500">
-              Cosine distance cutoff for seed face clustering. Default: 0.50. Lower values produce stricter, smaller clusters.
-            </p>
+    <div className="settings-dashboard animate-fadeIn select-none">
+      {/* Top Header Row with Actions - Always Visible at Top */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-[var(--line)]">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded bg-[var(--input)] border border-[var(--panel-border)] flex items-center justify-center text-[var(--accent)] flex-shrink-0">
+            <Sliders className="w-5 h-5" />
           </div>
-
-          {/* Merge Threshold */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <label htmlFor="setting-merge-threshold" className="font-semibold text-neutral-300">
-                Second-Pass Merge Cutoff (`merge_threshold`)
-              </label>
-              <span id="setting-merge-threshold-val" className="font-mono text-accent font-bold">
-                {settings.merge_threshold.toFixed(2)}
-              </span>
-            </div>
-            <input
-              id="setting-merge-threshold"
-              type="range"
-              min="0.30"
-              max="0.60"
-              step="0.01"
-              value={settings.merge_threshold}
-              onChange={(e) =>
-                setSettings({ ...settings, merge_threshold: parseFloat(e.target.value) })
-              }
-              className="w-full accent-accent h-1.5 bg-neutral-800 rounded-lg cursor-pointer"
-            />
-            <p className="text-[11px] text-neutral-500">
-              Centroid distance cutoff for automatic second-pass duplicate reduction. Default: 0.50.
-            </p>
-          </div>
-
-          {/* Maybe Threshold */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <label htmlFor="setting-maybe-threshold" className="font-semibold text-neutral-300">
-                Suggestion Range Cap (`maybe_threshold`)
-              </label>
-              <span id="setting-maybe-threshold-val" className="font-mono text-amber-400 font-bold">
-                {settings.maybe_threshold.toFixed(2)}
-              </span>
-            </div>
-            <input
-              id="setting-maybe-threshold"
-              type="range"
-              min="0.50"
-              max="0.75"
-              step="0.01"
-              value={settings.maybe_threshold}
-              onChange={(e) =>
-                setSettings({ ...settings, maybe_threshold: parseFloat(e.target.value) })
-              }
-              className="w-full accent-amber-400 h-1.5 bg-neutral-800 rounded-lg cursor-pointer"
-            />
-            <p className="text-[11px] text-neutral-500">
-              Upper centroid distance for suggestion pair generation. Default: 0.65 (rev 2).
-            </p>
-          </div>
-
-          {/* Same-photo guard */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <label htmlFor="setting-same-photo-guard" className="font-semibold text-neutral-300">
-                Same-Photo Guard Cap (`same_photo_merge_max`)
-              </label>
-              <span id="setting-same-photo-guard-val" className="font-mono text-neutral-300 font-bold">
-                {settings.same_photo_merge_max.toFixed(2)}
-              </span>
-            </div>
-            <input
-              id="setting-same-photo-guard"
-              type="range"
-              min="0.20"
-              max="0.50"
-              step="0.01"
-              value={settings.same_photo_merge_max}
-              onChange={(e) =>
-                setSettings({ ...settings, same_photo_merge_max: parseFloat(e.target.value) })
-              }
-              className="w-full accent-neutral-300 h-1.5 bg-neutral-800 rounded-lg cursor-pointer"
-            />
-            <p className="text-[11px] text-neutral-500">
-              Blocks merging clusters if two faces from one photo exceed this distance. Default: 0.40.
-            </p>
-          </div>
-        </div>
-
-        {/* Toggles */}
-        <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <label className="flex items-center gap-3 p-3 rounded-xl bg-neutral-900 border border-neutral-800 cursor-pointer hover:border-neutral-700">
-            <input
-              id="setting-second-pass-toggle"
-              type="checkbox"
-              checked={settings.second_pass_merge}
-              onChange={(e) =>
-                setSettings({ ...settings, second_pass_merge: e.target.checked })
-              }
-              className="w-4 h-4 rounded border-neutral-700 bg-neutral-950 text-accent focus:ring-accent"
-            />
-            <div>
-              <p className="text-xs font-semibold text-white">Enable Second-Pass Centroid Merge</p>
-              <p className="text-[10px] text-neutral-400">Merges split clusters automatically with same-photo collision check</p>
-            </div>
-          </label>
-
-          <label className="flex items-center gap-3 p-3 rounded-xl bg-neutral-900 border border-neutral-800 cursor-pointer hover:border-neutral-700">
-            <input
-              id="setting-flip-average-toggle"
-              type="checkbox"
-              checked={settings.flip_average}
-              onChange={(e) =>
-                setSettings({ ...settings, flip_average: e.target.checked })
-              }
-              className="w-4 h-4 rounded border-neutral-700 bg-neutral-950 text-accent focus:ring-accent"
-            />
-            <div>
-              <p className="text-xs font-semibold text-white">Flip-Averaged Embeddings</p>
-              <p className="text-[10px] text-neutral-400">Averages horizontal mirrored embeddings (default: false)</p>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {/* Section 2: Visual & Image Sizing */}
-      <div className="glass-card p-6 rounded-2xl space-y-4">
-        <h3 className="text-base font-semibold text-white border-b border-neutral-800 pb-3">
-          Asset Generation Sizes
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="setting-thumb-size" className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
-              Photo Thumbnail Dimension (px)
-            </label>
-            <select
-              id="setting-thumb-size"
-              value={settings.thumb_size}
-              onChange={(e) => setSettings({ ...settings, thumb_size: parseInt(e.target.value, 10) })}
-              className="w-full px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-accent"
-            >
-              <option value="300">300 px (Compact)</option>
-              <option value="400">400 px (Default SPEC 6.2)</option>
-              <option value="500">500 px (High Quality)</option>
-              <option value="600">600 px (Ultra HD)</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="setting-face-crop-size" className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
-              Face Crop Dimension (px)
-            </label>
-            <select
-              id="setting-face-crop-size"
-              value={settings.face_crop_size}
-              onChange={(e) =>
-                setSettings({ ...settings, face_crop_size: parseInt(e.target.value, 10) })
-              }
-              className="w-full px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-accent"
-            >
-              <option value="192">192 px (Compact)</option>
-              <option value="256">256 px (Default SPEC 6.2)</option>
-              <option value="320">320 px (High Detail)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Section 3: Google Drive API Key */}
-      <div className="glass-card p-6 rounded-2xl space-y-5">
-        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-          <div className="flex items-center gap-2">
-            <Key className="w-5 h-5 text-amber-400" />
-            <h3 className="text-base font-semibold text-white">Google Drive API Key</h3>
-          </div>
-          {settings.drive_api_key_configured ? (
-            <span
-              id="drive-key-status-badge"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Configured ({settings.drive_api_key_masked || 'Active'})</span>
-            </span>
-          ) : (
-            <span
-              id="drive-key-status-badge"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-400 border border-amber-800"
-            >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>Not Configured</span>
-            </span>
-          )}
-        </div>
-
-        {keySavedMessage && (
-          <div
-            id="drive-key-saved-message"
-            className="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs flex items-center gap-2 animate-fadeIn"
-          >
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{keySavedMessage}</span>
-          </div>
-        )}
-
-        {/* API Key Input and Action Buttons */}
-        <div className="space-y-3">
-          <label htmlFor="setting-drive-api-key" className="block text-xs font-semibold uppercase tracking-wider text-neutral-400">
-            {settings.drive_api_key_configured ? 'Update API Key' : 'Enter API Key'}
-          </label>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              id="setting-drive-api-key"
-              type="password"
-              value={driveKeyInput}
-              onChange={(e) => setDriveKeyInput(e.target.value)}
-              placeholder={
-                settings.drive_api_key_configured
-                  ? `Configured (${settings.drive_api_key_masked || 'Hidden'}) - paste new key to update`
-                  : 'AIzaSy... (free Google Cloud API key)'
-              }
-              className="flex-1 px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-accent font-mono placeholder:text-neutral-600"
-            />
-            <div className="flex gap-2">
-              <button
-                id="save-drive-key-btn"
-                type="button"
-                onClick={handleSaveDriveKey}
-                disabled={isSavingKey || !driveKeyInput.trim()}
-                className={`px-4 py-2.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all shadow-md ${
-                  isSavingKey || !driveKeyInput.trim()
-                    ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
-                    : 'bg-accent text-white hover:brightness-110 shadow-accent/20 cursor-pointer'
-                }`}
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>{isSavingKey ? 'Saving...' : 'Save Key'}</span>
-              </button>
-              {settings.drive_api_key_configured && (
-                <button
-                  id="clear-drive-key-btn"
-                  type="button"
-                  onClick={handleClearDriveKey}
-                  disabled={isSavingKey}
-                  className="px-3.5 py-2.5 rounded-xl font-semibold text-xs flex items-center gap-1.5 bg-red-950/40 hover:bg-red-950/80 text-red-300 border border-red-800/80 transition-all cursor-pointer"
-                  title="Remove saved key from local settings"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Remove</span>
-                </button>
-              )}
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg md:text-xl font-bold tracking-tight text-[var(--text)] uppercase font-mono">
+                Clustering & Pipeline Engine
+              </h2>
+              <span className="settings-badge accent">
+                SPEC 6.2 ACTIVE
+              </span>
             </div>
+            <p className="text-xs text-[var(--muted)] font-mono">
+              Real-time parameter tuning with interactive visualizers. Changes trigger agglomerative re-clustering with stable edit replay.
+            </p>
           </div>
         </div>
 
-        {/* Security Guarantee */}
-        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800/80 text-[11px] text-neutral-400">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <span className="font-semibold text-neutral-300">Security Guarantee: </span>
-            Stored only in your local profile (<code className="text-neutral-300">~/.photosorter/settings.json</code>) or read from the <code className="text-neutral-300">DRIVE_API_KEY</code> environment variable. Never committed to git, never written to project files, never included in exports or client bundles, and masked in logs.
-          </div>
-        </div>
-
-        {/* In-App Guide */}
-        <div className="border border-neutral-800 rounded-xl overflow-hidden bg-neutral-900/40">
+        {/* Action Controls */}
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => setShowGuide(!showGuide)}
-            className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-neutral-300 hover:text-white transition-colors"
+            onClick={handleResetDefaults}
+            className="btn sm"
+            title="Reset parameters to SPEC 6.2 default recommendations"
           >
-            <span className="flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-accent" />
-              <span>How to get a free Google Drive API Key (3 minutes)</span>
-            </span>
-            <span className="text-[11px] text-neutral-500">{showGuide ? 'Hide Guide' : 'Show Guide'}</span>
+            <RotateCcw className="w-3.5 h-3.5 text-[var(--muted)]" />
+            <span>Reset Defaults</span>
           </button>
 
-          {showGuide && (
-            <div className="px-4 pb-4 pt-1 space-y-2.5 text-xs text-neutral-400 border-t border-neutral-800/60">
-              <ol className="list-decimal list-inside space-y-2">
-                <li>
-                  Go to the{' '}
-                  <a
-                    href="https://console.cloud.google.com/"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-accent hover:underline inline-flex items-center gap-1 font-medium"
-                  >
-                    Google Cloud Console <ExternalLink className="w-3 h-3" />
-                  </a>{' '}
-                  and sign in with any Google account.
-                </li>
-                <li>
-                  Click the project selector at the top and click <strong className="text-neutral-200">New Project</strong> (e.g. name it <code className="text-neutral-200">PhotoSorter</code>).
-                </li>
-                <li>
-                  Go to <strong className="text-neutral-200">APIs &amp; Services &gt; Library</strong>, search for <strong className="text-neutral-200">Google Drive API</strong>, and click <strong className="text-neutral-200">Enable</strong>.
-                </li>
-                <li>
-                  Go to <strong className="text-neutral-200">APIs &amp; Services &gt; Credentials</strong>, click <strong className="text-neutral-200">+ Create Credentials</strong>, and select <strong className="text-neutral-200">API key</strong>.
-                </li>
-                <li>
-                  <strong className="text-neutral-300">(Recommended)</strong> Click <strong className="text-neutral-200">Edit API key</strong>, under <em className="text-neutral-300">API restrictions</em> select <strong className="text-neutral-200">Restrict key</strong> and choose <strong className="text-neutral-200">Google Drive API</strong>.
-                </li>
-                <li>
-                  Paste the generated key above and click <strong className="text-neutral-200">Save Key</strong>, or set the <code className="text-neutral-200">DRIVE_API_KEY</code> environment variable.
-                </li>
-              </ol>
-              <p className="text-[11px] text-neutral-500 pt-1">
-                Note: Standard Google Cloud free tier includes hundreds of thousands of Drive API requests per day at zero cost.
-              </p>
-            </div>
-          )}
+          <button
+            id="save-rerun-btn"
+            disabled={isRerunning || isLoading}
+            onClick={handleSaveAndRerun}
+            className="btn pri"
+            style={{ height: '36px', padding: '0 20px', fontSize: '13px' }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRerunning ? 'animate-spin' : ''}`} />
+            <span>{isRerunning ? 'Replaying Edits...' : 'Save & Rerun Clustering'}</span>
+          </button>
         </div>
       </div>
 
-      {/* Error display */}
+      {/* Global Error Banner */}
       {error && (
-        <div className="p-4 rounded-xl bg-red-950/60 border border-red-800 text-red-300 text-xs flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+        <div className="p-3 rounded bg-red-950/80 border border-red-800 text-red-200 text-xs flex items-center gap-2 animate-fadeIn">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-400" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Rerun Result Feedback */}
-      {rerunResult && (
-        <div
-          id="rerun-result-summary"
-          className="glass-card p-6 rounded-2xl space-y-4 border border-emerald-500/40 bg-emerald-950/20 animate-scaleUp"
-        >
-          <div className="flex items-center gap-3 text-emerald-400">
-            <CheckCircle2 className="w-6 h-6 flex-shrink-0" />
-            <div>
-              <h3 className="text-base font-semibold text-white">Re-clustering Completed with Edit Replay</h3>
-              <p className="text-xs text-neutral-300 mt-0.5">
-                Clustering rerun finished. {rerunResult.applied_count} edits successfully replayed by face ID.
+      {/* Main Full-Width Dashboard Content Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-3 flex-1 min-h-0">
+        {/* Left Column: 4 Core Algorithm Sliders with Interactive Visualizers (7 Cols) */}
+        <div className="xl:col-span-7 flex flex-col gap-3">
+          {/* Section Subtitle */}
+          <div className="flex items-center justify-between text-xs font-mono px-1">
+            <span className="font-bold text-[var(--text)] uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
+              Clustering Sensitivity Thresholds
+            </span>
+            <span className="text-[var(--muted)]">Agglomerative Average Linkage</span>
+          </div>
+
+          {/* 2x2 Grid of Themed Visualizer Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Slider 1: Distance Threshold */}
+            <div className="settings-slider-card">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <label htmlFor="setting-distance-threshold" className="text-xs md:text-sm font-bold text-[var(--text)] block">
+                    Primary Distance Cutoff
+                  </label>
+                  <span className="text-[11px] font-mono text-[var(--muted)]">
+                    distance_threshold
+                  </span>
+                </div>
+                <span
+                  id="setting-distance-threshold-val"
+                  className="settings-badge accent text-sm"
+                >
+                  {settings.distance_threshold.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Interactive Visualizer: Orbital Face Constellation */}
+              <div className="h-[84px] w-full my-0.5">
+                <OrbitalClusterVisualizer value={settings.distance_threshold} />
+              </div>
+
+              <div>
+                <input
+                  id="setting-distance-threshold"
+                  type="range"
+                  min="0.30"
+                  max="0.65"
+                  step="0.01"
+                  value={settings.distance_threshold}
+                  onChange={(e) =>
+                    setSettings({ ...settings, distance_threshold: parseFloat(e.target.value) })
+                  }
+                  className="settings-range"
+                />
+                <div className="flex justify-between text-[10px] font-mono text-[var(--muted)]">
+                  <span>0.30 (Strict / Tight)</span>
+                  <span>Default: 0.50</span>
+                  <span>0.65 (Loose / Wide)</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-[var(--muted)] leading-tight">
+                Cosine cutoff for seed face clustering. Lower values require near-identical faces; higher values link wider variations.
+              </p>
+            </div>
+
+            {/* Slider 2: Merge Threshold */}
+            <div className="settings-slider-card">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <label htmlFor="setting-merge-threshold" className="text-xs md:text-sm font-bold text-[var(--text)] block">
+                    Second-Pass Merge Cutoff
+                  </label>
+                  <span className="text-[11px] font-mono text-[var(--muted)]">
+                    merge_threshold
+                  </span>
+                </div>
+                <span
+                  id="setting-merge-threshold-val"
+                  className="settings-badge accent text-sm"
+                >
+                  {settings.merge_threshold.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Interactive Visualizer: Centroid Gravitational Fusion */}
+              <div className="h-[84px] w-full my-0.5">
+                <MergeFusionVisualizer value={settings.merge_threshold} />
+              </div>
+
+              <div>
+                <input
+                  id="setting-merge-threshold"
+                  type="range"
+                  min="0.30"
+                  max="0.60"
+                  step="0.01"
+                  value={settings.merge_threshold}
+                  onChange={(e) =>
+                    setSettings({ ...settings, merge_threshold: parseFloat(e.target.value) })
+                  }
+                  className="settings-range"
+                />
+                <div className="flex justify-between text-[10px] font-mono text-[var(--muted)]">
+                  <span>0.30 (Separate)</span>
+                  <span>Default: 0.50</span>
+                  <span>0.60 (Aggressive)</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-[var(--muted)] leading-tight">
+                Centroid distance cutoff for automatic duplicate cluster consolidation into a unified person identity.
+              </p>
+            </div>
+
+            {/* Slider 3: Maybe Threshold */}
+            <div className="settings-slider-card">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <label htmlFor="setting-maybe-threshold" className="text-xs md:text-sm font-bold text-[var(--text)] block">
+                    Suggestion Range Cap
+                  </label>
+                  <span className="text-[11px] font-mono text-[var(--muted)]">
+                    maybe_threshold
+                  </span>
+                </div>
+                <span
+                  id="setting-maybe-threshold-val"
+                  className="settings-badge accent text-sm"
+                >
+                  {settings.maybe_threshold.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Interactive Visualizer: Sonar Radar Hologram */}
+              <div className="h-[84px] w-full my-0.5">
+                <RadarSuggestionVisualizer value={settings.maybe_threshold} />
+              </div>
+
+              <div>
+                <input
+                  id="setting-maybe-threshold"
+                  type="range"
+                  min="0.50"
+                  max="0.75"
+                  step="0.01"
+                  value={settings.maybe_threshold}
+                  onChange={(e) =>
+                    setSettings({ ...settings, maybe_threshold: parseFloat(e.target.value) })
+                  }
+                  className="settings-range"
+                />
+                <div className="flex justify-between text-[10px] font-mono text-[var(--muted)]">
+                  <span>0.50 (Close)</span>
+                  <span>Default: 0.65</span>
+                  <span>0.75 (Wide Sweep)</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-[var(--muted)] leading-tight">
+                Upper centroid radar distance for generating candidate "Maybe Same Person" review pairs.
+              </p>
+            </div>
+
+            {/* Slider 4: Same-Photo Guard */}
+            <div className="settings-slider-card">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <label htmlFor="setting-same-photo-guard" className="text-xs md:text-sm font-bold text-[var(--text)] block">
+                    Same-Photo Guard Cap
+                  </label>
+                  <span className="text-[11px] font-mono text-[var(--muted)]">
+                    same_photo_merge_max
+                  </span>
+                </div>
+                <span
+                  id="setting-same-photo-guard-val"
+                  className="settings-badge text-sm"
+                >
+                  {settings.same_photo_merge_max.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Interactive Visualizer: Laser Collision Shield */}
+              <div className="h-[84px] w-full my-0.5">
+                <PhotoCollisionShieldVisualizer value={settings.same_photo_merge_max} />
+              </div>
+
+              <div>
+                <input
+                  id="setting-same-photo-guard"
+                  type="range"
+                  min="0.20"
+                  max="0.50"
+                  step="0.01"
+                  value={settings.same_photo_merge_max}
+                  onChange={(e) =>
+                    setSettings({ ...settings, same_photo_merge_max: parseFloat(e.target.value) })
+                  }
+                  className="settings-range"
+                />
+                <div className="flex justify-between text-[10px] font-mono text-[var(--muted)]">
+                  <span>0.20 (Impenetrable)</span>
+                  <span>Default: 0.40</span>
+                  <span>0.50 (Permissive)</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-[var(--muted)] leading-tight">
+                Prevents merging two clusters if any two faces appearing in the identical photograph exceed this barrier.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 pt-2">
-            <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800 text-center">
-              <span className="text-xs text-neutral-400">People</span>
-              <p id="rerun-stat-people" className="text-lg font-bold text-white mt-0.5">{rerunResult.people_count}</p>
-            </div>
-            <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800 text-center">
-              <span className="text-xs text-neutral-400">Unrecognized Faces</span>
-              <p id="rerun-stat-unrec" className="text-lg font-bold text-white mt-0.5">{rerunResult.unrecognized_faces_count}</p>
-            </div>
-            <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800 text-center">
-              <span className="text-xs text-neutral-400">Replayed Edits</span>
-              <p id="rerun-stat-edits" className="text-lg font-bold text-emerald-400 mt-0.5">{rerunResult.applied_count}</p>
-            </div>
-          </div>
+          {/* Algorithm Switches Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <label
+              className={`settings-toggle-card ${settings.second_pass_merge ? 'active' : ''}`}
+            >
+              <input
+                id="setting-second-pass-toggle"
+                type="checkbox"
+                checked={settings.second_pass_merge}
+                onChange={(e) =>
+                  setSettings({ ...settings, second_pass_merge: e.target.checked })
+                }
+                className="w-4 h-4 rounded border-[var(--panel-border)] bg-[var(--input)] text-[var(--accent)] focus:ring-[var(--accent)] cursor-pointer"
+              />
+              <div className="flex-1">
+                <p className="text-xs font-bold text-[var(--text)] uppercase tracking-wide">
+                  Second-Pass Centroid Merge
+                </p>
+                <p className="text-[11px] text-[var(--muted)] leading-tight">
+                  Automatically merges split sub-clusters with strict same-photo collision protection.
+                </p>
+              </div>
+            </label>
 
-          {/* Unapplied edits list if any */}
-          {rerunResult.unapplied_edits && rerunResult.unapplied_edits.length > 0 ? (
-            <div id="unapplied-edits-box" className="p-4 rounded-xl bg-amber-950/40 border border-amber-800/80 space-y-2">
-              <p className="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4" />
-                {rerunResult.unapplied_edits.length} edit(s) could not be re-applied:
-              </p>
-              <ul className="text-xs text-neutral-300 list-disc list-inside space-y-1 font-mono">
-                {rerunResult.unapplied_edits.map((item, idx) => (
-                  <li key={idx}>
-                    {item.op}: {item.reason || JSON.stringify(item)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p id="all-edits-survived-msg" className="text-xs text-emerald-400 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" />
-              All organizer edits survived and were re-applied by stable face ID anchors!
-            </p>
-          )}
+            <label
+              className={`settings-toggle-card ${settings.flip_average ? 'active' : ''}`}
+            >
+              <input
+                id="setting-flip-average-toggle"
+                type="checkbox"
+                checked={settings.flip_average}
+                onChange={(e) =>
+                  setSettings({ ...settings, flip_average: e.target.checked })
+                }
+                className="w-4 h-4 rounded border-[var(--panel-border)] bg-[var(--input)] text-[var(--accent)] focus:ring-[var(--accent)] cursor-pointer"
+              />
+              <div className="flex-1">
+                <p className="text-xs font-bold text-[var(--text)] uppercase tracking-wide">
+                  Flip-Averaged Embeddings
+                </p>
+                <p className="text-[11px] text-[var(--muted)] leading-tight">
+                  Calculates horizontal mirrored embedding averages for increased pose invariance.
+                </p>
+              </div>
+            </label>
+          </div>
         </div>
-      )}
 
-      {/* Action Button */}
-      <div className="pt-2">
-        <button
-          id="save-rerun-btn"
-          disabled={isRerunning || isLoading}
-          onClick={handleSaveAndRerun}
-          className={`w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2.5 transition-all shadow-lg ${
-            isRerunning || isLoading
-              ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
-              : 'bg-accent text-white hover:brightness-110 shadow-accent/20 cursor-pointer'
-          }`}
-        >
-          <RefreshCw className={`w-4 h-4 ${isRerunning ? 'animate-spin' : ''}`} />
-          <span>{isRerunning ? 'Re-running Pipeline & Replaying Edits...' : 'Save & Rerun Clustering'}</span>
-        </button>
+        {/* Right Column: Asset Sizing, Cloud API Credentials & Telemetry (5 Cols) */}
+        <div className="xl:col-span-5 flex flex-col gap-3">
+          {/* Card 1: Asset Generation Sizes & Visual Dimension Scaling */}
+          <div className="settings-panel p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--text)] flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-[var(--accent)]" />
+                Asset Generation Dimensions
+              </span>
+              <span className="text-[10px] font-mono text-[var(--muted)]">SPEC 6.2 Standard</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label
+                  htmlFor="setting-thumb-size"
+                  className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-1"
+                >
+                  Thumbnail Size
+                </label>
+                <select
+                  id="setting-thumb-size"
+                  value={settings.thumb_size}
+                  onChange={(e) => setSettings({ ...settings, thumb_size: parseInt(e.target.value, 10) })}
+                  className="settings-select"
+                >
+                  <option value="300">300 px (Compact)</option>
+                  <option value="400">400 px (Default 6.2)</option>
+                  <option value="500">500 px (High Detail)</option>
+                  <option value="600">600 px (Ultra HD)</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="setting-face-crop-size"
+                  className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-1"
+                >
+                  Face Crop Size
+                </label>
+                <select
+                  id="setting-face-crop-size"
+                  value={settings.face_crop_size}
+                  onChange={(e) =>
+                    setSettings({ ...settings, face_crop_size: parseInt(e.target.value, 10) })
+                  }
+                  className="settings-select"
+                >
+                  <option value="192">192 px (Compact)</option>
+                  <option value="256">256 px (Default 6.2)</option>
+                  <option value="320">320 px (High Detail)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Interactive Dimension Scale Preview */}
+            <DimensionPreviewVisualizer
+              thumbSize={settings.thumb_size}
+              faceCropSize={settings.face_crop_size}
+            />
+          </div>
+
+          {/* Card 2: Google Drive API Key */}
+          <div className="settings-panel p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2">
+              <div className="flex items-center gap-1.5">
+                <Key className="w-3.5 h-3.5 text-amber-500" />
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--text)]">
+                  Google Drive Cloud API
+                </span>
+              </div>
+
+              {settings.drive_api_key_configured ? (
+                <span
+                  id="drive-key-status-badge"
+                  className="settings-badge"
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.12)',
+                    borderColor: '#10b981',
+                    color: '#10b981',
+                  }}
+                >
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>Configured ({settings.drive_api_key_masked || 'Active'})</span>
+                </span>
+              ) : (
+                <span
+                  id="drive-key-status-badge"
+                  className="settings-badge"
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.12)',
+                    borderColor: '#f59e0b',
+                    color: '#f59e0b',
+                  }}
+                >
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>Not Configured</span>
+                </span>
+              )}
+            </div>
+
+            {keySavedMessage && (
+              <div
+                id="drive-key-saved-message"
+                className="p-2 rounded bg-emerald-950/70 border border-emerald-800 text-emerald-300 text-xs flex items-center gap-2 animate-fadeIn"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{keySavedMessage}</span>
+              </div>
+            )}
+
+            {/* API Key Input and Action Buttons */}
+            <div>
+              <label
+                htmlFor="setting-drive-api-key"
+                className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-1"
+              >
+                {settings.drive_api_key_configured ? 'Update API Key' : 'Enter API Key'}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="setting-drive-api-key"
+                  type="password"
+                  value={driveKeyInput}
+                  onChange={(e) => setDriveKeyInput(e.target.value)}
+                  placeholder={
+                    settings.drive_api_key_configured
+                      ? `Configured (${settings.drive_api_key_masked || 'Hidden'}) - paste new key to update`
+                      : 'AIzaSy... (free Google Cloud API key)'
+                  }
+                  className="settings-input flex-1"
+                />
+                <button
+                  id="save-drive-key-btn"
+                  type="button"
+                  onClick={handleSaveDriveKey}
+                  disabled={isSavingKey || !driveKeyInput.trim()}
+                  className="btn pri sm"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSavingKey ? 'Saving...' : 'Save'}</span>
+                </button>
+                {settings.drive_api_key_configured && (
+                  <button
+                    id="clear-drive-key-btn"
+                    type="button"
+                    onClick={handleClearDriveKey}
+                    disabled={isSavingKey}
+                    className="btn sm"
+                    style={{ borderColor: 'rgba(239, 68, 68, 0.5)', color: '#f87171' }}
+                    title="Remove saved key from local settings"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Clear</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Security Guarantee Note */}
+            <div className="flex items-start gap-2 p-2 rounded bg-[var(--input)] border border-[var(--panel-border)] text-[11px] text-[var(--muted)]">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-[var(--text)]">Local Security: </strong>
+                Stored strictly in your home directory profile (<code className="font-mono text-[var(--text)]">~/.photosorter/settings.json</code>). Never committed to git, never written to project exports, and masked in telemetry logs.
+              </div>
+            </div>
+
+            {/* Collapsible 3-Minute Guide Drawer */}
+            <div className="border border-[var(--panel-border)] rounded overflow-hidden bg-[var(--input)]">
+              <button
+                type="button"
+                onClick={() => setShowGuide(!showGuide)}
+                className="w-full px-3 py-1.5 flex items-center justify-between text-xs font-semibold text-[var(--text)] hover:text-[var(--accent)] transition-colors"
+              >
+                <span className="flex items-center gap-1.5">
+                  <HelpCircle className="w-3.5 h-3.5 text-[var(--accent)]" />
+                  <span>How to get a free Google Drive API Key (3 minutes)</span>
+                </span>
+                {showGuide ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+
+              {showGuide && (
+                <div className="px-3 pb-3 pt-1 space-y-1.5 text-xs text-[var(--muted)] border-t border-[var(--line)]">
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li>
+                      Open{' '}
+                      <a
+                        href="https://console.cloud.google.com/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[var(--accent)] hover:underline inline-flex items-center gap-1 font-semibold"
+                      >
+                        Google Cloud Console <ExternalLink className="w-3 h-3" />
+                      </a>.
+                    </li>
+                    <li>Create or select a project (e.g. <code className="text-[var(--text)]">PhotoSorter</code>).</li>
+                    <li>Go to <strong>APIs & Services &gt; Library</strong>, search for <strong>Google Drive API</strong>, click <strong>Enable</strong>.</li>
+                    <li>Go to <strong>Credentials</strong>, click <strong>+ Create Credentials &gt; API key</strong>.</li>
+                    <li>Paste the generated key above and click <strong>Save</strong>.</li>
+                  </ol>
+                  <p className="text-[10px] text-[var(--muted)] pt-1">
+                    Free tier includes unlimited personal scanning quotas with zero cloud fees.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Card 3: Execution Telemetry & Result Summary */}
+          <div className="settings-panel p-3.5 space-y-2">
+            <div className="flex items-center justify-between border-b border-[var(--line)] pb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--text)]">
+                Clustering Telemetry & Replay
+              </span>
+              <span className="settings-badge">
+                STABLE FACE IDS
+              </span>
+            </div>
+
+            {rerunResult ? (
+              <div
+                id="rerun-result-summary"
+                className="space-y-2.5 animate-fadeIn"
+              >
+                <div className="flex items-center gap-2 text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <p className="text-xs font-semibold text-[var(--text)]">
+                    Re-clustering completed. {rerunResult.applied_count} edits replayed!
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-2 rounded bg-[var(--input)] border border-[var(--panel-border)] text-center">
+                    <span className="text-[10px] text-[var(--muted)] font-mono uppercase">People</span>
+                    <p id="rerun-stat-people" className="text-base font-bold text-[var(--text)] font-mono">{rerunResult.people_count}</p>
+                  </div>
+                  <div className="p-2 rounded bg-[var(--input)] border border-[var(--panel-border)] text-center">
+                    <span className="text-[10px] text-[var(--muted)] font-mono uppercase">Unrec Faces</span>
+                    <p id="rerun-stat-unrec" className="text-base font-bold text-[var(--text)] font-mono">{rerunResult.unrecognized_faces_count}</p>
+                  </div>
+                  <div className="p-2 rounded bg-[var(--input)] border border-[var(--panel-border)] text-center">
+                    <span className="text-[10px] text-[var(--muted)] font-mono uppercase">Replayed</span>
+                    <p id="rerun-stat-edits" className="text-base font-bold text-[var(--accent)] font-mono">{rerunResult.applied_count}</p>
+                  </div>
+                </div>
+
+                {rerunResult.unapplied_edits && rerunResult.unapplied_edits.length > 0 ? (
+                  <div id="unapplied-edits-box" className="p-2.5 rounded bg-amber-950/40 border border-amber-800 text-xs space-y-1">
+                    <p className="font-semibold text-amber-300 flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      {rerunResult.unapplied_edits.length} edit(s) could not be re-applied:
+                    </p>
+                    <ul className="text-[11px] text-[var(--muted)] list-disc list-inside space-y-0.5 font-mono">
+                      {rerunResult.unapplied_edits.map((item, idx) => (
+                        <li key={idx}>
+                          {item.op}: {item.reason || JSON.stringify(item)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p id="all-edits-survived-msg" className="text-xs text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    All organizer edits survived and were re-applied by stable face ID anchors!
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="p-3 rounded bg-[var(--input)] border border-[var(--panel-border)] text-xs text-[var(--muted)] space-y-1 font-mono">
+                <div className="flex items-center gap-2 text-[var(--text)]">
+                  <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
+                  <span className="font-semibold">Engine Ready</span>
+                </div>
+                <p className="text-[11px]">
+                  When you change any parameter above and click &quot;Save &amp; Rerun Clustering&quot;, the engine will re-partition clusters from raw face embeddings and automatically replay all manual person renames, merges, and assigned faces.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1339,4 +1339,173 @@ html, body {
   mix-blend-mode: normal;
 }
 
+/* ==========================================================================
+   Full-Screen Tactile Risograph Settings Dashboard
+   ========================================================================== */
+.main.settings-mode {
+  padding: 14px clamp(14px, 2vw, 28px);
+  align-items: stretch;
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+}
+
+.settings-dashboard {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.settings-panel {
+  background: var(--panel);
+  border: 1.5px solid var(--panel-border);
+  border-radius: 4px;
+  box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.12);
+  color: var(--text);
+  position: relative;
+}
+
+.settings-slider-card {
+  background: var(--panel);
+  border: 1.5px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+}
+
+.settings-slider-card:hover {
+  border-color: var(--accent);
+}
+
+.settings-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--input);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.settings-badge.accent {
+  background: rgba(250, 113, 117, 0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.t-paper .settings-badge.accent {
+  background: rgba(229, 120, 26, 0.15);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.t-navy .settings-badge.accent {
+  background: rgba(242, 143, 36, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Custom Tactile Range Slider Input */
+input[type="range"].settings-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--line);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  margin: 4px 0;
+  transition: background 0.15s ease;
+}
+
+input[type="range"].settings-range:focus {
+  background: var(--panel-border);
+}
+
+input[type="range"].settings-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--accent);
+  border: 1.5px solid var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+input[type="range"].settings-range::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+  filter: brightness(1.1);
+}
+
+input[type="range"].settings-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--accent);
+  border: 1.5px solid var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+/* Tactile Select & Text Inputs for Settings */
+.settings-select,
+.settings-input {
+  width: 100%;
+  background: var(--input);
+  border: 1.5px solid var(--panel-border);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 3px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.settings-select:focus,
+.settings-input:focus {
+  border-color: var(--accent);
+}
+
+/* Tactile Switch / Toggle Box */
+.settings-toggle-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 4px;
+  background: var(--panel);
+  border: 1.5px solid var(--panel-border);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.settings-toggle-card:hover {
+  border-color: var(--line);
+}
+
+.settings-toggle-card.active {
+  border-color: var(--accent);
+}
+
+
 

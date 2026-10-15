@@ -658,7 +658,7 @@ export const App: React.FC = () => {
       </div>
 
       {/* Main Screen Content */}
-      <div className="main">
+      <div className={`main ${activeTab === 'settings' ? 'settings-mode' : ''}`}>
         {activeTab === 'home' && (
           <HomeScreen
             onStartJob={handleStartJob}
