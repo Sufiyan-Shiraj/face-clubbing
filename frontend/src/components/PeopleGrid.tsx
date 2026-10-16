@@ -59,30 +59,30 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
       <div className="glass-card p-4 rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Search Input */}
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-5 h-5 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             id="people-search-input"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={`Search across ${people.length} people...`}
-            className="w-full pl-10 pr-4 py-2 bg-neutral-900/90 border border-neutral-800 rounded-xl text-neutral-200 placeholder-neutral-500 text-sm focus:outline-none focus:border-accent"
+            className="w-full pl-11 pr-4 py-2.5 bg-neutral-900/90 border border-neutral-800 rounded-xl text-neutral-200 placeholder-neutral-500 text-base focus:outline-none focus:border-accent"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 self-start md:self-auto overflow-x-auto pb-1 md:pb-0">
+        <div className="flex items-center gap-2 self-start md:self-auto overflow-x-auto pb-1 md:pb-0">
           <button
             onClick={() => setFilterMode('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
               filterMode === 'all'
                 ? 'bg-neutral-800 text-white border border-neutral-700'
                 : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60'
@@ -92,7 +92,7 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
           </button>
           <button
             onClick={() => setFilterMode('multiple')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
               filterMode === 'multiple'
                 ? 'bg-neutral-800 text-white border border-neutral-700'
                 : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60'
@@ -102,7 +102,7 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
           </button>
           <button
             onClick={() => setFilterMode('single')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
               filterMode === 'single'
                 ? 'bg-neutral-800 text-white border border-neutral-700'
                 : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60'
@@ -117,17 +117,17 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
       {selectedIds.size > 0 && (
         <div
           id="merge-action-banner"
-          className="sticky top-20 z-30 glass-card border border-accent/40 bg-neutral-900/95 p-3 sm:p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-4 animate-scaleUp"
+          className="sticky top-20 z-30 glass-card border border-accent/40 bg-neutral-900/95 p-3.5 sm:p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-4 animate-scaleUp"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-accent/20 border border-accent/40 flex items-center justify-center text-accent font-bold text-sm">
+          <div className="flex items-center gap-3.5">
+            <div className="w-9 h-9 rounded-lg bg-accent/20 border border-accent/40 flex items-center justify-center text-accent font-bold text-base">
               {selectedIds.size}
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">
+              <p className="text-base font-bold text-white">
                 {selectedIds.size} {selectedIds.size === 1 ? 'person' : 'people'} selected
               </p>
-              <p className="text-xs text-neutral-400">
+              <p className="text-sm text-neutral-400">
                 {selectedIds.size < 2
                   ? 'Select at least 2 people to merge into a single person'
                   : 'Ready to combine all faces and photos into one person'}
@@ -135,11 +135,11 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               id="clear-selection-btn"
               onClick={onClearSelection}
-              className="px-3 py-1.5 rounded-xl border border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800 text-xs font-medium transition-all"
+              className="px-3.5 py-2 rounded-xl border border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800 text-sm font-semibold transition-all"
             >
               Clear
             </button>
@@ -147,7 +147,7 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
               id="merge-selected-btn"
               disabled={selectedIds.size < 2 || isMerging}
               onClick={onMergeSelected}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all shadow-lg ${
+              className={`px-4 sm:px-5 py-2.5 rounded-xl text-sm sm:text-base font-bold flex items-center gap-2 transition-all shadow-lg ${
                 selectedIds.size >= 2 && !isMerging
                   ? 'bg-accent text-white hover:brightness-110 shadow-accent/20 cursor-pointer'
                   : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700/50'
@@ -164,8 +164,8 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
       {filteredPeople.length === 0 ? (
         <div className="glass-card p-12 rounded-2xl text-center space-y-3">
           <Users className="w-10 h-10 text-neutral-500 mx-auto" />
-          <h3 className="text-base font-semibold text-neutral-300">No people found</h3>
-          <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+          <h3 className="text-lg font-bold text-neutral-300">No people found</h3>
+          <p className="text-sm text-neutral-400 max-w-sm mx-auto">
             Try adjusting your search query or filter settings above.
           </p>
         </div>
@@ -213,7 +213,7 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
                 </button>
 
                 {/* Photo Count Badge */}
-                <div className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-medium text-neutral-200">
+                <div className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md border border-white/10 text-xs font-semibold text-neutral-200">
                   {photoCount} {photoCount === 1 ? 'photo' : 'photos'}
                 </div>
 
@@ -229,19 +229,19 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
                 </div>
 
                 {/* Footer details */}
-                <div className="p-2.5 sm:p-3 flex flex-col justify-between flex-1">
+                <div className="p-3 sm:p-3.5 flex flex-col justify-between flex-1">
                   <div className="min-w-0">
                     <p
-                      className="text-xs sm:text-sm font-semibold text-neutral-200 group-hover:text-white truncate"
+                      className="text-sm sm:text-base font-bold text-neutral-200 group-hover:text-white truncate"
                       title={displayName}
                     >
                       {displayName}
                     </p>
                     {person.label && (
-                      <p className="text-[10px] text-neutral-500 font-mono truncate">{person.id}</p>
+                      <p className="text-xs text-neutral-400 font-mono truncate">{person.id}</p>
                     )}
                   </div>
-                  <p className="text-[10px] text-neutral-400 mt-1">
+                  <p className="text-xs text-neutral-400 mt-1.5 font-medium">
                     {person.faces?.length || photoCount} detected face{person.faces?.length === 1 ? '' : 's'}
                   </p>
                 </div>

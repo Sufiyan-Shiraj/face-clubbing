@@ -61,18 +61,18 @@ export const PersonModal: React.FC<PersonModalProps> = ({
                     onChange={(e) => setLabelInput(e.target.value)}
                     placeholder="Enter person name"
                     autoFocus
-                    className="px-2.5 py-1 text-sm rounded-lg bg-neutral-950 border border-blue-500 text-white focus:outline-none"
+                    className="px-3 py-1.5 text-base rounded-lg bg-neutral-950 border border-blue-500 text-white focus:outline-none"
                   />
                   <button
                     onClick={handleSaveLabel}
-                    className="p-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white"
+                    className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white"
                     title="Save"
                   >
                     <Check className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setIsEditingLabel(false)}
-                    className="p-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-400"
+                    className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-400"
                     title="Cancel"
                   >
                     <X className="w-4 h-4" />
@@ -80,20 +80,20 @@ export const PersonModal: React.FC<PersonModalProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-white tracking-tight">{displayName}</h3>
+                  <h3 className="text-xl font-bold text-white tracking-tight">{displayName}</h3>
                   <button
                     onClick={() => {
                       setLabelInput(person.label || '');
                       setIsEditingLabel(true);
                     }}
-                    className="p-1 text-neutral-400 hover:text-neutral-200 transition-colors"
+                    className="p-1.5 text-neutral-400 hover:text-neutral-200 transition-colors"
                     title="Rename"
                   >
-                    <Edit2 className="w-3.5 h-3.5" />
+                    <Edit2 className="w-4 h-4" />
                   </button>
                 </div>
               )}
-              <div className="flex items-center gap-2 mt-1 text-xs text-neutral-400">
+              <div className="flex items-center gap-2 mt-1 text-sm text-neutral-400">
                 <span className="font-mono text-neutral-500">Handle: {person.id}</span>
                 <span>•</span>
                 <span>{person.photos.length} photos</span>
@@ -106,10 +106,10 @@ export const PersonModal: React.FC<PersonModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onHide(person.id)}
-              className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-amber-950/60 text-neutral-300 hover:text-amber-300 border border-neutral-700 hover:border-amber-700/50 text-xs font-medium flex items-center gap-1.5 transition-colors"
+              className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-amber-950/60 text-neutral-200 hover:text-amber-300 border border-neutral-700 hover:border-amber-700/50 text-sm font-semibold flex items-center gap-2 transition-colors"
               title="Hide this person from public export"
             >
-              <EyeOff className="w-3.5 h-3.5" />
+              <EyeOff className="w-4 h-4" />
               <span>Hide</span>
             </button>
             <button
@@ -123,27 +123,27 @@ export const PersonModal: React.FC<PersonModalProps> = ({
         </div>
 
         {/* Tabs: Photos vs Faces */}
-        <div className="flex items-center gap-4 px-6 pt-4 border-b border-neutral-800 bg-neutral-900/40 text-xs font-medium">
+        <div className="flex items-center gap-6 px-6 pt-4 border-b border-neutral-800 bg-neutral-900/40 text-sm font-semibold">
           <button
             onClick={() => setActiveTab('photos')}
-            className={`pb-3 border-b-2 flex items-center gap-1.5 transition-colors ${
+            className={`pb-3 border-b-2 flex items-center gap-2 transition-colors ${
               activeTab === 'photos'
                 ? 'border-blue-500 text-blue-400'
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            <Image className="w-3.5 h-3.5" />
+            <Image className="w-4 h-4" />
             <span>Photos ({person.photos.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('faces')}
-            className={`pb-3 border-b-2 flex items-center gap-1.5 transition-colors ${
+            className={`pb-3 border-b-2 flex items-center gap-2 transition-colors ${
               activeTab === 'faces'
                 ? 'border-blue-500 text-blue-400'
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            <UserX className="w-3.5 h-3.5" />
+            <UserX className="w-4 h-4" />
             <span>Faces ({person.faces.length})</span>
           </button>
         </div>
@@ -173,7 +173,7 @@ export const PersonModal: React.FC<PersonModalProps> = ({
                       }}
                     />
                     <div className="relative z-10 p-2 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex items-center justify-between">
-                      <span className="text-[10px] text-neutral-300 font-mono truncate max-w-[100px]" title={fileName}>
+                      <span className="text-xs text-neutral-200 font-mono truncate max-w-[120px]" title={fileName}>
                         {fileName}
                       </span>
                       <button
@@ -181,7 +181,7 @@ export const PersonModal: React.FC<PersonModalProps> = ({
                         className="p-1 rounded bg-red-950/70 hover:bg-red-900 text-red-300 hover:text-red-100 transition-colors opacity-90 group-hover:opacity-100"
                         title="Remove photo from person"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -205,19 +205,19 @@ export const PersonModal: React.FC<PersonModalProps> = ({
                       }}
                     />
                   </div>
-                  <span className="text-[10px] font-mono text-neutral-400 truncate w-full" title={face.face_id}>
+                  <span className="text-xs font-mono text-neutral-300 truncate w-full" title={face.face_id}>
                     {face.face_id}
                   </span>
                   {face.det_score !== null && face.det_score !== undefined && (
-                    <span className="text-[10px] text-neutral-500 font-mono mt-0.5">
+                    <span className="text-xs text-neutral-400 font-mono mt-0.5">
                       score: {face.det_score.toFixed(2)}
                     </span>
                   )}
                   <button
                     onClick={() => onRemoveFace(person.id, face.face_id)}
-                    className="mt-2.5 w-full py-1 px-2 rounded-lg bg-red-950/50 hover:bg-red-900/60 text-red-300 border border-red-800/40 text-[10px] font-medium flex items-center justify-center gap-1 transition-colors"
+                    className="mt-2.5 w-full py-1.5 px-2 rounded-lg bg-red-950/50 hover:bg-red-900/60 text-red-200 border border-red-800/40 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-3.5 h-3.5" />
                     <span>Remove Face</span>
                   </button>
                 </div>

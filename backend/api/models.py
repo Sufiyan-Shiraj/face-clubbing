@@ -69,6 +69,8 @@ class JobStatusResponse(BaseModel):
     progress: float = 0.0
     current_file: Optional[str] = None
     eta_seconds: Optional[float] = None
+    elapsed_seconds: Optional[float] = None
+    start_time: Optional[float] = None
     message: str = ""
     error: Optional[str] = None
     result_summary: Optional[Dict[str, Any]] = None
@@ -198,3 +200,40 @@ class ExportResponse(BaseModel):
     files_exported: List[str]
     people_count: int
     photos_count: int
+
+
+class DirectoryItem(BaseModel):
+    name: str
+    path: str
+    modified_time: Optional[str] = None
+
+
+class ShortcutItem(BaseModel):
+    label: str
+    path: str
+
+
+class BrowseFolderResponse(BaseModel):
+    current_path: str
+    parent_path: Optional[str] = None
+    name: str
+    exists: bool = True
+    is_directory: bool = True
+    directories: List[DirectoryItem] = Field(default_factory=list)
+    shortcuts: List[ShortcutItem] = Field(default_factory=list)
+
+
+class MkdirRequest(BaseModel):
+    parent_path: str
+    folder_name: str
+
+
+class SelectDialogRequest(BaseModel):
+    initial_dir: Optional[str] = None
+    title: Optional[str] = None
+
+
+class SelectDialogResponse(BaseModel):
+    selected: Optional[str] = None
+    cancelled: bool = False
+

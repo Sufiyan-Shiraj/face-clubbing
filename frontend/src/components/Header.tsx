@@ -94,6 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Minimal Settings Icon */}
         <button
+          id="tab-settings"
           type="button"
           onClick={() => onTabChange('settings')}
           className={`icon-btn ${activeTab === 'settings' ? 'on' : ''}`}

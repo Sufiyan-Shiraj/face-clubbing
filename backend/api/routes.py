@@ -19,6 +19,12 @@ from backend.api.models import (
     RerunResponse,
     ExportRequest,
     ExportResponse,
+    DirectoryItem,
+    ShortcutItem,
+    BrowseFolderResponse,
+    MkdirRequest,
+    SelectDialogRequest,
+    SelectDialogResponse,
 )
 from backend.api.state import AppState
 from backend.api.jobs import JobManager
@@ -144,30 +150,21 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
 
             folder_name = meta_data.get("name", "Google Drive Folder")
 
-            # 4. Check if there are images in the folder
-            query = f"'{folder_id}' in parents and trashed = false and (mimeType contains 'image/' or name contains '.jpg' or name contains '.jpeg' or name contains '.png' or name contains '.webp' or name contains '.heic')"
-            list_url = "https://www.googleapis.com/drive/v3/files"
-            list_resp = requests.get(
-                list_url,
-                params={
-                    "q": query,
-                    "pageSize": 10,
-                    "fields": "files(id,name,mimeType)",
-                    "key": api_key,
-                    "supportsAllDrives": "true",
-                    "includeItemsFromAllDrives": "true",
-                },
-                timeout=8,
-            )
-
-            has_images = False
-            image_count = 0
-            if list_resp.status_code == 200:
-                files = list_resp.json().get("files", [])
-                image_count = len(files)
-                has_images = image_count > 0
+            # 4. Check if there are images in the folder (including subfolders, ignoring videos)
+            from backend.drive import DriveClient
+            client = DriveClient(api_key=api_key)
+            list_res = client.list_folder_images(folder_id=folder_id, recursive=True, stop_after_images=10)
+            has_images = list_res.image_count > 0
 
             if not has_images:
+                details = []
+                if list_res.skipped_folders_count > 0:
+                    details.append(f"searched {list_res.skipped_folders_count} subfolders")
+                if list_res.skipped_videos_count > 0:
+                    details.append(f"ignored {list_res.skipped_videos_count} video files")
+                if list_res.skipped_non_images_count > 0:
+                    details.append(f"found non-image files like {', '.join(repr(n) for n in list_res.non_image_sample_names[:3])}")
+                extra_msg = f" ({'; '.join(details)})" if details else ""
                 return DriveVerifyResponse(
                     valid=False,
                     folder_id=folder_id,
@@ -175,7 +172,7 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                     has_images=False,
                     image_count_preview=0,
                     error_type="no_images",
-                    message=f"Folder '{folder_name}' was found, but it contains no image files.",
+                    message=f"Folder '{folder_name}' was found, but it contains no image files{extra_msg}.",
                 )
 
             return DriveVerifyResponse(
@@ -183,8 +180,8 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                 folder_id=folder_id,
                 folder_name=folder_name,
                 has_images=True,
-                image_count_preview=image_count,
-                message=f"Verified: '{folder_name}' ({image_count}+ images found)",
+                image_count_preview=list_res.image_count,
+                message=f"Verified: '{folder_name}' ({list_res.image_count}+ images found)",
             )
         except requests.exceptions.RequestException as e:
             return DriveVerifyResponse(
@@ -270,7 +267,10 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             if req.include_maybe is not None:
                 state.settings.include_maybe = req.include_maybe
 
-            out_dir = req.output_dir or state.settings.output_dir
+            out_dir = req.output_dir or state.settings.output_dir or "export"
+            if str(out_dir).startswith("http") or "drive.google.com" in str(out_dir):
+                out_dir = "export"
+                state.settings.output_dir = "export"
             exported_files = state.export_public_bundle(output_dir=out_dir)
 
             return ExportResponse(
@@ -314,5 +314,99 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
         current.drive_api_key_masked = mask_api_key(raw_key)
         current.drive_api_key_configured = bool(raw_key)
         return current
+
+    # 8. Filesystem Browser & Folder Picker Endpoints
+    @router.get("/fs/browse", response_model=BrowseFolderResponse)
+    def browse_filesystem(path: Optional[str] = None):
+        try:
+            import datetime
+            from pathlib import Path
+            repo_root = state.repo_root
+            if not path or not path.strip():
+                target = (repo_root / "export").resolve()
+            else:
+                p = Path(path.strip())
+                if not p.is_absolute():
+                    target = (repo_root / p).resolve()
+                else:
+                    target = p.resolve()
+
+            exists = target.exists()
+            is_dir = target.is_dir() if exists else True
+            parent_path = str(target.parent) if target.parent != target else None
+
+            subdirs: List[DirectoryItem] = []
+            if exists and is_dir:
+                try:
+                    for child in sorted(target.iterdir(), key=lambda c: c.name.lower()):
+                        if child.is_dir() and not child.name.startswith("."):
+                            try:
+                                mtime = child.stat().st_mtime
+                                dt_str = datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
+                            except Exception:
+                                dt_str = None
+                            subdirs.append(
+                                DirectoryItem(
+                                    name=child.name,
+                                    path=str(child.resolve()),
+                                    modified_time=dt_str,
+                                )
+                            )
+                except PermissionError:
+                    pass
+
+            # Common system shortcuts
+            home = Path.home()
+            shortcuts = [
+                ShortcutItem(label="Project Export", path=str((repo_root / "export").resolve())),
+                ShortcutItem(label="Project Root", path=str(repo_root.resolve())),
+                ShortcutItem(label="Desktop", path=str((home / "Desktop").resolve())),
+                ShortcutItem(label="Documents", path=str((home / "Documents").resolve())),
+                ShortcutItem(label="Downloads", path=str((home / "Downloads").resolve())),
+            ]
+
+            return BrowseFolderResponse(
+                current_path=str(target),
+                parent_path=parent_path,
+                name=target.name or str(target),
+                exists=exists,
+                is_directory=is_dir,
+                directories=subdirs,
+                shortcuts=shortcuts,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.post("/fs/mkdir", response_model=BrowseFolderResponse)
+    def create_filesystem_folder(req: MkdirRequest):
+        try:
+            from pathlib import Path
+            parent = Path(req.parent_path).resolve()
+            new_folder = parent / req.folder_name.strip()
+            new_folder.mkdir(parents=True, exist_ok=True)
+            return browse_filesystem(str(new_folder))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.post("/fs/select-dialog", response_model=SelectDialogResponse)
+    def open_select_folder_dialog(req: Optional[SelectDialogRequest] = None):
+        try:
+            from pathlib import Path
+            from backend.api.dialog import open_folder_dialog
+            initial_dir = ""
+            if req and req.initial_dir and Path(req.initial_dir).exists():
+                initial_dir = str(Path(req.initial_dir).resolve())
+            else:
+                initial_dir = str((state.repo_root / "export").resolve())
+
+            title = (req and req.title) or "Select Public Export Directory"
+            selected = open_folder_dialog(initial_dir=initial_dir, title=title)
+            if selected:
+                return SelectDialogResponse(selected=str(Path(selected).resolve()), cancelled=False)
+            return SelectDialogResponse(selected=None, cancelled=True)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return SelectDialogResponse(selected=None, cancelled=True)
 
     return router

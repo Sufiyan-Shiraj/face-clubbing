@@ -94,6 +94,8 @@ export interface JobStatus {
   percent: number;
   current_file?: string | null;
   eta_seconds?: number | null;
+  elapsed_seconds?: number | null;
+  start_time?: number | null;
   message: string;
   error?: string | null;
   result_summary?: Record<string, any> | null;
@@ -159,6 +161,27 @@ export interface PhotoInfo {
 }
 
 export type ActiveTab = 'home' | 'progress' | 'people' | 'export' | 'settings';
+
+export interface DirectoryItem {
+  name: string;
+  path: string;
+  modified_time?: string | null;
+}
+
+export interface ShortcutItem {
+  label: string;
+  path: string;
+}
+
+export interface BrowseFolderResult {
+  current_path: string;
+  parent_path?: string | null;
+  name: string;
+  exists: boolean;
+  is_directory: boolean;
+  directories: DirectoryItem[];
+  shortcuts: ShortcutItem[];
+}
 
 declare global {
   interface Window {

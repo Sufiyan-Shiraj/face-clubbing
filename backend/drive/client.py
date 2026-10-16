@@ -62,6 +62,43 @@ class DriveListResult:
     image_count: int
     skipped_folders_count: int
     skipped_non_images_count: int
+    skipped_videos_count: int = 0
+    scanned_folder_names: List[str] = field(default_factory=list)
+    non_image_sample_names: List[str] = field(default_factory=list)
+
+
+SUPPORTED_IMAGE_EXTENSIONS = (
+    ".jpg", ".jpeg", ".png", ".webp",
+    ".heic", ".heif", ".hif", ".avif",
+    ".bmp", ".tiff", ".tif"
+)
+
+SUPPORTED_IMAGE_MIMES = (
+    "image/jpeg", "image/png", "image/webp",
+    "image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence",
+    "image/bmp", "image/tiff", "image/x-adobe-dng"
+)
+
+VIDEO_EXTENSIONS = (
+    ".mp4", ".mov", ".avi", ".mkv", ".m4v", ".webm", ".wmv",
+    ".flv", ".3gp", ".mts", ".m2ts", ".ts", ".vob", ".ogv", ".qt"
+)
+
+
+def is_video_file(name: str, mime_type: str) -> bool:
+    """Check if the given file is a video."""
+    if mime_type.startswith("video/") or mime_type in ("application/mp4", "application/x-matroska"):
+        return True
+    return name.lower().endswith(VIDEO_EXTENSIONS)
+
+
+def is_image_file(name: str, mime_type: str) -> bool:
+    """Check if the given file is a supported image (including HEIC / HEIF)."""
+    if is_video_file(name, mime_type):
+        return False
+    if mime_type.startswith("image/") or mime_type in SUPPORTED_IMAGE_MIMES:
+        return True
+    return name.lower().endswith(SUPPORTED_IMAGE_EXTENSIONS)
 
 
 def resize_thumbnail_link(link: str, target_size: int = 1000) -> str:
@@ -139,84 +176,125 @@ class DriveClient:
         folder_id: str,
         cancel_check: Optional[Callable[[], bool]] = None,
         progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
+        recursive: bool = True,
+        max_depth: int = 10,
+        stop_after_images: Optional[int] = None,
     ) -> DriveListResult:
         """
         List all image files inside a public Google Drive folder with pagination.
-        Skips non-images and subfolders, reporting counts.
+        Recursively traverses subfolders and shortcuts when recursive=True.
+        Skips non-images and explicitly ignores video files, reporting counts.
         """
         files: List[DriveFile] = []
-        page_token: Optional[str] = None
         total_items = 0
         skipped_folders = 0
+        skipped_videos = 0
         skipped_non_images = 0
+        scanned_folder_names: List[str] = []
+        non_image_sample_names: List[str] = []
 
-        # Query: inside folder and not trashed
-        query = f"'{folder_id}' in parents and trashed = false"
+        folders_to_visit: List[Tuple[str, int]] = [(folder_id, 0)]
+        visited_folders: set[str] = {folder_id}
         url = f"{DRIVE_API_BASE}/files"
 
-        while True:
-            if cancel_check and cancel_check():
-                raise InterruptedError("Listing cancelled by user")
+        while folders_to_visit:
+            cur_fid, depth = folders_to_visit.pop(0)
+            page_token: Optional[str] = None
+            query = f"'{cur_fid}' in parents and trashed = false"
 
-            params: Dict[str, Any] = {
-                "key": self.api_key,
-                "q": query,
-                "pageSize": 100,
-                "fields": "nextPageToken, files(id, name, mimeType, modifiedTime, size, thumbnailLink)",
-                "supportsAllDrives": "true",
-                "includeItemsFromAllDrives": "true",
-            }
-            if page_token:
-                params["pageToken"] = page_token
+            while True:
+                if cancel_check and cancel_check():
+                    raise InterruptedError("Listing cancelled by user")
 
-            # Request with retry for transient network glitches
-            resp = self._request_with_retry("GET", url, params=params)
-            if resp.status_code != 200:
-                self._handle_api_error_response(resp)
+                params: Dict[str, Any] = {
+                    "key": self.api_key,
+                    "q": query,
+                    "pageSize": 100,
+                    "fields": "nextPageToken, files(id, name, mimeType, modifiedTime, size, thumbnailLink, shortcutDetails)",
+                    "supportsAllDrives": "true",
+                    "includeItemsFromAllDrives": "true",
+                }
+                if page_token:
+                    params["pageToken"] = page_token
 
-            data = resp.json()
-            raw_files = data.get("files", [])
+                resp = self._request_with_retry("GET", url, params=params)
+                if resp.status_code != 200:
+                    self._handle_api_error_response(resp)
 
-            for item in raw_files:
-                total_items += 1
-                mime_type = item.get("mimeType", "")
-                name = item.get("name", "")
+                data = resp.json()
+                raw_files = data.get("files", [])
 
-                if mime_type == "application/vnd.google-apps.folder":
-                    skipped_folders += 1
-                    continue
+                for item in raw_files:
+                    total_items += 1
+                    mime_type = item.get("mimeType", "")
+                    name = item.get("name", "")
+                    item_id = item["id"]
 
-                # Check if file is an image by mimeType or file extension
-                is_img = (
-                    mime_type.startswith("image/")
-                    or name.lower().endswith(
-                        (".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".bmp", ".tiff", ".tif")
-                    )
-                )
+                    # 1. Google Drive subfolder
+                    if mime_type == "application/vnd.google-apps.folder":
+                        skipped_folders += 1
+                        scanned_folder_names.append(name)
+                        if recursive and depth < max_depth and item_id not in visited_folders:
+                            visited_folders.add(item_id)
+                            folders_to_visit.append((item_id, depth + 1))
+                        continue
 
-                if is_img:
-                    df = DriveFile(
-                        id=item["id"],
-                        name=name,
-                        mime_type=mime_type,
-                        modified_time=item.get("modifiedTime", ""),
-                        size=int(item.get("size", 0)),
-                        thumbnail_link=item.get("thumbnailLink"),
-                    )
-                    files.append(df)
-                else:
-                    skipped_non_images += 1
+                    # 2. Google Drive shortcut
+                    if mime_type == "application/vnd.google-apps.shortcut":
+                        shortcut_details = item.get("shortcutDetails", {})
+                        target_id = shortcut_details.get("targetId")
+                        target_mime = shortcut_details.get("targetMimeType", "")
+                        if target_mime == "application/vnd.google-apps.folder":
+                            skipped_folders += 1
+                            scanned_folder_names.append(name)
+                            if recursive and target_id and depth < max_depth and target_id not in visited_folders:
+                                visited_folders.add(target_id)
+                                folders_to_visit.append((target_id, depth + 1))
+                            continue
+                        elif target_id and target_mime:
+                            mime_type = target_mime
+                            item_id = target_id
 
-            if progress_callback:
-                progress_callback({
-                    "stage": "listing",
-                    "current": len(files),
-                    "total": total_items,
-                    "message": f"Found {len(files)} photos (scanned {total_items} items)...",
-                })
+                    # 3. Video file -> explicitly ignore
+                    if is_video_file(name, mime_type):
+                        skipped_videos += 1
+                        continue
 
-            page_token = data.get("nextPageToken")
-            if not page_token:
+                    # 4. Supported image (JPEG, PNG, HEIC, HEIF, WebP, etc.)
+                    if is_image_file(name, mime_type):
+                        df = DriveFile(
+                            id=item_id,
+                            name=name,
+                            mime_type=mime_type,
+                            modified_time=item.get("modifiedTime", ""),
+                            size=int(item.get("size", 0)),
+                            thumbnail_link=item.get("thumbnailLink"),
+                        )
+                        files.append(df)
+                        if stop_after_images and len(files) >= stop_after_images:
+                            break
+                    else:
+                        skipped_non_images += 1
+                        if len(non_image_sample_names) < 5:
+                            non_image_sample_names.append(name)
+
+                if stop_after_images and len(files) >= stop_after_images:
+                    break
+
+                if progress_callback:
+                    video_str = f", {skipped_videos} videos skipped" if skipped_videos > 0 else ""
+                    progress_callback({
+                        "stage": "listing",
+                        "current": len(files),
+                        "total": total_items,
+                        "message": f"Found {len(files)} photos (scanned {total_items} items across {skipped_folders} folders{video_str})...",
+                    })
+
+                page_token = data.get("nextPageToken")
+                if not page_token:
+                    break
+
+            if stop_after_images and len(files) >= stop_after_images:
                 break
 
         return DriveListResult(
@@ -225,6 +303,9 @@ class DriveClient:
             image_count=len(files),
             skipped_folders_count=skipped_folders,
             skipped_non_images_count=skipped_non_images,
+            skipped_videos_count=skipped_videos,
+            scanned_folder_names=scanned_folder_names,
+            non_image_sample_names=non_image_sample_names,
         )
 
     def _request_with_retry(

@@ -7,6 +7,7 @@ import {
   Settings,
   PhotoInfo,
   DriveVerifyResult,
+  BrowseFolderResult,
 } from '../types';
 
 const BASE_URL = '/api';
@@ -43,17 +44,45 @@ export const api = {
 
   async startJob(
     inputPath?: string,
-    outputDir: string = 'export',
-    driveFolder?: string,
-    driveApiKey?: string
+    driveFolderOrOutputDir?: string,
+    driveApiKey?: string,
+    outputDir: string = 'export'
   ): Promise<JobStatus> {
+    let driveFolder: string | undefined = undefined;
+    let apiKey: string | undefined = driveApiKey;
+    let actualOutputDir: string = outputDir || 'export';
+
+    if (driveFolderOrOutputDir) {
+      if (
+        driveFolderOrOutputDir.includes('drive.google.com') ||
+        driveFolderOrOutputDir.startsWith('http://') ||
+        driveFolderOrOutputDir.startsWith('https://') ||
+        !inputPath
+      ) {
+        driveFolder = driveFolderOrOutputDir;
+      } else if (driveFolderOrOutputDir === 'export' || !driveApiKey) {
+        actualOutputDir = driveFolderOrOutputDir;
+      } else {
+        driveFolder = driveFolderOrOutputDir;
+      }
+    }
+
+    if (
+      actualOutputDir.includes('drive.google.com') ||
+      actualOutputDir.startsWith('http://') ||
+      actualOutputDir.startsWith('https://')
+    ) {
+      if (!driveFolder) driveFolder = actualOutputDir;
+      actualOutputDir = 'export';
+    }
+
     return fetchJson(`${BASE_URL}/jobs/start`, {
       method: 'POST',
       body: JSON.stringify({
         input_path: driveFolder ? undefined : (inputPath || 'test_photos'),
         drive_folder: driveFolder || undefined,
-        drive_api_key: driveApiKey || undefined,
-        output_dir: outputDir,
+        drive_api_key: apiKey || undefined,
+        output_dir: actualOutputDir || 'export',
       }),
     });
   },
@@ -251,6 +280,25 @@ export const api = {
     return fetchJson(`${BASE_URL}/settings`, {
       method: 'POST',
       body: JSON.stringify(settings),
+    });
+  },
+
+  async browseFolder(path?: string): Promise<BrowseFolderResult> {
+    const q = path ? `?path=${encodeURIComponent(path)}` : '';
+    return fetchJson(`${BASE_URL}/fs/browse${q}`);
+  },
+
+  async createFolder(parentPath: string, folderName: string): Promise<BrowseFolderResult> {
+    return fetchJson(`${BASE_URL}/fs/mkdir`, {
+      method: 'POST',
+      body: JSON.stringify({ parent_path: parentPath, folder_name: folderName }),
+    });
+  },
+
+  async openFolderDialog(initialDir?: string): Promise<{ selected: string | null; cancelled: boolean }> {
+    return fetchJson(`${BASE_URL}/fs/select-dialog`, {
+      method: 'POST',
+      body: JSON.stringify({ initial_dir: initialDir || undefined }),
     });
   },
 };

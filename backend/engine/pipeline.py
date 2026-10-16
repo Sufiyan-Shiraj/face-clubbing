@@ -66,7 +66,10 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     Executes the end-to-end PhotoSorter engine:
     Scan -> Detect & Embed (with caching) -> Cluster -> Export Bundle.
     """
-    out_p = Path(config.output_dir).resolve()
+    out_dir_str = str(config.output_dir or "export")
+    if out_dir_str.startswith("http://") or out_dir_str.startswith("https://") or "drive.google.com" in out_dir_str:
+        out_dir_str = "export"
+    out_p = Path(out_dir_str).resolve()
     cache_p = Path(config.cache_dir).resolve() if config.cache_dir else out_p.parent / f"{out_p.name}.work"
     cache_thumbs_p = cache_p / "thumbs"
     cache_crops_p = cache_p / "crops"
@@ -109,9 +112,19 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         )
 
         if list_res.image_count == 0:
+            details = []
+            if list_res.skipped_folders_count > 0:
+                folders_sample = ", ".join(f"'{name}'" for name in list_res.scanned_folder_names[:4])
+                details.append(f"searched {list_res.skipped_folders_count} subfolders ({folders_sample})")
+            if list_res.skipped_videos_count > 0:
+                details.append(f"ignored {list_res.skipped_videos_count} video files")
+            if list_res.skipped_non_images_count > 0:
+                files_sample = ", ".join(f"'{name}'" for name in list_res.non_image_sample_names[:3])
+                details.append(f"skipped {list_res.skipped_non_images_count} non-image files like {files_sample}")
+            detail_str = "; ".join(details) if details else "folder is empty"
             raise ValueError(
-                f"No image files found in Google Drive folder '{folder_id}' "
-                f"(skipped {list_res.skipped_folders_count} folders, {list_res.skipped_non_images_count} non-image files)."
+                f"No image files found in Google Drive folder '{folder_id}' ({detail_str}). "
+                "Please verify that you provided the link to the folder containing photos."
             )
 
         notify({

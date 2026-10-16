@@ -199,15 +199,19 @@ class TestDriveClientListing:
             ],
         }
 
-        mock_get.side_effect = [page1_response, page2_response]
+        page3_subfolder = MagicMock()
+        page3_subfolder.status_code = 200
+        page3_subfolder.json.return_value = {"files": []}
+
+        mock_get.side_effect = [page1_response, page2_response, page3_subfolder]
 
         client = DriveClient(api_key="AIzaSyMockKeyForListing123")
         res = client.list_folder_images("test_folder_id")
 
-        # 2 pages called
-        assert mock_get.call_count == 2
+        # 3 calls: 2 pages of parent folder + 1 page of subfolder
+        assert mock_get.call_count == 3
 
-        # 2 images retained, subfolder and pdf and mp4 skipped
+        # 2 images retained, subfolder traversed, pdf and mp4 skipped
         assert len(res.files) == 2
         assert res.files[0].id == "file_img_1"
         assert res.files[1].id == "file_img_2"
@@ -216,7 +220,8 @@ class TestDriveClientListing:
         assert res.total_files_in_folder == 5
         assert res.image_count == 2
         assert res.skipped_folders_count == 1
-        assert res.skipped_non_images_count == 2
+        assert res.skipped_videos_count == 1
+        assert res.skipped_non_images_count == 1
 
 
 # ---------------------------------------------------------------------------

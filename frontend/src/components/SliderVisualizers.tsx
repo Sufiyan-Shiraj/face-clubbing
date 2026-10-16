@@ -1,134 +1,179 @@
 import React, { useEffect, useRef } from 'react';
 
-// Utility to read active CSS variable color or fallback
-function getThemeColor(varName: string, fallback: string): string {
+// Utility to read active CSS variable color from .app container or fallback
+function getThemeColors() {
+  let el: Element | null = null;
   try {
-    const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-    return val || fallback;
+    el = document.querySelector('.app') || document.documentElement;
   } catch {
-    return fallback;
+    el = null;
   }
+  
+  if (!el) {
+    return {
+      accent: '#fa7175',
+      text: '#f5eedf',
+      muted: '#b8a896',
+      line: 'rgba(255,255,255,0.18)',
+      panel: 'rgba(22, 20, 18, 0.85)',
+      input: 'rgba(0, 0, 0, 0.45)',
+    };
+  }
+
+  const style = getComputedStyle(el);
+  return {
+    accent: style.getPropertyValue('--accent').trim() || '#fa7175',
+    text: style.getPropertyValue('--text').trim() || '#f5eedf',
+    muted: style.getPropertyValue('--muted').trim() || '#b8a896',
+    line: style.getPropertyValue('--line').trim() || 'rgba(255,255,255,0.18)',
+    panel: style.getPropertyValue('--panel').trim() || 'rgba(22, 20, 18, 0.85)',
+    input: style.getPropertyValue('--input').trim() || 'rgba(0, 0, 0, 0.45)',
+  };
+}
+
+// Setup High-DPI canvas drawing context with exact pixel sizing
+function setupCanvas(canvas: HTMLCanvasElement): {
+  ctx: CanvasRenderingContext2D | null;
+  width: number;
+  height: number;
+} {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = canvas.getBoundingClientRect();
+  const width = Math.max(10, Math.floor(rect.width));
+  const height = Math.max(10, Math.floor(rect.height));
+
+  const targetW = Math.round(width * dpr);
+  const targetH = Math.round(height * dpr);
+
+  if (canvas.width !== targetW || canvas.height !== targetH) {
+    canvas.width = targetW;
+    canvas.height = targetH;
+  }
+
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  return { ctx, width, height };
 }
 
 // ============================================================================
 // Visualizer 1: Orbital Face Constellation (distance_threshold: 0.30 - 0.65)
-// Represents cluster cohesion and radius: higher distance = looser, larger cluster
-// with more orbiting interconnected face nodes.
+// Represents cluster cohesion and radius:
+// - At 0.30 (strict): 1 solitary node spinning tightly around the nucleus.
+// - Moving to right (up to 0.65): node count increases dynamically from 1 to 10
+//   with expanding orbital radii, glowing filaments, and travelling energy pulses.
 // ============================================================================
 export const OrbitalClusterVisualizer: React.FC<{ value: number }> = ({ value }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || typeof canvas.getContext !== 'function') return;
-    let ctx: CanvasRenderingContext2D | null = null;
-    try {
-      ctx = canvas.getContext('2d');
-    } catch {
-      return;
-    }
-    if (!ctx) return;
+    if (!canvas) return;
 
     let animId: number;
     let time = 0;
 
     const render = () => {
-      const width = canvas.width;
-      const height = canvas.height;
-      ctx.clearRect(0, 0, width, height);
+      const { ctx, width, height } = setupCanvas(canvas);
+      if (!ctx || width <= 0 || height <= 0) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
 
-      const accent = getThemeColor('--accent', '#fa7175');
-      const text = getThemeColor('--text', '#f5eedf');
-      const muted = getThemeColor('--muted', '#b8a896');
-      const line = getThemeColor('--line', 'rgba(255,255,255,0.15)');
+      ctx.clearRect(0, 0, width, height);
+      const colors = getThemeColors();
 
       const centerX = width / 2;
       const centerY = height / 2;
 
       // Normalization: 0.30 to 0.65 -> 0.0 to 1.0
       const norm = Math.max(0, Math.min(1, (value - 0.30) / (0.65 - 0.30)));
-      // Node count: 2 (tight/strict) to 8 (loose/inclusive)
-      const nodeCount = Math.round(2 + norm * 6);
-      const baseRadius = 18 + norm * 18;
+      
+      // Node count: Exactly 1 node at minimum, scaling up to 10 nodes at maximum!
+      const nodeCount = Math.round(1 + norm * 9);
+      const baseRadius = 16 + norm * Math.min(width * 0.28, height * 0.35);
 
       time += 0.02 + norm * 0.015;
 
-      // Draw faint orbit tracks
+      // 1. Draw concentric orbit track rings
       ctx.beginPath();
-      ctx.arc(centerX, centerY, baseRadius * 0.65, 0, Math.PI * 2);
-      ctx.strokeStyle = line;
+      ctx.arc(centerX, centerY, baseRadius * 0.6, 0, Math.PI * 2);
+      ctx.strokeStyle = colors.line;
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 4]);
       ctx.stroke();
 
       ctx.beginPath();
       ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = line;
+      ctx.strokeStyle = colors.line;
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Compute node positions
-      const nodes: Array<{ x: number; y: number; r: number }> = [];
+      // 2. Compute dynamic node coordinates in 3D-angled orbit
+      const nodes: Array<{ x: number; y: number; id: number }> = [];
       for (let i = 0; i < nodeCount; i++) {
-        // Multi-tier orbital radii
-        const tier = i % 2 === 0 ? 0.72 : 1.0;
-        const speed = (i % 2 === 0 ? 1 : -0.75) * (0.8 + (i * 0.15));
+        const tier = i % 2 === 0 ? 0.65 : 1.0;
+        const speed = (i % 2 === 0 ? 1 : -0.8) * (0.75 + (i * 0.12));
         const angle = (i * (Math.PI * 2 / nodeCount)) + (time * speed);
         const r = baseRadius * tier + Math.sin(time * 2 + i) * 2;
         const x = centerX + Math.cos(angle) * r;
-        const y = centerY + Math.sin(angle) * (r * 0.75); // slight 3D perspective slant
-        nodes.push({ x, y, r });
+        const y = centerY + Math.sin(angle) * (r * 0.72); // angled perspective
+        nodes.push({ x, y, id: i + 1 });
       }
 
-      // Draw interconnecting filament lines between nodes
+      // 3. Draw luminous interconnecting filament lines between nodes
+      let linkCount = 0;
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = nodes[i].x - nodes[j].x;
           const dy = nodes[i].y - nodes[j].y;
           const dist = Math.hypot(dx, dy);
-          const maxLinkDist = baseRadius * 1.6;
+          const maxLinkDist = baseRadius * 1.5;
 
           if (dist < maxLinkDist) {
-            const alpha = (1 - dist / maxLinkDist) * (0.35 + norm * 0.45);
+            linkCount++;
+            const alpha = (1 - dist / maxLinkDist) * (0.3 + norm * 0.5);
             ctx.beginPath();
             ctx.moveTo(nodes[i].x, nodes[i].y);
             ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.strokeStyle = accent;
+            ctx.strokeStyle = colors.accent;
             ctx.globalAlpha = alpha;
             ctx.lineWidth = 1.2;
             ctx.stroke();
             ctx.globalAlpha = 1.0;
 
-            // Traveling energy particle on connection chord
-            const particleProgress = (time * 1.5 + (i * 3 + j)) % 1;
-            const px = nodes[i].x + (nodes[j].x - nodes[i].x) * particleProgress;
-            const py = nodes[i].y + (nodes[j].y - nodes[i].y) * particleProgress;
+            // Traveling data photon on chord
+            const photonT = (time * 1.8 + (i * 2 + j)) % 1;
+            const px = nodes[i].x + (nodes[j].x - nodes[i].x) * photonT;
+            const py = nodes[i].y + (nodes[j].y - nodes[i].y) * photonT;
             ctx.beginPath();
-            ctx.arc(px, py, 1.2, 0, Math.PI * 2);
-            ctx.fillStyle = text;
+            ctx.arc(px, py, 1.4, 0, Math.PI * 2);
+            ctx.fillStyle = colors.text;
             ctx.fill();
           }
         }
 
-        // Connect to center nucleus
+        // Connecting tether line to seed anchor nucleus
         ctx.beginPath();
         ctx.moveTo(centerX, centerY);
         ctx.lineTo(nodes[i].x, nodes[i].y);
-        ctx.strokeStyle = line;
-        ctx.globalAlpha = 0.25;
+        ctx.strokeStyle = colors.line;
+        ctx.globalAlpha = 0.22;
         ctx.lineWidth = 1;
         ctx.stroke();
         ctx.globalAlpha = 1.0;
       }
 
-      // Draw Orbiting Nodes
-      nodes.forEach((node, idx) => {
+      // 4. Draw Orbiting Face Nodes
+      nodes.forEach((node) => {
         // Outer halo
         ctx.beginPath();
-        ctx.arc(node.x, node.y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = accent;
+        ctx.arc(node.x, node.y, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = colors.accent;
         ctx.globalAlpha = 0.85;
         ctx.fill();
         ctx.globalAlpha = 1.0;
@@ -136,41 +181,48 @@ export const OrbitalClusterVisualizer: React.FC<{ value: number }> = ({ value })
         // Inner core
         ctx.beginPath();
         ctx.arc(node.x, node.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = text;
+        ctx.fillStyle = colors.text;
         ctx.fill();
 
-        // Node index micro-tag
-        ctx.fillStyle = muted;
-        ctx.font = '8px "JetBrains Mono", monospace';
-        ctx.fillText(`F${idx + 1}`, node.x + 5, node.y - 3);
+        // Node index stamp
+        ctx.fillStyle = colors.muted;
+        ctx.font = '9px "JetBrains Mono", monospace';
+        ctx.fillText(`F${node.id}`, node.x + 5, node.y - 3);
       });
 
-      // Draw Center Nucleus (Seed Face Anchor)
-      const nucleusPulse = Math.sin(time * 3) * 1.5;
+      // 5. Draw Center Nucleus (Anchor Seed Face)
+      const nucleusPulse = Math.sin(time * 3.5) * 1.5;
       ctx.beginPath();
-      ctx.arc(centerX, centerY, 7 + nucleusPulse, 0, Math.PI * 2);
-      ctx.fillStyle = accent;
-      ctx.globalAlpha = 0.3;
+      ctx.arc(centerX, centerY, 7.5 + nucleusPulse, 0, Math.PI * 2);
+      ctx.fillStyle = colors.accent;
+      ctx.globalAlpha = 0.25;
       ctx.fill();
       ctx.globalAlpha = 1.0;
 
       ctx.beginPath();
       ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
-      ctx.fillStyle = accent;
+      ctx.fillStyle = colors.accent;
       ctx.fill();
 
       ctx.beginPath();
-      ctx.arc(centerX, centerY, 2.5, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, 2.2, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
       ctx.fill();
 
-      // Mini HUD stats
-      ctx.font = '9px "JetBrains Mono", monospace';
-      ctx.fillStyle = muted;
+      // Nucleus label
+      ctx.fillStyle = colors.text;
+      ctx.font = '8px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('SEED', centerX, centerY + 14);
+
+      // HUD Stats Readout
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillStyle = colors.muted;
       ctx.textAlign = 'left';
-      ctx.fillText(`ORBIT NODES: ${nodeCount}`, 8, 14);
+      ctx.fillText(`CLUSTER: ${nodeCount} ${nodeCount === 1 ? 'NODE' : 'NODES'}`, 8, 14);
       ctx.textAlign = 'right';
-      ctx.fillText(`RADIUS: ${(baseRadius).toFixed(0)}px`, width - 8, 14);
+      ctx.fillStyle = colors.accent;
+      ctx.fillText(`RADIUS: ${Math.round(baseRadius)}px`, width - 8, 14);
 
       animId = requestAnimationFrame(render);
     };
@@ -186,8 +238,6 @@ export const OrbitalClusterVisualizer: React.FC<{ value: number }> = ({ value })
     <div className="w-full h-full relative overflow-hidden rounded bg-[var(--input)] border border-[var(--panel-border)] flex items-center justify-center">
       <canvas
         ref={canvasRef}
-        width={280}
-        height={85}
         className="w-full h-full block"
       />
     </div>
@@ -196,43 +246,37 @@ export const OrbitalClusterVisualizer: React.FC<{ value: number }> = ({ value })
 
 // ============================================================================
 // Visualizer 2: Gravitational Centroid Fusion (merge_threshold: 0.30 - 0.60)
-// Represents automatic second-pass duplicate reduction:
-// Higher threshold pulls two separate identity clusters together into a unified core.
+// Represents automatic second-pass duplicate cluster consolidation:
+// - Low (0.30): Cluster A and Cluster B remain separated by a repulsive barrier.
+// - As slider moves right: Gravity pulls the two centroids together, arcing plasma
+//   streams bridge between them, and above 0.48 they fuse into a single glowing unified core!
 // ============================================================================
 export const MergeFusionVisualizer: React.FC<{ value: number }> = ({ value }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || typeof canvas.getContext !== 'function') return;
-    let ctx: CanvasRenderingContext2D | null = null;
-    try {
-      ctx = canvas.getContext('2d');
-    } catch {
-      return;
-    }
-    if (!ctx) return;
+    if (!canvas) return;
 
     let animId: number;
     let time = 0;
 
     const render = () => {
-      const width = canvas.width;
-      const height = canvas.height;
-      ctx.clearRect(0, 0, width, height);
+      const { ctx, width, height } = setupCanvas(canvas);
+      if (!ctx || width <= 0 || height <= 0) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
 
-      const accent = getThemeColor('--accent', '#fa7175');
-      const text = getThemeColor('--text', '#f5eedf');
-      const muted = getThemeColor('--muted', '#b8a896');
-      const line = getThemeColor('--line', 'rgba(255,255,255,0.15)');
+      ctx.clearRect(0, 0, width, height);
+      const colors = getThemeColors();
 
       const centerY = height / 2;
       const centerX = width / 2;
 
       // Normalization: 0.30 to 0.60 -> 0.0 to 1.0
       const norm = Math.max(0, Math.min(1, (value - 0.30) / (0.60 - 0.30)));
-      // Separation distance between Cluster A and Cluster B
-      const maxSeparation = width * 0.32;
+      const maxSeparation = width * 0.30;
       const separation = (1 - norm) * maxSeparation;
       const isFused = value >= 0.48;
 
@@ -241,21 +285,21 @@ export const MergeFusionVisualizer: React.FC<{ value: number }> = ({ value }) =>
       const posA = centerX - separation;
       const posB = centerX + separation;
 
-      // Draw gravitational field rings for Cluster A
+      // Gravitational ripple rings for Cluster A
       for (let r = 10; r <= 28; r += 9) {
         ctx.beginPath();
         ctx.arc(posA, centerY, r + Math.sin(time * 2 + r) * 1.5, 0, Math.PI * 2);
-        ctx.strokeStyle = line;
+        ctx.strokeStyle = colors.line;
         ctx.lineWidth = 1;
         ctx.globalAlpha = Math.max(0.1, 0.4 - (r / 35));
         ctx.stroke();
       }
 
-      // Draw gravitational field rings for Cluster B
+      // Gravitational ripple rings for Cluster B
       for (let r = 10; r <= 28; r += 9) {
         ctx.beginPath();
         ctx.arc(posB, centerY, r + Math.sin(time * 2.5 + r) * 1.5, 0, Math.PI * 2);
-        ctx.strokeStyle = line;
+        ctx.strokeStyle = colors.line;
         ctx.lineWidth = 1;
         ctx.globalAlpha = Math.max(0.1, 0.4 - (r / 35));
         ctx.stroke();
@@ -263,91 +307,90 @@ export const MergeFusionVisualizer: React.FC<{ value: number }> = ({ value }) =>
       ctx.globalAlpha = 1.0;
 
       if (isFused) {
-        // FUSED STATE: Glowing Venn / Metaball Fusion Core
+        // FUSED STATE: Radiant unified core & plasma flux
         const glowPulse = Math.sin(time * 4) * 3;
 
-        // Radiant Outer Glow
-        const gradient = ctx.createRadialGradient(centerX, centerY, 4, centerX, centerY, 32 + glowPulse);
-        gradient.addColorStop(0, accent);
-        gradient.addColorStop(0.6, `${accent}44`);
+        const gradient = ctx.createRadialGradient(centerX, centerY, 4, centerX, centerY, 34 + glowPulse);
+        gradient.addColorStop(0, colors.accent);
+        gradient.addColorStop(0.55, `${colors.accent}44`);
         gradient.addColorStop(1, 'transparent');
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(centerX, centerY, 34 + glowPulse, 0, Math.PI * 2);
+        ctx.arc(centerX, centerY, 36 + glowPulse, 0, Math.PI * 2);
         ctx.fill();
 
-        // Connecting bridge flux
+        // High-energy fusion bridge
         ctx.beginPath();
         ctx.moveTo(posA, centerY);
         ctx.lineTo(posB, centerY);
-        ctx.strokeStyle = accent;
+        ctx.strokeStyle = colors.accent;
         ctx.lineWidth = 8 + Math.sin(time * 5) * 2;
         ctx.stroke();
 
-        // Swirling plasma particles between the two centroids
-        for (let p = 0; p < 7; p++) {
-          const pt = (time * 2 + p * 0.3) % 1;
+        // Swirling plasma particles
+        for (let p = 0; p < 8; p++) {
+          const pt = (time * 2 + p * 0.25) % 1;
           const px = posA + (posB - posA) * pt;
           const py = centerY + Math.sin(pt * Math.PI * 2 + time * 3) * 6;
           ctx.beginPath();
           ctx.arc(px, py, 1.8, 0, Math.PI * 2);
-          ctx.fillStyle = text;
+          ctx.fillStyle = colors.text;
           ctx.fill();
         }
       } else {
-        // SEPARATE STATE: Central dividing boundary line
+        // SEPARATE STATE: Central dashed boundary
         ctx.beginPath();
         ctx.moveTo(centerX, 18);
         ctx.lineTo(centerX, height - 18);
-        ctx.strokeStyle = line;
+        ctx.strokeStyle = colors.line;
         ctx.setLineDash([3, 3]);
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.2;
         ctx.stroke();
         ctx.setLineDash([]);
 
         // Repulsion arrow indicators
-        const arrowOffset = Math.sin(time * 3) * 2;
-        ctx.font = '10px "JetBrains Mono", monospace';
-        ctx.fillStyle = muted;
+        const arrowOffset = Math.sin(time * 3) * 2.5;
+        ctx.font = '11px "JetBrains Mono", monospace';
+        ctx.fillStyle = colors.muted;
         ctx.textAlign = 'center';
-        ctx.fillText('◂', posA + 12 - arrowOffset, centerY + 3);
-        ctx.fillText('▸', posB - 12 + arrowOffset, centerY + 3);
+        ctx.fillText('◂', posA + 12 - arrowOffset, centerY + 4);
+        ctx.fillText('▸', posB - 12 + arrowOffset, centerY + 4);
       }
 
       // Draw Cluster A Centroid Core
       ctx.beginPath();
-      ctx.arc(posA, centerY, 7, 0, Math.PI * 2);
-      ctx.fillStyle = accent;
+      ctx.arc(posA, centerY, 7.5, 0, Math.PI * 2);
+      ctx.fillStyle = colors.accent;
       ctx.fill();
       ctx.beginPath();
       ctx.arc(posA, centerY, 3, 0, Math.PI * 2);
-      ctx.fillStyle = text;
+      ctx.fillStyle = colors.text;
       ctx.fill();
 
       // Draw Cluster B Centroid Core
       ctx.beginPath();
-      ctx.arc(posB, centerY, 7, 0, Math.PI * 2);
-      ctx.fillStyle = isFused ? accent : '#d97706';
+      ctx.arc(posB, centerY, 7.5, 0, Math.PI * 2);
+      ctx.fillStyle = isFused ? colors.accent : '#d97706';
       ctx.fill();
       ctx.beginPath();
       ctx.arc(posB, centerY, 3, 0, Math.PI * 2);
-      ctx.fillStyle = text;
+      ctx.fillStyle = colors.text;
       ctx.fill();
 
       // Cluster Labels
-      ctx.font = '9px "JetBrains Mono", monospace';
-      ctx.fillStyle = text;
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillStyle = colors.text;
       ctx.textAlign = 'center';
-      ctx.fillText('CLS A', posA, centerY - 13);
-      ctx.fillText('CLS B', posB, centerY - 13);
+      ctx.fillText('CLUSTER A', posA, centerY - 14);
+      ctx.fillText('CLUSTER B', posB, centerY - 14);
 
       // HUD Status
-      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.font = '10px "JetBrains Mono", monospace';
       ctx.textAlign = 'left';
-      ctx.fillStyle = isFused ? accent : muted;
+      ctx.fillStyle = isFused ? colors.accent : colors.muted;
       ctx.fillText(isFused ? 'STATUS: FUSED UNIFIED' : 'STATUS: SEPARATE CLUSTERS', 8, 14);
       ctx.textAlign = 'right';
-      ctx.fillStyle = muted;
+      ctx.fillStyle = colors.muted;
       ctx.fillText(`CUTOFF: ${value.toFixed(2)}`, width - 8, 14);
 
       animId = requestAnimationFrame(render);
@@ -364,8 +407,6 @@ export const MergeFusionVisualizer: React.FC<{ value: number }> = ({ value }) =>
     <div className="w-full h-full relative overflow-hidden rounded bg-[var(--input)] border border-[var(--panel-border)] flex items-center justify-center">
       <canvas
         ref={canvasRef}
-        width={280}
-        height={85}
         className="w-full h-full block"
       />
     </div>
@@ -374,49 +415,42 @@ export const MergeFusionVisualizer: React.FC<{ value: number }> = ({ value }) =>
 
 // ============================================================================
 // Visualizer 3: Sonar Radar Hologram (maybe_threshold: 0.50 - 0.75)
-// Represents suggestion candidate range: higher threshold sweeps wider radar horizon,
-// flagging more candidate pairs for organizer review.
+// Represents suggestion candidate range:
+// Higher threshold sweeps a wider radar horizon, pinging and flagging candidate pairs.
 // ============================================================================
 export const RadarSuggestionVisualizer: React.FC<{ value: number }> = ({ value }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || typeof canvas.getContext !== 'function') return;
-    let ctx: CanvasRenderingContext2D | null = null;
-    try {
-      ctx = canvas.getContext('2d');
-    } catch {
-      return;
-    }
-    if (!ctx) return;
+    if (!canvas) return;
 
     let animId: number;
     let sweepAngle = 0;
 
     // Fixed candidates on the radar plane at normalized distances
     const candidates = [
-      { id: 'P1', distVal: 0.52, angle: 0.85, matchPct: 92 },
-      { id: 'P2', distVal: 0.58, angle: 2.15, matchPct: 83 },
-      { id: 'P3', distVal: 0.63, angle: 3.70, matchPct: 76 },
-      { id: 'P4', distVal: 0.67, angle: 4.80, matchPct: 69 },
-      { id: 'P5', distVal: 0.71, angle: 1.45, matchPct: 61 },
-      { id: 'P6', distVal: 0.74, angle: 5.60, matchPct: 54 },
+      { id: 'P1', distVal: 0.52, angle: 0.85, matchPct: 94 },
+      { id: 'P2', distVal: 0.58, angle: 2.15, matchPct: 86 },
+      { id: 'P3', distVal: 0.63, angle: 3.70, matchPct: 79 },
+      { id: 'P4', distVal: 0.67, angle: 4.80, matchPct: 71 },
+      { id: 'P5', distVal: 0.71, angle: 1.45, matchPct: 63 },
+      { id: 'P6', distVal: 0.74, angle: 5.60, matchPct: 55 },
     ];
 
     const render = () => {
-      const width = canvas.width;
-      const height = canvas.height;
-      ctx.clearRect(0, 0, width, height);
+      const { ctx, width, height } = setupCanvas(canvas);
+      if (!ctx || width <= 0 || height <= 0) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
 
-      const accent = getThemeColor('--accent', '#fa7175');
-      const text = getThemeColor('--text', '#f5eedf');
-      const muted = getThemeColor('--muted', '#b8a896');
-      const line = getThemeColor('--line', 'rgba(255,255,255,0.15)');
+      ctx.clearRect(0, 0, width, height);
+      const colors = getThemeColors();
 
       const centerX = width / 2;
       const centerY = height / 2;
-      const maxRadarRadius = Math.min(width, height) * 0.42;
+      const maxRadarRadius = Math.min(width, height) * 0.44;
 
       sweepAngle = (sweepAngle + 0.035) % (Math.PI * 2);
 
@@ -424,11 +458,11 @@ export const RadarSuggestionVisualizer: React.FC<{ value: number }> = ({ value }
       const norm = Math.max(0, Math.min(1, (value - 0.50) / (0.75 - 0.50)));
       const activeSweepRadius = maxRadarRadius * (0.35 + norm * 0.65);
 
-      // Radar concentric rings
+      // Radar concentric range rings
       [0.35, 0.65, 1.0].forEach((ratio, idx) => {
         ctx.beginPath();
         ctx.arc(centerX, centerY, maxRadarRadius * ratio, 0, Math.PI * 2);
-        ctx.strokeStyle = line;
+        ctx.strokeStyle = colors.line;
         ctx.lineWidth = 1;
         ctx.setLineDash([idx === 2 ? 0 : 2, 3]);
         ctx.stroke();
@@ -441,7 +475,7 @@ export const RadarSuggestionVisualizer: React.FC<{ value: number }> = ({ value }
       ctx.lineTo(centerX + maxRadarRadius, centerY);
       ctx.moveTo(centerX, centerY - maxRadarRadius);
       ctx.lineTo(centerX, centerY + maxRadarRadius);
-      ctx.strokeStyle = line;
+      ctx.strokeStyle = colors.line;
       ctx.lineWidth = 0.8;
       ctx.globalAlpha = 0.4;
       ctx.stroke();
@@ -450,24 +484,24 @@ export const RadarSuggestionVisualizer: React.FC<{ value: number }> = ({ value }
       // Active Detection Horizon Circle (Scales with Slider)
       ctx.beginPath();
       ctx.arc(centerX, centerY, activeSweepRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 1.5;
-      ctx.globalAlpha = 0.6;
+      ctx.strokeStyle = colors.accent;
+      ctx.lineWidth = 1.6;
+      ctx.globalAlpha = 0.65;
       ctx.stroke();
-      ctx.fillStyle = accent;
-      ctx.globalAlpha = 0.06;
+      ctx.fillStyle = colors.accent;
+      ctx.globalAlpha = 0.07;
       ctx.fill();
       ctx.globalAlpha = 1.0;
 
       // Radar Sweep Fan Beam
       const sweepSegments = 16;
       for (let i = 0; i < sweepSegments; i++) {
-        const segAngle = sweepAngle - (i * 0.03);
+        const segAngle = sweepAngle - (i * 0.035);
         ctx.beginPath();
         ctx.moveTo(centerX, centerY);
-        ctx.arc(centerX, centerY, activeSweepRadius, segAngle - 0.03, segAngle);
+        ctx.arc(centerX, centerY, activeSweepRadius, segAngle - 0.035, segAngle);
         ctx.closePath();
-        ctx.fillStyle = accent;
+        ctx.fillStyle = colors.accent;
         ctx.globalAlpha = (1 - i / sweepSegments) * 0.22;
         ctx.fill();
       }
@@ -480,8 +514,8 @@ export const RadarSuggestionVisualizer: React.FC<{ value: number }> = ({ value }
         centerX + Math.cos(sweepAngle) * activeSweepRadius,
         centerY + Math.sin(sweepAngle) * activeSweepRadius
       );
-      ctx.strokeStyle = text;
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = colors.text;
+      ctx.lineWidth = 1.6;
       ctx.stroke();
 
       // Render Candidate Pings
@@ -495,48 +529,47 @@ export const RadarSuggestionVisualizer: React.FC<{ value: number }> = ({ value }
 
         if (isDetected) {
           detectedCount++;
-          // Angle difference with sweep line for ping flash
           let diff = (sweepAngle - cand.angle) % (Math.PI * 2);
           if (diff < 0) diff += Math.PI * 2;
           const isPinged = diff < 0.6;
 
           // Target reticle
           ctx.beginPath();
-          ctx.arc(cx, cy, isPinged ? 5.5 : 3.5, 0, Math.PI * 2);
-          ctx.fillStyle = isPinged ? text : accent;
+          ctx.arc(cx, cy, isPinged ? 6 : 3.8, 0, Math.PI * 2);
+          ctx.fillStyle = isPinged ? colors.text : colors.accent;
           ctx.fill();
 
           if (isPinged) {
             ctx.beginPath();
-            ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-            ctx.strokeStyle = accent;
-            ctx.lineWidth = 1;
+            ctx.arc(cx, cy, 9.5, 0, Math.PI * 2);
+            ctx.strokeStyle = colors.accent;
+            ctx.lineWidth = 1.2;
             ctx.stroke();
 
-            // Match percentage callout
-            ctx.font = '8px "JetBrains Mono", monospace';
-            ctx.fillStyle = text;
-            ctx.fillText(`${cand.matchPct}%`, cx + 7, cy - 2);
+            // Match percentage stamp
+            ctx.font = '9px "JetBrains Mono", monospace';
+            ctx.fillStyle = colors.text;
+            ctx.fillText(`${cand.matchPct}%`, cx + 8, cy - 2);
           }
         } else {
-          // Out of range (inactive target)
+          // Inactive target outside horizon
           ctx.beginPath();
-          ctx.arc(cx, cy, 2, 0, Math.PI * 2);
-          ctx.fillStyle = line;
+          ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = colors.line;
           ctx.globalAlpha = 0.4;
           ctx.fill();
           ctx.globalAlpha = 1.0;
         }
       });
 
-      // HUD
-      ctx.font = '9px "JetBrains Mono", monospace';
-      ctx.fillStyle = muted;
+      // HUD Readout
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillStyle = colors.muted;
       ctx.textAlign = 'left';
       ctx.fillText(`SWEEP CAP: ${value.toFixed(2)}`, 8, 14);
       ctx.textAlign = 'right';
-      ctx.fillStyle = accent;
-      ctx.fillText(`MATCHES: ${detectedCount} PAIRS`, width - 8, 14);
+      ctx.fillStyle = colors.accent;
+      ctx.fillText(`CANDIDATES: ${detectedCount} PAIRS`, width - 8, 14);
 
       animId = requestAnimationFrame(render);
     };
@@ -552,8 +585,6 @@ export const RadarSuggestionVisualizer: React.FC<{ value: number }> = ({ value }
     <div className="w-full h-full relative overflow-hidden rounded bg-[var(--input)] border border-[var(--panel-border)] flex items-center justify-center">
       <canvas
         ref={canvasRef}
-        width={280}
-        height={85}
         className="w-full h-full block"
       />
     </div>
@@ -570,27 +601,20 @@ export const PhotoCollisionShieldVisualizer: React.FC<{ value: number }> = ({ va
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || typeof canvas.getContext !== 'function') return;
-    let ctx: CanvasRenderingContext2D | null = null;
-    try {
-      ctx = canvas.getContext('2d');
-    } catch {
-      return;
-    }
-    if (!ctx) return;
+    if (!canvas) return;
 
     let animId: number;
     let time = 0;
 
     const render = () => {
-      const width = canvas.width;
-      const height = canvas.height;
-      ctx.clearRect(0, 0, width, height);
+      const { ctx, width, height } = setupCanvas(canvas);
+      if (!ctx || width <= 0 || height <= 0) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
 
-      const accent = getThemeColor('--accent', '#fa7175');
-      const text = getThemeColor('--text', '#f5eedf');
-      const muted = getThemeColor('--muted', '#b8a896');
-      const line = getThemeColor('--line', 'rgba(255,255,255,0.15)');
+      ctx.clearRect(0, 0, width, height);
+      const colors = getThemeColors();
 
       time += 0.03;
 
@@ -602,14 +626,14 @@ export const PhotoCollisionShieldVisualizer: React.FC<{ value: number }> = ({ va
       const isStrict = value <= 0.40;
       const shieldOpacity = 1 - norm * 0.65;
 
-      // Outer Photo Frame
-      ctx.strokeStyle = line;
+      // Viewfinder Photo Frame
+      ctx.strokeStyle = colors.line;
       ctx.lineWidth = 1;
       ctx.strokeRect(18, 12, width - 36, height - 24);
 
       // Photo Frame Corner Brackets
       const bLen = 6;
-      ctx.strokeStyle = accent;
+      ctx.strokeStyle = colors.accent;
       ctx.lineWidth = 2;
       // Top-Left
       ctx.beginPath();
@@ -629,34 +653,34 @@ export const PhotoCollisionShieldVisualizer: React.FC<{ value: number }> = ({ va
       ctx.stroke();
 
       // Face #1 (Left Avatar Frame)
-      const faceLeftX = 48;
+      const faceLeftX = Math.max(48, width * 0.2);
       ctx.fillStyle = 'rgba(255,255,255,0.05)';
       ctx.fillRect(faceLeftX - 16, centerY - 20, 32, 40);
-      ctx.strokeStyle = line;
+      ctx.strokeStyle = colors.line;
       ctx.lineWidth = 1;
       ctx.strokeRect(faceLeftX - 16, centerY - 20, 32, 40);
 
       // Face silhouette icon left
       ctx.beginPath();
       ctx.arc(faceLeftX, centerY - 5, 6, 0, Math.PI * 2);
-      ctx.fillStyle = text;
+      ctx.fillStyle = colors.text;
       ctx.fill();
       ctx.beginPath();
       ctx.arc(faceLeftX, centerY + 11, 9, Math.PI, 0);
       ctx.fill();
 
       // Face #2 (Right Avatar Frame)
-      const faceRightX = width - 48;
+      const faceRightX = Math.min(width - 48, width * 0.8);
       ctx.fillStyle = 'rgba(255,255,255,0.05)';
       ctx.fillRect(faceRightX - 16, centerY - 20, 32, 40);
-      ctx.strokeStyle = line;
+      ctx.strokeStyle = colors.line;
       ctx.lineWidth = 1;
       ctx.strokeRect(faceRightX - 16, centerY - 20, 32, 40);
 
       // Face silhouette icon right
       ctx.beginPath();
       ctx.arc(faceRightX, centerY - 5, 6, 0, Math.PI * 2);
-      ctx.fillStyle = text;
+      ctx.fillStyle = colors.text;
       ctx.fill();
       ctx.beginPath();
       ctx.arc(faceRightX, centerY + 11, 9, Math.PI, 0);
@@ -674,7 +698,7 @@ export const PhotoCollisionShieldVisualizer: React.FC<{ value: number }> = ({ va
         ctx.beginPath();
         ctx.moveTo(centerX, shieldTop);
         ctx.lineTo(centerX, shieldBottom);
-        ctx.strokeStyle = accent;
+        ctx.strokeStyle = colors.accent;
         ctx.lineWidth = 6 + laserPulse;
         ctx.globalAlpha = 0.25 * shieldOpacity;
         ctx.stroke();
@@ -694,7 +718,7 @@ export const PhotoCollisionShieldVisualizer: React.FC<{ value: number }> = ({ va
           const hexOffset = Math.sin(time * 4 + y) * 1.5;
           ctx.beginPath();
           ctx.arc(centerX + hexOffset, y, 3, 0, Math.PI * 2);
-          ctx.fillStyle = accent;
+          ctx.fillStyle = colors.accent;
           ctx.fill();
         }
 
@@ -707,7 +731,7 @@ export const PhotoCollisionShieldVisualizer: React.FC<{ value: number }> = ({ va
             ctx.beginPath();
             ctx.moveTo(centerX, sparkY);
             ctx.lineTo(centerX + Math.cos(angle) * 10 * sparkTime, sparkY + Math.sin(angle) * 10 * sparkTime);
-            ctx.strokeStyle = text;
+            ctx.strokeStyle = colors.text;
             ctx.lineWidth = 1.2;
             ctx.stroke();
           }
@@ -719,8 +743,8 @@ export const PhotoCollisionShieldVisualizer: React.FC<{ value: number }> = ({ va
         ctx.lineTo(centerX, shieldBottom);
         ctx.strokeStyle = '#f59e0b';
         ctx.setLineDash([4, 4]);
-        ctx.lineWidth = 1.5;
-        ctx.globalAlpha = 0.6;
+        ctx.lineWidth = 1.6;
+        ctx.globalAlpha = 0.65;
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.globalAlpha = 1.0;
@@ -739,19 +763,19 @@ export const PhotoCollisionShieldVisualizer: React.FC<{ value: number }> = ({ va
       }
 
       // Micro Labels
-      ctx.font = '8px "JetBrains Mono", monospace';
-      ctx.fillStyle = muted;
+      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.fillStyle = colors.muted;
       ctx.textAlign = 'center';
       ctx.fillText('FACE A', faceLeftX, centerY + 28);
       ctx.fillText('FACE B', faceRightX, centerY + 28);
 
       // HUD Status
-      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.font = '10px "JetBrains Mono", monospace';
       ctx.textAlign = 'left';
-      ctx.fillStyle = isStrict ? accent : '#f59e0b';
+      ctx.fillStyle = isStrict ? colors.accent : '#f59e0b';
       ctx.fillText(isStrict ? 'SHIELD: LOCKED (SAFE)' : 'SHIELD: PERMEABLE', 8, 14);
       ctx.textAlign = 'right';
-      ctx.fillStyle = muted;
+      ctx.fillStyle = colors.muted;
       ctx.fillText(`GUARD: ${value.toFixed(2)}`, width - 8, 14);
 
       animId = requestAnimationFrame(render);
@@ -768,8 +792,6 @@ export const PhotoCollisionShieldVisualizer: React.FC<{ value: number }> = ({ va
     <div className="w-full h-full relative overflow-hidden rounded bg-[var(--input)] border border-[var(--panel-border)] flex items-center justify-center">
       <canvas
         ref={canvasRef}
-        width={280}
-        height={85}
         className="w-full h-full block"
       />
     </div>
@@ -784,50 +806,52 @@ export const DimensionPreviewVisualizer: React.FC<{
   faceCropSize: number;
 }> = ({ thumbSize, faceCropSize }) => {
   return (
-    <div className="flex items-center gap-4 p-2 rounded bg-[var(--input)] border border-[var(--panel-border)]">
+    <div className="flex items-center justify-around p-2.5 rounded bg-[var(--input)] border border-[var(--panel-border)]">
       {/* Thumbnail scale box */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <div
           className="border-2 border-[var(--accent)] bg-[var(--face-box-bg)] flex items-center justify-center relative transition-all duration-200"
           style={{
-            width: `${Math.round(thumbSize / 10)}px`,
-            height: `${Math.round(thumbSize / 10)}px`,
-            maxWidth: '56px',
-            maxHeight: '56px',
+            width: `${Math.round(thumbSize / 9)}px`,
+            height: `${Math.round(thumbSize / 9)}px`,
+            maxWidth: '54px',
+            maxHeight: '54px',
+            boxShadow: '2px 2px 0px var(--line)',
           }}
           title={`Thumbnail: ${thumbSize}x${thumbSize}px`}
         >
-          <span className="text-[9px] font-mono font-bold text-[var(--accent)]">
+          <span className="text-xs font-mono font-extrabold text-[var(--accent)]">
             {thumbSize}
           </span>
         </div>
-        <div className="text-[11px] leading-tight">
-          <span className="block font-semibold text-[var(--text)]">Thumbnail</span>
-          <span className="text-[var(--muted)] font-mono">{thumbSize}x{thumbSize}px</span>
+        <div className="text-sm leading-tight">
+          <span className="block font-bold text-[var(--text)]">Thumbnail</span>
+          <span className="text-[var(--muted)] font-mono text-xs">{thumbSize}x{thumbSize}px</span>
         </div>
       </div>
 
       <div className="h-8 w-px bg-[var(--line)]" />
 
       {/* Face crop scale box */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <div
-          className="border border-[var(--line)] bg-[var(--input)] rounded-full flex items-center justify-center relative transition-all duration-200"
+          className="border-2 border-[var(--line)] bg-[var(--input)] rounded-full flex items-center justify-center relative transition-all duration-200"
           style={{
-            width: `${Math.round(faceCropSize / 8)}px`,
-            height: `${Math.round(faceCropSize / 8)}px`,
+            width: `${Math.round(faceCropSize / 7)}px`,
+            height: `${Math.round(faceCropSize / 7)}px`,
             maxWidth: '44px',
             maxHeight: '44px',
+            boxShadow: '1px 1px 0px var(--line)',
           }}
           title={`Face Crop: ${faceCropSize}x${faceCropSize}px`}
         >
-          <span className="text-[9px] font-mono text-[var(--text)]">
+          <span className="text-xs font-mono font-bold text-[var(--text)]">
             {faceCropSize}
           </span>
         </div>
-        <div className="text-[11px] leading-tight">
-          <span className="block font-semibold text-[var(--text)]">Face Crop</span>
-          <span className="text-[var(--muted)] font-mono">{faceCropSize}x{faceCropSize}px</span>
+        <div className="text-sm leading-tight">
+          <span className="block font-bold text-[var(--text)]">Face Crop</span>
+          <span className="text-[var(--muted)] font-mono text-xs">{faceCropSize}x{faceCropSize}px</span>
         </div>
       </div>
     </div>

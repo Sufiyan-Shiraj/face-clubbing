@@ -56,7 +56,10 @@ def create_app(
     # Serve face crops and thumbnails dynamically from output_dir, work_dir, cache_dir, or export/
     @app.get("/faces/{file_path:path}")
     def serve_face(file_path: str):
-        out_dir = Path(state.settings.output_dir).resolve() if state.settings.output_dir else repo_root / "export"
+        out_raw = state.settings.output_dir
+        if not out_raw or str(out_raw).startswith("http") or "drive.google.com" in str(out_raw):
+            out_raw = repo_root / "export"
+        out_dir = Path(out_raw).resolve()
         candidates = [
             out_dir / "faces" / file_path,
             repo_root / "export" / "faces" / file_path,
@@ -76,7 +79,10 @@ def create_app(
 
     @app.get("/thumbs/{file_path:path}")
     def serve_thumb(file_path: str):
-        out_dir = Path(state.settings.output_dir).resolve() if state.settings.output_dir else repo_root / "export"
+        out_raw = state.settings.output_dir
+        if not out_raw or str(out_raw).startswith("http") or "drive.google.com" in str(out_raw):
+            out_raw = repo_root / "export"
+        out_dir = Path(out_raw).resolve()
         candidates = [
             out_dir / "thumbs" / file_path,
             repo_root / "export" / "thumbs" / file_path,

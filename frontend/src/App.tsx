@@ -525,7 +525,7 @@ export const App: React.FC = () => {
   // Start job
   const handleStartJob = async (inputPath?: string, driveFolder?: string, driveApiKey?: string) => {
     try {
-      const st = await api.startJob(inputPath, driveFolder, driveApiKey);
+      const st = await api.startJob(inputPath, driveFolder, driveApiKey, 'export');
       setJobStatus(st);
       setProgressHistory([st]);
       setActiveTab('progress');
@@ -584,7 +584,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={`app ${theme}`}>
+    <div className={`app ${theme} ${activeTab === 'settings' ? 'app-settings-fixed' : ''}`}>
       <Header
         activeTab={activeTab}
         onTabChange={(t) => handleTabChange(t)}
@@ -639,6 +639,7 @@ export const App: React.FC = () => {
           </button>
           <button
             type="button"
+            id="tab-settings-rail"
             onClick={() => handleTabChange('settings')}
             className={`step ${activeTab === 'settings' ? 'on' : ''}`}
           >
@@ -658,7 +659,7 @@ export const App: React.FC = () => {
       </div>
 
       {/* Main Screen Content */}
-      <div className={`main ${activeTab === 'settings' ? 'settings-mode' : ''}`}>
+      <div className={`main ${activeTab === 'settings' ? 'settings-mode' : ''} ${activeTab === 'export' ? 'export-mode' : ''}`}>
         {activeTab === 'home' && (
           <HomeScreen
             onStartJob={handleStartJob}
@@ -689,6 +690,8 @@ export const App: React.FC = () => {
             onCancelJob={handleCancelJob}
             onGoToReview={() => setActiveTab('people')}
             isCancelling={isCancelling}
+            discoveredFaceCrops={allDiscoveredFaces}
+            theme={theme}
           />
         )}
 
@@ -716,7 +719,12 @@ export const App: React.FC = () => {
         )}
 
         {activeTab === 'export' && (
-          <ExportScreen onRefreshStats={loadAllData} />
+          <ExportScreen
+            initialTitle={verifiedFolderName || (typeof window !== 'undefined' ? localStorage.getItem('photosorter-verified-folder-name') || undefined : undefined)}
+            peopleCount={people.length}
+            photosCount={Object.keys(photos).length}
+            onRefreshStats={loadAllData}
+          />
         )}
 
         {activeTab === 'settings' && (

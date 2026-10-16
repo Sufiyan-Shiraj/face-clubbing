@@ -1,29 +1,103 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../api/client';
-import { Download, CheckCircle2, Folder, ExternalLink, Globe, Github, Sparkles, Layers } from 'lucide-react';
+import { BrowseFolderResult } from '../types';
+import {
+  Download,
+  Folder,
+  FolderPlus,
+  ArrowUp,
+  RefreshCw,
+  Monitor,
+  Copy,
+  Check,
+  Search,
+  ChevronRight,
+  FileCode,
+  HardDrive,
+} from 'lucide-react';
 
 interface ExportScreenProps {
   initialTitle?: string;
   initialSubtitle?: string;
+  peopleCount?: number;
+  photosCount?: number;
   onRefreshStats?: () => void;
 }
 
 export const ExportScreen: React.FC<ExportScreenProps> = ({
-  initialTitle = 'Face Clubbing Gallery',
+  initialTitle,
   initialSubtitle = 'Auto-sorted face albums and photo gallery',
+  peopleCount = 0,
+  photosCount = 0,
   onRefreshStats,
 }) => {
+  // Determine automatic drive folder name
+  const autoDriveName = useMemo(() => {
+    if (initialTitle && initialTitle !== 'Face Clubbing Gallery' && initialTitle !== 'Event Gallery') {
+      return initialTitle;
+    }
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('photosorter-verified-folder-name');
+      if (stored && stored.trim()) return stored.trim();
+    }
+    return null;
+  }, [initialTitle]);
+
   const [outputDir, setOutputDir] = useState('export');
-  const [title, setTitle] = useState(initialTitle);
+  const [title, setTitle] = useState(autoDriveName || initialTitle || 'Face Clubbing Gallery');
   const [subtitle, setSubtitle] = useState(initialSubtitle);
   const [includeMaybe, setIncludeMaybe] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // File Explorer State
+  const [browseData, setBrowseData] = useState<BrowseFolderResult | null>(null);
+  const [isBrowsingLoading, setIsBrowsingLoading] = useState(false);
+  const [explorerFilter, setExplorerFilter] = useState('');
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [browseError, setBrowseError] = useState<string | null>(null);
+  const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
+
+  // Fetch initial settings & folder list
   useEffect(() => {
-    api.getSettings().then((s) => {
-      if (s.output_dir) setOutputDir(s.output_dir);
-    }).catch(() => {});
-  }, []);
+    api
+      .getSettings()
+      .then((s) => {
+        if (s.output_dir) {
+          setOutputDir(s.output_dir);
+          loadFolder(s.output_dir);
+        } else {
+          loadFolder('export');
+        }
+        if (s.event_title && !autoDriveName && s.event_title !== 'Event Gallery') {
+          setTitle(s.event_title);
+        }
+        if (s.event_subtitle) {
+          setSubtitle(s.event_subtitle);
+        }
+        if (typeof s.include_maybe === 'boolean') {
+          setIncludeMaybe(s.include_maybe);
+        }
+      })
+      .catch(() => {
+        loadFolder('export');
+      });
+  }, [autoDriveName]);
+
+  const loadFolder = async (path?: string) => {
+    setIsBrowsingLoading(true);
+    setBrowseError(null);
+    try {
+      const data = await api.browseFolder(path);
+      setBrowseData(data);
+    } catch (err: any) {
+      setBrowseError(err.message || 'Failed to inspect filesystem');
+    } finally {
+      setIsBrowsingLoading(false);
+    }
+  };
+
   const [exportResult, setExportResult] = useState<{
     success: boolean;
     output_dir: string;
@@ -52,143 +126,571 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
     }
   };
 
+  const handleSelectFolder = (path: string) => {
+    setOutputDir(path);
+    loadFolder(path);
+  };
+
+  const handleOpenSystemDialog = async () => {
+    setIsNativeDialogOpen(true);
+    setBrowseError(null);
+    try {
+      // 1. Check if running inside desktop pywebview container
+      if ((window as any).pywebview?.api?.select_folder) {
+        const selected = await (window as any).pywebview.api.select_folder('Select Public Export Directory');
+        if (selected && selected.trim()) {
+          setOutputDir(selected.trim());
+          loadFolder(selected.trim());
+        }
+        return;
+      }
+
+      // 2. Otherwise trigger backend foreground dialog
+      const targetDir = outputDir.trim() || browseData?.current_path || undefined;
+      const res = await api.openFolderDialog(targetDir);
+      if (res && res.selected && !res.cancelled) {
+        setOutputDir(res.selected);
+        loadFolder(res.selected);
+      }
+    } catch (err: any) {
+      console.error('System dialog error:', err);
+      setBrowseError(err.message || 'System folder dialog cancelled or failed');
+    } finally {
+      setIsNativeDialogOpen(false);
+    }
+  };
+
+  const handleCreateNewFolder = async () => {
+    if (!newFolderName.trim() || !browseData?.current_path) return;
+    try {
+      const res = await api.createFolder(browseData.current_path, newFolderName.trim());
+      setBrowseData(res);
+      setOutputDir(res.current_path);
+      setNewFolderName('');
+      setIsCreatingFolder(false);
+    } catch (err: any) {
+      setBrowseError(err.message || 'Failed to create folder');
+    }
+  };
+
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  // Filter subdirectories
+  const filteredSubdirs = useMemo(() => {
+    if (!browseData?.directories) return [];
+    if (!explorerFilter.trim()) return browseData.directories;
+    const term = explorerFilter.toLowerCase();
+    return browseData.directories.filter((d) => d.name.toLowerCase().includes(term));
+  }, [browseData?.directories, explorerFilter]);
+
+  // Compute breadcrumbs from current path
+  const breadcrumbSegments = useMemo(() => {
+    if (!browseData?.current_path) return [];
+    const normalized = browseData.current_path.replace(/\\/g, '/');
+    const parts = normalized.split('/').filter(Boolean);
+    const segs: { label: string; fullPath: string }[] = [];
+    let acc = '';
+
+    parts.forEach((p, idx) => {
+      if (idx === 0 && browseData.current_path.includes(':')) {
+        acc = p + '/';
+        segs.push({ label: p, fullPath: p + '\\' });
+      } else {
+        acc = acc ? (acc.endsWith('/') ? acc + p : acc + '/' + p) : '/' + p;
+        const osPath = acc.replace(/\//g, '\\');
+        segs.push({ label: p, fullPath: osPath });
+      }
+    });
+    return segs;
+  }, [browseData?.current_path]);
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn pb-20">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-          <Download className="w-6 h-6 text-accent" />
-          Export Static Web Bundle
-        </h2>
-        <p className="text-sm text-neutral-400 mt-1">
-          Export the finalized public gallery bundle. The bundle contains strictly static files (config.json, people.json, faces/, thumbs/) ready to be hosted on any static web host with zero backend dependencies.
-        </p>
-      </div>
-
-      {/* Configuration Card */}
-      <div className="glass-card p-6 rounded-2xl space-y-5">
-        <h3 className="text-base font-semibold text-white">Bundle Configuration</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="export-dashboard animate-fadeIn select-none w-full px-2 sm:px-4 py-2 space-y-8">
+      {/* Top Header Row with Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-6 pb-6 border-b-2 border-[var(--line)]">
+        <div className="flex items-center gap-5">
+          <div className="w-16 h-16 rounded-xl bg-[var(--input)] border-2 border-[var(--panel-border)] shadow-[4px_4px_0px_var(--line)] flex items-center justify-center text-[var(--accent)] flex-shrink-0">
+            <Download className="w-9 h-9" />
+          </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
-              Output Directory
-            </label>
-            <div className="relative">
-              <Folder className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                id="export-output-dir-input"
-                type="text"
-                value={outputDir}
-                onChange={(e) => setOutputDir(e.target.value)}
-                placeholder="export"
-                className="w-full pl-10 pr-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-accent"
-              />
+            <div className="flex items-center gap-4 flex-wrap">
+              <h2 className="text-3xl md:text-4xl font-black tracking-tight text-[var(--text)] uppercase font-mono">
+                Export Static Web Bundle
+              </h2>
+              <span className="settings-badge accent text-sm md:text-base px-3.5 py-1 font-bold">
+                STANDALONE VIEWER
+              </span>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
-              Gallery Title
-            </label>
-            <input
-              id="export-title-input"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-accent"
-            />
+            <p className="text-base md:text-lg text-[var(--muted)] font-mono mt-2">
+              Generate a completely self-contained photo gallery with zero backend or server dependencies.
+            </p>
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
-            Gallery Subtitle
-          </label>
-          <input
-            id="export-subtitle-input"
-            type="text"
-            value={subtitle}
-            onChange={(e) => setSubtitle(e.target.value)}
-            className="w-full px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-200 text-sm focus:outline-none focus:border-accent"
-          />
-        </div>
-
-        <div className="flex items-center gap-3 pt-2">
-          <input
-            id="export-include-maybe-toggle"
-            type="checkbox"
-            checked={includeMaybe}
-            onChange={(e) => setIncludeMaybe(e.target.checked)}
-            className="w-4 h-4 rounded border-neutral-700 bg-neutral-900 text-accent focus:ring-accent"
-          />
-          <label htmlFor="export-include-maybe-toggle" className="text-xs text-neutral-300 select-none">
-            Include <span className="font-semibold text-amber-400">"Possible matches"</span> (distance 0.50 – 0.60) in the exported viewer bundle
-          </label>
-        </div>
-
-        {error && (
-          <div className="p-3.5 rounded-xl bg-red-950/60 border border-red-800 text-red-300 text-xs">
-            {error}
-          </div>
-        )}
-
-        <div className="pt-2">
+        {/* Top Header Controls: Single clean refresh button */}
+        <div className="flex items-center gap-4">
           <button
-            id="export-bundle-btn"
-            disabled={isExporting}
-            onClick={handleExport}
-            className={`w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-lg ${
-              isExporting
-                ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
-                : 'bg-accent text-white hover:brightness-110 shadow-accent/20 cursor-pointer'
-            }`}
+            type="button"
+            onClick={() => loadFolder(outputDir)}
+            className="btn sm flex items-center gap-2.5"
+            style={{ height: '48px', padding: '0 24px', fontSize: '16px', fontWeight: 700 }}
+            title="Refresh directory view"
           >
-            <Download className="w-4 h-4" />
-            <span>{isExporting ? 'Exporting Bundle...' : 'Export Public Bundle'}</span>
+            <RefreshCw className={`w-4 h-4 text-[var(--muted)] ${isBrowsingLoading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* Export Result Summary */}
+      {/* Global Error Banner */}
+      {error && (
+        <div className="p-5 rounded-lg bg-red-950/90 border-2 border-red-700 text-red-100 text-lg flex items-center gap-4 animate-fadeIn">
+          <span className="font-mono font-bold text-sm bg-red-800 text-white px-3 py-1 rounded">ERROR</span>
+          <span className="font-semibold">{error}</span>
+        </div>
+      )}
+
+      {/* Clean, Neat 2-Column Main Workspace using full available width */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: Output Directory Explorer Window (7 cols) */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="explorer-window">
+            {/* Titlebar Chrome */}
+            <div className="explorer-titlebar px-6 py-4">
+              <div className="flex items-center gap-3.5">
+                <div className="explorer-window-dots">
+                  <span className="explorer-dot red"></span>
+                  <span className="explorer-dot amber"></span>
+                  <span className="explorer-dot green"></span>
+                </div>
+                <div className="flex items-center gap-3 font-mono text-lg md:text-xl font-bold text-[var(--text)] ml-2">
+                  <HardDrive className="w-5 h-5 text-[var(--accent)]" />
+                  <span>OUTPUT DESTINATION EXPLORER</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  id="btn-system-dialog"
+                  data-testid="btn-system-dialog"
+                  onClick={handleOpenSystemDialog}
+                  disabled={isNativeDialogOpen}
+                  className={`btn sm transition-all flex items-center gap-2.5 ${
+                    isNativeDialogOpen ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--input)]' : ''
+                  }`}
+                  style={{ height: '42px', padding: '0 22px', fontSize: '15px', fontWeight: 800 }}
+                  title="Open Windows File Explorer Dialog"
+                >
+                  {isNativeDialogOpen ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 text-[var(--accent)] animate-spin" />
+                      <span>Opening Dialog...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Monitor className="w-4 h-4 text-[var(--accent)]" />
+                      <span>System Dialog...</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Active Dialog Indicator Banner */}
+            {isNativeDialogOpen && (
+              <div className="p-4 bg-amber-950/70 border-b border-amber-700/80 text-amber-200 text-base flex items-center gap-3 font-mono animate-pulse">
+                <RefreshCw className="w-5 h-5 animate-spin text-amber-400 flex-shrink-0" />
+                <span>Native Windows folder dialog is open. Please select your folder in the system window.</span>
+              </div>
+            )}
+
+            {/* Browse Error Alert */}
+            {browseError && (
+              <div className="p-4 bg-red-950/80 border-b border-red-700 text-red-200 text-base flex items-center justify-between gap-3 font-mono">
+                <span>{browseError}</span>
+                <button
+                  type="button"
+                  onClick={() => setBrowseError(null)}
+                  className="text-red-300 hover:text-white font-bold text-lg px-2"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* Breadcrumb Path Bar & Up Navigation */}
+            <div className="p-4 sm:p-5 bg-[var(--panel)] border-b border-[var(--panel-border)] flex flex-wrap items-center justify-between gap-4 text-base font-mono">
+              <div className="flex items-center gap-3 flex-1 min-w-[240px] overflow-x-auto py-1">
+                <button
+                  type="button"
+                  onClick={() => browseData?.parent_path && handleSelectFolder(browseData.parent_path)}
+                  disabled={!browseData?.parent_path}
+                  className={`p-3 rounded-md border border-[var(--panel-border)] bg-[var(--input)] transition-all flex items-center justify-center ${
+                    browseData?.parent_path
+                      ? 'hover:border-[var(--accent)] text-[var(--text)] cursor-pointer'
+                      : 'opacity-40 cursor-not-allowed text-[var(--muted)]'
+                  }`}
+                  title="Go up one folder"
+                >
+                  <ArrowUp className="w-5 h-5" />
+                </button>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {breadcrumbSegments.map((seg, idx) => (
+                    <React.Fragment key={seg.fullPath}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectFolder(seg.fullPath)}
+                        className={`px-3.5 py-2 rounded-md transition-colors text-base md:text-lg ${
+                          idx === breadcrumbSegments.length - 1
+                            ? 'font-black text-[var(--accent)] bg-[var(--input)] border border-[var(--line)] shadow-[2px_2px_0px_var(--line)]'
+                            : 'text-[var(--text)] hover:bg-[var(--input)] font-bold'
+                        }`}
+                      >
+                        {seg.label}
+                      </button>
+                      {idx < breadcrumbSegments.length - 1 && (
+                        <ChevronRight className="w-4 h-4 text-[var(--muted)] flex-shrink-0" />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions: New Folder */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingFolder(!isCreatingFolder)}
+                  className="btn sm flex items-center gap-2"
+                  style={{ height: '42px', padding: '0 18px', fontSize: '15px', fontWeight: 700 }}
+                >
+                  <FolderPlus className="w-4 h-4 text-[var(--accent)]" />
+                  <span>New Folder</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Access Shortcuts Pill Bar */}
+            {browseData?.shortcuts && browseData.shortcuts.length > 0 && (
+              <div className="px-5 py-3.5 bg-[var(--input)] border-b border-[var(--panel-border)] flex items-center gap-3 overflow-x-auto text-base font-mono">
+                <span className="text-[var(--muted)] uppercase font-bold text-xs md:text-sm flex-shrink-0 mr-1">QUICK:</span>
+                {browseData.shortcuts.map((sc) => (
+                  <button
+                    key={sc.label}
+                    type="button"
+                    onClick={() => handleSelectFolder(sc.path)}
+                    className={`px-4 py-2 rounded-md border text-sm md:text-base whitespace-nowrap transition-all ${
+                      outputDir === sc.path || outputDir === sc.label
+                        ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)] font-bold shadow-[2px_2px_0px_var(--line)]'
+                        : 'border-[var(--line)] bg-[var(--panel)] text-[var(--text)] hover:border-[var(--accent)] font-semibold'
+                    }`}
+                  >
+                    {sc.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Inline New Folder Form */}
+            {isCreatingFolder && (
+              <div className="p-4 bg-[var(--input)] border-b-2 border-[var(--accent)] flex items-center gap-3 animate-fadeIn">
+                <FolderPlus className="w-5 h-5 text-[var(--accent)] flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="New folder name..."
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateNewFolder()}
+                  autoFocus
+                  className="flex-1 px-4 py-2.5 bg-[var(--panel)] border border-[var(--panel-border)] rounded text-base font-mono text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateNewFolder}
+                  className="btn pri sm"
+                  style={{ height: '42px', padding: '0 20px', fontSize: '15px', fontWeight: 700 }}
+                >
+                  Create
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreatingFolder(false);
+                    setNewFolderName('');
+                  }}
+                  className="btn sm"
+                  style={{ height: '42px', padding: '0 16px', fontSize: '15px' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* Subdirectories Explorer Body */}
+            <div className="p-5 max-h-[320px] overflow-y-auto space-y-2.5 font-mono">
+              {/* Search / Filter Box */}
+              <div className="relative mb-3">
+                <Search className="w-5 h-5 text-[var(--muted)] absolute left-4 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Filter subfolders..."
+                  value={explorerFilter}
+                  onChange={(e) => setExplorerFilter(e.target.value)}
+                  className="w-full pl-12 pr-4 py-2.5 bg-[var(--input)] border border-[var(--panel-border)] rounded-md text-base md:text-lg text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+
+              {filteredSubdirs.length === 0 ? (
+                <div className="py-12 text-center text-[var(--muted)] font-mono text-base md:text-lg">
+                  {isBrowsingLoading
+                    ? 'Loading folders...'
+                    : explorerFilter
+                    ? 'No matching subfolders found.'
+                    : 'This folder has no subfolders. You can export directly here or create a new folder.'}
+                </div>
+              ) : (
+                filteredSubdirs.map((dir) => {
+                  const isSelected = outputDir === dir.path || outputDir === dir.name;
+                  return (
+                    <div
+                      key={dir.path}
+                      onClick={() => handleSelectFolder(dir.path)}
+                      className={`explorer-folder-item flex items-center justify-between p-4 rounded-md cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-[var(--accent)] text-[var(--on-accent)] font-bold shadow-[3px_3px_0px_var(--line)]'
+                          : 'bg-[var(--panel)] hover:bg-[var(--input)] text-[var(--text)] border border-[var(--line)]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4 truncate">
+                        <Folder className={`w-7 h-7 flex-shrink-0 ${isSelected ? 'text-[var(--on-accent)]' : 'text-[var(--accent)]'}`} />
+                        <span className="font-bold text-lg md:text-xl truncate">{dir.name}</span>
+                      </div>
+
+                      <div className="flex items-center gap-3 text-sm flex-shrink-0">
+                        <span
+                          className={`px-4 py-1.5 rounded-md text-sm font-bold uppercase transition-all ${
+                            isSelected
+                              ? 'bg-[var(--text)] text-[var(--bg)]'
+                              : 'bg-[var(--input)] text-[var(--text)] border border-[var(--line)]'
+                          }`}
+                        >
+                          {isSelected ? 'Active' : 'Select'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer Active Path Input & Target Confirmation */}
+            <div className="p-5 bg-[var(--input)] border-t-2 border-[var(--panel-border)] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <span className="text-sm uppercase font-bold text-[var(--muted)] block font-mono mb-1.5">
+                  Active Export Destination Path
+                </span>
+                <input
+                  id="export-output-dir-input"
+                  data-testid="export-output-dir-input"
+                  type="text"
+                  value={outputDir}
+                  onChange={(e) => setOutputDir(e.target.value)}
+                  onBlur={() => loadFolder(outputDir)}
+                  placeholder="export"
+                  className="w-full px-4 py-3 bg-[var(--panel)] border-2 border-[var(--panel-border)] rounded-md text-base md:text-lg font-mono font-bold text-[var(--text)] focus:outline-none focus:border-[var(--accent)] shadow-[2px_2px_0px_var(--line)]"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 flex-shrink-0 sm:pt-6">
+                <button
+                  type="button"
+                  onClick={() => handleSelectFolder(browseData?.current_path || outputDir)}
+                  className="btn pri sm flex items-center gap-2"
+                  style={{ height: '46px', padding: '0 24px', fontSize: '15px', fontWeight: 800 }}
+                >
+                  <Check className="w-5 h-5" />
+                  <span>Confirm Target</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Gallery Configuration & Clean Export Action (5 cols) */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="settings-panel p-6 sm:p-8 space-y-6">
+            <div className="flex items-center justify-between border-b-2 border-[var(--line)] pb-5">
+              <div className="flex items-center gap-3.5">
+                <FileCode className="w-7 h-7 text-[var(--accent)]" />
+                <h3 className="text-xl md:text-2xl font-black uppercase font-mono text-[var(--text)]">
+                  Gallery Configuration
+                </h3>
+              </div>
+              {autoDriveName && (
+                <span className="settings-badge accent text-sm px-3.5 py-1 font-bold" title="Title synchronized with your Google Drive folder">
+                  DRIVE SYNCED
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="export-title-input" className="text-base md:text-lg font-bold uppercase text-[var(--text)] font-mono">
+                    Gallery Title
+                  </label>
+                  {autoDriveName && (
+                    <button
+                      type="button"
+                      onClick={() => setTitle(autoDriveName)}
+                      className="text-sm text-[var(--accent)] hover:underline flex items-center gap-1 font-mono font-bold"
+                    >
+                      <span>Reset to Drive Name</span>
+                    </button>
+                  )}
+                </div>
+                <input
+                  id="export-title-input"
+                  data-testid="export-title-input"
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Gallery Title..."
+                  className="w-full px-4 py-3.5 bg-[var(--input)] border-2 border-[var(--panel-border)] rounded-md text-lg md:text-xl text-[var(--text)] font-sans font-bold focus:outline-none focus:border-[var(--accent)] shadow-[3px_3px_0px_var(--line)]"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="export-subtitle-input" className="block text-base md:text-lg font-bold uppercase text-[var(--text)] font-mono mb-2">
+                  Gallery Subtitle / Description
+                </label>
+                <input
+                  id="export-subtitle-input"
+                  data-testid="export-subtitle-input"
+                  type="text"
+                  value={subtitle}
+                  onChange={(e) => setSubtitle(e.target.value)}
+                  placeholder="Auto-sorted face albums and photo gallery"
+                  className="w-full px-4 py-3.5 bg-[var(--input)] border-2 border-[var(--panel-border)] rounded-md text-base md:text-lg text-[var(--text)] font-sans focus:outline-none focus:border-[var(--accent)] shadow-[3px_3px_0px_var(--line)]"
+                />
+              </div>
+
+              <div className="pt-2">
+                <label
+                  htmlFor="export-include-maybe-toggle"
+                  className="flex items-start gap-4 p-4 rounded-lg bg-[var(--input)] border border-[var(--panel-border)] cursor-pointer hover:border-[var(--accent)] transition-all"
+                >
+                  <input
+                    id="export-include-maybe-toggle"
+                    data-testid="export-include-maybe-toggle"
+                    type="checkbox"
+                    checked={includeMaybe}
+                    onChange={(e) => setIncludeMaybe(e.target.checked)}
+                    className="mt-1 w-5 h-5 rounded border-2 border-[var(--panel-border)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                  />
+                  <div>
+                    <span className="text-base md:text-lg font-bold text-[var(--text)] block">
+                      Include "Possible Matches" (Distance 0.50 – 0.65)
+                    </span>
+                    <span className="text-sm md:text-base text-[var(--muted)] block mt-1.5 font-sans leading-relaxed">
+                      Exports borderline ambiguous faces alongside confident matches so viewers can inspect edge cases.
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Big, Clear Primary Action Button */}
+              <div className="pt-4">
+                <button
+                  id="export-bundle-btn"
+                  data-testid="export-bundle-btn"
+                  disabled={isExporting}
+                  onClick={handleExport}
+                  className="btn pri w-full flex items-center justify-center gap-3.5 shadow-[4px_4px_0px_var(--line)]"
+                  style={{ height: '60px', fontSize: '19px', fontWeight: 900 }}
+                >
+                  <Download className={`w-6 h-6 ${isExporting ? 'animate-bounce' : ''}`} />
+                  <span>{isExporting ? 'Generating Bundle...' : 'Export Public Bundle Now'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Export Result Success Card */}
       {exportResult && (
-        <div id="export-success-summary" className="glass-card p-6 rounded-2xl space-y-4 border border-emerald-500/40 bg-emerald-950/20 animate-scaleUp">
-          <div className="flex items-center gap-3 text-emerald-400">
-            <CheckCircle2 className="w-6 h-6 flex-shrink-0" />
-            <div>
-              <h3 className="text-base font-semibold text-white">Bundle Exported Successfully</h3>
-              <p className="text-xs text-neutral-300 mt-0.5 font-mono">
-                Location: {exportResult.output_dir}
+        <div
+          id="export-success-summary"
+          data-testid="export-success-summary"
+          className="settings-panel p-7 sm:p-9 border-2 border-emerald-500 bg-emerald-950/20 space-y-6 animate-scaleUp"
+        >
+          <div className="flex items-center justify-between flex-wrap gap-4 border-b border-emerald-800/60 pb-5">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-emerald-500 text-black flex items-center justify-center flex-shrink-0 font-bold shadow-[2px_2px_0px_var(--line)]">
+                <Check className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-2xl md:text-3xl font-black text-white font-mono uppercase">
+                  Static Web Bundle Exported Successfully
+                </h3>
+                <p className="text-base md:text-lg text-neutral-300 font-mono mt-1">
+                  Destination: <span className="font-bold text-emerald-400">{exportResult.output_dir}</span>
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => copyToClipboard(exportResult.output_dir, 'dir')}
+              className="btn sm flex items-center gap-2"
+              style={{ height: '46px', fontSize: '15px', fontWeight: 700 }}
+            >
+              {copiedKey === 'dir' ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+              <span>{copiedKey === 'dir' ? 'Path Copied!' : 'Copy Absolute Path'}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 pt-2 font-mono">
+            <div className="p-5 rounded-lg bg-[var(--input)] border border-[var(--panel-border)] text-center">
+              <span className="text-sm md:text-base text-[var(--muted)] font-bold">People Clustered</span>
+              <p id="export-stat-people" data-testid="export-stat-people" className="text-3xl md:text-4xl font-black text-[var(--text)] mt-2">
+                {exportResult.people_count}
               </p>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-            <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800 text-center">
-              <span className="text-xs text-neutral-400">People</span>
-              <p id="export-stat-people" className="text-lg font-bold text-white mt-0.5">{exportResult.people_count}</p>
+            <div className="p-5 rounded-lg bg-[var(--input)] border border-[var(--panel-border)] text-center">
+              <span className="text-sm md:text-base text-[var(--muted)] font-bold">Photos Included</span>
+              <p id="export-stat-photos" data-testid="export-stat-photos" className="text-3xl md:text-4xl font-black text-[var(--text)] mt-2">
+                {exportResult.photos_count}
+              </p>
             </div>
-            <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800 text-center">
-              <span className="text-xs text-neutral-400">Photos</span>
-              <p id="export-stat-photos" className="text-lg font-bold text-white mt-0.5">{exportResult.photos_count}</p>
+            <div className="p-5 rounded-lg bg-[var(--input)] border border-[var(--panel-border)] text-center">
+              <span className="text-sm md:text-base text-[var(--muted)] font-bold">Exported Files</span>
+              <p id="export-stat-files" data-testid="export-stat-files" className="text-3xl md:text-4xl font-black text-[var(--text)] mt-2">
+                {exportResult.files_exported.length}
+              </p>
             </div>
-            <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800 text-center">
-              <span className="text-xs text-neutral-400">Bundle Files</span>
-              <p id="export-stat-files" className="text-lg font-bold text-white mt-0.5">{exportResult.files_exported.length}</p>
-            </div>
-            <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800 text-center">
-              <span className="text-xs text-neutral-400">Hygiene</span>
-              <p className="text-xs font-semibold text-emerald-400 mt-1.5">Zero Private Files</p>
+            <div className="p-5 rounded-lg bg-[var(--input)] border border-[var(--panel-border)] text-center">
+              <span className="text-sm md:text-base text-[var(--muted)] font-bold">Privacy Audit</span>
+              <p className="text-base md:text-lg font-black text-emerald-400 mt-3">Zero Private Leaks</p>
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-neutral-900/90 border border-neutral-800">
-            <p className="text-xs text-neutral-400 mb-1">Exported Assets in Bundle:</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="p-5 rounded-lg bg-[var(--input)] border border-[var(--panel-border)]">
+            <p className="text-sm md:text-base text-[var(--muted)] font-mono mb-3 font-bold uppercase">
+              Exported Bundle Manifest:
+            </p>
+            <div className="flex flex-wrap gap-2.5">
               {exportResult.files_exported.map((f) => (
                 <span
                   key={f}
-                  className="px-2.5 py-1 rounded-lg bg-neutral-800 text-neutral-200 text-xs font-mono border border-neutral-700"
+                  className="px-4 py-2 rounded-md bg-[var(--panel)] text-[var(--text)] text-sm md:text-base font-mono border border-[var(--line)] shadow-[1px_1px_0px_var(--line)]"
                 >
                   {f}
                 </span>
@@ -197,54 +699,6 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
           </div>
         </div>
       )}
-
-      {/* Deployment & Publishing Guides */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-bold text-white">Publishing Guides</h3>
-
-        {/* GitHub Pages Guide */}
-        <div className="glass-card p-6 rounded-2xl space-y-3 border border-neutral-800">
-          <div className="flex items-center gap-2.5 text-white font-semibold">
-            <Github className="w-5 h-5 text-neutral-300" />
-            <h4>Publish to GitHub Pages</h4>
-          </div>
-          <p className="text-xs text-neutral-400">
-            Host the exported gallery for free on GitHub Pages directly from your repository:
-          </p>
-          <div className="p-3 rounded-xl bg-neutral-950 font-mono text-xs text-neutral-300 space-y-1.5 overflow-x-auto border border-neutral-800/80">
-            <p className="text-neutral-500"># 1. Switch to the gh-pages branch (or create it)</p>
-            <p>git checkout -b gh-pages</p>
-            <p className="text-neutral-500"># 2. Copy the exported bundle and built viewer</p>
-            <p>cp -r export/* .</p>
-            <p>cp -r viewer/dist/* .</p>
-            <p className="text-neutral-500"># 3. Commit and push</p>
-            <p>git add . &amp;&amp; git commit -m "Deploy Face Clubbing gallery"</p>
-            <p>git push origin gh-pages</p>
-          </div>
-          <p className="text-xs text-neutral-500">
-            In repository settings under <strong>Pages</strong>, select branch <strong>gh-pages</strong> and folder <strong>/ (root)</strong>.
-          </p>
-        </div>
-
-        {/* Cloudflare Pages Guide */}
-        <div className="glass-card p-6 rounded-2xl space-y-3 border border-neutral-800">
-          <div className="flex items-center gap-2.5 text-white font-semibold">
-            <Globe className="w-5 h-5 text-amber-400" />
-            <h4>Publish to Cloudflare Pages</h4>
-          </div>
-          <p className="text-xs text-neutral-400">
-            Deploy with global CDN distribution and instant worldwide caching:
-          </p>
-          <div className="p-3 rounded-xl bg-neutral-950 font-mono text-xs text-neutral-300 space-y-1.5 overflow-x-auto border border-neutral-800/80">
-            <p className="text-neutral-500"># Option A: Deploy directly via Wrangler CLI</p>
-            <p>npx wrangler pages deploy export/ --project-name photo-sorter</p>
-            <p className="text-neutral-500"># Option B: Direct Drag-and-Drop</p>
-            <p className="text-neutral-400">
-              Navigate to dashboard.cloudflare.com &gt; Workers &amp; Pages &gt; Create &gt; Pages &gt; Upload assets &gt; Drag and drop the <span className="text-white font-semibold">export/</span> folder.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

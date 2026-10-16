@@ -21,7 +21,10 @@ class BundleExporter:
         thumb_size: int = 400,
         face_crop_size: int = 256,
     ):
-        self.output_dir = Path(output_dir).resolve()
+        out_dir_str = str(output_dir or "export")
+        if out_dir_str.startswith("http://") or out_dir_str.startswith("https://") or "drive.google.com" in out_dir_str:
+            out_dir_str = "export"
+        self.output_dir = Path(out_dir_str).resolve()
         self.cache_dir = Path(cache_dir).resolve() if cache_dir else None
         self.thumbs_dir = self.output_dir / "thumbs"
         self.faces_dir = self.output_dir / "faces"

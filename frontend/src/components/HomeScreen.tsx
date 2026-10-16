@@ -637,11 +637,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       id="btn-set-api-key"
                       data-testid="btn-set-api-key"
                       onClick={() => setShowApiKeyModal(true)}
-                      className="text-xs text-[var(--accent)] hover:underline inline-flex items-center gap-1 flex-shrink-0 ml-2"
+                      className="text-sm font-bold text-[var(--accent)] hover:underline inline-flex items-center gap-1.5 flex-shrink-0 ml-2"
                       style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
                       title="Set Google Drive API key"
                     >
-                      <Key className="w-3 h-3" />
+                      <Key className="w-3.5 h-3.5" />
                       <span>Set API key</span>
                     </button>
                   )}
@@ -849,7 +849,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </div>
 
             <p className="api-key-modal-desc">
-              A free Google Drive API key is required to scan Google Drive folders. The key will be saved securely in your local settings (<code className="text-xs">~/.photosorter/settings.json</code>) and can also be viewed in the Settings tab.
+              A free Google Drive API key is required to scan Google Drive folders. The key will be saved securely in your local settings (<code className="text-sm">~/.photosorter/settings.json</code>) and can also be viewed in the Settings tab.
             </p>
 
             <input
@@ -884,7 +884,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 onClick={handleSaveApiKey}
                 disabled={!apiKeyInput.trim() || isSavingApiKey}
                 className="btn pri"
-                style={{ height: '36px', padding: '0 18px', fontSize: '13px' }}
+                style={{ height: '40px', padding: '0 20px', fontSize: '15px' }}
               >
                 {isSavingApiKey ? 'Saving...' : 'Save & Verify'}
               </button>

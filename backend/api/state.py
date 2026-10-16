@@ -86,9 +86,13 @@ class AppState:
 
     def _try_load_existing_dataset(self):
         """Attempts to load existing Phase 1/1b export data if present."""
-        export_people = Path(self.settings.output_dir) / "people.json"
+        raw_out = self.settings.output_dir
+        if not raw_out or str(raw_out).startswith("http") or "drive.google.com" in str(raw_out):
+            raw_out = "export"
+            self.settings.output_dir = "export"
+        export_people = Path(raw_out) / "people.json"
         if not export_people.exists():
-            if Path(self.settings.output_dir).resolve() == (self.repo_root / "export").resolve():
+            if Path(raw_out).resolve() == (self.repo_root / "export").resolve():
                 export_people = self.repo_root / "export" / "people.json"
             else:
                 return
@@ -543,7 +547,11 @@ class AppState:
         config.json, people.json, faces/, thumbs/.
         Guarantees suggestions.json, edits.json, id_map.json, and .cache/ are never exported.
         """
-        out_p = Path(output_dir).resolve() if output_dir else Path(self.settings.output_dir).resolve()
+        target = output_dir or self.settings.output_dir or "export"
+        if str(target).startswith("http") or "drive.google.com" in str(target):
+            target = "export"
+            self.settings.output_dir = "export"
+        out_p = Path(target).resolve()
         cache_p = Path(self.settings.cache_dir).resolve() if self.settings.cache_dir else self.work_dir
 
         exporter = BundleExporter(

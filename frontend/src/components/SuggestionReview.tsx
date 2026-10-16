@@ -37,11 +37,11 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
     <div className="space-y-6">
       {/* Top Filter and Info Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-neutral-900/60 border border-neutral-800">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Sparkles className="w-5 h-5 text-amber-400" />
           <div>
-            <h3 className="text-sm font-semibold text-white">Smart Match Suggestions</h3>
-            <p className="text-xs text-neutral-400">
+            <h3 className="text-base font-bold text-white">Smart Match Suggestions</h3>
+            <p className="text-sm text-neutral-400">
               Ranked pairs calculated by centroid cosine distance. Rejected pairs stay hidden for this session.
             </p>
           </div>
@@ -49,12 +49,12 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
 
         {/* Filters */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-neutral-500 flex items-center gap-1">
-            <Filter className="w-3.5 h-3.5" /> Filter:
+          <span className="text-sm text-neutral-400 font-medium flex items-center gap-1.5">
+            <Filter className="w-4 h-4" /> Filter:
           </span>
           <button
             onClick={() => setFilterType('all')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors ${
               filterType === 'all'
                 ? 'bg-blue-600 text-white'
                 : 'bg-neutral-800 text-neutral-400 hover:text-neutral-200'
@@ -64,7 +64,7 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
           </button>
           <button
             onClick={() => setFilterType('medium')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors ${
               filterType === 'medium'
                 ? 'bg-blue-600 text-white'
                 : 'bg-neutral-800 text-neutral-400 hover:text-neutral-200'
@@ -74,7 +74,7 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
           </button>
           <button
             onClick={() => setFilterType('low')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors ${
               filterType === 'low'
                 ? 'bg-blue-600 text-white'
                 : 'bg-neutral-800 text-neutral-400 hover:text-neutral-200'
@@ -89,8 +89,8 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
       {activeSuggestions.length === 0 ? (
         <div className="text-center py-12 border border-neutral-800/80 rounded-2xl bg-neutral-900/30">
           <Check className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-          <h4 className="text-base font-semibold text-neutral-200">No Pending Suggestions</h4>
-          <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
+          <h4 className="text-lg font-bold text-neutral-200">No Pending Suggestions</h4>
+          <p className="text-sm text-neutral-400 mt-1 max-w-sm mx-auto">
             All suggestions in this category have been reviewed, accepted, or rejected for this session.
           </p>
         </div>
@@ -114,7 +114,7 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
                 {/* Comparison Pair Grid */}
                 <div className="flex items-center gap-3 sm:gap-6 flex-1">
                   {/* Person A */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex items-center gap-3.5 flex-1 min-w-0">
                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 flex-shrink-0">
                       <img
                         src={faceA}
@@ -127,22 +127,22 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
                       />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs sm:text-sm font-bold text-white truncate block">{nameA}</span>
-                      <span className="text-[11px] text-neutral-400 font-mono">
+                      <span className="text-sm sm:text-base font-bold text-white truncate block">{nameA}</span>
+                      <span className="text-xs text-neutral-400 font-mono">
                         {pA?.photo_count ?? s.person_a_photos} photos
                       </span>
                     </div>
                   </div>
 
                   {/* Middle Match Metrics */}
-                  <div className="flex flex-col items-center justify-center px-2 sm:px-4 py-2 rounded-xl bg-neutral-950/80 border border-neutral-800/80 text-center flex-shrink-0">
-                    <span className="text-[10px] text-neutral-500 font-mono">Distance</span>
-                    <span className="text-xs sm:text-sm font-bold font-mono text-blue-400">
+                  <div className="flex flex-col items-center justify-center px-3 sm:px-4 py-2 rounded-xl bg-neutral-950/80 border border-neutral-800/80 text-center flex-shrink-0">
+                    <span className="text-xs text-neutral-400 font-mono font-medium">Distance</span>
+                    <span className="text-sm sm:text-base font-bold font-mono text-blue-400">
                       {s.distance.toFixed(4)}
                     </span>
                     <div className="mt-1 flex flex-col items-center gap-1">
                       <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${
+                        className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
                           s.reason === 'same_photo_conflict'
                             ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                             : 'bg-blue-500/10 text-blue-300'
@@ -151,7 +151,7 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
                         {s.reason}
                       </span>
                       {isLowConfidence && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-neutral-800 text-amber-400 border border-neutral-700">
+                        <span className="px-2 py-0.5 rounded text-xs bg-neutral-800 text-amber-400 border border-neutral-700 font-semibold">
                           Low Confidence (Single-Photo)
                         </span>
                       )}
@@ -159,10 +159,10 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
                   </div>
 
                   {/* Person B */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
+                  <div className="flex items-center gap-3.5 flex-1 min-w-0 justify-end">
                     <div className="text-right min-w-0">
-                      <span className="text-xs sm:text-sm font-bold text-white truncate block">{nameB}</span>
-                      <span className="text-[11px] text-neutral-400 font-mono">
+                      <span className="text-sm sm:text-base font-bold text-white truncate block">{nameB}</span>
+                      <span className="text-xs text-neutral-400 font-mono">
                         {pB?.photo_count ?? s.person_b_photos} photos
                       </span>
                     </div>
@@ -181,11 +181,11 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
                 </div>
 
                 {/* Actions: Accept & Reject */}
-                <div className="flex items-center justify-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-neutral-800">
+                <div className="flex items-center justify-end gap-2.5 pt-2 md:pt-0 border-t md:border-t-0 border-neutral-800">
                   <button
                     data-testid="reject-suggestion-btn"
                     onClick={() => onReject(s.person_a_id, s.person_b_id)}
-                    className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-xs font-semibold border border-neutral-700 flex items-center gap-1.5 transition-colors"
+                    className="px-4 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-sm font-bold border border-neutral-700 flex items-center gap-2 transition-colors"
                   >
                     <X className="w-4 h-4 text-neutral-400" />
                     <span>Reject</span>
@@ -194,7 +194,7 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
                   <button
                     data-testid="accept-suggestion-btn"
                     onClick={() => onAccept(s.person_a_id, s.person_b_id)}
-                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-600/20 flex items-center gap-1.5 transition-all"
+                    className="px-4 sm:px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all"
                   >
                     <Check className="w-4 h-4" />
                     <span>Accept & Merge</span>

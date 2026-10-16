@@ -30,6 +30,8 @@ class JobManager:
         self.percent: float = 0.0
         self.current_file: Optional[str] = None
         self.eta_seconds: Optional[float] = None
+        self.start_time: Optional[float] = None
+        self.elapsed_seconds: Optional[float] = None
         self.message: str = "Engine is idle."
         self.error: Optional[str] = None
         self.result_summary: Optional[Dict[str, Any]] = None
@@ -40,6 +42,9 @@ class JobManager:
 
     def get_status(self) -> JobStatusResponse:
         with self._lock:
+            cur_elapsed = self.elapsed_seconds
+            if self.status == "running" and self.start_time:
+                cur_elapsed = round(time.time() - self.start_time, 1)
             return JobStatusResponse(
                 job_id=self.job_id,
                 status=self.status,
@@ -50,6 +55,8 @@ class JobManager:
                 progress=round(self.percent / 100.0, 4),
                 current_file=self.current_file,
                 eta_seconds=self.eta_seconds,
+                elapsed_seconds=cur_elapsed,
+                start_time=self.start_time,
                 message=self.message,
                 error=self.error,
                 result_summary=self.result_summary,
@@ -87,6 +94,11 @@ class JobManager:
                     if fid and fid not in self.recent_faces:
                         self.recent_faces.append(fid)
 
+            cur_elapsed = self.elapsed_seconds
+            if self.start_time:
+                cur_elapsed = round(time.time() - self.start_time, 1)
+                self.elapsed_seconds = cur_elapsed
+
             status_dict = {
                 "job_id": self.job_id,
                 "status": self.status,
@@ -97,6 +109,8 @@ class JobManager:
                 "progress": round(self.percent / 100.0, 4),
                 "current_file": self.current_file,
                 "eta_seconds": self.eta_seconds,
+                "elapsed_seconds": cur_elapsed,
+                "start_time": self.start_time,
                 "message": self.message,
                 "recent_faces": list(self.recent_faces),
             }
@@ -117,6 +131,8 @@ class JobManager:
             self.job_id = str(uuid.uuid4())[:8]
             self.status = "running"
             self.stage = "starting"
+            self.start_time = time.time()
+            self.elapsed_seconds = 0.0
             self.current = 0
             self.total = 0
             self.percent = 0.0
@@ -134,13 +150,23 @@ class JobManager:
                 if hasattr(self.state.settings, k) and v is not None:
                     setattr(self.state.settings, k, v)
         chosen_input = req.drive_folder or req.input_path or req.source_path
+
+        # Defensively sanitize drive/URL confusion in output_dir
+        out_candidate = req.output_dir
+        if out_candidate and (out_candidate.startswith("http://") or out_candidate.startswith("https://") or "drive.google.com" in out_candidate):
+            if not chosen_input:
+                chosen_input = out_candidate
+            out_candidate = None
+
         if chosen_input:
             self.state.settings.input_path = chosen_input
         env_out = os.environ.get("PHOTOSORTER_OUTPUT_DIR")
-        if req.output_dir and (req.output_dir != "export" or not env_out):
-            self.state.settings.output_dir = req.output_dir
+        if out_candidate and (out_candidate != "export" or not env_out):
+            self.state.settings.output_dir = out_candidate
         elif env_out:
             self.state.settings.output_dir = env_out
+        elif not self.state.settings.output_dir or str(self.state.settings.output_dir).startswith("http") or "drive.google.com" in str(self.state.settings.output_dir):
+            self.state.settings.output_dir = "export"
         if req.cache_dir:
             self.state.settings.cache_dir = req.cache_dir
 
@@ -167,9 +193,14 @@ class JobManager:
             or get_drive_api_key()
         )
 
+        out_dir = self.state.settings.output_dir
+        if not out_dir or str(out_dir).startswith("http") or "drive.google.com" in str(out_dir):
+            out_dir = "export"
+            self.state.settings.output_dir = "export"
+
         config = EngineConfig(
             input_path=resolved_input,
-            output_dir=self.state.settings.output_dir,
+            output_dir=out_dir,
             cache_dir=self.state.settings.cache_dir,
             distance_threshold=self.state.settings.distance_threshold,
             min_det_score=self.state.settings.min_det_score,
@@ -200,6 +231,8 @@ class JobManager:
                 res = run_pipeline(config)
                 self.state.set_result(res)
                 with self._lock:
+                    if self.start_time:
+                        self.elapsed_seconds = round(time.time() - self.start_time, 1)
                     self.status = "completed"
                     self.stage = "complete"
                     self.percent = 100.0
@@ -213,6 +246,8 @@ class JobManager:
                 self._broadcast_progress({"stage": "complete", "message": self.message})
             except InterruptedError:
                 with self._lock:
+                    if self.start_time:
+                        self.elapsed_seconds = round(time.time() - self.start_time, 1)
                     self.status = "cancelled"
                     self.stage = "cancelled"
                     self.message = "Job was cancelled by organizer."
@@ -222,6 +257,8 @@ class JobManager:
                 tb_str = traceback.format_exc()
                 traceback.print_exc()
                 with self._lock:
+                    if self.start_time:
+                        self.elapsed_seconds = round(time.time() - self.start_time, 1)
                     self.status = "failed"
                     self.stage = "failed"
                     self.error = f"{e}\n{tb_str}"

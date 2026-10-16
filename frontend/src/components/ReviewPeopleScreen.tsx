@@ -101,21 +101,21 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
     <div className="space-y-6 pb-20 animate-fadeIn">
       {/* Sub-tab Navigation */}
       <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             id="tab-people-grid"
             onClick={() => setActiveSubTab('people')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-base font-bold transition-all ${
               activeSubTab === 'people'
                 ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
             }`}
           >
-            <Users className="w-4 h-4" />
+            <Users className="w-5 h-5" />
             <span>People</span>
             <span
               id="subtab-people-count"
-              className="px-2 py-0.5 rounded-md bg-neutral-900 border border-neutral-700/80 text-xs font-mono text-neutral-300"
+              className="px-2.5 py-0.5 rounded-md bg-neutral-900 border border-neutral-700/80 text-sm font-mono font-bold text-neutral-300"
             >
               {people.length}
             </span>
@@ -124,18 +124,18 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
           <button
             id="tab-suggestions"
             onClick={() => setActiveSubTab('suggestions')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-base font-bold transition-all ${
               activeSubTab === 'suggestions'
                 ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-amber-400" />
+            <Sparkles className="w-5 h-5 text-amber-400" />
             <span>Suggestions</span>
             {activeSuggestionsCount > 0 && (
               <span
                 id="subtab-suggestions-count"
-                className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-mono font-bold"
+                className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-sm font-mono font-bold"
               >
                 {activeSuggestionsCount}
               </span>
@@ -145,17 +145,17 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
           <button
             id="tab-unrecognized"
             onClick={() => setActiveSubTab('unrecognized')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-base font-bold transition-all ${
               activeSubTab === 'unrecognized'
                 ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
             }`}
           >
-            <HelpCircle className="w-4 h-4 text-blue-400" />
+            <HelpCircle className="w-5 h-5 text-blue-400" />
             <span>Unrecognized</span>
             <span
               id="subtab-unrecognized-count"
-              className="px-2 py-0.5 rounded-md bg-neutral-900 border border-neutral-700/80 text-xs font-mono text-neutral-300"
+              className="px-2.5 py-0.5 rounded-md bg-neutral-900 border border-neutral-700/80 text-sm font-mono font-bold text-neutral-300"
             >
               {unrecognized.faces.length}
             </span>
