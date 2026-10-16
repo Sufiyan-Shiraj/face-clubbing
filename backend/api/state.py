@@ -406,19 +406,63 @@ class AppState:
                 stored_edit["face_id"] = req["face_id"]
 
         elif op == "assign":
-            # Assign unrecognized face to person or create new person
-            if not req.get("face_id"):
-                return False, "Assign requires 'face_id'", []
-            fid = req["face_id"]
-            face_obj, _, _ = find_face_by_id(fid, self.people, self.unrecognized, self.photos)
-            stored_edit["face_id"] = face_obj.face_id if face_obj else fid
-
+            # Assign unrecognized face(s) or photo(s) to person or create new person
+            target_anchors = None
             if req.get("person_id") and req["person_id"] != "new":
-                stored_edit["person"] = self.resolve_person_handle_to_anchors(req["person_id"])
+                target_anchors = self.resolve_person_handle_to_anchors(req["person_id"])
             elif req.get("person"):
-                stored_edit["person"] = req["person"]
+                target_anchors = req["person"]
             else:
-                stored_edit["person"] = None  # creates new person
+                target_anchors = None  # creates new person
+
+            face_ids = req.get("face_ids") or ([req["face_id"]] if req.get("face_id") else [])
+            photo_ids = req.get("photo_ids") or ([req["photo_id"]] if req.get("photo_id") else [])
+
+            if not face_ids and not photo_ids:
+                return False, "Assign requires 'face_id', 'face_ids', 'photo_id', or 'photo_ids'", []
+
+            batch_edits = []
+            if face_ids:
+                resolved_fids = []
+                for fid in face_ids:
+                    face_obj, _, _ = find_face_by_id(fid, self.people, self.unrecognized, self.photos)
+                    actual_fid = face_obj.face_id if face_obj else fid
+                    resolved_fids.append(actual_fid)
+                if len(resolved_fids) == 1:
+                    batch_edits.append({
+                        "op": "assign",
+                        "face_id": resolved_fids[0],
+                        "person": target_anchors,
+                    })
+                else:
+                    batch_edits.append({
+                        "op": "assign",
+                        "face_ids": resolved_fids,
+                        "person": target_anchors,
+                    })
+
+            for pid in photo_ids:
+                batch_edits.append({
+                    "op": "assign",
+                    "photo_id": pid,
+                    "person": target_anchors,
+                })
+
+            for e in batch_edits:
+                self.edits_list.append(e)
+            self._save_edits_to_disk()
+
+            # Re-apply all edits from base clustering
+            people_replayed, unrec_replayed, unapplied, _ = apply_edits(
+                copy.deepcopy(self.base_people),
+                copy.deepcopy(self.base_unrecognized),
+                {"version": 1, "edits": self.edits_list},
+                self.photos,
+            )
+            self.people = people_replayed
+            self.unrecognized = unrec_replayed
+
+            return True, f"Applied edit 'assign' ({len(batch_edits)} items)", unapplied
 
         elif op == "hide":
             if "person_id" in req and req["person_id"]:
@@ -635,14 +679,29 @@ class AppState:
                 if not fid and f.get("face"):
                     # Extract face_id from face path
                     fid = Path(f["face"]).stem
+                bbox = f.get("bbox")
+                photo_id = f.get("photo_id", "")
+                if not bbox and photo_id in self.photos:
+                    p_rec = self.photos[photo_id]
+                    if hasattr(p_rec, "faces") and p_rec.faces:
+                        for pf in p_rec.faces:
+                            if pf.face_id == fid:
+                                bbox = pf.bbox
+                                break
+                elif not bbox and i < len(internal_items):
+                    f_obj = internal_items[i].get("face_obj")
+                    if f_obj and hasattr(f_obj, "bbox") and f_obj.bbox:
+                        bbox = f_obj.bbox
+
                 faces_resp.append(
                     UnrecognizedFaceResponse(
                         face_id=fid,
-                        photo_id=f.get("photo_id", ""),
+                        photo_id=photo_id,
                         face=f.get("face", ""),
                         rejection_reason=f.get("rejection_reason", "unattached"),
                         det_score=f.get("det_score"),
-                        file_name=self.photos.get(f.get("photo_id")).file_name if f.get("photo_id") in self.photos else None,
+                        file_name=self.photos.get(photo_id).file_name if photo_id in self.photos else None,
+                        bbox=bbox,
                     )
                 )
 
@@ -661,6 +720,16 @@ class AppState:
                 "width": p.width,
                 "height": p.height,
                 "thumb": f"thumbs/{pid}.jpg",
+                "faces": [
+                    {
+                        "face_id": f.face_id,
+                        "photo_id": pid,
+                        "det_score": f.det_score,
+                        "bbox": f.bbox,
+                        "file_name": p.file_name,
+                    }
+                    for f in (p.faces or [])
+                ],
             }
         return result
 

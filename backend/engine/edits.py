@@ -230,86 +230,125 @@ def apply_edits(
             stats["applied"] += 1
 
         elif op == "assign":
-            target_fid = edit.get("face_id")
+            target_fids = edit.get("face_ids") or ([edit.get("face_id")] if edit.get("face_id") else [])
+            target_pid = edit.get("photo_id")
             target_anchors = edit.get("person")
 
-            face_obj, loc_type, loc_person = find_face_by_id(target_fid, current_people, unrecognized, photos)
-            if face_obj is None:
-                unapplied_edits.append({"edit": edit, "reason": f"face {target_fid} not found in dataset"})
-                stats["failed"] += 1
-                continue
+            if target_fids:
+                created_person: Optional[PersonCluster] = None
+                target_person: Optional[PersonCluster] = None
+                if target_anchors is not None:
+                    target_person, err = locate_person_by_anchors(current_people, target_anchors)
+                    if target_person is None:
+                        unapplied_edits.append({"edit": edit, "reason": f"could not locate target person: {err}"})
+                        stats["failed"] += 1
+                        continue
 
-            # Remove face from prior cluster if applicable
-            if loc_type == "cluster" and loc_person is not None:
-                if face_obj in loc_person.faces:
-                    loc_person.faces.remove(face_obj)
-                    if not any(f.photo_id == face_obj.photo_id for f in loc_person.faces):
-                        if face_obj.photo_id in loc_person.photo_ids:
-                            loc_person.photo_ids.remove(face_obj.photo_id)
+                any_applied = False
+                for target_fid in target_fids:
+                    face_obj, loc_type, loc_person = find_face_by_id(target_fid, current_people, unrecognized, photos)
+                    if face_obj is None:
+                        unapplied_edits.append({"edit": edit, "reason": f"face {target_fid} not found in dataset"})
+                        continue
 
-            # Remove from unrecognized if applicable
-            if loc_type == "unrecognized":
-                internal_items = getattr(unrecognized, "_face_items", [])
-                matched_face_paths = set()
-                new_internal = []
-                for it in internal_items:
-                    f_o = it.get("face_obj")
-                    fid_matches = (
-                        f_o == face_obj
-                        or (f_o and getattr(f_o, "face_id", None) == target_fid)
-                        or it.get("face_id") == target_fid
-                        or (it.get("face") and Path(it["face"]).stem == target_fid)
-                    )
-                    if fid_matches:
-                        if it.get("face"):
-                            matched_face_paths.add(it["face"])
+                    # Remove face from prior cluster if applicable
+                    if loc_type == "cluster" and loc_person is not None:
+                        if face_obj in loc_person.faces:
+                            loc_person.faces.remove(face_obj)
+                            if not any(f.photo_id == face_obj.photo_id for f in loc_person.faces):
+                                if face_obj.photo_id in loc_person.photo_ids:
+                                    loc_person.photo_ids.remove(face_obj.photo_id)
+
+                    # Remove from unrecognized if applicable
+                    if loc_type == "unrecognized":
+                        internal_items = getattr(unrecognized, "_face_items", [])
+                        matched_face_paths = set()
+                        new_internal = []
+                        for it in internal_items:
+                            f_o = it.get("face_obj")
+                            fid_matches = (
+                                f_o == face_obj
+                                or (f_o and getattr(f_o, "face_id", None) == target_fid)
+                                or it.get("face_id") == target_fid
+                                or (it.get("face") and Path(it["face"]).stem == target_fid)
+                            )
+                            if fid_matches:
+                                if it.get("face"):
+                                    matched_face_paths.add(it["face"])
+                            else:
+                                new_internal.append(it)
+                        unrecognized._face_items = new_internal
+
+                        new_faces = []
+                        for it in unrecognized.faces:
+                            if isinstance(it, dict):
+                                f_id = it.get("face_id")
+                                f_path = it.get("face")
+                                is_match = (
+                                    f_id == target_fid
+                                    or (f_id and face_obj and f_id == face_obj.face_id)
+                                    or (f_path and f_path in matched_face_paths)
+                                    or (f_path and f_path == f"faces/{target_fid}.jpg")
+                                    or (f_path and Path(f_path).stem == target_fid)
+                                )
+                                if not is_match:
+                                    new_faces.append(it)
+                            else:
+                                if it != face_obj and getattr(it, "face_id", None) != target_fid:
+                                    new_faces.append(it)
+                        unrecognized.faces = new_faces
+
+                    face_obj.is_good_quality = True
+                    face_obj.rejection_reason = None
+
+                    if target_anchors is None:
+                        if created_person is None:
+                            created_person = PersonCluster(
+                                id="p_new",
+                                photo_ids=[face_obj.photo_id],
+                                faces=[face_obj],
+                                merged_from=[],
+                                merged_from_numbering="",
+                            )
+                            current_people.append(created_person)
+                        else:
+                            created_person.faces.append(face_obj)
+                            if face_obj.photo_id not in created_person.photo_ids:
+                                created_person.photo_ids.append(face_obj.photo_id)
                     else:
-                        new_internal.append(it)
-                unrecognized._face_items = new_internal
+                        target_person.faces.append(face_obj)
+                        if face_obj.photo_id not in target_person.photo_ids:
+                            target_person.photo_ids.append(face_obj.photo_id)
 
-                new_faces = []
-                for it in unrecognized.faces:
-                    if isinstance(it, dict):
-                        f_id = it.get("face_id")
-                        f_path = it.get("face")
-                        is_match = (
-                            f_id == target_fid
-                            or (f_id and face_obj and f_id == face_obj.face_id)
-                            or (f_path and f_path in matched_face_paths)
-                            or (f_path and f_path == f"faces/{target_fid}.jpg")
-                            or (f_path and Path(f_path).stem == target_fid)
-                        )
-                        if not is_match:
-                            new_faces.append(it)
-                    else:
-                        if it != face_obj and getattr(it, "face_id", None) != target_fid:
-                            new_faces.append(it)
-                unrecognized.faces = new_faces
+                    any_applied = True
 
-            face_obj.is_good_quality = True
-            face_obj.rejection_reason = None
-
-            if target_anchors is None:
-                # Create a new person cluster
-                new_person = PersonCluster(
-                    id="p_new",
-                    photo_ids=[face_obj.photo_id],
-                    faces=[face_obj],
-                    merged_from=[],
-                    merged_from_numbering="",
-                )
-                current_people.append(new_person)
-            else:
-                target_person, err = locate_person_by_anchors(current_people, target_anchors)
-                if target_person is None:
-                    unapplied_edits.append({"edit": edit, "reason": f"could not locate target person: {err}"})
+                if any_applied:
+                    stats["applied"] += 1
+                else:
                     stats["failed"] += 1
-                    continue
-                target_person.faces.append(face_obj)
-                if face_obj.photo_id not in target_person.photo_ids:
-                    target_person.photo_ids.append(face_obj.photo_id)
 
-            stats["applied"] += 1
+            elif target_pid:
+                # Direct photo assignment
+                if target_pid in unrecognized.photo_ids:
+                    unrecognized.photo_ids.remove(target_pid)
+                if target_anchors is None:
+                    new_person = PersonCluster(
+                        id="p_new",
+                        photo_ids=[target_pid],
+                        faces=[],
+                        merged_from=[],
+                        merged_from_numbering="",
+                    )
+                    current_people.append(new_person)
+                else:
+                    target_person, err = locate_person_by_anchors(current_people, target_anchors)
+                    if target_person is None:
+                        unapplied_edits.append({"edit": edit, "reason": f"could not locate target person: {err}"})
+                        stats["failed"] += 1
+                        continue
+                    if target_pid not in target_person.photo_ids:
+                        target_person.photo_ids.append(target_pid)
+                stats["applied"] += 1
 
         elif op == "hide":
             person_anchors = edit.get("person", [])

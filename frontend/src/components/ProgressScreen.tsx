@@ -160,7 +160,7 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
             </button>
           )}
 
-          {(isCompleted || !isRunning) && (
+          {isCompleted && (
             <button
               id="goto-review-btn"
               data-testid="goto-review-btn"

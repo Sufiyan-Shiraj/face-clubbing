@@ -109,7 +109,6 @@ export const Header: React.FC<HeaderProps> = ({
           id="header-undo-btn"
           data-testid="undo-btn"
           onClick={onUndo}
-          disabled={appliedEditsCount === 0}
           style={{ display: 'none' }}
           aria-hidden="true"
         >

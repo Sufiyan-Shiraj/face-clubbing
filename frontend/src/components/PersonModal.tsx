@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PersonCluster, PhotoInfo } from '../types';
 import { X, EyeOff, Edit2, Check, Trash2, Image, UserX } from 'lucide-react';
 
@@ -32,15 +32,50 @@ export const PersonModal: React.FC<PersonModalProps> = ({
     setIsEditingLabel(false);
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const displayName = person.label || person.id.toUpperCase();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto animate-fadeIn">
-      <div className="relative w-full max-w-3xl bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden my-8">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto animate-fadeIn"
+      style={{ background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(8px)' }}
+    >
+      <div
+        className="relative w-full max-w-3xl rounded overflow-hidden my-8"
+        style={{
+          background: 'var(--panel)',
+          border: '2px solid var(--line)',
+          boxShadow: '4px 6px 0px rgba(0, 0, 0, 0.35)',
+          color: 'var(--text)',
+          fontFamily: "'JetBrains Mono', monospace",
+        }}
+      >
         {/* Header */}
-        <div className="p-5 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/60">
+        <div
+          className="p-5 sm:p-6 flex items-center justify-between"
+          style={{
+            background: 'var(--card-bg)',
+            borderBottom: '1.5px solid var(--line)',
+          }}
+        >
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl overflow-hidden border border-neutral-700/80 bg-neutral-800 flex-shrink-0">
+            <div
+              className="w-18 h-18 sm:w-20 sm:h-20 rounded overflow-hidden flex-shrink-0"
+              style={{
+                border: '2.5px solid var(--accent)',
+                background: 'var(--input)',
+                boxShadow: '2px 2px 0px rgba(0,0,0,0.2)',
+              }}
+            >
               <img
                 src={person.face}
                 alt={displayName}
@@ -61,40 +96,46 @@ export const PersonModal: React.FC<PersonModalProps> = ({
                     onChange={(e) => setLabelInput(e.target.value)}
                     placeholder="Enter person name"
                     autoFocus
-                    className="px-3 py-1.5 text-base rounded-lg bg-neutral-950 border border-blue-500 text-white focus:outline-none"
+                    className="riso-input px-3 py-1.5 text-base"
+                    style={{ height: '40px' }}
                   />
                   <button
                     onClick={handleSaveLabel}
-                    className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white"
+                    className="btn pri"
+                    style={{ height: '40px', padding: '0 14px', borderRadius: '4px' }}
                     title="Save"
                   >
                     <Check className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setIsEditingLabel(false)}
-                    className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-400"
+                    className="riso-btn-sec"
+                    style={{ height: '40px', padding: '0 12px' }}
                     title="Cancel"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-bold text-white tracking-tight">{displayName}</h3>
+                <div className="flex items-center gap-2.5">
+                  <h3 className="text-xl sm:text-2xl font-bold tracking-tight" style={{ color: 'var(--text)' }}>
+                    {displayName}
+                  </h3>
                   <button
                     onClick={() => {
                       setLabelInput(person.label || '');
                       setIsEditingLabel(true);
                     }}
-                    className="p-1.5 text-neutral-400 hover:text-neutral-200 transition-colors"
+                    className="riso-btn-sec"
+                    style={{ width: '32px', height: '32px', padding: 0 }}
                     title="Rename"
                   >
-                    <Edit2 className="w-4 h-4" />
+                    <Edit2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
-              <div className="flex items-center gap-2 mt-1 text-sm text-neutral-400">
-                <span className="font-mono text-neutral-500">Handle: {person.id}</span>
+              <div className="flex items-center gap-2 mt-1.5 text-sm" style={{ color: 'var(--muted)' }}>
+                <span className="font-mono">ID: {person.id}</span>
                 <span>•</span>
                 <span>{person.photos.length} photos</span>
                 <span>•</span>
@@ -103,10 +144,11 @@ export const PersonModal: React.FC<PersonModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => onHide(person.id)}
-              className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-amber-950/60 text-neutral-200 hover:text-amber-300 border border-neutral-700 hover:border-amber-700/50 text-sm font-semibold flex items-center gap-2 transition-colors"
+              className="riso-btn-sec"
+              style={{ height: '40px', padding: '0 14px' }}
               title="Hide this person from public export"
             >
               <EyeOff className="w-4 h-4" />
@@ -114,7 +156,8 @@ export const PersonModal: React.FC<PersonModalProps> = ({
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+              className="riso-btn-sec"
+              style={{ width: '40px', height: '40px', padding: 0 }}
               title="Close modal"
             >
               <X className="w-5 h-5" />
@@ -123,25 +166,40 @@ export const PersonModal: React.FC<PersonModalProps> = ({
         </div>
 
         {/* Tabs: Photos vs Faces */}
-        <div className="flex items-center gap-6 px-6 pt-4 border-b border-neutral-800 bg-neutral-900/40 text-sm font-semibold">
+        <div
+          className="flex items-center gap-6 px-6 pt-4 text-sm font-bold"
+          style={{
+            background: 'var(--card-bg)',
+            borderBottom: '1.5px solid var(--line)',
+          }}
+        >
           <button
             onClick={() => setActiveTab('photos')}
-            className={`pb-3 border-b-2 flex items-center gap-2 transition-colors ${
-              activeTab === 'photos'
-                ? 'border-blue-500 text-blue-400'
-                : 'border-transparent text-neutral-400 hover:text-neutral-200'
-            }`}
+            className="pb-3 flex items-center gap-2 transition-all cursor-pointer"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'photos' ? '2.5px solid var(--accent)' : '2.5px solid transparent',
+              color: activeTab === 'photos' ? 'var(--accent)' : 'var(--muted)',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '15px',
+            }}
           >
             <Image className="w-4 h-4" />
             <span>Photos ({person.photos.length})</span>
           </button>
           <button
+            id="modal-tab-faces"
             onClick={() => setActiveTab('faces')}
-            className={`pb-3 border-b-2 flex items-center gap-2 transition-colors ${
-              activeTab === 'faces'
-                ? 'border-blue-500 text-blue-400'
-                : 'border-transparent text-neutral-400 hover:text-neutral-200'
-            }`}
+            className="pb-3 flex items-center gap-2 transition-all cursor-pointer"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'faces' ? '2.5px solid var(--accent)' : '2.5px solid transparent',
+              color: activeTab === 'faces' ? 'var(--accent)' : 'var(--muted)',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '15px',
+            }}
           >
             <UserX className="w-4 h-4" />
             <span>Faces ({person.faces.length})</span>
@@ -151,7 +209,7 @@ export const PersonModal: React.FC<PersonModalProps> = ({
         {/* Content Body */}
         <div className="p-6 max-h-[60vh] overflow-y-auto">
           {activeTab === 'photos' ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {person.photos.map((photoId) => {
                 const pInfo = photos[photoId];
                 const thumbUrl = pInfo?.thumb || `thumbs/${photoId}.jpg`;
@@ -159,7 +217,12 @@ export const PersonModal: React.FC<PersonModalProps> = ({
                 return (
                   <div
                     key={photoId}
-                    className="group relative rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 aspect-square flex flex-col justify-end"
+                    className="group relative rounded overflow-hidden aspect-square flex flex-col justify-end"
+                    style={{
+                      background: 'var(--input)',
+                      border: '1.5px solid var(--line)',
+                      boxShadow: '2px 2px 0px rgba(0,0,0,0.15)',
+                    }}
                   >
                     <img
                       src={thumbUrl}
@@ -172,13 +235,17 @@ export const PersonModal: React.FC<PersonModalProps> = ({
                           'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2327272a"><rect width="24" height="24"/></svg>';
                       }}
                     />
-                    <div className="relative z-10 p-2 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex items-center justify-between">
-                      <span className="text-xs text-neutral-200 font-mono truncate max-w-[120px]" title={fileName}>
+                    <div
+                      className="relative z-10 p-2 flex items-center justify-between"
+                      style={{ background: 'var(--card-bg)', borderTop: '1px solid var(--line)' }}
+                    >
+                      <span className="text-xs font-mono font-bold truncate max-w-[120px]" style={{ color: 'var(--text)' }} title={fileName}>
                         {fileName}
                       </span>
                       <button
                         onClick={() => onRemovePhoto(person.id, photoId)}
-                        className="p-1 rounded bg-red-950/70 hover:bg-red-900 text-red-300 hover:text-red-100 transition-colors opacity-90 group-hover:opacity-100"
+                        className="p-1 rounded text-red-400 hover:text-red-300 transition-colors"
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
                         title="Remove photo from person"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -189,13 +256,24 @@ export const PersonModal: React.FC<PersonModalProps> = ({
               })}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {person.faces.map((face) => (
                 <div
                   key={face.face_id}
-                  className="rounded-xl p-3 bg-neutral-950 border border-neutral-800 flex flex-col items-center text-center relative group"
+                  className="rounded p-4 flex flex-col items-center text-center relative group"
+                  style={{
+                    background: 'var(--card-bg)',
+                    border: '1.5px solid var(--line)',
+                    boxShadow: '2px 2px 0px rgba(0,0,0,0.15)',
+                  }}
                 >
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-neutral-900 mb-2 border border-neutral-800">
+                  <div
+                    className="w-20 h-20 rounded overflow-hidden mb-2.5"
+                    style={{
+                      background: 'var(--input)',
+                      border: '1.5px solid var(--line)',
+                    }}
+                  >
                     <img
                       src={`faces/${face.face_id}.jpg`}
                       alt={face.face_id}
@@ -205,17 +283,23 @@ export const PersonModal: React.FC<PersonModalProps> = ({
                       }}
                     />
                   </div>
-                  <span className="text-xs font-mono text-neutral-300 truncate w-full" title={face.face_id}>
+                  <span className="text-xs font-mono font-bold truncate w-full" style={{ color: 'var(--text)' }} title={face.face_id}>
                     {face.face_id}
                   </span>
                   {face.det_score !== null && face.det_score !== undefined && (
-                    <span className="text-xs text-neutral-400 font-mono mt-0.5">
+                    <span className="text-xs font-mono mt-0.5" style={{ color: 'var(--muted)' }}>
                       score: {face.det_score.toFixed(2)}
                     </span>
                   )}
                   <button
                     onClick={() => onRemoveFace(person.id, face.face_id)}
-                    className="mt-2.5 w-full py-1.5 px-2 rounded-lg bg-red-950/50 hover:bg-red-900/60 text-red-200 border border-red-800/40 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    className="mt-3 w-full py-1.5 px-2 rounded text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                    style={{
+                      background: 'var(--input)',
+                      border: '1px solid var(--line)',
+                      color: 'var(--accent)',
+                      cursor: 'pointer',
+                    }}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Remove Face</span>

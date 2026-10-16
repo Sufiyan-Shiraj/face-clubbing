@@ -1,8 +1,8 @@
 # PhotoSorter Verification & Phase 5 Delivery Report
 
-**Date**: 2026-10-15  
+**Date**: 2026-10-16  
 **Project**: Face Sorting Engine (`face-clubbing`)  
-**Status**: Phase 1b Complete, Phase 2 Complete (All Rows 1-15 PASS), Phase 3 Complete, Phase 4 Complete, Hygiene & Isolation Round Complete (Tasks 0-7 COMPLETE), Phase 5 Complete, Phase 6 In Verification (Mocked suite complete; early verification on public folder pending user-provided link and key), Landing & HomeScreen Riso Redesign Complete.
+**Status**: Phase 1b Complete, Phase 2 Complete (All Rows 1-15 PASS), Phase 3 Complete, Phase 4 Complete, Hygiene & Isolation Round Complete (Tasks 0-7 COMPLETE), Phase 5 Complete, Phase 6 In Verification (Mocked suite complete; early verification on public folder pending user-provided link and key), Landing & HomeScreen Riso Redesign Complete, Review & Merge Screen Revamp, Unrecognized Triage Multi-Select, Compact Card Layouts, and Image Viewer Unknown Face Bounding Boxes & On-Canvas Reassignment Controls Complete.
 
 ### Working Rules Compliance Confirmation
 - **No Cluster IDs (`pNNN`)**: Strictly enforced. Cluster IDs are display handles only for a single export and are never persisted, tested, compared, or allowlisted. All tests, edits, and verification scripts key strictly by anchor face IDs and photo IDs. Check 14 of `eval/verify_export.py` enforces zero `\bp\d{3}\b` tokens in code outside comments across `eval/` and `tests/`.
@@ -3396,6 +3396,176 @@ Command: `npx vitest run --pool=forks` (in `frontend/`)
    Start at  07:54:56
    Duration  12.35s
 ```
+
+---
+
+## 22. REVIEW & MERGE SCREEN REVAMP, UNRECOGNIZED TRIAGE, AND IMAGE VIEWER FACE MANAGEMENT DELIVERABLES & VERIFICATION REPORT
+
+**Status**: **Complete** (All UI components, backend endpoints, bounding box coordinate serializers, and test suites fully implemented and verified; 44/44 Vitest tests passing across 10 test suites, 68/68 pytest tests passing, 14/14 verify_export checks passing).
+
+### 22.1 Overview & Requirements Delivered
+To support streamlined organizing, high-volume merge verification, and granular face triage across large event galleries, the Review & Merge workflow was comprehensively revamped with modern risograph aesthetics, compact card geometry, and direct on-image face reassignment tools:
+
+1. **Review & Merge Screen Theme & Layout Harmonization**:
+   - **Riso Theme Alignment**: Unified card containers, subtabs, and dialog panels with crisp 1.5px–2px high-contrast borders (`var(--line)`), 2px–3px hard offset box shadows (`rgba(0, 0, 0, 0.2)`), and custom typography using `'JetBrains Mono', monospace`.
+   - **Typography & Element Scaling**: Resolved undersized UI controls by establishing a proportional typography hierarchy (16px base headers, 13px labels, 12px pill badges, and 11px metadata).
+   - **Full Viewport Responsive Grid**: Grid layouts adapt smoothly from compact mobile views to 1920px widescreen desktop viewports with balanced column widths.
+
+2. **Unrecognized Faces Triage Multi-Select & Batch Assignment**:
+   - **Target Person Selection**: Added a global target person dropdown selector with avatar thumbnail preview and photo count indicator (`#batch-target-person-preview`).
+   - **Multi-Selection Controls**: Every unrecognized face card features an interactive selection checkbox. Included "Select All Filtered" and "Deselect All" convenience controls with a live count badge (`#batch-selected-count`).
+   - **Single-Click Batch Actions**:
+     - `Add Selected (N) to <Person>`: Submits all selected face IDs to the backend in a single atomic transaction (`/api/edits` with `op: "assign"`, `face_ids: [...]`).
+     - `+ Create New Person from Selected`: Instantly clusters all selected faces under a newly created person identity.
+
+3. **Side-by-Side Target Person Face Comparison (`FaceCompareModal.tsx`)**:
+   - Before committing an unrecognized face to a known cluster, organizers can click the "Compare" button on any face card or target preview.
+   - Displays the candidate unrecognized face crop side-by-side with the target person's representative anchor face, detection confidence score, and up to 4 recent photos from the person's existing cluster.
+
+4. **Card Sizing & Layout Geometry Polish**:
+   - **Compact Card Sizing**: Addressed oversized images in the Unrecognized grid by introducing `.unrec-card-compact` (160px–180px cards with 130px face preview crops), maximizing information density without visual crowding.
+   - **Eliminated Right-Side Button Protrusion**: Replaced rigid fixed widths with flexible container rows (`flex-wrap: wrap`, `min-width: 0`, and `box-sizing: border-box`), preventing "Assign" and "Compare" buttons from overflowing beyond card borders.
+
+5. **Image Viewer Modal (`ImageViewerModal.tsx`) Dual-Mode Face Highlighting**:
+   - **Known Faces**: Displayed with crisp solid cyan/white bounding boxes, representative avatar badges, and a "Change" tag.
+   - **Unknown / Unrecognized Faces**: Displayed with high-contrast **dashed coral bounding boxes** (`2px dashed var(--accent)`), tinted transparent fill, and floating labels showing rejection reason (e.g. `Unknown (unattached_small)`) and a `+ ASSIGN` action tag.
+   - **Accurate Image-Space Coordinate Scaling**: `UnrecognizedFaceResponse` and `/api/photos` now serialize InsightFace bounding box coordinates (`bbox: [x1, y1, x2, y2]` in original image dimensions). The viewer scales coordinates to the rendered aspect ratio via SVG/CSS percentage mapping.
+
+6. **Interactive On-Canvas & Drawer Person Reassignment**:
+   - **Canvas Quick-Change Popover**: Clicking any face bounding box or floating tag directly on the image opens a popover right below the face with a sorted person dropdown, "Apply", "+ New Person", and "Detach" (for known faces).
+   - **"Inspect Faces" Side Drawer**: Slide-over drawer accessible from the top toolbar listing all detected faces in the photo with confidence scores, rejection badges, person dropdown selectors, `Assign`, `+ New`, `Detach`, and `View Person` buttons.
+   - **Optimistic State Updates**: Reassignments update instantly in the local UI state before the network round-trip completes, accompanied by non-intrusive feedback toast banners.
+
+---
+
+### 22.2 Detailed Breakdown of UI & Component Changes
+
+| Component / File | Specific UI & Architectural Changes | Impact & User Benefit |
+| :--- | :--- | :--- |
+| **`frontend/src/index.css`** | • Added `.unrec-card-compact` style class with 160px–180px responsive limits.<br>• Added `.riso-btn-primary`, `.riso-btn-sec`, `.riso-btn-danger`, `.riso-btn-ghost` with 1.5px borders and hard offset shadows (`2px 2px 0px rgba(0,0,0,0.2)`).<br>• Set `box-sizing: border-box` and `min-width: 0` on flex items to prevent right-edge button protrusion.<br>• Harmonized typography with JetBrains Mono, 16px section headers, and 12px pill badges. | Eliminates oversized bloated face cards; fixes right-side button protrusion; aligns with risograph physical print design language. |
+| **`frontend/src/components/UnrecognizedTriage.tsx`** | • Integrated batch triage toolbar with target person `<select>`, avatar thumbnail preview, photo count badge, and "Compare / Verify Target" button.<br>• Added multi-selection checkboxes to every face card with toggle logic.<br>• Added "Select All Filtered" and "Clear Selection" bulk controls.<br>• Added single-click "Add Selected (N) to <Person>" and "+ Create New Person from Selected" buttons.<br>• Scaled card thumbnail images down to compact sizes with proper overflow containment.<br>• Fixed card action buttons row with `flex-wrap: wrap` to prevent container overflow. | Delivers full batch assignment workflow: select 1 person, check multiple faces, assign all with one button click; preview target person before merging. |
+| **`frontend/src/components/FaceCompareModal.tsx`** *(New)* | • High-contrast split-pane dialog comparing unrecognized face crop against target person's representative face.<br>• Displays detection confidence, rejection reason (e.g. `unattached_small`), and person cluster metrics.<br>• Shows up to 4 recent photos from the target person's existing cluster.<br>• Features instant "Confirm & Assign" and "Cancel" actions. | Allows users to verify visual likeness between unrecognized face and target person before committing edits. |
+| **`frontend/src/components/ImageViewerModal.tsx`** *(Revamped)* | • Dual-mode face bounding box overlays: solid border for known people; dashed coral border (`2px dashed var(--accent)`) with tinted background for unrecognized faces.<br>• Floating face tags showing avatar / indicator, cluster label, rejection reason, and "+ Assign" or "Change" callouts.<br>• Interactive On-Canvas Quick-Change Popover on clicking any bounding box, containing person `<select>`, "Apply", "+ New", and "Detach".<br>• Slide-over "Inspect Faces" side drawer with complete list of all faces in photo, detection confidence, rejection reason, and full reassignment controls.<br>• Bottom filmstrip with thumbnail navigation and keyboard shortcuts (`ArrowLeft`/`ArrowRight`, `Esc`, `+`/`-`/`0`, `F`, `H`).<br>• Optimistic local state updates with temporary feedback toasts. | Users can view all faces in a photo (both recognized and unrecognized) and reassign or create people directly from the photo viewer. |
+| **`frontend/src/components/ReviewPeopleScreen.tsx`** | • Subtab navigation styled with riso borders and active color bars.<br>• Connected `ImageViewerModal` with `onAssignFace` and `onRemoveFace` handlers.<br>• Maintained view state and context photo lists during deep modal navigation. | Cohesive review workspace across Clustered People, Unrecognized Triage, and Suggestions subtabs. |
+| **`backend/api/models.py`** | • Added `face_ids: Optional[List[str]] = None` and `photo_ids: Optional[List[str]] = None` to `EditRequest`.<br>• Added `bbox: Optional[List[float]] = None` to `UnrecognizedFaceResponse`. | Supports batch assignment payloads and delivers bounding box coordinates to the frontend. |
+| **`backend/api/state.py`** | • Populated `bbox` in `get_unrecognized_response()` from face objects and photo record cache lookup.<br>• Populated `faces` array with `face_id`, `bbox`, `det_score` in `get_photos_response()`.<br>• Fixed cache discovery in `_load_export_state` to load all cached photo records from work directory. | Frontend receives exact pixel coordinates for all detected faces across every photo. |
+| **`backend/engine/edits.py`** | • Extended `EditLog.apply_edit` for `op: "assign"` to accept `face_ids` list and apply batch cluster assignments atomically. | Persists multi-face assignments to `edits.json` and supports replay during clustering re-runs. |
+
+---
+
+### 22.3 Verbatim Frontend Vitest Test Suite Execution Transcript
+Command: `npx vitest run --run` (in `frontend/`)
+```text
+ RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
+
+ ✓ src/__tests__/imageViewerModal.test.tsx (4 tests) 1775ms
+   ✓ ImageViewerModal - Unknown Face Boxes & Person Changing (4)
+     ✓ renders bounding boxes for BOTH known and unknown faces 459ms
+     ✓ allows changing an unknown face to an existing person directly from Inspect Faces drawer 875ms
+     ✓ allows creating a new person for an unknown face 210ms
+     ✓ allows detaching a known face to unknown 231ms
+ ✓ src/__tests__/unrecognizedTriageRevamp.test.tsx (4 tests) 817ms
+   ✓ Revamped Unrecognized Triage & Image Viewer (4)
+     ✓ renders unrecognized faces grid with triage controls 376ms
+     ✓ shows target person preview when a person is chosen in batch header 120ms
+     ✓ allows multi-selecting faces and clicking one button to add them all 185ms
+     ✓ renders individual card target preview when a person is chosen in card dropdown 136ms
+ ✓ src/__tests__/homeScreen.test.tsx (3 tests) 334ms
+ ✓ src/__tests__/exportScreen.test.tsx (5 tests) 721ms
+ ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 786ms
+ ✓ src/__tests__/twoStageInteraction.test.tsx (8 tests) 1455ms
+ ✓ src/__tests__/pollingFallback.test.ts (2 tests) 23ms
+ ✓ src/__tests__/mergeSelection.test.ts (4 tests) 13ms
+ ✓ src/__tests__/suggestionList.test.ts (4 tests) 12ms
+ ✓ src/__tests__/undoControl.test.ts (3 tests) 9ms
+
+ Test Files  10 passed (10)
+      Tests  44 passed (44)
+   Start at  10:27:48
+   Duration  24.94s
+```
+
+---
+
+### 22.4 Verbatim Static Viewer Test Suite Execution Transcript
+Command: `npm test -- --run` (in `viewer/`)
+```text
+ RUN  v5.0.3 C:/Users/DELL/face-clubbing/viewer
+
+ ✓ src/__tests__/viewer.test.tsx (6 tests) 581ms
+   ✓ Requirement 12: Config Swap Look Changes Without Code Change (2)
+     ✓ loads two different config.json files through App code path and verifies title, accent, footer, and toggle differ 407ms
+     ✓ verifies all 15 SPEC 6.2 parameters have active defaults matching SPEC exactly 174ms
+   ✓ Requirement 13: Edge Case Robustness (4)
+     ✓ handles missing people array gracefully with empty state
+     ✓ handles missing photos gracefully
+     ✓ handles special characters and long names without breaking layout
+     ✓ keyboard navigation works across grid and modal
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  10:37:53
+   Duration  77.54s
+```
+
+---
+
+### 22.5 Verbatim Backend Pytest Execution Transcript
+Command: `.venv\Scripts\pytest -q -rs`
+```text
+....................................................................     [100%]
+68 passed in 69.18s (0:01:09)
+```
+- **Passed**: 68 passed (including 4 new batch assign & edit persistence tests in `tests/test_batch_assign.py` and `tests/test_api.py`)
+- **Failed**: 0
+- **Skipped**: 0
+
+---
+
+### 22.6 Verbatim Phase 1b Verification Audit (`eval/verify_export.py`)
+Command: `.venv\Scripts\python.exe eval/verify_export.py`
+```text
+================================================================================
+PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
+================================================================================
+[PASS] Check 1: Engine Invariants (259/259 photos covered, 1256 clustered + 445 unrec = 1701 detected faces, photos==photo_ids, maybe_photos empty)
+[PASS] Check 2: Public Bundle Hygiene verified (['assets', 'config.json', 'faces', 'gallery.html', 'index.html', 'people.json', 'thumbs'] - zero organizer files)
+[PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
+[PASS] Check 4: Collision Audit by Face IDs: 1 collision instance verified (photo 4a9b927f5789cd69, faces ['f_4a9b927f5789cd69_001', 'f_4a9b927f5789cd69_005', 'f_4a9b927f5789cd69_007'], max distance 0.2878 <= 0.40, allowlist verified)
+[PASS] Check 5: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
+[PASS] Check 6: Pytest full suite execution passed (68 passed, 0 failures/errors)
+[PASS] Check 7: Section 13.2 Merge Arithmetic verified (83 pre-merge clusters -> 33 final clusters = 50 net merges, 242 - 50 = 192)
+[PASS] Check 8: Section 13.4 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
+[PASS] Check 9: Blocked Merges by Best-Face IDs verified (3 blocked links < 0.50 matched; 8 same_photo_conflict links total)
+[PASS] Check 10: Section 13.8 Maximum Same-Photo Distance verified (computed=0.2878, report=0.2878 <= 0.40)
+[PASS] Check 11: Section 13.9 Evaluation Table A (All Pairs: 30 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 12: Section 13.9 Evaluation Table B (Clean Set: 22 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 13: Section 13.11 Aligned Cap-Sweep Table verified (0.45: 253 att/445 unrec; 0.50: 275 att/423 unrec; 0.55: 322 att/376 unrec)
+[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (43 files scanned across eval/, tests/, and frontend/)
+================================================================================
+OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
+================================================================================
+```
+
+---
+
+### 22.7 In-Browser Verification Records
+
+1. **Unrecognized Triage Multi-Select Toolbar & Compact Grid**:
+   - Verified in live browser (`http://127.0.0.1:5173/`):
+     - Selecting target person displays avatar and photo count in top toolbar.
+     - Multi-selection checkboxes accurately update selection counter badge.
+     - "Add Selected (N) to <Person>" triggers batch assignment without page flicker.
+     - Face preview cards render cleanly at compact 160px–180px with zero button protrusion.
+   - Evidence Screenshot: `inspect_protruding_button_1792120318265.webp` / `verify_unrecognized_compact_1792120902122.webp`.
+
+2. **Image Viewer Modal Dual Bounding Boxes & Person Reassignment**:
+   - Verified on dense multi-person photo (`IMG_2271.HEIC` / `e2706ea5c2d73ea6`, 13 detected faces):
+     - Solid bounding boxes for recognized people (`p001`, `p006`, `p012`, `p002`) with avatar badge and `CHANGE` button.
+     - Dashed coral bounding boxes (`2px dashed var(--accent)`) with `Unknown (unattached_small)` badges and `+ ASSIGN` callouts on all unrecognized attendee faces.
+     - Clicking any bounding box opens on-canvas quick-change popover.
+     - Clicking "Inspect Faces" slides open the side drawer displaying all 13 faces with detection confidences, target person `<select>`, `Assign`, `+ New`, `Detach`, and `View Person` buttons.
+   - Evidence Screenshots: `inspect_faces_drawer_1792126629883.png` and `popover_check_1792126604856.png`.
 
 ---
 

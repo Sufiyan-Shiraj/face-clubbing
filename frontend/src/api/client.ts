@@ -177,7 +177,9 @@ export const api = {
     person_id?: string | null;
     person_ids?: string[];
     face_id?: string;
+    face_ids?: string[];
     photo_id?: string;
+    photo_ids?: string[];
     label?: string;
     anchors?: string[][];
   }): Promise<EditResponse> {
@@ -214,6 +216,22 @@ export const api = {
     return this.applyEdit({
       op: 'assign',
       face_id: faceId,
+      person_id: personId || null,
+    });
+  },
+
+  async assignFaces(faceIds: string[], personId?: string | null): Promise<EditResponse> {
+    return this.applyEdit({
+      op: 'assign',
+      face_ids: faceIds,
+      person_id: personId || null,
+    });
+  },
+
+  async assignPhotos(photoIds: string[], personId?: string | null): Promise<EditResponse> {
+    return this.applyEdit({
+      op: 'assign',
+      photo_ids: photoIds,
       person_id: personId || null,
     });
   },

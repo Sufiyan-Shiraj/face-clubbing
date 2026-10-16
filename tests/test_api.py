@@ -66,11 +66,15 @@ def _setup_isolated_baseline_fixture(tmp_path: Path):
     if (baseline_dir / "id_map.json").exists():
         shutil.copy2(baseline_dir / "id_map.json", temp_work / "id_map.json")
 
-    # Copy cached embeddings into temp_cache (photo json files only, never edits.json)
+    # Copy cached embeddings into temp_cache (photo json files belonging to baseline, never edits.json)
+    with open(baseline_dir / "people.json", "r", encoding="utf-8") as f:
+        baseline_data = json.load(f)
+    baseline_pids = set(baseline_data.get("photos", {}).keys())
+
     work_dir = REPO_ROOT / "export.work"
     source_cache = work_dir / ".cache" if (work_dir / ".cache").exists() else work_dir
     for jf in source_cache.glob("*.json"):
-        if jf.name not in ("edits.json", "suggestions.json", "id_map.json"):
+        if jf.name not in ("edits.json", "suggestions.json", "id_map.json") and jf.stem in baseline_pids:
             shutil.copy2(jf, temp_cache / jf.name)
 
     return temp_export, temp_work, temp_cache

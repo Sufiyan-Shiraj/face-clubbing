@@ -103,6 +103,7 @@ class UnrecognizedFaceResponse(BaseModel):
     rejection_reason: Optional[str] = None
     det_score: Optional[float] = None
     file_name: Optional[str] = None
+    bbox: Optional[List[float]] = None
 
 
 class UnrecognizedResponse(BaseModel):
@@ -157,7 +158,9 @@ class EditRequest(BaseModel):
     anchors: Optional[List[List[str]]] = None
     # For remove or assign
     face_id: Optional[str] = None
+    face_ids: Optional[List[str]] = None
     photo_id: Optional[str] = None
+    photo_ids: Optional[List[str]] = None
     # For name
     label: Optional[str] = None
 

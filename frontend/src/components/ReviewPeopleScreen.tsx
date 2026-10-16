@@ -9,8 +9,8 @@ import { PeopleGrid } from './PeopleGrid';
 import { SuggestionReview } from './SuggestionReview';
 import { UnrecognizedTriage } from './UnrecognizedTriage';
 import { PersonModal } from './PersonModal';
-import { PhotoModal } from '@viewer/components/PhotoModal';
-import { Users, Sparkles, HelpCircle } from 'lucide-react';
+import { ImageViewerModal } from './ImageViewerModal';
+import { Users, Sparkles, HelpCircle, Undo2, CheckCircle, ShieldAlert } from 'lucide-react';
 
 interface ReviewPeopleScreenProps {
   people: PersonCluster[];
@@ -26,10 +26,14 @@ interface ReviewPeopleScreenProps {
   onRejectSuggestion: (personAId: string, personBId: string) => void;
   rejectedPairs: Set<string>;
   onAssignFace: (faceId: string, targetPersonId?: string | null) => void;
+  onAssignMultipleFaces?: (faceIds: string[], targetPersonId?: string | null) => Promise<void>;
+  onAssignPhotos?: (photoIds: string[], targetPersonId?: string | null) => Promise<void>;
   onRenamePerson: (personId: string, newLabel: string) => void;
   onHidePerson: (personId: string) => void;
   onRemoveFace: (personId: string, faceId: string) => void;
   onRemovePhoto: (personId: string, photoId: string) => void;
+  onUndo?: () => void;
+  appliedEditsCount?: number;
   isMerging?: boolean;
 }
 
@@ -47,15 +51,20 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
   onRejectSuggestion,
   rejectedPairs,
   onAssignFace,
+  onAssignMultipleFaces,
+  onAssignPhotos,
   onRenamePerson,
   onHidePerson,
   onRemoveFace,
   onRemovePhoto,
+  onUndo,
+  appliedEditsCount = 0,
   isMerging = false,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'people' | 'suggestions' | 'unrecognized'>('people');
   const [inspectingPerson, setInspectingPerson] = useState<PersonCluster | null>(null);
   const [viewingPhotoId, setViewingPhotoId] = useState<string | null>(null);
+  const [viewingContextPhotoIds, setViewingContextPhotoIds] = useState<string[] | undefined>(undefined);
 
   // Map for quick person lookup
   const peopleMap = useMemo(() => {
@@ -92,31 +101,29 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
     }).length;
   }, [suggestions, rejectedPairs]);
 
-  // Photo viewer navigation
-  const allPhotoIds = useMemo(() => Object.keys(photos), [photos]);
-  const activePhotoIndex = viewingPhotoId ? allPhotoIds.indexOf(viewingPhotoId) : -1;
-  const activePhoto = viewingPhotoId ? photos[viewingPhotoId] : null;
+  // Open viewer with optional context photo list (e.g. from person modal or triage)
+  const handleOpenPhotoViewer = (photoId: string, contextIds?: string[]) => {
+    setViewingPhotoId(photoId);
+    setViewingContextPhotoIds(contextIds);
+  };
 
   return (
-    <div className="space-y-6 pb-20 animate-fadeIn">
-      {/* Sub-tab Navigation */}
-      <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-        <div className="flex items-center gap-3">
+    <div className="space-y-6 pb-24 animate-fadeIn">
+      {/* Top Header Bar & Sub-tab Navigation */}
+      <div
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4"
+        style={{ borderBottom: '1.5px solid var(--line)' }}
+      >
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             id="tab-people-grid"
             onClick={() => setActiveSubTab('people')}
-            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-base font-bold transition-all ${
-              activeSubTab === 'people'
-                ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
-            }`}
+            className={`riso-subtab-btn ${activeSubTab === 'people' ? 'active' : ''}`}
           >
-            <Users className="w-5 h-5" />
-            <span>People</span>
-            <span
-              id="subtab-people-count"
-              className="px-2.5 py-0.5 rounded-md bg-neutral-900 border border-neutral-700/80 text-sm font-mono font-bold text-neutral-300"
-            >
+            <Users className="w-5 h-5" style={{ color: activeSubTab === 'people' ? 'var(--accent)' : 'inherit' }} />
+            <span>People Clusters</span>
+            <span id="subtab-people-count" className="riso-tab-badge">
               {people.length}
             </span>
           </button>
@@ -124,42 +131,60 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
           <button
             id="tab-suggestions"
             onClick={() => setActiveSubTab('suggestions')}
-            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-base font-bold transition-all ${
-              activeSubTab === 'suggestions'
-                ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
-            }`}
+            className={`riso-subtab-btn ${activeSubTab === 'suggestions' ? 'active' : ''}`}
           >
-            <Sparkles className="w-5 h-5 text-amber-400" />
+            <Sparkles className="w-5 h-5" style={{ color: activeSubTab === 'suggestions' ? 'var(--accent)' : 'inherit' }} />
             <span>Suggestions</span>
-            {activeSuggestionsCount > 0 && (
-              <span
-                id="subtab-suggestions-count"
-                className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-sm font-mono font-bold"
-              >
-                {activeSuggestionsCount}
-              </span>
-            )}
+            <span id="subtab-suggestions-count" className="riso-tab-badge">
+              {activeSuggestionsCount}
+            </span>
           </button>
 
           <button
             id="tab-unrecognized"
             onClick={() => setActiveSubTab('unrecognized')}
-            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-base font-bold transition-all ${
-              activeSubTab === 'unrecognized'
-                ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
-            }`}
+            className={`riso-subtab-btn ${activeSubTab === 'unrecognized' ? 'active' : ''}`}
           >
-            <HelpCircle className="w-5 h-5 text-blue-400" />
+            <HelpCircle className="w-5 h-5" style={{ color: activeSubTab === 'unrecognized' ? 'var(--accent)' : 'inherit' }} />
             <span>Unrecognized</span>
-            <span
-              id="subtab-unrecognized-count"
-              className="px-2.5 py-0.5 rounded-md bg-neutral-900 border border-neutral-700/80 text-sm font-mono font-bold text-neutral-300"
-            >
+            <span id="subtab-unrecognized-count" className="riso-tab-badge">
               {unrecognized.faces.length}
             </span>
           </button>
+        </div>
+
+        {/* Quick Undo & Review Stats */}
+        <div className="flex items-center gap-3">
+          {appliedEditsCount > 0 && onUndo && (
+            <button
+              onClick={onUndo}
+              className="riso-btn-sec"
+              title="Undo last edit operation"
+            >
+              <Undo2 className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+              <span>Undo Last Edit</span>
+              <span className="riso-tab-badge ml-1">
+                {appliedEditsCount}
+              </span>
+            </button>
+          )}
+
+          <div
+            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded"
+            style={{
+              background: 'var(--card-bg)',
+              border: '1.5px solid var(--line)',
+              fontSize: '14px',
+              fontFamily: "'JetBrains Mono', monospace",
+              color: 'var(--muted)',
+            }}
+          >
+            <span
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ background: 'var(--accent)' }}
+            />
+            <span>{Object.keys(photos).length} Photos Indexed</span>
+          </div>
         </div>
       </div>
 
@@ -195,7 +220,9 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
           people={people}
           photos={photos}
           onAssignFace={onAssignFace}
-          onOpenPhotoViewer={(pid) => setViewingPhotoId(pid)}
+          onAssignMultipleFaces={onAssignMultipleFaces}
+          onAssignPhotos={onAssignPhotos}
+          onOpenPhotoViewer={(pid) => handleOpenPhotoViewer(pid)}
         />
       )}
 
@@ -209,31 +236,31 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
           onHide={onHidePerson}
           onRemoveFace={onRemoveFace}
           onRemovePhoto={onRemovePhoto}
-          onOpenPhotoViewer={(pid) => setViewingPhotoId(pid)}
+          onOpenPhotoViewer={(pid) =>
+            handleOpenPhotoViewer(pid, currentInspectingPerson.photo_ids || currentInspectingPerson.photos)
+          }
         />
       )}
 
-      {/* Photo Viewer Modal */}
-      {viewingPhotoId && activePhoto && (
-        <PhotoModal
-          photo={{
-            name: activePhoto.file_name,
-            thumb: activePhoto.thumb || `thumbs/${activePhoto.photo_id}.jpg`,
-            width: activePhoto.width,
-            height: activePhoto.height,
-          }}
+      {/* Revamped High-End Image Viewer Modal */}
+      {viewingPhotoId && photos[viewingPhotoId] && (
+        <ImageViewerModal
           photoId={viewingPhotoId}
-          hasPrev={activePhotoIndex > 0}
-          hasNext={activePhotoIndex >= 0 && activePhotoIndex < allPhotoIds.length - 1}
-          onPrev={() => {
-            if (activePhotoIndex > 0) setViewingPhotoId(allPhotoIds[activePhotoIndex - 1]);
+          photos={photos}
+          photoIds={viewingContextPhotoIds}
+          people={people}
+          unrecognized={unrecognized}
+          onClose={() => {
+            setViewingPhotoId(null);
+            setViewingContextPhotoIds(undefined);
           }}
-          onNext={() => {
-            if (activePhotoIndex >= 0 && activePhotoIndex < allPhotoIds.length - 1) {
-              setViewingPhotoId(allPhotoIds[activePhotoIndex + 1]);
-            }
+          onNavigatePhoto={(pid) => setViewingPhotoId(pid)}
+          onAssignFace={onAssignFace}
+          onRemoveFace={onRemoveFace}
+          onInspectPerson={(p) => {
+            setViewingPhotoId(null);
+            setInspectingPerson(p);
           }}
-          onClose={() => setViewingPhotoId(null)}
         />
       )}
     </div>

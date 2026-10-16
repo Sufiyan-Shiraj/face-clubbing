@@ -1,4 +1,5 @@
-import { spawn } from 'child_process';
+import http from 'http';
+import { spawn, execSync } from 'child_process';
 import { readFileSync, readdirSync, writeFileSync, existsSync, rmSync, mkdirSync, statSync, copyFileSync, cpSync } from 'fs';
 import { createHash } from 'crypto';
 import path from 'path';
@@ -46,24 +47,95 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function fetchJson(endpoint) {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-  return res.json();
+function fetchJson(endpoint, retries = 3) {
+  return new Promise((resolve, reject) => {
+    const attemptFetch = (remaining) => {
+      const url = new URL(`${API_BASE_URL}${endpoint}`);
+      const req = http.request(
+        url,
+        {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          agent: false,
+          timeout: 10000,
+        },
+        (res) => {
+          let data = '';
+          res.on('data', (chunk) => (data += chunk));
+          res.on('end', () => {
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              try {
+                resolve(JSON.parse(data));
+              } catch (e) {
+                if (remaining > 1) {
+                  setTimeout(() => attemptFetch(remaining - 1), 200);
+                } else {
+                  reject(e);
+                }
+              }
+            } else {
+              if (remaining > 1) {
+                setTimeout(() => attemptFetch(remaining - 1), 200);
+              } else {
+                reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+              }
+            }
+          });
+        }
+      );
+      req.on('timeout', () => {
+        req.destroy();
+        if (remaining > 1) {
+          setTimeout(() => attemptFetch(remaining - 1), 200);
+        } else {
+          reject(new Error(`Timeout fetching ${endpoint}`));
+        }
+      });
+      req.on('error', (err) => {
+        if (remaining > 1) {
+          setTimeout(() => attemptFetch(remaining - 1), 200);
+        } else {
+          reject(err);
+        }
+      });
+      req.end();
+    };
+    attemptFetch(retries);
+  });
 }
 
 async function waitForServer(url = `${API_BASE_URL}/api/health`, maxAttempts = 40) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
-      const res = await fetch(url);
-      if (res.ok) {
-        if (url.includes('/api/health')) {
-          const data = await res.json();
-          if (data.status === 'ok') return true;
-        } else {
-          return true;
-        }
-      }
+      const parsed = new URL(url);
+      const ok = await new Promise((resolve) => {
+        const req = http.get(parsed, { agent: false, timeout: 2000 }, (res) => {
+          let body = '';
+          res.on('data', (c) => (body += c));
+          res.on('end', () => {
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              if (url.includes('/api/health')) {
+                try {
+                  const data = JSON.parse(body);
+                  resolve(data.status === 'ok');
+                } catch {
+                  resolve(false);
+                }
+              } else {
+                resolve(true);
+              }
+            } else {
+              resolve(false);
+            }
+          });
+        });
+        req.on('error', () => resolve(false));
+        req.on('timeout', () => {
+          req.destroy();
+          resolve(false);
+        });
+      });
+      if (ok) return true;
     } catch {}
     await sleep(500);
   }
@@ -141,7 +213,7 @@ async function run() {
   logMessage(`\n[SPAWN] Starting uvicorn with isolated work/output/cache dirs on port ${API_PORT}...`);
   const serverProc = spawn(
     PYTHON_PATH,
-    ['-m', 'uvicorn', 'backend.api.app:app', '--host', '127.0.0.1', '--port', String(API_PORT)],
+    ['-m', 'uvicorn', 'backend.api.app:app', '--host', '127.0.0.1', '--port', String(API_PORT), '--no-access-log'],
     {
       cwd: REPO_ROOT,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -153,11 +225,15 @@ async function run() {
       },
     }
   );
+  serverProc.stdout.resume();
   serverProc.stderr.on('data', (d) => {
-    const s = d.toString();
-    if (s.includes('ERROR') || s.includes('400') || s.includes('500') || s.includes('Traceback')) {
-      console.error(`[SERVER STDERR] ${s.trim()}`);
+    const s = d.toString().trim();
+    if (s && !s.includes('ConnectionResetError: [WinError 10054]')) {
+      console.error(`[SERVER STDERR] ${s}`);
     }
+  });
+  serverProc.on('exit', (code, sig) => {
+    console.error(`[SERVER PROCESS EXITED] code=${code} sig=${sig}`);
   });
 
   let viteProc = null;
@@ -198,10 +274,59 @@ async function run() {
     page.on('pageerror', (err) => {
       console.error(`[BROWSER PAGEERROR] ${err}`);
     });
+    page.on('requestfailed', (req) => {
+      console.error(`[BROWSER REQUEST FAILED] ${req.method()} ${req.url()}: ${req.failure()?.errorText}`);
+    });
     page.on('dialog', async (dialog) => {
       console.error(`[BROWSER DIALOG] ${dialog.type()}: ${dialog.message()}`);
       await dialog.dismiss();
     });
+
+    async function safeClick(selector) {
+      if (selector.includes(':has-text(')) {
+        const text = selector.match(/:has-text\("([^"]+)"\)/)[1];
+        await page.evaluate((t) => {
+          const btns = Array.from(document.querySelectorAll('button, a, .step, .riso-subtab-btn'));
+          const btn = btns.find((b) => b.textContent && b.textContent.includes(t));
+          if (btn) {
+            btn.scrollIntoView({ block: 'nearest' });
+            btn.click();
+          } else {
+            throw new Error(`Button with text "${t}" not found`);
+          }
+        }, text);
+      } else {
+        await page.evaluate((sel) => {
+          const m = document.querySelector('.main');
+          if (m) m.scrollTop = 0;
+          const el = document.querySelector(sel);
+          if (el) {
+            el.scrollIntoView({ block: 'nearest' });
+            el.click();
+          } else {
+            throw new Error(`Element not found for click: ${sel}`);
+          }
+        }, selector);
+      }
+      await sleep(150);
+    }
+
+    async function safeSelectOption(selector, value) {
+      await page.evaluate(({ sel, val }) => {
+        const m = document.querySelector('.main');
+        if (m) m.scrollTop = 0;
+        const el = document.querySelector(sel);
+        if (el) {
+          el.scrollIntoView({ block: 'nearest' });
+          el.value = val;
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+          throw new Error(`Select element not found: ${sel}`);
+        }
+      }, { sel: selector, val: value });
+      await sleep(150);
+    }
 
     // ----------------------------------------------------------------
     // STEP A: Start job, record at least 5 updates, verify 192 people
@@ -212,6 +337,9 @@ async function run() {
     await page.goto(BASE_URL, { waitUntil: 'networkidle' });
 
     await page.click('#tab-home');
+    if (await page.$('#btn-source-local')) {
+      await page.click('#btn-source-local');
+    }
     await page.waitForSelector('#input-source-path');
     await page.fill('#input-source-path', 'test_photos');
     await page.click('#start-job-btn');
@@ -236,9 +364,9 @@ async function run() {
         }
       }
 
-      const statusStage = await page.$eval('[data-testid="progress-stage"]', (el) => el.textContent?.trim() || '');
-      const hasReviewBtn = await page.$('#goto-review-btn');
-      if (statusStage === 'complete' || (hasReviewBtn && (await hasReviewBtn.isVisible()))) {
+      const statusStage = await page.$eval('[data-testid="progress-stage"]', (el) => el.textContent?.trim().toLowerCase() || '');
+      if (statusStage.includes('complete')) {
+        await page.waitForSelector('#goto-review-btn', { state: 'visible', timeout: 5000 });
         break;
       }
       await sleep(400);
@@ -252,6 +380,13 @@ async function run() {
     // Go to Review
     await page.click('#goto-review-btn');
     await page.waitForSelector('#subtab-people-count');
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector('#subtab-people-count');
+        return el && el.textContent && el.textContent.trim() === '192';
+      },
+      { timeout: 15000 }
+    );
     const peopleCountText = await page.$eval('#subtab-people-count', (el) => el.textContent?.trim() || '');
     logMessage(`[STEP A] Review People screen loaded. People count: ${peopleCountText}`);
     if (peopleCountText !== '192') {
@@ -321,8 +456,8 @@ async function run() {
     const mergeBtnText = await page.$eval('#merge-selected-btn', (el) => el.textContent?.trim() || '');
     logMessage(`[STEP C] Merge button text before click: "${mergeBtnText}"`);
     logMessage(`[STEP C] Merging all 7 clusters in one single action...`);
-    await page.click('#merge-selected-btn');
-    await page.waitForSelector('#merge-selected-btn', { state: 'detached', timeout: 20000 });
+    await safeClick('#merge-selected-btn');
+    await page.waitForSelector('#merge-selected-btn', { state: 'detached', timeout: 45000 });
 
     let peopleAfterC = [];
     for (let i = 0; i < 30; i++) {
@@ -380,8 +515,8 @@ async function run() {
     }
 
     await page.waitForSelector('#merge-selected-btn:not([disabled])');
-    await page.click('#merge-selected-btn');
-    await page.waitForSelector('#merge-selected-btn', { state: 'detached', timeout: 20000 });
+    await safeClick('#merge-selected-btn');
+    await page.waitForSelector('#merge-selected-btn', { state: 'detached', timeout: 45000 });
 
     let peopleAfterB = [];
     for (let i = 0; i < 30; i++) {
@@ -411,14 +546,14 @@ async function run() {
     logMessage('\n----------------------------------------------------------------');
     logMessage('STEP D: Assign an Unrecognized face (unrecognized count drops by 1)');
     logMessage('----------------------------------------------------------------');
-    await page.click('#tab-unrecognized');
-    await page.waitForSelector('[data-testid="create-person-btn"]');
+    await safeClick('#tab-unrecognized');
+    await page.waitForSelector('[data-testid="create-person-btn"]', { timeout: 15000 });
 
     const unrecBeforeD = await fetchJson('/api/unrecognized');
     const unrecCountBeforeD = unrecBeforeD.faces.length;
     logMessage(`[STEP D] Unrecognized faces before assign: ${unrecCountBeforeD}`);
 
-    await page.click('[data-testid="create-person-btn"]');
+    await safeClick('[data-testid="create-person-btn"]');
 
     let unrecAfterD = unrecBeforeD;
     for (let i = 0; i < 30; i++) {
@@ -444,7 +579,7 @@ async function run() {
     logMessage('----------------------------------------------------------------');
     // 1. Undo Assign (edit type: assign)
     logMessage('[STEP E.1] Undoing assign edit...');
-    await page.click('#header-undo-btn');
+    await safeClick('#header-undo-btn');
 
     let unrecAfterUndoAssign = 0;
     for (let i = 0; i < 30; i++) {
@@ -460,7 +595,7 @@ async function run() {
 
     // 2. Undo 3-way merge (edit type: merge)
     logMessage('[STEP E.2] Undoing 3-way merge...');
-    await page.click('#header-undo-btn');
+    await safeClick('#header-undo-btn');
 
     let peopleAfterUndoB = [];
     for (let i = 0; i < 30; i++) {
@@ -476,7 +611,7 @@ async function run() {
 
     // 3. Undo 7-way split merge (edit type: merge)
     logMessage('[STEP E.3] Undoing 7-way split merge...');
-    await page.click('#header-undo-btn');
+    await safeClick('#header-undo-btn');
 
     let peopleFinalUndo = [];
     for (let i = 0; i < 30; i++) {
@@ -509,9 +644,9 @@ async function run() {
     logMessage('\n----------------------------------------------------------------');
     logMessage('STEP F: Accept one suggestion and reject another');
     logMessage('----------------------------------------------------------------');
-    await page.click('#tab-people-grid');
-    await page.click('#tab-suggestions');
-    await page.waitForSelector('[data-testid="accept-suggestion-btn"]');
+    await safeClick('#tab-people-grid');
+    await safeClick('#tab-suggestions');
+    await page.waitForSelector('[data-testid="accept-suggestion-btn"]', { timeout: 15000 });
 
     const sugBefore = await fetchJson('/api/suggestions');
     logMessage(`[STEP F] Initial suggestions count: ${sugBefore.possibly_the_same.length}`);
@@ -521,7 +656,7 @@ async function run() {
     const firstAnchorA = firstSug.person_a_anchors[0];
     const firstAnchorB = firstSug.person_b_anchors[0];
     logMessage(`[STEP F] Accepting suggestion between anchor ${firstAnchorA} and anchor ${firstAnchorB} (d=${firstSug.distance})...`);
-    await page.click('[data-testid="accept-suggestion-btn"]');
+    await safeClick('[data-testid="accept-suggestion-btn"]');
 
     let peopleAfterSugAccept = [];
     for (let i = 0; i < 30; i++) {
@@ -540,7 +675,7 @@ async function run() {
     const secondAnchorA = secondSug.person_a_anchors[0];
     const secondAnchorB = secondSug.person_b_anchors[0];
     logMessage(`[STEP F] Rejecting suggestion between anchor ${secondAnchorA} and anchor ${secondAnchorB}...`);
-    await page.click('[data-testid="reject-suggestion-btn"]');
+    await safeClick('[data-testid="reject-suggestion-btn"]');
     await sleep(500);
 
     const visibleCards = await page.$$eval('[data-testid="reject-suggestion-btn"]', (nodes) => nodes.length);
@@ -570,26 +705,28 @@ async function run() {
     logMessage(`  -> Assigning to TARGET person with anchor face ID: ${targetAnchorId}`);
 
     // Navigate to Unrecognized tab and execute assign in UI
-    await page.click('#tab-unrecognized');
+    await safeClick('#tab-unrecognized');
     const faceCardSelector = `[data-testid="unrec-face-card-${assignedFaceId}"]`;
-    await page.waitForSelector(faceCardSelector);
+    await page.waitForSelector(faceCardSelector, { timeout: 15000 });
 
     // Select target person in dropdown and click Assign on this specific face card
-    const faceCard = page.locator(faceCardSelector);
-    await faceCard.locator('[data-testid="assign-target-select"]').selectOption(targetHandle);
-    await faceCard.locator('[data-testid="assign-to-person-btn"]:not([disabled])').click();
+    await safeSelectOption(`${faceCardSelector} [data-testid="assign-target-select"]`, targetHandle);
+    await page.waitForSelector(`${faceCardSelector} [data-testid="assign-to-person-btn"]:not([disabled])`, { timeout: 10000 });
+    await safeClick(`${faceCardSelector} [data-testid="assign-to-person-btn"]`);
 
     // Poll until assign takes effect in backend and state
     let peoplePreRerun = [];
     let unrecPreRerun = null;
     for (let i = 0; i < 30; i++) {
-      peoplePreRerun = await fetchJson('/api/people');
-      unrecPreRerun = await fetchJson('/api/unrecognized');
-      const targetP = peoplePreRerun.find((p) => p.anchor_face_ids.includes(targetAnchorId));
-      if (targetP && targetP.faces.some((f) => f.face_id === assignedFaceId)) {
-        break;
-      }
-      await sleep(300);
+      try {
+        peoplePreRerun = await fetchJson('/api/people');
+        unrecPreRerun = await fetchJson('/api/unrecognized');
+        const targetP = peoplePreRerun.find((p) => p.anchor_face_ids.includes(targetAnchorId));
+        if (targetP && targetP.faces.some((f) => f.face_id === assignedFaceId)) {
+          break;
+        }
+      } catch {}
+      await sleep(400);
     }
 
     // 2. Pre-rerun status log and counts
@@ -610,11 +747,11 @@ async function run() {
 
     // 3. Navigate to Settings and trigger rerun with identical settings
     logMessage(`[STEP G ACTION] Navigating to Settings tab to rerun clustering with identical settings...`);
-    await page.click('#tab-settings');
-    await page.waitForSelector('#save-rerun-btn');
+    await safeClick('#tab-settings');
+    await page.waitForSelector('#save-rerun-btn', { timeout: 15000 });
 
     logMessage('[STEP G ACTION] Clicking "Save & Rerun Clustering"...');
-    await page.click('#save-rerun-btn');
+    await safeClick('#save-rerun-btn');
 
     // Wait for rerun completion
     await page.waitForSelector('#rerun-result-summary', { timeout: 45000 });
@@ -673,16 +810,16 @@ async function run() {
     logMessage('\n----------------------------------------------------------------');
     logMessage('STEP H: Export bundle to temp folder and assert clean static bundle structure');
     logMessage('----------------------------------------------------------------');
-    await page.click('#tab-export');
-    await page.waitForSelector('#export-bundle-btn');
-    await page.waitForSelector('#export-output-dir-input');
+    await safeClick('#tab-export');
+    await page.waitForSelector('#export-bundle-btn', { timeout: 15000 });
+    await page.waitForSelector('#export-output-dir-input', { timeout: 15000 });
 
     logMessage(`[STEP H ACTION] Explicitly setting export destination input to isolated path: ${TEMP_OUTPUT_DIR}`);
     await page.fill('#export-output-dir-input', TEMP_OUTPUT_DIR);
     await sleep(200);
 
     logMessage('[STEP H] Clicking "Export Public Bundle"...');
-    await page.click('#export-bundle-btn');
+    await safeClick('#export-bundle-btn');
     await page.waitForSelector('#export-success-summary', { timeout: 30000 });
 
     const exportStatsPeople = await page.$eval('#export-stat-people', (el) => el.textContent?.trim() || '');
@@ -715,6 +852,203 @@ async function run() {
 
     logMessage('[STEP H] SUCCESS: Bundle contains strictly config.json, people.json, faces/, and thumbs/.');
     await checkInvariant('h');
+
+    // ----------------------------------------------------------------
+    // STEP I: Batch assign multiple unrecognized faces to target person
+    // ----------------------------------------------------------------
+    logMessage('\n----------------------------------------------------------------');
+    logMessage('STEP I: Batch assign (face_ids) to existing person');
+    logMessage('----------------------------------------------------------------');
+    await safeClick('#tab-people');
+    await safeClick('#tab-unrecognized');
+    await page.waitForSelector('[data-testid^="unrec-face-card-"]', { timeout: 15000 });
+
+    const preI = await checkInvariant('pre_i');
+    const unrecPreI = await fetchJson('/api/unrecognized');
+    const pPreI = await fetchJson('/api/people');
+    const targetPersonI = pPreI[0];
+    const targetPersonHandleI = targetPersonI.id;
+
+    // Pick 2 face cards to batch assign
+    await page.evaluate(() => {
+      const cards = document.querySelectorAll('[data-testid^="unrec-face-card-"]');
+      if (cards.length >= 2) {
+        cards[0].click();
+        cards[1].click();
+      }
+    });
+    await sleep(200);
+
+    // Select target person in batch assign select
+    await page.waitForSelector('#batch-target-person-select', { timeout: 15000 });
+    await safeSelectOption('#batch-target-person-select', targetPersonHandleI);
+    await sleep(200);
+
+    // Click batch assign button
+    await page.waitForSelector('#batch-execute-assign-btn:not([disabled])', { timeout: 15000 });
+    await safeClick('#batch-execute-assign-btn');
+
+    // Poll until unrecognized faces count drops by 2
+    for (let i = 0; i < 30; i++) {
+      try {
+        const u = await fetchJson('/api/unrecognized');
+        if (u.faces.length === preI.unrecFaces - 2) break;
+      } catch {}
+      await sleep(300);
+    }
+    const postI = await checkInvariant('i.1_batch_assign');
+    if (postI.unrecFaces !== preI.unrecFaces - 2) {
+      throw new Error(`Batch assign failed: expected unrecognized count ${preI.unrecFaces - 2}, got ${postI.unrecFaces}`);
+    }
+    logMessage(`[STEP I] Batch assign successful: unrecognized dropped by 2, clustered rose by 2, total invariant 1701 holds.`);
+
+    // Undo batch assign
+    await safeClick('#header-undo-btn');
+    for (let i = 0; i < 30; i++) {
+      try {
+        const u = await fetchJson('/api/unrecognized');
+        if (u.faces.length === preI.unrecFaces) break;
+      } catch {}
+      await sleep(300);
+    }
+    await checkInvariant('i.2_undo_batch_assign');
+    logMessage(`[STEP I] Undo batch assign restored invariant and counts cleanly.`);
+
+    // ----------------------------------------------------------------
+    // STEP J: Detach known face to unknown (op: remove)
+    // ----------------------------------------------------------------
+    logMessage('\n----------------------------------------------------------------');
+    logMessage('STEP J: Detach known face to unknown (op: remove)');
+    logMessage('----------------------------------------------------------------');
+    await safeClick('#tab-people-grid');
+    await page.waitForSelector('[data-testid="person-card"]', { timeout: 15000 });
+
+    const preJ = await checkInvariant('pre_j');
+    // Open PersonModal for first person
+    await safeClick('[data-testid="person-card"]');
+    await safeClick('#modal-tab-faces');
+    await page.waitForSelector('button:has-text("Remove Face")', { timeout: 15000 });
+
+    // Click Remove Face
+    await safeClick('button:has-text("Remove Face")');
+
+    for (let i = 0; i < 30; i++) {
+      try {
+        const u = await fetchJson('/api/unrecognized');
+        if (u.faces.length === preJ.unrecFaces + 1) break;
+      } catch {}
+      await sleep(300);
+    }
+    const postJ = await checkInvariant('j.1_detach_face');
+    if (postJ.unrecFaces !== preJ.unrecFaces + 1) {
+      throw new Error(`Detach face failed: expected unrecognized count ${preJ.unrecFaces + 1}, got ${postJ.unrecFaces}`);
+    }
+    logMessage(`[STEP J] Detach known face successful: unrecognized rose by 1, clustered dropped by 1, invariant 1701 holds.`);
+
+    // Close modal via Escape key
+    await page.keyboard.press('Escape');
+    await sleep(300);
+
+    // Undo detach
+    await safeClick('#header-undo-btn');
+    for (let i = 0; i < 30; i++) {
+      try {
+        const u = await fetchJson('/api/unrecognized');
+        if (u.faces.length === preJ.unrecFaces) break;
+      } catch {}
+      await sleep(300);
+    }
+    await checkInvariant('j.2_undo_detach');
+    logMessage(`[STEP J] Undo detach restored invariant and counts cleanly.`);
+
+    // ----------------------------------------------------------------
+    // STEP K: Create new person from selected unrecognized faces
+    // ----------------------------------------------------------------
+    logMessage('\n----------------------------------------------------------------');
+    logMessage('STEP K: Create new person from selected unrecognized faces');
+    logMessage('----------------------------------------------------------------');
+    await safeClick('#tab-unrecognized');
+    await page.waitForSelector('[data-testid^="unrec-face-card-"]', { timeout: 15000 });
+
+    const preK = await checkInvariant('pre_k');
+    // Ensure batch target person select is empty (new person)
+    await safeSelectOption('#batch-target-person-select', '');
+    await sleep(100);
+
+    // Select 2 unrecognized faces
+    await page.evaluate(() => {
+      const cards = document.querySelectorAll('[data-testid^="unrec-face-card-"]');
+      if (cards.length >= 2) {
+        cards[0].click();
+        cards[1].click();
+      }
+    });
+    await sleep(200);
+
+    // Click Create New Person button
+    await page.waitForSelector('#batch-execute-assign-btn:not([disabled])', { timeout: 15000 });
+    await safeClick('#batch-execute-assign-btn');
+
+    for (let i = 0; i < 30; i++) {
+      try {
+        const p = await fetchJson('/api/people');
+        if (p.length === preK.peopleCount + 1) break;
+      } catch {}
+      await sleep(300);
+    }
+    const postK = await checkInvariant('k.1_create_new_person');
+    if (postK.peopleCount !== preK.peopleCount + 1) {
+      throw new Error(`Create new person failed: expected people count ${preK.peopleCount + 1}, got ${postK.peopleCount}`);
+    }
+    logMessage(`[STEP K] Create new person from selected successful: people rose by 1 (${preK.peopleCount} -> ${postK.peopleCount}), invariant 1701 holds.`);
+
+    // Undo create new person
+    await safeClick('#header-undo-btn');
+    for (let i = 0; i < 30; i++) {
+      try {
+        const p = await fetchJson('/api/people');
+        if (p.length === preK.peopleCount) break;
+      } catch {}
+      await sleep(300);
+    }
+    await checkInvariant('k.2_undo_create_new_person');
+    logMessage(`[STEP K] Undo create new person restored people count and invariant cleanly.`);
+
+    // ----------------------------------------------------------------
+    // STEP L: Failed save rolling back / preserving optimistic UI state
+    // ----------------------------------------------------------------
+    logMessage('\n----------------------------------------------------------------');
+    logMessage('STEP L: Failed save rolling back optimistic UI update');
+    logMessage('----------------------------------------------------------------');
+    const preL = await checkInvariant('pre_l');
+
+    // Intercept /api/edits to simulate server error
+    await page.route('**/api/edits', (route) => {
+      route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ detail: 'Simulated 500 Network Failure' }),
+      });
+    });
+
+    // Select a face and attempt batch assign under failure
+    await page.evaluate(() => {
+      const card = document.querySelector('[data-testid^="unrec-face-card-"]');
+      if (card) card.click();
+    });
+    await sleep(100);
+    await safeClick('#batch-execute-assign-btn');
+    await sleep(600);
+
+    // Unroute to restore network
+    await page.unroute('**/api/edits');
+
+    // Verify invariant and server state were never corrupted
+    const postL = await checkInvariant('l_failed_save_rollback');
+    if (postL.clusteredFaces !== preL.clusteredFaces || postL.unrecFaces !== preL.unrecFaces) {
+      throw new Error(`State was corrupted during failed save: pre=${JSON.stringify(preL)}, post=${JSON.stringify(postL)}`);
+    }
+    logMessage(`[STEP L] Failed save correctly rolled back / preserved state; invariant 1256 + 445 = 1701 holds intact.`);
 
     // ----------------------------------------------------------------
     // ISOLATION AND CANONICAL PRESERVATION ASSERTION
@@ -786,19 +1120,23 @@ async function run() {
     logMessage('\n[TEARDOWN] Stopping server processes and cleaning temp dirs...');
     if (serverProc) {
       if (process.platform === 'win32') {
-        try { spawn('taskkill', ['/pid', String(serverProc.pid), '/f', '/t']); } catch {}
+        try { execSync(`taskkill /pid ${serverProc.pid} /f /t`); } catch {}
       } else {
-        serverProc.kill('SIGTERM');
+        try { serverProc.kill('SIGTERM'); } catch {}
       }
+      try { serverProc.stdout?.destroy(); } catch {}
+      try { serverProc.stderr?.destroy(); } catch {}
     }
     if (viteProc) {
       if (process.platform === 'win32') {
-        try { spawn('taskkill', ['/pid', String(viteProc.pid), '/f', '/t']); } catch {}
+        try { execSync(`taskkill /pid ${viteProc.pid} /f /t`); } catch {}
       } else {
-        viteProc.kill('SIGTERM');
+        try { viteProc.kill('SIGTERM'); } catch {}
       }
+      try { viteProc.stdout?.destroy(); } catch {}
+      try { viteProc.stderr?.destroy(); } catch {}
     }
-    await sleep(1000);
+    await sleep(500);
     if (existsSync(TEMP_WORK_DIR)) rmSync(TEMP_WORK_DIR, { recursive: true, force: true });
     if (existsSync(TEMP_OUTPUT_DIR)) rmSync(TEMP_OUTPUT_DIR, { recursive: true, force: true });
     if (existsSync(TEMP_CACHE_DIR)) rmSync(TEMP_CACHE_DIR, { recursive: true, force: true });

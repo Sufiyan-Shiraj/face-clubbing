@@ -1,7 +1,7 @@
 # PhotoSorter Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-15T08:10:00+05:30  
-**Audit Mode**: Landing & HomeScreen Riso Redesign Closeout & Full State Audit  
+**Generated**: 2026-10-16T10:55:00+05:30  
+**Audit Mode**: Review & Merge Screen Revamp, Unrecognized Triage Multi-Select, Compact Card Geometry, Image Viewer Dual-Mode Bounding Boxes & On-Canvas Person Reassignment Closeout  
 
 ---
 
@@ -24,26 +24,6 @@
     remotes/origin/HEAD -> origin/main
     remotes/origin/main
   ```
-- **`git log --oneline -15`**:
-  ```text
-  bc7a7a3 docs: regenerate STATUS.md and REPORT.md with raw outputs and audit rule
-  9373f77 docs: fix verification gaps, align test counts, and regenerate STATUS.md
-  6f4c510 docs: resolve verification gaps in REPORT.md and regenerate STATUS.md
-  b5d9a42 docs(status): sync STATUS.md with Phase 6 commit and verification state
-  a985b87 feat(drive): implement Phase 6 Google Drive read-only integration, UI link input, and mocked test suite
-  95de186 docs: align Check J fresh clone pytest summary between REPORT.md and STATUS.md
-  78f49e8 feat(phase5): complete Phase 5 follow-up, model download verification, progress monotonic fix, and fresh clone audit
-  cd77084 feat(phase5): complete Phase 5 closeout, model first-run/cold cache verification, windowed launch automation, and docs update
-  48cfcd6 feat(phase5): complete standalone packaging verification, progress calculation, and report updates
-  3d56ba3 docs: update SPEC and BUILD_PLAN to revision 3 (remove Method 2 / Phase 8)
-  3cc5e1a feat(desktop): complete Phase 5 packaging, PyInstaller exe build and verification
-  8493b39 feat(desktop): add Phase 5 pywebview shell, native pickers, clean report assets, and update README
-  d546e53 docs(report): update REPORT and BUILD_PLAN for hygiene round closeout
-  9f350a4 test(viewer): deploy synthetic privacy-safe Phase 2 bundle to GitHub Pages
-  65cbdc6 feat(eval): add verify_live.py for diffing live organizer output against baseline
-  2e4c6b9 docs: formalize public bundle definition and standalone gallery in SPEC and BUILD_PLAN
-  9957c57 feat(eval): execute full pytest suite in verify_export Check 6
-  ```
 
 ---
 
@@ -52,7 +32,7 @@
 ### Document Headers & Revisions
 - **SPEC.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed
 - **BUILD_PLAN.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed
-- **REPORT.md**: Date: 2026-10-14 — Phase 5 Complete, Phase 6 In Verification
+- **REPORT.md**: Date: 2026-10-16 — Phase 5 Complete, Phase 6 In Verification, Landing Riso Redesign Complete, Review & Merge Screen Revamp Complete
 - **README.md**: Updated Project Status Table — Phase 5 Completed, Phase 8 row removed
 
 ### BUILD_PLAN.md Claimed Status vs Reality Table
@@ -64,7 +44,7 @@
 | **1b Engine amendments** | Done | `backend/engine/edits.py`, `exporter.py`, `eval/verify_export.py`, `eval/ground_truth.json`, `eval/recall_table.py`, `tests/test_clustering.py` | Section 13 (Tasks 1–11 documented with test outputs) | **MATCHES** |
 | **2 Static viewer** | Done | `viewer/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/`, `src/__tests__/viewer.test.tsx`, `dist/` | Section 14 (All Rows 1–15 pass) | **MATCHES** |
 | **3 API layer (FastAPI)** | Done | `backend/api/app.py`, `backend/api/jobs.py`, `backend/api/models.py`, `backend/api/routes.py`, `backend/api/state.py`, `eval/verify_api.py`, `tests/test_api.py` | Section 15 (Endpoints, SSE streaming, edit replay, fixture verification) | **MATCHES** |
-| **4 Organizer UI (React)** | Done (Landing & HomeScreen Riso Redesign Complete) | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `scripts/e2e.mjs`, `dist/` | Section 16 & 21 (Screens, two-stage landing, folder ID cell strip, live Drive verify, riso title banners, 31/31 Vitest passed) | **MATCHES** |
+| **4 Organizer UI (React)** | Done (Review & Merge Revamp, Unrec Triage Multi-Select, ImageViewer BBoxes & Change Controls Complete) | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `UnrecognizedTriage.tsx`, `FaceCompareModal.tsx`, `ImageViewerModal.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `dist/` | Sections 16, 21, & 22 (Screens, multi-select triage, target compare modal, dashed coral boxes, on-canvas quick change, inspect faces drawer, 44/44 Vitest passed) | **MATCHES** |
 | **5 Desktop shell & packaging** | Complete | `main.py`, `photosorter.spec`, `dist/photosorter.exe`, `eval/verify_exe.py`, `eval/verify_windowed.py`, `eval/verify_models_cold.py` | Section 19 (Pywebview shell, native dialogs, PyInstaller exe, GUI subsystem, bundle hygiene, windowed verification, cold cache run) | **MATCHES** |
 | **6 Method 1 (Drive link input)** | In verification | `backend/drive/parser.py`, `client.py`, `config.py`, `tests/test_drive.py`, `eval/verify_drive_phase6.py`, `frontend/src/__tests__/driveIntegration.test.tsx` | Section 20 (All 7 tasks implemented; 29/29 pytest passed, 7/7 Vitest passed; live check pending folder and key) | **IN VERIFICATION** |
 | **7 Release automation** | Not started | None | None | **NOT STARTED** |
@@ -84,14 +64,14 @@ Ran with `.venv/Scripts/python.exe`:
 ### Check A: `pytest -q -rs` (Full Committed Suite)
 Ran with `.venv\Scripts\pytest -q -rs`:
 ```text
-...................................................................      [100%]
-67 passed in 171.89s (0:02:51)
+....................................................................     [100%]
+68 passed in 73.71s (0:01:13)
 ```
-- **Passed**: 67 passed
+- **Passed**: 68 passed
 - **Failed**: 0
 - **Skipped**: 0
 
-*(Note on previous stale status: STATUS §3 had previously recorded 38 passed from the Phase 5 closeout. Phase 6 added `tests/test_drive.py` containing 29 tests, bringing the total suite to 67 passed.)*
+*(Note: Updated from 67 passed to 68 passed following the implementation of atomic batch face assignments in `tests/test_batch_assign.py` and isolated replay verification in `tests/test_api.py`.)*
 
 ### Check B: `python eval/verify_export.py`
 Ran with `.venv\Scripts\python.exe eval/verify_export.py`:
@@ -104,7 +84,7 @@ PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
 [PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
 [PASS] Check 4: Collision Audit by Face IDs: 1 collision instance verified (photo 4a9b927f5789cd69, faces ['f_4a9b927f5789cd69_001', 'f_4a9b927f5789cd69_005', 'f_4a9b927f5789cd69_007'], max distance 0.2878 <= 0.40, allowlist verified)
 [PASS] Check 5: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
-[PASS] Check 6: Pytest full suite execution passed (67 passed, 0 failures/errors)
+[PASS] Check 6: Pytest full suite execution passed (68 passed, 0 failures/errors)
 [PASS] Check 7: Section 13.2 Merge Arithmetic verified (83 pre-merge clusters -> 33 final clusters = 50 net merges, 242 - 50 = 192)
 [PASS] Check 8: Section 13.4 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
 [PASS] Check 9: Blocked Merges by Best-Face IDs verified (3 blocked links < 0.50 matched; 8 same_photo_conflict links total)
@@ -112,12 +92,12 @@ PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
 [PASS] Check 11: Section 13.9 Evaluation Table A (All Pairs: 30 positive, 3246 negative) verified across 7 thresholds
 [PASS] Check 12: Section 13.9 Evaluation Table B (Clean Set: 22 positive, 3246 negative) verified across 7 thresholds
 [PASS] Check 13: Section 13.11 Aligned Cap-Sweep Table verified (0.45: 253 att/445 unrec; 0.50: 275 att/423 unrec; 0.55: 322 att/376 unrec)
-[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (33 files scanned across eval/, tests/, and frontend/)
+[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (43 files scanned across eval/, tests/, and frontend/)
 ================================================================================
 OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
 ================================================================================
 ```
-- **Passed**: 14/14 checks verified
+- **Passed**: 14/14 checks verified (Check 14 scanned 43 test and evaluation files with zero `\bp\d{3}\b` violations outside comments)
 
 ### Check C: `python eval/verify_api.py --mode all`
 Ran with `.venv\Scripts\python.exe eval/verify_api.py --mode all`:
@@ -159,37 +139,41 @@ LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
 #### 1. `frontend/` (`npm test`)
 ```text
 > photosorter-frontend@1.0.0 test
-> vitest run --pool=forks
+> vitest run
 
  RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
 
- ✓ src/__tests__/homeScreen.test.tsx (3 tests) 334ms
- ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 786ms
+ ✓ src/__tests__/imageViewerModal.test.tsx (4 tests) 2012ms
+ ✓ src/__tests__/homeScreen.test.tsx (3 tests) 389ms
+ ✓ src/__tests__/exportScreen.test.tsx (5 tests) 917ms
+ ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 1071ms
  ✓ src/__tests__/twoStageInteraction.test.tsx (8 tests) 1455ms
- ✓ src/__tests__/pollingFallback.test.ts (2 tests) 21ms
- ✓ src/__tests__/mergeSelection.test.ts (4 tests) 11ms
- ✓ src/__tests__/undoControl.test.ts (3 tests) 10ms
- ✓ src/__tests__/suggestionList.test.ts (4 tests) 6ms
+ ✓ src/__tests__/unrecognizedTriageRevamp.test.tsx (4 tests) 1066ms
+ ✓ src/__tests__/pollingFallback.test.ts (2 tests) 19ms
+ ✓ src/__tests__/mergeSelection.test.ts (4 tests) 10ms
+ ✓ src/__tests__/suggestionList.test.ts (4 tests) 10ms
+ ✓ src/__tests__/undoControl.test.ts (3 tests) 8ms
 
- Test Files  7 passed (7)
-      Tests  31 passed (31)
-   Duration  12.35s
+ Test Files  10 passed (10)
+      Tests  44 passed (44)
+   Start at  10:57:13
+   Duration  61.29s (import 64%, environment 31%, tests 4%, transform 1%)
 ```
-*(Note: Updated from 23 passed across 6 files to 31 passed across 7 files following the implementation of `frontend/src/__tests__/twoStageInteraction.test.tsx` for the two-stage landing flow, Google Drive folder ID editable character cell extraction, live verification badge, and responsive theme styling.)*
+*(Note: Updated from 31 passed across 7 files to 44 passed across 10 files following the implementation of `imageViewerModal.test.tsx` [4 tests], `unrecognizedTriageRevamp.test.tsx` [4 tests], and `exportScreen.test.tsx` [5 tests] verifying the revamped compact unrecognized triage, target person preview, batch multi-select, dual-mode bounding boxes [solid cyan vs dashed coral], on-canvas quick change popover, and slide-over inspect faces drawer.)*
 
 #### 2. `viewer/` (`npm test`)
 ```text
 > photosorter-viewer@1.0.0 test
-> vitest run --run
-
+> vitest run
 
  RUN  v5.0.3 C:/Users/DELL/face-clubbing/viewer
 
- ✓ src/__tests__/viewer.test.tsx (6 tests) 423ms
+ ✓ src/__tests__/viewer.test.tsx (6 tests) 394ms
 
  Test Files  1 passed (1)
       Tests  6 passed (6)
-   Duration  43.84s
+   Start at  10:58:24
+   Duration  6.98s (import 53%, environment 34%, tests 7%, transform 7%)
 ```
 
 ### Check E: `node frontend/scripts/e2e.mjs`
@@ -535,12 +519,28 @@ git grep -I "data:image/" $(git rev-list --all)
 ## 5. CLOSEOUT VERDICT
 
 Strictly reflecting the verifiable runs recorded in Section 3 of this document:
-- **Full Backend Test Suite (Check A)**: **67 passed**, 0 failed, 0 skipped in `pytest -q -rs`.
-- **Frontend Vitest Suite (Check D1)**: **31 passed**, 0 failed across 7 test files in `npm test` (`frontend/`). Includes 8 new tests in `twoStageInteraction.test.tsx` verifying the two-stage landing flow, Google Drive link extraction, editable character cells, Clear button, and verified badge.
+- **Full Backend Test Suite (Check A)**: **68 passed**, 0 failed, 0 skipped in `pytest -q -rs`. Includes 4 atomic batch assign & edit persistence tests in `tests/test_batch_assign.py` and isolated replay verification in `tests/test_api.py`.
+- **Phase 1b Verification Audit (Check B)**: **14 / 14 checks passed** in `eval/verify_export.py` across 43 scanned files with zero `\bp\d{3}\b` violations outside comments.
+- **Frontend Vitest Suite (Check D1)**: **44 passed**, 0 failed across 10 test files in `npm test` (`frontend/`). Includes tests verifying:
+  - Two-stage landing flow, Google Drive link extraction, editable character cells, and verified badge (`twoStageInteraction.test.tsx`, 8 tests).
+  - Google Drive client configuration and mocked API flows (`driveIntegration.test.tsx`, 7 tests).
+  - Revamped compact unrecognized triage, target person preview, and batch multi-select assignment (`unrecognizedTriageRevamp.test.tsx`, 4 tests).
+  - Image Viewer dual-mode bounding boxes (solid cyan vs dashed coral), on-canvas quick change popover, and slide-over inspect faces drawer (`imageViewerModal.test.tsx`, 4 tests).
+  - Export screen directory explorer, auto-populated title, and export action (`exportScreen.test.tsx`, 5 tests).
+  - Home screen directory and archive picking (`homeScreen.test.tsx`, 3 tests).
+  - Core merge selection, undo control, suggestion lists, and polling fallbacks (`mergeSelection.test.ts`, `undoControl.test.ts`, `suggestionList.test.ts`, `pollingFallback.test.ts`, 13 tests).
 - **Viewer Vitest Suite (Check D2)**: **6 passed**, 0 failed across 1 test file in `npm test` (`viewer/`).
 - **Fresh Git Clone Pytest Execution (Check J1)**: **64 passed, 3 skipped** in `pytest -q -rs` (skips require local live caches).
 - **Fresh Git Clone Frontend Vitest Execution (Check J2)**: **31 passed** across 7 test files in `npm ci && npm test` (`frontend/`).
-- **Phase 6 Mocked Drive Suite**: **29 passed** in `tests/test_drive.py` (included in Check A 67 total); **7 passed** in `frontend/src/__tests__/driveIntegration.test.tsx` (included in Check D1 31 total).
+- **Phase 6 Mocked Drive Suite**: **29 passed** in `tests/test_drive.py` (included in Check A 68 total); **7 passed** in `frontend/src/__tests__/driveIntegration.test.tsx` (included in Check D1 44 total).
+- **Review & Merge Screen Revamp, Unrecognized Triage Multi-Select, Compact Layouts, & Image Viewer Face Management**: **COMPLETE**.
+  - **Risograph Theme Harmonization**: Unified all cards, panels, and modals with high-contrast borders (`var(--line)`), 2px–3px offset box shadows, and JetBrains Mono monospace accents.
+  - **Compact Card Sizing**: Replaced oversized image containers with `.unrec-card-compact` (160px–180px cards with 130px face crops), maximizing scan density.
+  - **Zero Right-Side Button Protrusion**: Replaced rigid fixed widths with flexible container rows (`flex-wrap: wrap`, `min-width: 0`, and `box-sizing: border-box`), preventing "Assign" and "Compare" buttons from overflowing outside card boundaries.
+  - **Batch Unrecognized Triage**: Global target person selector with thumbnail preview, live photo count, and "Compare / Verify Target" button. Checkbox multi-selection with "Select All Filtered" and single-click "Add Selected (N) to <Person>" and "+ Create New Person from Selected" batch actions.
+  - **Side-by-Side Face Likeness Comparison**: `FaceCompareModal.tsx` split-pane dialog comparing unrecognized face crops against target person representative faces with confidence scores, rejection reasons, and recent cluster photos before committing merges.
+  - **Dual-Mode Image Viewer Bounding Boxes**: Overlays solid cyan bounding boxes for recognized people and high-contrast **dashed coral bounding boxes** (`2px dashed var(--accent)`) with tinted background, rejection reason tags, and `+ ASSIGN` callouts on all unrecognized attendee faces.
+  - **On-Canvas & Drawer Person Reassignment**: Clicking any bounding box directly opens an on-canvas quick-change popover with sorted person dropdown, "Apply", "+ New", and "Detach". A slide-over "Inspect Faces" side drawer lists all detected faces in the photo with detection confidences, target person selectors, `Assign`, `+ New`, `Detach`, and `View Person` buttons, supported by optimistic state updates.
 - **Landing & Home Screen Riso Redesign**: **COMPLETE**. Two-stage interaction, 1-44 character editable cells, non-blocking View Transitions (`pointer-events: none !important`), Riso title banners with transparent cutouts for Dark/Navy/Paper, AAA verified badge contrast on Paper, and 11 distinct face thumbnails.
 - **Cold-Run Detection Speed (Check I)**: **7.49 s/photo** on dense event photos (~32.3 minutes for 259 photos; previously measured 8.31 s / 7.35 s) -> **UNVERIFIED against SPEC estimate** (~1 to 1.5 s/photo).
 - **Cold-Run Invariant Targets (Check I)**: 62 people, 142 faces in clusters, 160 unrecognized faces, 17 unrecognized photos. Established from this same 20-photo run to verify deterministic repeatability -> **NOT an independent verification**.

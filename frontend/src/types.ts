@@ -24,6 +24,7 @@ export interface UnrecognizedFace {
   rejection_reason?: string | null;
   det_score?: number | null;
   file_name?: string | null;
+  bbox?: number[] | null;
 }
 
 export interface UnrecognizedData {
@@ -158,6 +159,8 @@ export interface PhotoInfo {
   width?: number;
   height?: number;
   thumb?: string;
+  download?: string;
+  faces?: FaceItem[];
 }
 
 export type ActiveTab = 'home' | 'progress' | 'people' | 'export' | 'settings';

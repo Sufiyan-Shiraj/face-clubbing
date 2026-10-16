@@ -458,6 +458,30 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleAssignMultipleFaces = async (faceIds: string[], targetPersonId?: string | null) => {
+    try {
+      const res = await api.assignFaces(faceIds, targetPersonId);
+      if (res.success) {
+        setAppliedEditsCount((c) => c + faceIds.length);
+        await loadAllData();
+      }
+    } catch (err: any) {
+      alert(`Batch assign failed: ${err.message || err}`);
+    }
+  };
+
+  const handleAssignPhotos = async (photoIds: string[], targetPersonId?: string | null) => {
+    try {
+      const res = await api.assignPhotos(photoIds, targetPersonId);
+      if (res.success) {
+        setAppliedEditsCount((c) => c + photoIds.length);
+        await loadAllData();
+      }
+    } catch (err: any) {
+      alert(`Assign photos failed: ${err.message || err}`);
+    }
+  };
+
   // Person edits
   const handleRenamePerson = async (personId: string, label: string) => {
     try {
@@ -607,6 +631,7 @@ export const App: React.FC = () => {
         <div className="rail-steps">
           <button
             type="button"
+            id="tab-home"
             onClick={() => handleTabChange('home')}
             className={`step ${activeTab === 'home' ? 'on' : ''}`}
           >
@@ -615,6 +640,7 @@ export const App: React.FC = () => {
           </button>
           <button
             type="button"
+            id="tab-progress"
             onClick={() => handleTabChange('progress')}
             className={`step ${activeTab === 'progress' ? 'on' : ''}`}
           >
@@ -623,6 +649,7 @@ export const App: React.FC = () => {
           </button>
           <button
             type="button"
+            id="tab-people"
             onClick={() => handleTabChange('people')}
             className={`step ${activeTab === 'people' ? 'on' : ''}`}
           >
@@ -631,6 +658,7 @@ export const App: React.FC = () => {
           </button>
           <button
             type="button"
+            id="tab-export"
             onClick={() => handleTabChange('export')}
             className={`step ${activeTab === 'export' ? 'on' : ''}`}
           >
@@ -639,7 +667,7 @@ export const App: React.FC = () => {
           </button>
           <button
             type="button"
-            id="tab-settings-rail"
+            id="tab-settings"
             onClick={() => handleTabChange('settings')}
             className={`step ${activeTab === 'settings' ? 'on' : ''}`}
           >
@@ -688,7 +716,10 @@ export const App: React.FC = () => {
             status={jobStatus}
             progressHistory={progressHistory}
             onCancelJob={handleCancelJob}
-            onGoToReview={() => setActiveTab('people')}
+            onGoToReview={() => {
+              setActiveTab('people');
+              loadAllData();
+            }}
             isCancelling={isCancelling}
             discoveredFaceCrops={allDiscoveredFaces}
             theme={theme}
@@ -710,10 +741,14 @@ export const App: React.FC = () => {
             onRejectSuggestion={handleRejectSuggestion}
             rejectedPairs={rejectedPairs}
             onAssignFace={handleAssignFace}
+            onAssignMultipleFaces={handleAssignMultipleFaces}
+            onAssignPhotos={handleAssignPhotos}
             onRenamePerson={handleRenamePerson}
             onHidePerson={handleHidePerson}
             onRemoveFace={handleRemoveFace}
             onRemovePhoto={handleRemovePhoto}
+            onUndo={handleUndo}
+            appliedEditsCount={appliedEditsCount}
             isMerging={isMerging}
           />
         )}

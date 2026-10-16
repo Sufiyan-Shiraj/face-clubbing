@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { RankedPairSuggestion, PersonCluster } from '../types';
-import { Check, X, Sparkles, Filter, AlertCircle, Users } from 'lucide-react';
+import { Check, X, Sparkles, Filter } from 'lucide-react';
 
 interface SuggestionReviewProps {
   suggestions: RankedPairSuggestion[];
@@ -34,51 +34,75 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
       {/* Top Filter and Info Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-neutral-900/60 border border-neutral-800">
-        <div className="flex items-center gap-3">
-          <Sparkles className="w-5 h-5 text-amber-400" />
+      <div
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded"
+        style={{
+          background: 'var(--card-bg, var(--panel))',
+          border: '1.5px solid var(--line)',
+          boxShadow: '2px 3px 0px rgba(0, 0, 0, 0.2)',
+        }}
+      >
+        <div className="flex items-center gap-3.5">
+          <div
+            className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+            style={{
+              background: 'var(--input)',
+              border: '1.5px solid var(--accent)',
+              color: 'var(--accent)',
+            }}
+          >
+            <Sparkles className="w-5 h-5" />
+          </div>
           <div>
-            <h3 className="text-base font-bold text-white">Smart Match Suggestions</h3>
-            <p className="text-sm text-neutral-400">
+            <h3 className="text-base sm:text-lg font-bold" style={{ color: 'var(--text)' }}>
+              Smart Match Suggestions
+            </h3>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--muted)' }}>
               Ranked pairs calculated by centroid cosine distance. Rejected pairs stay hidden for this session.
             </p>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-neutral-400 font-medium flex items-center gap-1.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--muted)' }}>
             <Filter className="w-4 h-4" /> Filter:
           </span>
           <button
             onClick={() => setFilterType('all')}
-            className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors ${
-              filterType === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-neutral-800 text-neutral-400 hover:text-neutral-200'
-            }`}
+            className="px-3.5 py-1.5 rounded text-xs font-bold transition-all"
+            style={{
+              background: filterType === 'all' ? 'var(--accent)' : 'var(--input)',
+              color: filterType === 'all' ? 'var(--on-accent)' : 'var(--text)',
+              border: filterType === 'all' ? '1.5px solid var(--accent)' : '1.5px solid var(--line)',
+              cursor: 'pointer',
+            }}
           >
             All ({suggestions.filter((s) => !rejectedPairs.has(getPairKey(s.person_a_id, s.person_b_id))).length})
           </button>
           <button
             onClick={() => setFilterType('medium')}
-            className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors ${
-              filterType === 'medium'
-                ? 'bg-blue-600 text-white'
-                : 'bg-neutral-800 text-neutral-400 hover:text-neutral-200'
-            }`}
+            className="px-3.5 py-1.5 rounded text-xs font-bold transition-all"
+            style={{
+              background: filterType === 'medium' ? 'var(--accent)' : 'var(--input)',
+              color: filterType === 'medium' ? 'var(--on-accent)' : 'var(--text)',
+              border: filterType === 'medium' ? '1.5px solid var(--accent)' : '1.5px solid var(--line)',
+              cursor: 'pointer',
+            }}
           >
             Medium
           </button>
           <button
             onClick={() => setFilterType('low')}
-            className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors ${
-              filterType === 'low'
-                ? 'bg-blue-600 text-white'
-                : 'bg-neutral-800 text-neutral-400 hover:text-neutral-200'
-            }`}
+            className="px-3.5 py-1.5 rounded text-xs font-bold transition-all"
+            style={{
+              background: filterType === 'low' ? 'var(--accent)' : 'var(--input)',
+              color: filterType === 'low' ? 'var(--on-accent)' : 'var(--text)',
+              border: filterType === 'low' ? '1.5px solid var(--accent)' : '1.5px solid var(--line)',
+              cursor: 'pointer',
+            }}
           >
             Low (Single-Photo)
           </button>
@@ -87,10 +111,18 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
 
       {/* Suggestion Cards List */}
       {activeSuggestions.length === 0 ? (
-        <div className="text-center py-12 border border-neutral-800/80 rounded-2xl bg-neutral-900/30">
-          <Check className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-          <h4 className="text-lg font-bold text-neutral-200">No Pending Suggestions</h4>
-          <p className="text-sm text-neutral-400 mt-1 max-w-sm mx-auto">
+        <div
+          className="text-center py-14 rounded"
+          style={{
+            background: 'var(--card-bg, var(--panel))',
+            border: '1.5px solid var(--line)',
+            color: 'var(--muted)',
+            boxShadow: '2px 3px 0px rgba(0, 0, 0, 0.2)',
+          }}
+        >
+          <Check className="w-9 h-9 mx-auto mb-2" style={{ color: 'var(--accent)' }} />
+          <h4 className="text-lg font-bold" style={{ color: 'var(--text)' }}>No Pending Suggestions</h4>
+          <p className="text-sm mt-1 max-w-sm mx-auto">
             All suggestions in this category have been reviewed, accepted, or rejected for this session.
           </p>
         </div>
@@ -109,13 +141,24 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
               <div
                 key={idx}
                 data-testid={`suggestion-card-${s.person_a_id}-${s.person_b_id}`}
-                className="glass-card rounded-2xl p-4 sm:p-5 bg-neutral-900/70 border border-neutral-800 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                className="p-5 sm:p-6 rounded flex flex-col md:flex-row md:items-center justify-between gap-5"
+                style={{
+                  background: 'var(--card-bg, var(--panel))',
+                  border: '1.5px solid var(--line)',
+                  boxShadow: '2px 3px 0px rgba(0, 0, 0, 0.2)',
+                }}
               >
                 {/* Comparison Pair Grid */}
-                <div className="flex items-center gap-3 sm:gap-6 flex-1">
+                <div className="flex items-center gap-4 sm:gap-8 flex-1 flex-wrap sm:flex-nowrap">
                   {/* Person A */}
-                  <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 flex-shrink-0">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded overflow-hidden flex-shrink-0"
+                      style={{
+                        background: 'var(--input)',
+                        border: '2px solid var(--line)',
+                      }}
+                    >
                       <img
                         src={faceA}
                         alt={nameA}
@@ -127,46 +170,56 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
                       />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-sm sm:text-base font-bold text-white truncate block">{nameA}</span>
-                      <span className="text-xs text-neutral-400 font-mono">
+                      <span className="text-base sm:text-lg font-bold font-mono truncate block" style={{ color: 'var(--text)' }}>
+                        {nameA}
+                      </span>
+                      <span className="text-xs font-mono" style={{ color: 'var(--muted)' }}>
                         {pA?.photo_count ?? s.person_a_photos} photos
                       </span>
                     </div>
                   </div>
 
                   {/* Middle Match Metrics */}
-                  <div className="flex flex-col items-center justify-center px-3 sm:px-4 py-2 rounded-xl bg-neutral-950/80 border border-neutral-800/80 text-center flex-shrink-0">
-                    <span className="text-xs text-neutral-400 font-mono font-medium">Distance</span>
-                    <span className="text-sm sm:text-base font-bold font-mono text-blue-400">
+                  <div
+                    className="flex flex-col items-center justify-center px-4 py-3 rounded text-center flex-shrink-0 mx-auto"
+                    style={{
+                      background: 'var(--input)',
+                      border: '1.5px solid var(--line)',
+                    }}
+                  >
+                    <span className="text-xs font-mono font-medium" style={{ color: 'var(--muted)' }}>Distance</span>
+                    <span className="text-base sm:text-lg font-bold font-mono" style={{ color: 'var(--accent)' }}>
                       {s.distance.toFixed(4)}
                     </span>
                     <div className="mt-1 flex flex-col items-center gap-1">
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
-                          s.reason === 'same_photo_conflict'
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            : 'bg-blue-500/10 text-blue-300'
-                        }`}
-                      >
+                      <span className="riso-tab-badge">
                         {s.reason}
                       </span>
                       {isLowConfidence && (
-                        <span className="px-2 py-0.5 rounded text-xs bg-neutral-800 text-amber-400 border border-neutral-700 font-semibold">
-                          Low Confidence (Single-Photo)
+                        <span className="riso-badge-accent text-xs">
+                          Single-Photo
                         </span>
                       )}
                     </div>
                   </div>
 
                   {/* Person B */}
-                  <div className="flex items-center gap-3.5 flex-1 min-w-0 justify-end">
+                  <div className="flex items-center gap-4 flex-1 min-w-0 justify-end">
                     <div className="text-right min-w-0">
-                      <span className="text-sm sm:text-base font-bold text-white truncate block">{nameB}</span>
-                      <span className="text-xs text-neutral-400 font-mono">
+                      <span className="text-base sm:text-lg font-bold font-mono truncate block" style={{ color: 'var(--text)' }}>
+                        {nameB}
+                      </span>
+                      <span className="text-xs font-mono" style={{ color: 'var(--muted)' }}>
                         {pB?.photo_count ?? s.person_b_photos} photos
                       </span>
                     </div>
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-neutral-950 border border-neutral-800 flex-shrink-0">
+                    <div
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded overflow-hidden flex-shrink-0"
+                      style={{
+                        background: 'var(--input)',
+                        border: '2px solid var(--line)',
+                      }}
+                    >
                       <img
                         src={faceB}
                         alt={nameB}
@@ -181,22 +234,34 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
                 </div>
 
                 {/* Actions: Accept & Reject */}
-                <div className="flex items-center justify-end gap-2.5 pt-2 md:pt-0 border-t md:border-t-0 border-neutral-800">
+                <div
+                  className="flex items-center justify-end gap-3 pt-3 md:pt-0"
+                  style={{ borderTop: '1px solid var(--line)' }}
+                >
                   <button
                     data-testid="reject-suggestion-btn"
                     onClick={() => onReject(s.person_a_id, s.person_b_id)}
-                    className="px-4 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-sm font-bold border border-neutral-700 flex items-center gap-2 transition-colors"
+                    className="riso-btn-sec"
+                    style={{ height: '44px', padding: '0 18px', fontSize: '14px' }}
                   >
-                    <X className="w-4 h-4 text-neutral-400" />
+                    <X className="w-4 h-4" />
                     <span>Reject</span>
                   </button>
 
                   <button
                     data-testid="accept-suggestion-btn"
                     onClick={() => onAccept(s.person_a_id, s.person_b_id)}
-                    className="px-4 sm:px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all"
+                    className="btn pri"
+                    style={{
+                      height: '44px',
+                      padding: '0 22px',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontWeight: 800,
+                      boxShadow: '2px 3px 0px rgba(0,0,0,0.25)',
+                    }}
                   >
-                    <Check className="w-4 h-4" />
+                    <Check className="w-4 h-4 mr-1" />
                     <span>Accept & Merge</span>
                   </button>
                 </div>

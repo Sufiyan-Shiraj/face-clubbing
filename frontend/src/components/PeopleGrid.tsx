@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PersonCluster, PhotoInfo } from '../types';
-import { Search, Users, CheckSquare, Square, X, Filter } from 'lucide-react';
+import { Search, Users, CheckSquare, Square, X } from 'lucide-react';
 
 interface PeopleGridProps {
   people: PersonCluster[];
@@ -54,24 +54,36 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
   );
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
       {/* Search and Filters Bar */}
-      <div className="glass-card p-4 rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div
+        className="p-4 sm:p-5 rounded flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4"
+        style={{
+          background: 'var(--card-bg, var(--panel))',
+          border: '1.5px solid var(--line)',
+          boxShadow: '2px 3px 0px rgba(0, 0, 0, 0.2)',
+        }}
+      >
         {/* Search Input */}
         <div className="relative flex-1">
-          <Search className="w-5 h-5 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search
+            className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ color: 'var(--muted)' }}
+          />
           <input
             id="people-search-input"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={`Search across ${people.length} people...`}
-            className="w-full pl-11 pr-4 py-2.5 bg-neutral-900/90 border border-neutral-800 rounded-xl text-neutral-200 placeholder-neutral-500 text-base focus:outline-none focus:border-accent"
+            className="riso-input w-full pl-11 pr-10"
+            style={{ height: '46px', fontSize: '15px' }}
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 cursor-pointer"
+              style={{ background: 'transparent', border: 'none', color: 'var(--muted)' }}
             >
               <X className="w-4 h-4" />
             </button>
@@ -82,31 +94,34 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
         <div className="flex items-center gap-2 self-start md:self-auto overflow-x-auto pb-1 md:pb-0">
           <button
             onClick={() => setFilterMode('all')}
-            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
-              filterMode === 'all'
-                ? 'bg-neutral-800 text-white border border-neutral-700'
-                : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60'
-            }`}
+            className="px-4 py-2 rounded text-sm font-bold transition-all cursor-pointer"
+            style={{
+              background: filterMode === 'all' ? 'var(--accent)' : 'var(--input)',
+              color: filterMode === 'all' ? 'var(--on-accent)' : 'var(--text)',
+              border: filterMode === 'all' ? '1.5px solid var(--accent)' : '1.5px solid var(--line)',
+            }}
           >
             All ({people.length})
           </button>
           <button
             onClick={() => setFilterMode('multiple')}
-            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
-              filterMode === 'multiple'
-                ? 'bg-neutral-800 text-white border border-neutral-700'
-                : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60'
-            }`}
+            className="px-4 py-2 rounded text-sm font-bold transition-all cursor-pointer"
+            style={{
+              background: filterMode === 'multiple' ? 'var(--accent)' : 'var(--input)',
+              color: filterMode === 'multiple' ? 'var(--on-accent)' : 'var(--text)',
+              border: filterMode === 'multiple' ? '1.5px solid var(--accent)' : '1.5px solid var(--line)',
+            }}
           >
             Multi-photo ({multipleCount})
           </button>
           <button
             onClick={() => setFilterMode('single')}
-            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
-              filterMode === 'single'
-                ? 'bg-neutral-800 text-white border border-neutral-700'
-                : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60'
-            }`}
+            className="px-4 py-2 rounded text-sm font-bold transition-all cursor-pointer"
+            style={{
+              background: filterMode === 'single' ? 'var(--accent)' : 'var(--input)',
+              color: filterMode === 'single' ? 'var(--on-accent)' : 'var(--text)',
+              border: filterMode === 'single' ? '1.5px solid var(--accent)' : '1.5px solid var(--line)',
+            }}
           >
             Singletons ({singleCount})
           </button>
@@ -117,17 +132,28 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
       {selectedIds.size > 0 && (
         <div
           id="merge-action-banner"
-          className="sticky top-20 z-30 glass-card border border-accent/40 bg-neutral-900/95 p-3.5 sm:p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-4 animate-scaleUp"
+          className="sticky top-20 z-30 p-4 sm:p-5 rounded flex items-center justify-between gap-4 animate-scaleUp"
+          style={{
+            background: 'var(--panel)',
+            border: '2px solid var(--accent)',
+            boxShadow: '2px 4px 0px rgba(0, 0, 0, 0.3)',
+          }}
         >
           <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-lg bg-accent/20 border border-accent/40 flex items-center justify-center text-accent font-bold text-base">
+            <div
+              className="w-10 h-10 rounded flex items-center justify-center font-bold text-base flex-shrink-0"
+              style={{
+                background: 'var(--accent)',
+                color: 'var(--on-accent)',
+              }}
+            >
               {selectedIds.size}
             </div>
             <div>
-              <p className="text-base font-bold text-white">
+              <p className="text-base sm:text-lg font-bold" style={{ color: 'var(--text)' }}>
                 {selectedIds.size} {selectedIds.size === 1 ? 'person' : 'people'} selected
               </p>
-              <p className="text-sm text-neutral-400">
+              <p className="text-sm mt-0.5" style={{ color: 'var(--muted)' }}>
                 {selectedIds.size < 2
                   ? 'Select at least 2 people to merge into a single person'
                   : 'Ready to combine all faces and photos into one person'}
@@ -139,7 +165,8 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
             <button
               id="clear-selection-btn"
               onClick={onClearSelection}
-              className="px-3.5 py-2 rounded-xl border border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800 text-sm font-semibold transition-all"
+              className="riso-btn-sec"
+              style={{ height: '44px', padding: '0 18px', fontSize: '14px' }}
             >
               Clear
             </button>
@@ -147,13 +174,19 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
               id="merge-selected-btn"
               disabled={selectedIds.size < 2 || isMerging}
               onClick={onMergeSelected}
-              className={`px-4 sm:px-5 py-2.5 rounded-xl text-sm sm:text-base font-bold flex items-center gap-2 transition-all shadow-lg ${
-                selectedIds.size >= 2 && !isMerging
-                  ? 'bg-accent text-white hover:brightness-110 shadow-accent/20 cursor-pointer'
-                  : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700/50'
-              }`}
+              className="btn pri"
+              style={{
+                height: '44px',
+                padding: '0 24px',
+                borderRadius: '4px',
+                fontSize: '15px',
+                fontWeight: 800,
+                opacity: selectedIds.size < 2 || isMerging ? 0.45 : 1,
+                cursor: selectedIds.size < 2 || isMerging ? 'not-allowed' : 'pointer',
+                boxShadow: '2px 3px 0px rgba(0,0,0,0.25)',
+              }}
             >
-              <Users className="w-4 h-4" />
+              <Users className="w-4 h-4 mr-1.5" />
               <span>{isMerging ? 'Merging...' : `Merge Selected (${selectedIds.size})`}</span>
             </button>
           </div>
@@ -162,17 +195,24 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
 
       {/* Grid of People Cards */}
       {filteredPeople.length === 0 ? (
-        <div className="glass-card p-12 rounded-2xl text-center space-y-3">
-          <Users className="w-10 h-10 text-neutral-500 mx-auto" />
-          <h3 className="text-lg font-bold text-neutral-300">No people found</h3>
-          <p className="text-sm text-neutral-400 max-w-sm mx-auto">
+        <div
+          className="p-14 rounded text-center space-y-3"
+          style={{
+            background: 'var(--card-bg, var(--panel))',
+            border: '1.5px dashed var(--line)',
+            color: 'var(--muted)',
+          }}
+        >
+          <Users className="w-10 h-10 mx-auto" style={{ color: 'var(--accent)' }} />
+          <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>No people found</h3>
+          <p className="text-sm max-w-sm mx-auto">
             Try adjusting your search query or filter settings above.
           </p>
         </div>
       ) : (
         <div
           id="people-cards-grid"
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4"
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
         >
           {filteredPeople.map((person) => {
             const isSelected = selectedIds.has(person.id);
@@ -183,12 +223,14 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
               <div
                 key={person.id}
                 id={`person-card-${person.id}`}
+                data-testid="person-card"
                 onClick={() => onSelectPerson(person)}
-                className={`group relative glass-card rounded-2xl overflow-hidden border transition-all duration-200 cursor-pointer flex flex-col ${
-                  isSelected
-                    ? 'border-accent bg-accent/5 ring-2 ring-accent/30 shadow-lg'
-                    : 'border-neutral-800/80 hover:border-neutral-700 hover:bg-neutral-900/90'
-                }`}
+                className="group relative rounded overflow-hidden transition-all duration-150 cursor-pointer flex flex-col"
+                style={{
+                  background: isSelected ? 'var(--panel)' : 'var(--card-bg, var(--panel))',
+                  border: isSelected ? '2.5px solid var(--accent)' : '1.5px solid var(--line)',
+                  boxShadow: isSelected ? '2px 4px 0px var(--accent)' : '2px 3px 0px rgba(0, 0, 0, 0.2)',
+                }}
               >
                 {/* Selection Checkbox Overlay */}
                 <button
@@ -199,49 +241,66 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
                     e.stopPropagation();
                     onToggleSelect(person.id);
                   }}
-                  className={`absolute top-2 left-2 z-10 p-1.5 rounded-lg transition-all ${
-                    isSelected
-                      ? 'bg-accent text-white shadow-md'
-                      : 'bg-black/60 text-neutral-400 hover:text-white backdrop-blur-sm opacity-60 group-hover:opacity-100'
-                  }`}
+                  className="absolute top-2 left-2 z-10 w-7 h-7 rounded flex items-center justify-center transition-all"
+                  style={{
+                    background: isSelected ? 'var(--accent)' : 'rgba(0,0,0,0.65)',
+                    color: isSelected ? 'var(--on-accent)' : 'var(--muted)',
+                    border: isSelected ? 'none' : '1px solid var(--line)',
+                    cursor: 'pointer',
+                  }}
                 >
                   {isSelected ? (
-                    <CheckSquare className="w-4 h-4 text-white" />
+                    <CheckSquare className="w-4 h-4" />
                   ) : (
                     <Square className="w-4 h-4" />
                   )}
                 </button>
 
                 {/* Photo Count Badge */}
-                <div className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md border border-white/10 text-xs font-semibold text-neutral-200">
+                <div
+                  className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded text-xs font-mono font-bold"
+                  style={{
+                    background: 'var(--panel)',
+                    border: '1px solid var(--line)',
+                    color: 'var(--text)',
+                  }}
+                >
                   {photoCount} {photoCount === 1 ? 'photo' : 'photos'}
                 </div>
 
                 {/* Face Thumbnail */}
-                <div className="relative aspect-square w-full bg-neutral-950 overflow-hidden">
+                <div className="relative aspect-square w-full overflow-hidden" style={{ background: 'var(--input)' }}>
                   <img
                     src={person.face}
                     alt={displayName}
                     loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
 
                 {/* Footer details */}
-                <div className="p-3 sm:p-3.5 flex flex-col justify-between flex-1">
+                <div
+                  className="p-3 flex flex-col justify-between flex-1"
+                  style={{
+                    background: 'var(--card-bg)',
+                    borderTop: '1px solid var(--line)',
+                  }}
+                >
                   <div className="min-w-0">
                     <p
-                      className="text-sm sm:text-base font-bold text-neutral-200 group-hover:text-white truncate"
+                      className="text-sm sm:text-base font-bold font-mono truncate"
+                      style={{ color: 'var(--text)' }}
                       title={displayName}
                     >
                       {displayName}
                     </p>
                     {person.label && (
-                      <p className="text-xs text-neutral-400 font-mono truncate">{person.id}</p>
+                      <p className="text-xs font-mono truncate mt-0.5" style={{ color: 'var(--muted)' }}>
+                        {person.id}
+                      </p>
                     )}
                   </div>
-                  <p className="text-xs text-neutral-400 mt-1.5 font-medium">
+                  <p className="text-xs font-medium mt-1.5" style={{ color: 'var(--muted)' }}>
                     {person.faces?.length || photoCount} detected face{person.faces?.length === 1 ? '' : 's'}
                   </p>
                 </div>

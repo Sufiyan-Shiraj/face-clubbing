@@ -19,6 +19,7 @@ import json
 import time
 import shutil
 import tempfile
+from typing import Optional, Dict, Any, List
 from pathlib import Path
 from PIL import Image
 import numpy as np
@@ -364,10 +365,14 @@ def setup_isolated_export_client():
     if (baseline_dir / "id_map.json").exists():
         shutil.copy2(baseline_dir / "id_map.json", temp_work / "id_map.json")
 
+    with open(baseline_dir / "people.json", "r", encoding="utf-8") as f:
+        baseline_data = json.load(f)
+    baseline_pids = set(baseline_data.get("photos", {}).keys())
+
     work_dir = repo_root / "export.work"
     source_cache = work_dir / ".cache" if (work_dir / ".cache").exists() else work_dir
     for jf in source_cache.glob("*.json"):
-        if jf.name not in ("edits.json", "suggestions.json", "id_map.json"):
+        if jf.name not in ("edits.json", "suggestions.json", "id_map.json") and jf.stem in baseline_pids:
             shutil.copy2(jf, temp_cache / jf.name)
 
     app = create_app(work_dir=temp_work, output_dir=temp_export, cache_dir=temp_cache)
@@ -375,7 +380,7 @@ def setup_isolated_export_client():
     return client, temp_dir
 
 
-def run_live_export_verification(base_url: str = "http://127.0.0.1:8000", report_path: Path = Path("REPORT.md")) -> bool:
+def run_live_export_verification(base_url: Optional[str] = None, report_path: Path = Path("REPORT.md")) -> bool:
     """Verifies API output against canonical test export numbers parsed dynamically from REPORT.md using isolated baseline."""
     import urllib.request
     import urllib.error
@@ -394,13 +399,15 @@ def run_live_export_verification(base_url: str = "http://127.0.0.1:8000", report
 
     try:
         def get_json(path: str):
-            try:
-                req = urllib.request.Request(f"{base_url}{path}", headers={"User-Agent": "verify_api"})
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    return json.loads(resp.read().decode("utf-8"))
-            except (urllib.error.URLError, TimeoutError):
-                r = client.get(path)
-                return r.json()
+            if base_url:
+                try:
+                    req = urllib.request.Request(f"{base_url}{path}", headers={"User-Agent": "verify_api"})
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        return json.loads(resp.read().decode("utf-8"))
+                except (urllib.error.URLError, TimeoutError):
+                    pass
+            r = client.get(path)
+            return r.json()
 
         # 1. People count
         people_data = get_json("/api/people")
@@ -457,6 +464,120 @@ def run_live_export_verification(base_url: str = "http://127.0.0.1:8000", report
             print(f"[PASS] Ambiguous faces: {ambiguous_faces} (matched REPORT.md: {expected['ambiguous_faces']})")
         else:
             print(f"[FAIL] Ambiguous faces: {ambiguous_faces} (expected from REPORT.md: {expected['ambiguous_faces']})")
+            all_passed = False
+
+        # ---------------------------------------------------------------------
+        # 4. Invariant 1256 + 445 = 1701 & Advanced Batch Operations Audit
+        # (batch assign, detach known to unknown, create-new-person-from-selected,
+        # undo of each, failed save rollback, and zero pNNN in edits.json)
+        # ---------------------------------------------------------------------
+        temp_work_dir = Path(temp_dir) / "work"
+        edits_json_path = temp_work_dir / "edits.json"
+
+        def assert_invariant(step_name: str, expected_clustered: int, expected_unrec: int):
+            p_list = client.get("/api/people").json()
+            u_data = client.get("/api/unrecognized").json()
+            c_faces = sum(len(p.get("faces", [])) for p in p_list)
+            u_faces = len(u_data.get("faces", []))
+            tot = c_faces + u_faces
+
+            if edits_json_path.exists():
+                e_txt = edits_json_path.read_text(encoding="utf-8")
+                v_clusters = re.findall(r'\bp\d{3}\b', e_txt)
+                if v_clusters:
+                    raise AssertionError(f"Cluster ID violation in edits.json at {step_name}: {v_clusters}")
+
+            if c_faces != expected_clustered or u_faces != expected_unrec or tot != 1701:
+                raise AssertionError(
+                    f"Invariant violation at {step_name}: clustered={c_faces} (exp {expected_clustered}), "
+                    f"unrec={u_faces} (exp {expected_unrec}), total={tot} (exp 1701)"
+                )
+            return p_list, u_data
+
+        # 4a. Initial baseline invariant: 1256 + 445 = 1701
+        assert_invariant("baseline", 1256, 445)
+        print("[PASS] Check 4a: Baseline invariant holds: 1256 clustered + 445 unrecognized = 1701 total faces")
+
+        # 4b. Batch assign (face_ids) to existing person
+        unrec_init = client.get("/api/unrecognized").json()
+        target_fids = [unrec_init["faces"][0]["face_id"], unrec_init["faces"][1]["face_id"]]
+        cur_people = client.get("/api/people").json()
+        target_pid = cur_people[0]["id"]
+
+        assign_batch_res = client.post("/api/edits", json={
+            "op": "assign",
+            "face_ids": target_fids,
+            "person_id": target_pid,
+        })
+        if assign_batch_res.status_code == 200 and assign_batch_res.json()["success"]:
+            assert_invariant("batch_assign", 1258, 443)
+            # Undo batch assign
+            undo_res = client.post("/api/edits", json={"op": "undo"})
+            assert undo_res.status_code == 200
+            assert_invariant("undo_batch_assign", 1256, 445)
+            print(f"[PASS] Check 4b: Batch assign ({len(target_fids)} face_ids) and undo verified; invariant 1256 + 445 = 1701 holds, zero pNNN in edits.json")
+        else:
+            print(f"[FAIL] Check 4b: Batch assign failed: {assign_batch_res.text}")
+            all_passed = False
+
+        # 4c. Detach known face to unknown (op: remove)
+        person_with_multi = next(p for p in cur_people if len(p.get("faces", [])) >= 2)
+        face_to_detach = person_with_multi["faces"][0]["face_id"]
+        detach_res = client.post("/api/edits", json={
+            "op": "remove",
+            "person_id": person_with_multi["id"],
+            "face_id": face_to_detach,
+        })
+        if detach_res.status_code == 200 and detach_res.json()["success"]:
+            assert_invariant("detach_face", 1255, 446)
+            # Undo detach
+            undo_detach_res = client.post("/api/edits", json={"op": "undo"})
+            assert undo_detach_res.status_code == 200
+            assert_invariant("undo_detach_face", 1256, 445)
+            print(f"[PASS] Check 4c: Detach known face to unknown and undo verified; invariant 1256 + 445 = 1701 holds, zero pNNN in edits.json")
+        else:
+            print(f"[FAIL] Check 4c: Detach known face failed: {detach_res.text}")
+            all_passed = False
+
+        # 4d. Create new person from selected unrecognized faces (person_id: None)
+        new_fids = [unrec_init["faces"][2]["face_id"], unrec_init["faces"][3]["face_id"]]
+        create_new_res = client.post("/api/edits", json={
+            "op": "assign",
+            "face_ids": new_fids,
+            "person_id": None,
+        })
+        if create_new_res.status_code == 200 and create_new_res.json()["success"]:
+            p_after_create, _ = assert_invariant("create_new_person", 1258, 443)
+            if len(p_after_create) != 193:
+                raise AssertionError(f"Expected 193 people after create new person, got {len(p_after_create)}")
+            # Undo create new person
+            undo_create_res = client.post("/api/edits", json={"op": "undo"})
+            assert undo_create_res.status_code == 200
+            p_restored, _ = assert_invariant("undo_create_new_person", 1256, 445)
+            if len(p_restored) != 192:
+                raise AssertionError(f"Expected 192 people after undo create, got {len(p_restored)}")
+            print(f"[PASS] Check 4d: Create new person from selected faces and undo verified (192 -> 193 -> 192); invariant holds, zero pNNN in edits.json")
+        else:
+            print(f"[FAIL] Check 4d: Create new person failed: {create_new_res.text}")
+            all_passed = False
+
+        # 4e. Failed save rolls back / preserves state without corruption
+        # 4e.1 Invalid op returns HTTP 400 error
+        invalid_res = client.post("/api/edits", json={"op": "unsupported_bogus_op"})
+        # 4e.2 Ghost face remove edit returns unapplied_edits with applied_count == 0
+        ghost_res = client.post("/api/edits", json={
+            "op": "remove",
+            "person_id": cur_people[0]["id"],
+            "face_id": "f_non_existent_ghost_face_9999",
+        })
+        ghost_unapplied = ghost_res.json().get("unapplied_edits", [])
+        if invalid_res.status_code == 400 and len(ghost_unapplied) > 0:
+            # Undo ghost edit
+            client.post("/api/edits", json={"op": "undo"})
+            assert_invariant("failed_save_preserved", 1256, 445)
+            print(f"[PASS] Check 4e: Failed edits handled gracefully (HTTP 400 for bad op, unapplied for ghost face); state preserved and invariant 1256 + 445 = 1701 holds")
+        else:
+            print(f"[FAIL] Check 4e: Failed edit checks did not behave as expected: invalid_code={invalid_res.status_code}, ghost_res={ghost_res.text}")
             all_passed = False
 
     finally:

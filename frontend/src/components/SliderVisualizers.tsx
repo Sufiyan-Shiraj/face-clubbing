@@ -350,7 +350,7 @@ export const MergeFusionVisualizer: React.FC<{ value: number }> = ({ value }) =>
 
         // Repulsion arrow indicators
         const arrowOffset = Math.sin(time * 3) * 2.5;
-        ctx.font = '11px "JetBrains Mono", monospace';
+        ctx.font = '12px "JetBrains Mono", monospace';
         ctx.fillStyle = colors.muted;
         ctx.textAlign = 'center';
         ctx.fillText('◂', posA + 12 - arrowOffset, centerY + 4);

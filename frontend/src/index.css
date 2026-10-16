@@ -2130,7 +2130,7 @@ input[type="range"].settings-range::-moz-range-thumb {
   background: rgba(0, 0, 0, 0.75);
   color: var(--accent-ink);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   padding: 1px 4px;
   border-radius: 2px;
@@ -2328,6 +2328,142 @@ input[type="range"].settings-range::-moz-range-thumb {
   transform: translateY(-2px);
   filter: brightness(1.1);
 }
+
+/* ==========================================================================
+   Review & Unrecognized Triage Tactile Risograph Design System
+   ========================================================================== */
+
+/* Universal Tactile Panel / Card */
+.glass-card {
+  background: var(--card-bg, var(--panel));
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  box-shadow: 2px 3px 0px rgba(0, 0, 0, 0.2);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Subtab Navigation Buttons */
+.riso-subtab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  height: 46px;
+  background: var(--card-bg, var(--panel));
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.riso-subtab-btn:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.riso-subtab-btn.active {
+  background: var(--panel);
+  border-color: var(--accent);
+  color: var(--text);
+  box-shadow: 2px 2px 0px var(--accent);
+}
+
+.riso-tab-badge {
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: var(--input);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Tactile Inputs, Selects & Buttons */
+.riso-select {
+  background: var(--input);
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  height: 44px;
+  padding: 0 16px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.riso-select:focus {
+  border-color: var(--accent);
+}
+
+.riso-select option {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.riso-input {
+  background: var(--input);
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.riso-input:focus {
+  border-color: var(--accent);
+}
+
+.riso-btn-sec {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 18px;
+  height: 42px;
+  background: var(--card-bg, rgba(255, 255, 255, 0.04));
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.riso-btn-sec:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.riso-btn-sec:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.riso-badge-accent {
+  background: var(--input);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 
 
 
