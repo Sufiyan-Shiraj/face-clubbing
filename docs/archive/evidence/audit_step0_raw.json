@@ -1,0 +1,391 @@
+{
+  "step_0a": {
+    "exe_size_bytes": 171065458,
+    "total_toc_entries": 1773,
+    "models_bundled_count": 0,
+    "mascot_logo_files_count": 32,
+    "category_totals": {
+      "code_dll_pyd": {
+        "count": 327,
+        "comp_bytes": 127273639,
+        "uncomp_bytes": 358543649
+      },
+      "code_py": {
+        "count": 24,
+        "comp_bytes": 24880795,
+        "uncomp_bytes": 24929181
+      },
+      "ui_images": {
+        "count": 23,
+        "comp_bytes": 5739679,
+        "uncomp_bytes": 5765497
+      },
+      "mascot_logo": {
+        "count": 32,
+        "comp_bytes": 9594134,
+        "uncomp_bytes": 9676449
+      },
+      "models": {
+        "count": 0,
+        "comp_bytes": 0,
+        "uncomp_bytes": 0
+      },
+      "other_data": {
+        "count": 1367,
+        "comp_bytes": 3096163,
+        "uncomp_bytes": 10116692
+      }
+    },
+    "mascot_logo_files": [
+      {
+        "name": "frontend\\dist\\catlog-icon.png",
+        "comp_bytes": 756128,
+        "uncomp_bytes": 764892
+      },
+      {
+        "name": "frontend\\dist\\catlog-logo.png",
+        "comp_bytes": 1122165,
+        "uncomp_bytes": 1134387
+      },
+      {
+        "name": "frontend\\dist\\catlog-tagline.png",
+        "comp_bytes": 1094921,
+        "uncomp_bytes": 1113319
+      },
+      {
+        "name": "frontend\\dist\\mascot\\dark\\pose1.png",
+        "comp_bytes": 193944,
+        "uncomp_bytes": 196302
+      },
+      {
+        "name": "frontend\\dist\\mascot\\dark\\pose2.png",
+        "comp_bytes": 164925,
+        "uncomp_bytes": 167138
+      },
+      {
+        "name": "frontend\\dist\\mascot\\dark\\pose3.png",
+        "comp_bytes": 204394,
+        "uncomp_bytes": 207551
+      },
+      {
+        "name": "frontend\\dist\\mascot\\dark\\pose4.png",
+        "comp_bytes": 210612,
+        "uncomp_bytes": 214103
+      },
+      {
+        "name": "frontend\\dist\\mascot\\dark\\pose5.png",
+        "comp_bytes": 168223,
+        "uncomp_bytes": 169986
+      },
+      {
+        "name": "frontend\\dist\\mascot\\dark\\pose6.png",
+        "comp_bytes": 172790,
+        "uncomp_bytes": 174619
+      },
+      {
+        "name": "frontend\\dist\\mascot\\dark\\pose7.png",
+        "comp_bytes": 120498,
+        "uncomp_bytes": 122315
+      },
+      {
+        "name": "frontend\\dist\\mascot\\dark\\pose8.png",
+        "comp_bytes": 130948,
+        "uncomp_bytes": 133995
+      },
+      {
+        "name": "frontend\\dist\\mascot\\navy\\pose1.png",
+        "comp_bytes": 266444,
+        "uncomp_bytes": 266353
+      },
+      {
+        "name": "frontend\\dist\\mascot\\navy\\pose2.png",
+        "comp_bytes": 266849,
+        "uncomp_bytes": 266758
+      },
+      {
+        "name": "frontend\\dist\\mascot\\navy\\pose3.png",
+        "comp_bytes": 278713,
+        "uncomp_bytes": 278622
+      },
+      {
+        "name": "frontend\\dist\\mascot\\navy\\pose4.png",
+        "comp_bytes": 277705,
+        "uncomp_bytes": 277614
+      },
+      {
+        "name": "frontend\\dist\\mascot\\navy\\pose5.png",
+        "comp_bytes": 252021,
+        "uncomp_bytes": 251935
+      },
+      {
+        "name": "frontend\\dist\\mascot\\navy\\pose6.png",
+        "comp_bytes": 251065,
+        "uncomp_bytes": 250979
+      },
+      {
+        "name": "frontend\\dist\\mascot\\navy\\pose7.png",
+        "comp_bytes": 196213,
+        "uncomp_bytes": 196147
+      },
+      {
+        "name": "frontend\\dist\\mascot\\navy\\pose8.png",
+        "comp_bytes": 206818,
+        "uncomp_bytes": 206747
+      },
+      {
+        "name": "frontend\\dist\\mascot\\paper\\pose1.png",
+        "comp_bytes": 226569,
+        "uncomp_bytes": 228104
+      },
+      {
+        "name": "frontend\\dist\\mascot\\paper\\pose2.png",
+        "comp_bytes": 215283,
+        "uncomp_bytes": 216789
+      },
+      {
+        "name": "frontend\\dist\\mascot\\paper\\pose3.png",
+        "comp_bytes": 230442,
+        "uncomp_bytes": 232242
+      },
+      {
+        "name": "frontend\\dist\\mascot\\paper\\pose4.png",
+        "comp_bytes": 285330,
+        "uncomp_bytes": 290567
+      },
+      {
+        "name": "frontend\\dist\\mascot\\paper\\pose5.png",
+        "comp_bytes": 203337,
+        "uncomp_bytes": 205020
+      },
+      {
+        "name": "frontend\\dist\\mascot\\paper\\pose6.png",
+        "comp_bytes": 194591,
+        "uncomp_bytes": 195982
+      },
+      {
+        "name": "frontend\\dist\\mascot\\paper\\pose7.png",
+        "comp_bytes": 132918,
+        "uncomp_bytes": 133751
+      },
+      {
+        "name": "frontend\\dist\\mascot\\paper\\pose8.png",
+        "comp_bytes": 149812,
+        "uncomp_bytes": 150866
+      },
+      {
+        "name": "frontend\\dist\\textures\\logo-dark.png",
+        "comp_bytes": 10138,
+        "uncomp_bytes": 10127
+      },
+      {
+        "name": "frontend\\dist\\textures\\logo-navy.png",
+        "comp_bytes": 10538,
+        "uncomp_bytes": 10527
+      },
+      {
+        "name": "frontend\\dist\\textures\\logo-paper.png",
+        "comp_bytes": 10521,
+        "uncomp_bytes": 10510
+      },
+      {
+        "name": "frontend\\dist\\textures\\photosorter-logo-banner.jpg",
+        "comp_bytes": 688795,
+        "uncomp_bytes": 692822
+      },
+      {
+        "name": "frontend\\dist\\textures\\photosorter-logo-mark.jpg",
+        "comp_bytes": 900484,
+        "uncomp_bytes": 905380
+      }
+    ],
+    "ui_images_files": [
+      {
+        "name": "_tk_data\\images\\tai-ku.gif",
+        "comp_bytes": 5400
+      },
+      {
+        "name": "frontend\\dist\\favicon.png",
+        "comp_bytes": 756128
+      },
+      {
+        "name": "frontend\\dist\\favicon.svg",
+        "comp_bytes": 372
+      },
+      {
+        "name": "frontend\\dist\\textures\\coral-btn-texture.png",
+        "comp_bytes": 8906
+      },
+      {
+        "name": "frontend\\dist\\textures\\paper-bg-dark.png",
+        "comp_bytes": 294221
+      },
+      {
+        "name": "frontend\\dist\\textures\\paper-bg-light.png",
+        "comp_bytes": 337863
+      },
+      {
+        "name": "frontend\\dist\\textures\\paper-bg-navy.png",
+        "comp_bytes": 210020
+      },
+      {
+        "name": "frontend\\dist\\textures\\paper-grain-universal.png",
+        "comp_bytes": 164493
+      },
+      {
+        "name": "frontend\\dist\\textures\\riso-dust-overlay.png",
+        "comp_bytes": 67993
+      },
+      {
+        "name": "frontend\\dist\\textures\\riso-paper-overlay.png",
+        "comp_bytes": 298487
+      },
+      {
+        "name": "frontend\\dist\\textures\\title-dark.png",
+        "comp_bytes": 1184573
+      },
+      {
+        "name": "frontend\\dist\\textures\\title-navy.png",
+        "comp_bytes": 1002050
+      },
+      {
+        "name": "frontend\\dist\\textures\\title-paper.png",
+        "comp_bytes": 664683
+      },
+      {
+        "name": "insightface\\data\\images\\Tom_Hanks_54745.png",
+        "comp_bytes": 12099
+      },
+      {
+        "name": "insightface\\data\\images\\mask_black.jpg",
+        "comp_bytes": 18769
+      },
+      {
+        "name": "insightface\\data\\images\\mask_blue.jpg",
+        "comp_bytes": 42569
+      },
+      {
+        "name": "insightface\\data\\images\\mask_green.jpg",
+        "comp_bytes": 5974
+      },
+      {
+        "name": "insightface\\data\\images\\mask_white.jpg",
+        "comp_bytes": 77861
+      },
+      {
+        "name": "insightface\\data\\images\\t1.jpg",
+        "comp_bytes": 128791
+      },
+      {
+        "name": "insightface\\gui\\assets\\app_icon.ico",
+        "comp_bytes": 76978
+      },
+      {
+        "name": "insightface\\gui\\assets\\app_icon.png",
+        "comp_bytes": 50040
+      },
+      {
+        "name": "sklearn\\datasets\\images\\china.jpg",
+        "comp_bytes": 195641
+      },
+      {
+        "name": "sklearn\\datasets\\images\\flower.jpg",
+        "comp_bytes": 135768
+      }
+    ]
+  },
+  "step_0b": {
+    "files": [
+      {
+        "filename": "README.md",
+        "type": ".md",
+        "size_bytes": 2269,
+        "sha256": "ef49f3d91c0eaa9a0974cdc0511acc159066b701512a6430fab597b0b4089500"
+      },
+      {
+        "filename": "config.json",
+        "type": ".json",
+        "size_bytes": 269,
+        "sha256": "e90381bf2a519b7fe46187d87177224421bf9f0f3e8c9dfd580874994ad95afe"
+      },
+      {
+        "filename": "edits.json",
+        "type": ".json",
+        "size_bytes": 34,
+        "sha256": "9f2b01ab1282f406ff39b23f03c9eb1397530528e9a454502564f88f9959ce2d"
+      },
+      {
+        "filename": "id_map.json",
+        "type": ".json",
+        "size_bytes": 4766,
+        "sha256": "3e7eb52f516ba648923f98096dc16990c0c1344828a7cc0fcbdeda4b54c55380"
+      },
+      {
+        "filename": "people.json",
+        "type": ".json",
+        "size_bytes": 736814,
+        "sha256": "55fe871896549797868e3e33e7fcea91fefde7f8d7ceef60371a847472a6cfdd"
+      },
+      {
+        "filename": "suggestions.json",
+        "type": ".json",
+        "size_bytes": 73608,
+        "sha256": "6f7d689535715ec75d6cd4ec8637c02e36ca7763f1cd48f1f413d5ccccdcb39b"
+      }
+    ],
+    "contains_embeddings": false,
+    "contains_face_crops": false,
+    "contains_photo_derived_metadata": true
+  },
+  "step_0c": {
+    "total_tracked_files": 239,
+    "real_photos_tracked": 0,
+    "face_crops_tracked": 0,
+    "face_embeddings_tracked": 0
+  },
+  "step_0d": {
+    "host": "github.com",
+    "url": "https://github.com/deepinsight/insightface/releases/download/model-zoo/buffalo_l.zip",
+    "download_size_zip_bytes": 300806495,
+    "uncompressed_model_dir": "~/.photosorter/models/buffalo_l (migrating to ~/.catlog/models/buffalo_l)",
+    "onnx_model_count": 5,
+    "onnx_files": [
+      "1k3d68.onnx",
+      "2d106det.onnx",
+      "genderage.onnx",
+      "glintr100.onnx",
+      "scrfd_10g_bnkps.onnx"
+    ],
+    "verified_progress": true,
+    "verified_retry_and_restart": true,
+    "verified_crc_and_size_check": true,
+    "verified_no_redownload_on_launch": true,
+    "verified_offline_error_handling": true
+  },
+  "step_0e": {
+    "onefile": {
+      "size_bytes": 171065458,
+      "size_mb": 163.14,
+      "runs_seconds": [
+        11.934,
+        11.778,
+        29.64
+      ],
+      "avg_seconds": 17.784,
+      "min_seconds": 11.778,
+      "max_seconds": 29.64
+    },
+    "onedir": {
+      "total_size_bytes": 409362961,
+      "size_mb": 390.4,
+      "file_count": 1761,
+      "runs_seconds": [
+        4.104,
+        1.146,
+        1.143
+      ],
+      "avg_seconds": 2.131,
+      "min_seconds": 1.143,
+      "max_seconds": 4.104
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "exe_size_bytes": 171065458,
+  "cold_start_runs": [
+    11.934,
+    11.778,
+    29.64
+  ],
+  "cold_start_avg_s": 17.784000000000002,
+  "time_to_open_project_ms": 11.91,
+  "total_photos": 259,
+  "total_pipeline_time_s": 979.877,
+  "s_per_photo": 3.783,
+  "peak_ram_mb": 1403.96,
+  "stage_timings_s": {
+    "decode": 107.614,
+    "detect": 79.362,
+    "embed": 714.268,
+    "thumbs_crops": 55.563,
+    "cluster": 4.625,
+    "export": 10.694,
+    "model_init": 3.081
+  },
+  "invariants": {
+    "people_count": 192,
+    "clustered_faces": 1256,
+    "unrecognized_faces": 445,
+    "total_faces": 1701,
+    "unrecognized_photos": 168,
+    "total_photos": 259,
+    "verified": true
+  },
+  "export_folder": {
+    "size_bytes": 31421177,
+    "file_count": 898
+  },
+  "bundles": {
+    "frontend": {
+      "js_raw": 415970,
+      "js_gz": 108464,
+      "css_raw": 79808,
+      "css_gz": 14826,
+      "total_raw": 495778,
+      "total_gz": 123290
+    },
+    "viewer": {
+      "js_raw": 198276,
+      "js_gz": 59691,
+      "css_raw": 27276,
+      "css_gz": 5765,
+      "total_raw": 225552,
+      "total_gz": 65456
+    }
+  },
+  "viewer_first_load": {
+    "load_time_ms": 267.4,
+    "request_count": 22,
+    "transferred_bytes": 1753299
+  }
+}

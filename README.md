@@ -94,7 +94,42 @@ It takes an event's photo collection, detects faces, extracts mathematical embed
 | **Machine Learning** | InsightFace (`buffalo_l`), ONNX Runtime, NumPy, SciPy |
 | **Organizer UI** | React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons |
 | **Gallery Viewers** | Standalone Single-File HTML5 (Vanilla JS) & Static React Viewer |
-| **Testing** | Pytest (83 tests), Vitest (73 tests, 13 test suites) |
+| **Testing** | Pytest (86 tests), Vitest (73 tests, 13 test suites) |
+
+---
+
+## Repository Structure
+
+```text
+catlog/
+├── backend/
+│   ├── api/                 # FastAPI backend (endpoints, SSE events, project state, dialogs)
+│   ├── drive/               # Google Drive v3 integration (API client, parser, downloads)
+│   └── engine/              # Face clustering pipeline
+│       ├── detector.py      # InsightFace buffalo_l detection & 512D ArcFace embeddings
+│       ├── clusterer.py     # Two-pass Agglomerative clustering & distance thresholding
+│       ├── thumbnails.py    # Multi-resolution thumbnail and avatar crop generator
+│       ├── exporter.py      # Static web gallery and export bundle generator
+│       ├── standalone_html.py # Self-contained single-file HTML gallery compiler
+│       ├── edits.py         # Organizer edits, merge history, and split operations
+│       ├── cache.py         # Disk embedding cache with facial crop hashes
+│       ├── loader.py        # Photo decoder supporting JPEG, PNG, WebP, HEIC/HEIF
+│       ├── scanner.py       # Local folder and ZIP archive photo discovery
+│       └── pipeline.py      # End-to-end background job execution orchestrator
+├── frontend/                # React 19 organizer desktop UI (Vite, TypeScript, Tailwind)
+│   ├── public/              # Camera Cat mascots (8 poses x 3 themes), UI textures, brand icons
+│   └── src/                 # Review interface, triage view, suggestions, settings, tour
+├── viewer/                  # Public static gallery web app for attendees (Vite, React 19)
+│   └── src/                 # Attendee search, responsive grid, ZIP streaming, direct downloads
+├── docs/
+│   └── archive/             # Archived benchmarks, evaluation data, and verification screenshots
+├── eval/                    # Standalone verification suites, baseline fixtures, and test runners
+├── tests/                   # Backend unit and integration test suite (86 pytest cases)
+├── main.py                  # Desktop application entrypoint (webview + uvicorn server)
+├── photosorter.spec         # PyInstaller standalone executable specification
+├── catlog.ico               # Multi-resolution application icon
+└── version_info.txt         # Windows PE executable version resource definition
+```
 
 ---
 
