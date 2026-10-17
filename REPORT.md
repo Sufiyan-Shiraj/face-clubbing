@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-17  
 **Project**: Face Sorting Engine (`face-clubbing`)  
-**Status**: Phase 1b Complete, Phase 2 Complete (All Rows 1-15 PASS), Phase 3 Complete, Phase 4 Complete, Hygiene & Isolation Round Complete (Tasks 0-7 COMPLETE), Phase 5 Complete, Phase 6 Complete (Live Google Drive integration verified on real public folder; 100% thumbnails, 92.1% bandwidth saved, 64px floor documented in SPEC §18), Landing & HomeScreen Riso Redesign Complete, Review & Merge Screen Revamp, Unrecognized Triage Multi-Select, Compact Card Layouts, Image Viewer Unknown Face Bounding Boxes & On-Canvas Reassignment Controls Complete, and Open Saved Project Feature Complete.
+**Status**: Phase 1b Complete, Phase 2 Complete (All Rows 1-15 PASS), Phase 3 Complete, Phase 4 Complete, Hygiene & Isolation Round Complete (Tasks 0-7 COMPLETE), Phase 5 Complete, Phase 6 Complete (Live Google Drive integration verified on real public folder; 100% thumbnails, 92.1% bandwidth saved, 64px floor documented in SPEC §18), Landing & HomeScreen Riso Redesign Complete, Review & Merge Screen Revamp, Unrecognized Triage Multi-Select, Compact Card Layouts, Image Viewer Unknown Face Bounding Boxes & On-Canvas Reassignment Controls Complete, Open Saved Project Feature Complete, and Startup Isolation, Drive Direct Photo Linking, Drive Folder Auto-Nesting, Temporary Cleanup & Standalone HTML Gallery Complete.
 
 ### Working Rules Compliance Confirmation
 - **No Cluster IDs (`pNNN`)**: Strictly enforced. Cluster IDs are display handles only for a single export and are never persisted, tested, compared, or allowlisted. All tests, edits, and verification scripts key strictly by anchor face IDs and photo IDs. Check 14 of `eval/verify_export.py` enforces zero `\bp\d{3}\b` tokens in code outside comments across `eval/` and `tests/`.
@@ -3754,6 +3754,100 @@ To uphold complete privacy and zero real-face leakage, all visual verification c
 3. **Missing Source Photo Handling (`review_03_image_viewer_source_missing.png`)**:
    - Location: `scratch/screenshots/review_03_image_viewer_source_missing.png` (512.12 KB).
    - Verifies: Image viewer displays "Source missing" badge, red floating warning banner, dashed container placeholder, and disabled download button when source photo is deleted or moved from disk.
+
+---
+
+## 24. PROJECT ISOLATION, DRIVE DIRECT LINKING, AUTO-NESTING, TEMP CLEANUP & STANDALONE HTML DELIVERABLES
+
+**Status**: **Complete** (All Requirements Implemented, Verified, and Integrated Across Engine, API, Frontend, and Standalone Gallery).
+
+### 24.1 Delivery Overview & User Requirements
+This round of deliverables addresses five critical real-world operational workflows requested for PhotoSorter:
+1. **Startup Isolation & Project Active Guard**:
+   - On application startup, past project state is not automatically loaded into memory.
+   - The user must explicitly choose to start a new project from a source or open an existing saved project.
+   - Review and Publish navigation tabs are disabled in the UI unless a project is active, guiding the user cleanly to the Source tab on fresh boots.
+2. **"New Project" Button**:
+   - A dedicated "New Project" button in the header resets the active runtime state to an empty slate anytime.
+   - If unsaved or unexported edits exist, the user is prompted for confirmation before resetting.
+3. **Drive Folder Auto-Nesting on Export**:
+   - When an export destination directory is selected (e.g. `export/`), the engine and UI automatically create and nest inside a subfolder titled with the Google Drive folder name (or active project name), e.g. `export/Echoes of reason 18th/`.
+   - Prevents duplicate nesting if the user already selected or navigated into that folder.
+4. **Temporary Directory Lifecycle & Automatic Cleanup**:
+   - During scanning of Google Drive folders, downloaded files are temporarily staged in `<folder_name>_temp` (e.g. `Echoes of reason 18th_temp`).
+   - As soon as the user exports the bundle, all temporary working directories and `<folder_name>_temp` are automatically and recursively deleted.
+5. **Standalone HTML (`index.html`) Zero-Server Gallery**:
+   - Generating a public export bundle automatically creates a self-contained, single-file `index.html` (and `gallery.html`).
+   - Anyone can double-click this file to view the full interactive event gallery in any modern browser without needing Node, Python, or an active server.
+6. **Direct Google Drive Photo Linking (Zero Local Photo Bloat)**:
+   - For Google Drive sources, full-resolution photos are **never** downloaded or stored locally in the export bundle.
+   - Only local face avatars (`faces/`) and square thumbnails (`thumbs/`) are stored locally.
+   - Every photo record in `people.json` and in `index.html` embeds the shareable Google Drive URL (`https://drive.google.com/file/d/<id>/view`).
+   - Clicking any photo card in the gallery or in a person modal opens the full photo directly on Google Drive in a new tab.
+
+---
+
+### 24.2 Architecture & Component Implementation
+
+#### 1. Backend Runtime Isolation & Reset (`backend/api/state.py` & `backend/api/routes.py`)
+- **`AppState.__init__`**:
+  `self.project_active = False` by default. `_try_load_existing_dataset()` only runs if explicitly commanded by a test fixture or environment flag (`PHOTOSORTER_LOAD_SAVED`).
+- **`GET /api/projects/active`**:
+  Returns active project metadata:
+  ```json
+  {
+    "active": false,
+    "name": null,
+    "people_count": 0,
+    "photos_count": 0
+  }
+  ```
+- **`POST /api/projects/new`**:
+  Calls `AppState.reset_to_empty()`, wiping `self.photos`, `self.people`, `self.unrecognized`, `self.id_map`, `self.edits_list`, and clearing `self.temp_dirs`.
+- **`set_result` & `open_saved_project`**:
+  Mark `self.project_active = True`, capture `self.drive_folder_name` and `self.active_project_name`, and register temporary directories.
+
+#### 2. Frontend Header & Guard Architecture (`frontend/src/`)
+- **`frontend/src/components/Header.tsx`**:
+  Added `#header-new-project-btn` styled with Risograph aesthetic (amber accent, clean hover transition, icon).
+- **`frontend/src/App.tsx`**:
+  - Initializes `isProjectActive` via `api.getActiveProject()`.
+  - Disables the Review and Publish tabs when `!isProjectActive`.
+  - Implements `handleNewProject()`: checks `hasUnsavedEdits`, prompts via `window.confirm("You have unexported changes. Discard and start a new project?")`, calls `api.newProject()`, and smoothly switches view to `'home'`.
+- **`frontend/src/components/ExportScreen.tsx`**:
+  `getNestedPath()` inspects the active project/drive folder name and dynamically appends the subfolder to the user's export path input.
+
+#### 3. Google Drive Direct Linking & Metadata Flow (`backend/drive/` & `backend/engine/`)
+- **`backend/drive/client.py`**:
+  Populates `drive_url = f"https://drive.google.com/file/d/{file_id}/view"` and `share_url = f"https://drive.google.com/file/d/{file_id}/view?usp=sharing"` on every `DriveFile`. Added `get_folder_name(folder_id)` to query the folder title via the Google Drive API.
+- **`backend/engine/scanner.py` & `backend/engine/models.py`**:
+  `ScannedPhoto` and `PhotoRecord` carry `drive_url`, `share_url`, and `drive_file_id`.
+- **`backend/engine/exporter.py`**:
+  Serializes `drive_url`, `share_url`, and `drive_file_id` into `photos` dictionary in `people.json`.
+- **`backend/engine/standalone_html.py`**:
+  Renders Google Drive badges on photo cards. Clicking a photo triggers `window.open(driveLink, '_blank')`, opening the original photo on Google Drive.
+
+#### 4. Temporary Directory Lifecycle & Export Auto-Nesting
+- In `backend/engine/pipeline.py`:
+  When scanning Google Drive, photos are downloaded into `<safe_folder_name>_temp`.
+- In `backend/api/state.py` (`export_public_bundle`):
+  - Detects `folder_title = self.drive_folder_name or self.active_project_name`.
+  - Automatically nests inside `out_p / safe_folder` if `out_p.name.lower() != safe_folder.lower()`.
+  - Automatically invokes `shutil.rmtree(t_dir, ignore_errors=True)` on all recorded `temp_dirs` and `<folder_title>_temp`.
+
+---
+
+### 24.3 Verification Evidence & Test Suite Matrix
+The changes were verified with the complete automated test suite and live build checks:
+
+| Verification Target | Command & Parameters | Outcome | Notes |
+| :--- | :--- | :---: | :--- |
+| **Complete Backend Test Suite** | `.venv\Scripts\python.exe -m pytest tests/` | **78 / 78 passed (100%)** in 57.69s | All 78 tests across 11 test modules pass cleanly. |
+| **Projects & Re-Export Suite** | `.venv\Scripts\python.exe -m pytest tests/test_projects.py` | **7 / 7 passed (100%)** in 2.38s | Re-opening, re-exporting, corrupt edits read-only, and shared cache isolation verified. |
+| **Public Bundle Hygiene & Isolation** | `.venv\Scripts\python.exe -m pytest tests/test_isolation.py` | **1 passed (100%)** in 38.81s | Zero modifications to source files; public bundle contains strictly allowed files. |
+| **API Layer Verification** | `.venv\Scripts\python.exe -m pytest tests/test_api.py` | **12 / 12 passed (100%)** | Active project API, new project reset, and public export hygiene verified. |
+| **Standalone HTML Tests** | `.venv\Scripts\python.exe -m pytest tests/test_standalone_html.py` | **1 / 1 passed (100%)** | Zero external JS scripts, DOM components, and JSON island validity verified. |
+| **Production Frontend Build** | `npm run build` (in `frontend/`) | **Exit code 0 (Success)** in 17.99s | 1,606 modules transformed, 0 TypeScript errors. Production bundle emitted to `dist/`. |
 
 ---
 
