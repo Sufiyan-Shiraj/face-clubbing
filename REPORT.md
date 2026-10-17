@@ -3569,6 +3569,89 @@ OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
 
 ---
 
+## 23. OPEN SAVED PROJECT FEATURE DELIVERABLES & VERIFICATION REPORT
+
+**Feature Status**: **Complete** (All Backend Endpoints, Edge Cases, Frontend Modal, and Tests Implemented & Verified).
+
+### 23.1 Feature Overview & Scope
+The "Open saved project" feature allows users to reopen a previously scanned work directory or export directory instantly without re-scanning source photos or re-computing embeddings.
+1. **Instant State Restoration**: Loads `edits.json`, the embedding cache (`embeddings.pkl` / `pose_cache.json`), and `people.json` directly from the specified directory. Restores people clusters, unrecognized faces, suggestions, and full undo history to the Review screen.
+2. **Zero Cluster ID Persistence**: Edits and associations remain strictly keyed by permanent face IDs (`f_<photo_id>_<idx>`) and photo IDs (`<photo_id>`). Cluster IDs (`pNNN`) are purely ephemeral UI labels.
+3. **Automatic Registration**: Every successful scan and export automatically records or updates the project entry in the recent projects registry.
+4. **File Safety Guarantee**: Removing a project from the recent list via `DELETE /api/projects/{id}` or the UI "Remove" action removes the metadata entry only and **never deletes any files or folders on disk**.
+
+### 23.2 Schema & Privacy Guarantee
+Recent projects are recorded outside the workspace in `~/.photosorter/projects.json` (overridable via `PHOTOSORTER_PROJECTS_FILE` for isolated test runs).
+
+#### Exact Data Written to Disk
+```json
+{
+  "version": 1,
+  "projects": [
+    {
+      "id": "75369772",
+      "name": "Summit2026",
+      "work_dir": "C:\\Projects\\Summit2026.work",
+      "export_path": "C:\\Projects\\Summit2026_export",
+      "source_description": "C:\\Photos\\HighRes (Local Folder)",
+      "last_opened": "2026-10-17T05:30:00Z",
+      "counts": {
+        "people": 192,
+        "photos": 259
+      },
+      "exists": true
+    }
+  ]
+}
+```
+
+#### Privacy & Security Guarantees
+- **No Biometric Data**: Zero face embeddings (512-d float vectors), landmarks, or bounding boxes are stored in `projects.json`.
+- **No Image Data**: Zero raw images, thumbnails, or image bytes are stored in `projects.json`.
+- **Credential Stripping**: `_sanitize_source_description()` automatically strips Google Drive API keys (`AIzaSy...`), OAuth tokens, and sensitive query parameters before any metadata is written to disk.
+- **Atomic Writes**: Written via temporary file replacement (`tempfile.NamedTemporaryFile` + `os.replace`) to prevent file corruption on unexpected shutdown.
+
+### 23.3 Five Edge Cases & Recovery Architecture
+Each edge case is explicitly handled in the architecture and validated with dedicated automated tests:
+
+| Edge Case | Failure Scenario | System Handling & Recovery | Verified In |
+| :--- | :--- | :--- | :--- |
+| **1. Work Folder Moved/Deleted** | Project folder missing or drive unmounted (`exists: false`). | `POST /api/projects/open` returns HTTP 404 with clear message: `"Work directory does not exist or was moved"`. UI highlights the missing project in red and provides a one-click "Remove from list" action. | `test_open_missing_work_dir()` & `openProject.test.tsx` |
+| **2. Source Photos Missing/Moved** | Original camera raw photos moved or missing from disk. | Local cluster view and thumbnail browser open normally using cached assets. Opening the full photo viewer flags `source_exists: false`, displaying a "Source missing" badge, warning banner, fallback placeholder, and disabling the raw download button (`download-missing-btn`). | `test_missing_source_photos_flag()` & `imageViewerModal.test.tsx` |
+| **3. Drive-Sourced Project** | Reopening project that was scanned from Google Drive. | Reopens completely offline without requiring or asking for the Google Drive API key, reading entirely from local embedding and thumbnail caches. | `test_open_drive_sourced_project_offline()` & `openProject.test.tsx` |
+| **4. Corrupt `edits.json`** | `edits.json` contains malformed JSON syntax or truncated bytes. | Opens safely in `read_only=True` mode. Reconstructs base clusters from `people.json`, emits a clear error warning, displays a persistent amber banner in the UI, and blocks destructive write-backs. | `test_corrupt_edits_read_only_fallback()` & `openProject.test.tsx` |
+| **5. Scan in Progress** | Attempting to open a project while a scan or export job is currently running. | Request is blocked with HTTP 409 Conflict: `"Cannot open project while a scan or export job is in progress"`. | `test_open_blocked_while_scan_running()` & `test_projects.py` |
+
+### 23.4 Automated Test Suite & Verification Matrix
+All 9 core test and verification suites were executed with outputs persisted to `scratch/` alongside SHA-256 cryptographic verification hashes:
+
+| Verification Suite | Target & Scope | Result | Raw Output File & SHA-256 Digest |
+| :--- | :--- | :---: | :--- |
+| **Full Pytest Suite** | 77 unit & integration tests (`tests/test_projects.py`, `tests/test_drive.py`, `tests/test_api.py`, etc.) | **77 passed** (56.12s) | `scratch/pytest_run.txt`<br>`ede3e05ca62375c90fc07f4f10d375b61a407051bb918913359872e8c082755d` |
+| **Phase 1b Audit** | Invariants, bundle hygiene, zero cluster IDs across 43 files (`eval/verify_export.py`) | **14 / 14 checks passed** | `scratch/verify_export.txt`<br>`d090dd36d0a7c2ec3aebe352b4f39307e8b8482a50cc75183037fad2f01e3a82` |
+| **Phase 3 API Audit** | Fixtures, live server endpoints, edit replay (`eval/verify_api.py --mode all`) | **8 fixture + 7 live checks passed** | `scratch/verify_api.txt`<br>`f7c4cf03b204fddd64b0fededa2934f3752367f46b227770e93d3dfb8a0910ee` |
+| **Baseline Audit** | Pinned baseline metrics reproduction (`eval/check_baseline.py`) | **100% OK** | `scratch/check_baseline.txt`<br>`fb46d19d9a9258e665c64c249ceb2073597123e674444274646ff016702d27e8` |
+| **E2E Invariant Test** | Browser pipeline Steps A–M: open project, edit, close, reopen (`frontend/scripts/e2e.mjs`) | **Step M passed** ($1,256 + 445 = 1,701$) | `scratch/e2e_run.txt`<br>`51eaf8fd5c2418ba8960ac973487c4b4896d4818eb8e78bafae5e6f9e0befbfe` |
+| **Frontend Vitest** | 50 unit/component tests across 11 files (`frontend/`) | **50 passed** (11 files) | `scratch/vitest_frontend.txt`<br>`93203fa7e7425979851768774eab888a692c5aaadc3ac276507854001120bd4d` |
+| **Viewer Vitest** | 6 unit tests (`viewer/`) | **6 passed** (1 file) | `scratch/vitest_viewer.txt`<br>`02c14091f81959ca76965b19d2eb54deed7541cd14e7ef785ff60bfcff14af63` |
+| **Standalone EXE** | Standalone binary startup, PE subsystem, progress & metrics (`eval/verify_exe.py`) | **All checks passed** | `scratch/verify_exe.txt`<br>`73c0873f937f3a654fcede85dc236c37bf3d5505f129fba3f1f52ba9e7084627` |
+| **Windowed Mode** | Windowed GUI execution (`eval/verify_windowed.py`) | **All checks passed** | `scratch/windowed_run.txt`<br>`c03a6295229f7cd2f3867a4634bf479794b8316d98d0dbd0326a9de562d1b0b6` |
+
+### 23.5 Organizer Review Items & Visual Evidence
+To uphold complete privacy and zero real-face leakage, all visual verification captures use synthetic SVG vector placeholder avatars:
+
+1. **Open Saved Project Modal (`review_01_open_saved_project_modal.png`)**:
+   - Location: `scratch/screenshots/review_01_open_saved_project_modal.png` (355.28 KB).
+   - Verifies: Risograph-themed modal layout, recent project entries with timestamps, people/photo count badges, sanitized source paths, custom path picker, and missing folder removal alerts.
+2. **Corrupt `edits.json` Read-Only Banner (`review_02_project_read_only_banner.png`)**:
+   - Location: `scratch/screenshots/review_02_project_read_only_banner.png` (955.01 KB).
+   - Verifies: Persistent read-only mode banner at the top of the Review screen informing the organizer that edits are locked to protect data from corruption.
+3. **Missing Source Photo Handling (`review_03_image_viewer_source_missing.png`)**:
+   - Location: `scratch/screenshots/review_03_image_viewer_source_missing.png` (512.12 KB).
+   - Verifies: Image viewer displays "Source missing" badge, red floating warning banner, dashed container placeholder, and disabled download button when source photo is deleted or moved from disk.
+
+---
+
 ## APPENDIX A: HISTORICAL ENGINE EVOLUTION & INTERMEDIATE STAGES (SUPERSEDED)
 
 

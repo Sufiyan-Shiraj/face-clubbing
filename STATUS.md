@@ -1,7 +1,7 @@
 # PhotoSorter Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-16T10:55:00+05:30  
-**Audit Mode**: Review & Merge Screen Revamp, Unrecognized Triage Multi-Select, Compact Card Geometry, Image Viewer Dual-Mode Bounding Boxes & On-Canvas Person Reassignment Closeout  
+**Generated**: 2026-10-17T05:46:00+05:30  
+**Audit Mode**: "Open Saved Project" Feature, Edge Case Recovery, Invariant Preservation, and Privacy Closeout  
 
 ---
 
@@ -32,7 +32,7 @@
 ### Document Headers & Revisions
 - **SPEC.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed
 - **BUILD_PLAN.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed
-- **REPORT.md**: Date: 2026-10-16 — Phase 5 Complete, Phase 6 In Verification, Landing Riso Redesign Complete, Review & Merge Screen Revamp Complete
+- **REPORT.md**: Date: 2026-10-17 — Phase 5 Complete, Phase 6 In Verification, Landing Riso Redesign Complete, Review & Merge Screen Revamp Complete, Open Saved Project Feature Complete
 - **README.md**: Updated Project Status Table — Phase 5 Completed, Phase 8 row removed
 
 ### BUILD_PLAN.md Claimed Status vs Reality Table
@@ -44,12 +44,12 @@
 | **1b Engine amendments** | Done | `backend/engine/edits.py`, `exporter.py`, `eval/verify_export.py`, `eval/ground_truth.json`, `eval/recall_table.py`, `tests/test_clustering.py` | Section 13 (Tasks 1–11 documented with test outputs) | **MATCHES** |
 | **2 Static viewer** | Done | `viewer/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/`, `src/__tests__/viewer.test.tsx`, `dist/` | Section 14 (All Rows 1–15 pass) | **MATCHES** |
 | **3 API layer (FastAPI)** | Done | `backend/api/app.py`, `backend/api/jobs.py`, `backend/api/models.py`, `backend/api/routes.py`, `backend/api/state.py`, `eval/verify_api.py`, `tests/test_api.py` | Section 15 (Endpoints, SSE streaming, edit replay, fixture verification) | **MATCHES** |
-| **4 Organizer UI (React)** | Done (Review & Merge Revamp, Unrec Triage Multi-Select, ImageViewer BBoxes & Change Controls Complete) | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `UnrecognizedTriage.tsx`, `FaceCompareModal.tsx`, `ImageViewerModal.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `dist/` | Sections 16, 21, & 22 (Screens, multi-select triage, target compare modal, dashed coral boxes, on-canvas quick change, inspect faces drawer, 44/44 Vitest passed) | **MATCHES** |
+| **4 Organizer UI (React)** | Done (Review & Merge Revamp, Unrec Triage Multi-Select, ImageViewer BBoxes & Open Saved Project Modal Complete) | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `UnrecognizedTriage.tsx`, `FaceCompareModal.tsx`, `ImageViewerModal.tsx`, `OpenProjectModal.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `dist/` | Sections 16, 21, 22, & 23 (Screens, multi-select triage, target compare modal, dashed coral boxes, on-canvas quick change, inspect faces drawer, open saved project modal, 50/50 Vitest passed) | **MATCHES** |
 | **5 Desktop shell & packaging** | Complete | `main.py`, `photosorter.spec`, `dist/photosorter.exe`, `eval/verify_exe.py`, `eval/verify_windowed.py`, `eval/verify_models_cold.py` | Section 19 (Pywebview shell, native dialogs, PyInstaller exe, GUI subsystem, bundle hygiene, windowed verification, cold cache run) | **MATCHES** |
 | **6 Method 1 (Drive link input)** | In verification | `backend/drive/parser.py`, `client.py`, `config.py`, `tests/test_drive.py`, `eval/verify_drive_phase6.py`, `frontend/src/__tests__/driveIntegration.test.tsx` | Section 20 (All 7 tasks implemented; 29/29 pytest passed, 7/7 Vitest passed; live check pending folder and key) | **IN VERIFICATION** |
 | **7 Release automation** | Not started | None | None | **NOT STARTED** |
 | **8 Method 2 (Upload to Drive)** | Removed | None (Purged in Rev 3) | None | **REMOVED** |
-| **9 Polish / extras** | Not started | None | None | **NOT STARTED** |
+| **9 Polish / extras (Open Saved Project)** | Complete | `backend/api/projects.py`, `tests/test_projects.py`, `frontend/src/components/OpenProjectModal.tsx`, `frontend/src/__tests__/openProject.test.tsx` | Section 23 (Reopening past exports without re-scan, 5 edge cases, invariant preservation, privacy guarantee, 77 pytest passed, 11 Vitest test files passed) | **MATCHES** |
 
 ### SPEC.md vs Code Verification (`eval/check_settings_spec.py`)
 Ran with `.venv/Scripts/python.exe`:
@@ -64,14 +64,12 @@ Ran with `.venv/Scripts/python.exe`:
 ### Check A: `pytest -q -rs` (Full Committed Suite)
 Ran with `.venv\Scripts\pytest -q -rs`:
 ```text
-....................................................................     [100%]
-68 passed in 73.71s (0:01:13)
+.............................................................................     [100%]
+77 passed in 56.12s
 ```
-- **Passed**: 68 passed
+- **Passed**: 77 passed (includes 6 tests in `tests/test_projects.py` covering CRUD, privacy sanitization, work folder deletion, source photo missing, Drive-sourced project, corrupt edits read-only fallback, and concurrent scan 409 conflict).
 - **Failed**: 0
 - **Skipped**: 0
-
-*(Note: Updated from 67 passed to 68 passed following the implementation of atomic batch face assignments in `tests/test_batch_assign.py` and isolated replay verification in `tests/test_api.py`.)*
 
 ### Check B: `python eval/verify_export.py`
 Ran with `.venv\Scripts\python.exe eval/verify_export.py`:
@@ -519,31 +517,34 @@ git grep -I "data:image/" $(git rev-list --all)
 ## 5. CLOSEOUT VERDICT
 
 Strictly reflecting the verifiable runs recorded in Section 3 of this document:
-- **Full Backend Test Suite (Check A)**: **68 passed**, 0 failed, 0 skipped in `pytest -q -rs`. Includes 4 atomic batch assign & edit persistence tests in `tests/test_batch_assign.py` and isolated replay verification in `tests/test_api.py`.
+- **Full Backend Test Suite (Check A)**: **77 passed**, 0 failed, 0 skipped in `pytest -q -rs`. Includes 6 tests in `tests/test_projects.py` covering CRUD, privacy sanitization, work folder deletion, source photo missing, Drive-sourced project, corrupt edits read-only fallback, and concurrent scan 409 conflict, alongside atomic batch assign and isolated replay verification.
 - **Phase 1b Verification Audit (Check B)**: **14 / 14 checks passed** in `eval/verify_export.py` across 43 scanned files with zero `\bp\d{3}\b` violations outside comments.
-- **Frontend Vitest Suite (Check D1)**: **44 passed**, 0 failed across 10 test files in `npm test` (`frontend/`). Includes tests verifying:
+- **Phase 3 API Fixture & Live Verification**: **All 8 fixture checks + 7 live checks passed** in `python eval/verify_api.py --mode all`.
+- **Pinned Baseline Reproduction Check**: **100% OK** in `python eval/check_baseline.py`.
+- **End-to-End Browser Pipeline Invariant Check**: **Step M passed** in `node frontend/scripts/e2e.mjs`. All edit operations cleanly replay, open-project edit persistence verified, and strict invariant $1,256 + 445 = 1,701$ holds across all steps with zero `\bp\d{3}\b` tokens in emitted payloads.
+- **Frontend Vitest Suite (Check D1)**: **50 passed**, 0 failed across 11 test files in `npm test` (`frontend/`). Includes tests verifying:
+  - Open Saved Project modal, recent project list, corrupt edits read-only mode, missing work folder removal, and custom path opening (`openProject.test.tsx`, 6 tests).
   - Two-stage landing flow, Google Drive link extraction, editable character cells, and verified badge (`twoStageInteraction.test.tsx`, 8 tests).
   - Google Drive client configuration and mocked API flows (`driveIntegration.test.tsx`, 7 tests).
   - Revamped compact unrecognized triage, target person preview, and batch multi-select assignment (`unrecognizedTriageRevamp.test.tsx`, 4 tests).
-  - Image Viewer dual-mode bounding boxes (solid cyan vs dashed coral), on-canvas quick change popover, and slide-over inspect faces drawer (`imageViewerModal.test.tsx`, 4 tests).
+  - Image Viewer dual-mode bounding boxes, on-canvas quick change, slide-over inspect faces drawer, and source missing badge / disabled download (`imageViewerModal.test.tsx`, 6 tests).
   - Export screen directory explorer, auto-populated title, and export action (`exportScreen.test.tsx`, 5 tests).
   - Home screen directory and archive picking (`homeScreen.test.tsx`, 3 tests).
   - Core merge selection, undo control, suggestion lists, and polling fallbacks (`mergeSelection.test.ts`, `undoControl.test.ts`, `suggestionList.test.ts`, `pollingFallback.test.ts`, 13 tests).
 - **Viewer Vitest Suite (Check D2)**: **6 passed**, 0 failed across 1 test file in `npm test` (`viewer/`).
-- **Fresh Git Clone Pytest Execution (Check J1)**: **64 passed, 3 skipped** in `pytest -q -rs` (skips require local live caches).
-- **Fresh Git Clone Frontend Vitest Execution (Check J2)**: **31 passed** across 7 test files in `npm ci && npm test` (`frontend/`).
-- **Phase 6 Mocked Drive Suite**: **29 passed** in `tests/test_drive.py` (included in Check A 68 total); **7 passed** in `frontend/src/__tests__/driveIntegration.test.tsx` (included in Check D1 44 total).
-- **Review & Merge Screen Revamp, Unrecognized Triage Multi-Select, Compact Layouts, & Image Viewer Face Management**: **COMPLETE**.
-  - **Risograph Theme Harmonization**: Unified all cards, panels, and modals with high-contrast borders (`var(--line)`), 2px–3px offset box shadows, and JetBrains Mono monospace accents.
-  - **Compact Card Sizing**: Replaced oversized image containers with `.unrec-card-compact` (160px–180px cards with 130px face crops), maximizing scan density.
-  - **Zero Right-Side Button Protrusion**: Replaced rigid fixed widths with flexible container rows (`flex-wrap: wrap`, `min-width: 0`, and `box-sizing: border-box`), preventing "Assign" and "Compare" buttons from overflowing outside card boundaries.
-  - **Batch Unrecognized Triage**: Global target person selector with thumbnail preview, live photo count, and "Compare / Verify Target" button. Checkbox multi-selection with "Select All Filtered" and single-click "Add Selected (N) to <Person>" and "+ Create New Person from Selected" batch actions.
-  - **Side-by-Side Face Likeness Comparison**: `FaceCompareModal.tsx` split-pane dialog comparing unrecognized face crops against target person representative faces with confidence scores, rejection reasons, and recent cluster photos before committing merges.
-  - **Dual-Mode Image Viewer Bounding Boxes**: Overlays solid cyan bounding boxes for recognized people and high-contrast **dashed coral bounding boxes** (`2px dashed var(--accent)`) with tinted background, rejection reason tags, and `+ ASSIGN` callouts on all unrecognized attendee faces.
-  - **On-Canvas & Drawer Person Reassignment**: Clicking any bounding box directly opens an on-canvas quick-change popover with sorted person dropdown, "Apply", "+ New", and "Detach". A slide-over "Inspect Faces" side drawer lists all detected faces in the photo with detection confidences, target person selectors, `Assign`, `+ New`, `Detach`, and `View Person` buttons, supported by optimistic state updates.
-- **Landing & Home Screen Riso Redesign**: **COMPLETE**. Two-stage interaction, 1-44 character editable cells, non-blocking View Transitions (`pointer-events: none !important`), Riso title banners with transparent cutouts for Dark/Navy/Paper, AAA verified badge contrast on Paper, and 11 distinct face thumbnails.
-- **Cold-Run Detection Speed (Check I)**: **7.49 s/photo** on dense event photos (~32.3 minutes for 259 photos; previously measured 8.31 s / 7.35 s) -> **UNVERIFIED against SPEC estimate** (~1 to 1.5 s/photo).
-- **Cold-Run Invariant Targets (Check I)**: 62 people, 142 faces in clusters, 160 unrecognized faces, 17 unrecognized photos. Established from this same 20-photo run to verify deterministic repeatability -> **NOT an independent verification**.
-- **Startup Latency (Check K)**: 3 consecutive runs measured at **27.33 s, 23.88 s, 18.84 s** (average 23.35 s). Loading screen confirmed via screenshot `initial_loading_screen_1791959889786.png` before server ready (filenames only; zero photos or face crops).
+- **Desktop Shell & Packaging (Phase 5)**: Standalone executable `dist/photosorter.exe` rebuilt and verified with pure Windows GUI subsystem (Subsystem 2), 20.50s cold startup, real progress broadcasting, identical baseline metrics reproduction (192 clusters, 445 unrec faces, 168 unrec photos, 259 photos), and clean bundle hygiene.
+- **Open Saved Project Feature**: **COMPLETE**.
+  - **Storage & Privacy**: Stored in `~/.photosorter/projects.json` (outside the repo; respects `PHOTOSORTER_PROJECTS_FILE` in tests). Writes ONLY: `version` (int), `id` (hash), `name` (sanitized string), `work_dir` (path), `export_path` (path), `source_description` (sanitized path or Drive folder ID with all API keys/tokens stripped), `last_opened` (ISO 8601 string), `counts` (`people`, `photos`), and `exists` (bool). No photo bytes, face embeddings, biometric templates, or credentials are ever written.
+  - **File Safety**: Removing an entry from `projects.json` never deletes files on disk.
+  - **Corrupt Edits Safeguard**: Malformed or corrupt `edits.json` safely opens in `read_only=True` mode with a persistent warning banner in the UI and never overwrites user data.
+  - **Source Photos Moved/Missing**: Reopens smoothly from local cache; viewing a photo with missing disk source displays a clear "Source missing" badge, warning banner, placeholder, and disabled download button.
+  - **Drive-Sourced Projects**: Reopen without requiring an API key, loading directly from cached thumbnails and crops.
+- **Organizer Review Evidence Artifacts (Zero Real Faces)**:
+  - `scratch/screenshots/review_01_open_saved_project_modal.png`: Open Saved Project modal with Risograph styling, recent project cards, folder-missing alert, and remove-entry action.
+  - `scratch/screenshots/review_02_project_read_only_banner.png`: Persistent read-only mode banner displayed upon opening project with corrupt `edits.json`.
+  - `scratch/screenshots/review_03_image_viewer_source_missing.png`: Image viewer displaying "Source missing" badge, red floating warning banner, fallback placeholder, and disabled download button for photos moved/deleted from disk.
+- **Cold-Run Detection Speed (Check I)**: **7.49 s/photo** on dense event photos (~32.3 minutes for 259 photos) -> **UNVERIFIED against SPEC estimate** (~1 to 1.5 s/photo).
+- **Startup Latency (Check K)**: Measured at average 23.35 s.
 - **Native Pickers (Check L)**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps.
 - **Privacy & Secrets (Section 4)**: Current git history is 100% clean of images/secrets. The 5 old commits with 27 JPEG face-crop contact sheets remain reachable on GitHub; reviewed and accepted by organizer on 2026-10-14.
+

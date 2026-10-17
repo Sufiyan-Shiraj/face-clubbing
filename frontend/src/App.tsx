@@ -7,6 +7,7 @@ import {
   UnrecognizedData,
   SuggestionsData,
   JobStatus,
+  OpenProjectResponse,
 } from './types';
 import { Header, RisoTheme } from './components/Header';
 import { HomeScreen } from './components/HomeScreen';
@@ -14,7 +15,8 @@ import { ProgressScreen } from './components/ProgressScreen';
 import { ReviewPeopleScreen } from './components/ReviewPeopleScreen';
 import { ExportScreen } from './components/ExportScreen';
 import { SettingsScreen } from './components/SettingsScreen';
-import { Lock } from 'lucide-react';
+import { OpenProjectModal } from './components/OpenProjectModal';
+import { Lock, AlertTriangle, X } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<RisoTheme>(() => {
@@ -580,18 +582,22 @@ export const App: React.FC = () => {
   const unrecPhotosCount = unrecognized.total_unrecognized_photos || 0;
   const totalFacesCount = clusteredFacesCount + unrecFacesCount;
 
-  const handleOpenProject = async () => {
-    if (window.pywebview?.api?.select_folder) {
-      try {
-        const selected = await window.pywebview.api.select_folder('Open Photo Folder or Project');
-        if (selected) {
-          handleStartJob(selected);
-        }
-      } catch (err) {
-        console.error('Failed to open project folder:', err);
-      }
+  const [isOpenProjectModalOpen, setIsOpenProjectModalOpen] = useState<boolean>(false);
+  const [projectReadOnlyNotice, setProjectReadOnlyNotice] = useState<string | null>(null);
+
+  const handleOpenProject = () => {
+    setIsOpenProjectModalOpen(true);
+  };
+
+  const handleProjectOpened = async (res: OpenProjectResponse) => {
+    await loadAllData();
+    handleTabChange('people');
+    if (res.read_only) {
+      setProjectReadOnlyNotice(
+        `Project opened in read-only mode: ${res.edits_error || 'Corrupt edits.json detected'}. Modifications will not overwrite edits.json.`
+      );
     } else {
-      setActiveTab('home');
+      setProjectReadOnlyNotice(null);
     }
   };
 
@@ -688,6 +694,31 @@ export const App: React.FC = () => {
 
       {/* Main Screen Content */}
       <div className={`main ${activeTab === 'settings' ? 'settings-mode' : ''} ${activeTab === 'export' ? 'export-mode' : ''}`}>
+        {projectReadOnlyNotice && (
+          <div
+            data-testid="read-only-banner"
+            className="mx-4 mt-3 p-3 rounded flex items-center justify-between text-xs"
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1.5px solid #ef4444',
+              color: '#f87171',
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <span>{projectReadOnlyNotice}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setProjectReadOnlyNotice(null)}
+              className="p-1 opacity-70 hover:opacity-100"
+              title="Dismiss notice"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {activeTab === 'home' && (
           <HomeScreen
             onStartJob={handleStartJob}
@@ -708,6 +739,7 @@ export const App: React.FC = () => {
             discoveredFaceCrops={allDiscoveredFaces}
             onApiKeySaved={loadAllData}
             isApiKeyConfigured={isApiKeyConfigured}
+            onOpenProject={handleOpenProject}
           />
         )}
 
@@ -763,9 +795,20 @@ export const App: React.FC = () => {
         )}
 
         {activeTab === 'settings' && (
-          <SettingsScreen onRerunComplete={loadAllData} />
+          <SettingsScreen
+            onRerunComplete={loadAllData}
+            onOpenProject={handleOpenProject}
+          />
         )}
       </div>
+
+      {/* Open Saved Project Modal */}
+      {isOpenProjectModalOpen && (
+        <OpenProjectModal
+          onClose={() => setIsOpenProjectModalOpen(false)}
+          onProjectOpened={handleProjectOpened}
+        />
+      )}
 
       {/* Reassurance Footer matching screenshot */}
       <div className="ftr">

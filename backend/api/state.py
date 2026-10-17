@@ -77,7 +77,9 @@ class AppState:
         self.base_people: List[PersonCluster] = []
         self.base_unrecognized: UnrecognizedGroup = UnrecognizedGroup(photo_ids=[], faces=[])
 
-        # Edit log
+        # Edit log & read-only state
+        self.read_only: bool = False
+        self.edits_error: Optional[str] = None
         self.edits_list: List[Dict[str, Any]] = []
         self._load_edits_from_disk()
 
@@ -240,18 +242,32 @@ class AppState:
                 raise
 
     def _load_edits_from_disk(self):
+        self.read_only = False
+        self.edits_error = None
         if self.edits_path.exists():
             try:
                 with open(self.edits_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                self.edits_list = data.get("edits", [])
-            except Exception:
+                    raw_text = f.read()
+                if raw_text.strip():
+                    data = json.loads(raw_text)
+                    if not isinstance(data, dict) or "edits" not in data or not isinstance(data["edits"], list):
+                        raise ValueError("edits.json must be an object with an 'edits' list")
+                    self.edits_list = data.get("edits", [])
+                else:
+                    self.edits_list = []
+            except Exception as e:
+                # Corrupt edits.json: open read-only and report, NEVER overwrite
+                self.read_only = True
+                self.edits_error = f"Corrupt edits.json: {e}"
                 self.edits_list = []
         else:
             self.edits_list = []
 
     def _save_edits_to_disk(self):
         """Saves edits.json and asserts no cluster IDs (\\bp\\d{3}\\b) are ever persisted."""
+        if getattr(self, "read_only", False):
+            raise RuntimeError(f"Cannot save edits: project is opened in read-only mode ({self.edits_error})")
+
         payload = {
             "version": 1,
             "updated_at": datetime.datetime.now().astimezone().isoformat(),
@@ -321,6 +337,202 @@ class AppState:
                 self.people = people_replayed
                 self.unrecognized = unrec_replayed
 
+    def open_saved_project(self, work_dir: Path | str, export_path: Optional[Path | str] = None) -> Dict[str, Any]:
+        """
+        Reopens a past export/work folder without re-scanning disk:
+        1. Validates work folder on disk.
+        2. Loads edits.json (or switches to read_only if corrupt).
+        3. Loads embedding cache and people.json.
+        4. Reconstructs base clusters, suggestions, and replays edits.
+        5. Preserves undo history and invariant.
+        """
+        work_p = Path(work_dir).resolve()
+        if not work_p.exists() or not work_p.is_dir():
+            raise FileNotFoundError(f"Work folder '{work_p}' not found or was moved.")
+
+        self.work_dir = work_p
+        self.edits_path = work_p / "edits.json"
+        self.settings.work_dir = str(work_p)
+        self.settings.cache_dir = str(work_p)
+
+        export_p = Path(export_path).resolve() if export_path else None
+        if export_p and export_p.exists() and export_p.is_dir():
+            self.settings.output_dir = str(export_p)
+
+        # 1. Load edits.json (corrupt files set read_only=True and report)
+        self._load_edits_from_disk()
+
+        # 2. Candidate cache directories for embedding cache (strictly within project)
+        cache_candidates = [
+            work_p / ".cache",
+            work_p,
+        ]
+        if export_p:
+            cache_candidates.extend([export_p / ".cache", export_p])
+
+        cached_photos: Dict[str, PhotoRecord] = {}
+        for c_dir in cache_candidates:
+            if c_dir.exists():
+                cache = EmbeddingCache(c_dir)
+                loaded = cache.load_all()
+                if len(loaded) > len(cached_photos):
+                    cached_photos = loaded
+
+        # Build face lookup map
+        face_lookup: Dict[str, FaceDetection] = {}
+        for p_rec in cached_photos.values():
+            for f in p_rec.faces:
+                face_lookup[f.face_id] = f
+
+        # 3. Locate people.json (strictly within project)
+        people_json_candidates = []
+        if export_p:
+            people_json_candidates.append(export_p / "people.json")
+        people_json_candidates.append(work_p / "people.json")
+
+        found_people_json = None
+        for cand in people_json_candidates:
+            if cand.exists() and cand.is_file():
+                found_people_json = cand
+                break
+
+        if found_people_json:
+            with open(found_people_json, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            self.photos = dict(cached_photos)
+            for pid, pinfo in data.get("photos", {}).items():
+                if pid not in self.photos:
+                    self.photos[pid] = PhotoRecord(
+                        photo_id=pid,
+                        original_path=pinfo.get("thumb", ""),
+                        file_name=pinfo.get("name", f"{pid}.jpg"),
+                        width=pinfo.get("width", 1000),
+                        height=pinfo.get("height", 1000),
+                        download_url=pinfo.get("download"),
+                        faces=[],
+                    )
+
+            # Reconstruct people
+            self.people = []
+            for pdict in data.get("people", []):
+                faces = []
+                for fdict in pdict.get("faces", []):
+                    fid = fdict.get("face_id", f"f_{fdict.get('photo_id')}_001")
+                    if fid in face_lookup:
+                        f_obj = face_lookup[fid]
+                    else:
+                        emb = np.zeros(512, dtype=np.float32)
+                        f_obj = FaceDetection(
+                            face_id=fid,
+                            photo_id=fdict.get("photo_id", ""),
+                            bbox=fdict.get("bbox", [0.0, 0.0, 100.0, 100.0]),
+                            det_score=fdict.get("det_score", 0.9),
+                            embedding=emb,
+                        )
+                    f_obj.cluster_id = pdict["id"]
+                    faces.append(f_obj)
+
+                p_cluster = PersonCluster(
+                    id=pdict["id"],
+                    photo_ids=pdict.get("photos") or pdict.get("photo_ids", []),
+                    faces=faces,
+                    label=pdict.get("label"),
+                    face_path=pdict.get("face", f"faces/{pdict['id']}.jpg"),
+                    merged_from=pdict.get("merged_from", []),
+                    merged_from_numbering="",
+                )
+                self.people.append(p_cluster)
+
+            # Reconstruct unrecognized
+            unrec_dict = data.get("unrecognized", {})
+            self.unrecognized = UnrecognizedGroup(
+                photo_ids=unrec_dict.get("photo_ids", []),
+                faces=unrec_dict.get("faces", []),
+            )
+            self.unrecognized._face_items = []
+            for f_entry in unrec_dict.get("faces", []):
+                fid = f_entry.get("face_id")
+                f_real = face_lookup.get(fid) if fid else None
+                if not f_real:
+                    f_real = FaceDetection(
+                        face_id=fid or f"unrec_{f_entry.get('photo_id')}",
+                        photo_id=f_entry.get("photo_id", ""),
+                        bbox=f_entry.get("bbox", [0.0, 0.0, 100.0, 100.0]),
+                        det_score=f_entry.get("det_score", 0.5),
+                        embedding=np.zeros(512, dtype=np.float32),
+                        rejection_reason=f_entry.get("rejection_reason", "unattached"),
+                    )
+                else:
+                    f_real.rejection_reason = f_entry.get("rejection_reason", "unattached")
+                self.unrecognized._face_items.append({
+                    "face_obj": f_real,
+                    "photo_id": f_entry.get("photo_id", ""),
+                    "face": f_entry.get("face", f"faces/{fid}.jpg"),
+                    "rejection_reason": f_entry.get("rejection_reason", "unattached"),
+                })
+        elif cached_photos:
+            clusterer = FaceClusterer(
+                distance_threshold=self.settings.distance_threshold,
+                seed_min_face_size=self.settings.seed_min_face_size,
+                seed_max_yaw=self.settings.seed_max_yaw,
+                seed_min_det_score=self.settings.seed_min_det_score,
+                second_pass_merge=self.settings.second_pass_merge,
+                merge_threshold=self.settings.merge_threshold,
+                maybe_threshold=self.settings.maybe_threshold,
+                same_photo_merge_max=self.settings.same_photo_merge_max,
+                attach_distance_cap=getattr(self.settings, "attach_distance_cap", 0.45),
+            )
+            self.people, self.unrecognized = clusterer.cluster(cached_photos)
+            self.photos = cached_photos
+            self.id_map = clusterer.id_map
+            self.maybe_groups = clusterer.maybe_groups
+            self.ambiguous_faces_raw = clusterer.ambiguous_faces
+        else:
+            raise RuntimeError(f"Could not find people.json or valid embedding cache in '{work_p}'.")
+
+        # Snapshot baseline for undo/replay
+        self.base_people = copy.deepcopy(self.people)
+        self.base_unrecognized = copy.deepcopy(self.unrecognized)
+        self.initial_people = copy.deepcopy(self.people)
+        self.initial_unrecognized = copy.deepcopy(self.unrecognized)
+
+        # 4. Load suggestions if present in work_dir
+        sug_path = work_p / "suggestions.json"
+        if sug_path.exists():
+            try:
+                with open(sug_path, "r", encoding="utf-8") as f:
+                    sug_data = json.load(f)
+                self.maybe_groups = sug_data.get("maybe_groups", [])
+                self.ambiguous_faces_raw = sug_data.get("ambiguous_faces", [])
+            except Exception:
+                pass
+        self.initial_maybe_groups = copy.deepcopy(self.maybe_groups)
+        self.initial_ambiguous_faces_raw = copy.deepcopy(self.ambiguous_faces_raw)
+
+        # 5. Replay edits if any and not read-only
+        unapplied_edits = []
+        if self.edits_list and not self.read_only:
+            people_replayed, unrec_replayed, unapplied_edits, _ = apply_edits(
+                copy.deepcopy(self.base_people),
+                copy.deepcopy(self.base_unrecognized),
+                {"version": 1, "edits": self.edits_list},
+                self.photos,
+            )
+            self.people = people_replayed
+            self.unrecognized = unrec_replayed
+
+        return {
+            "work_dir": str(work_p),
+            "export_path": str(export_p) if export_p else None,
+            "people_count": len(self.people),
+            "photos_count": len(self.photos),
+            "unrecognized_faces_count": len(self.unrecognized.faces),
+            "applied_edits_count": len(self.edits_list),
+            "read_only": self.read_only,
+            "edits_error": self.edits_error,
+        }
+
     def get_cluster_by_id(self, cluster_id: str) -> Optional[PersonCluster]:
         for p in self.people:
             if p.id == cluster_id:
@@ -348,6 +560,9 @@ class AppState:
         Converts any transient cluster ID handles to anchor face IDs,
         records in edits_list, saves to edits.json, and replays edits.
         """
+        if getattr(self, "read_only", False):
+            return False, f"Project is in read-only mode ({self.edits_error}). Edits are disabled to prevent overwriting.", []
+
         op = req.get("op")
 
         if op == "undo":
@@ -714,12 +929,21 @@ class AppState:
     def get_photos_response(self) -> Dict[str, Any]:
         result = {}
         for pid, p in self.photos.items():
+            source_exists = False
+            if p.original_path:
+                try:
+                    source_exists = Path(p.original_path).exists() and Path(p.original_path).is_file()
+                except Exception:
+                    source_exists = False
+
             result[pid] = {
                 "photo_id": pid,
                 "file_name": p.file_name,
                 "width": p.width,
                 "height": p.height,
                 "thumb": f"thumbs/{pid}.jpg",
+                "source_exists": source_exists,
+                "original_path": p.original_path,
                 "faces": [
                     {
                         "face_id": f.face_id,

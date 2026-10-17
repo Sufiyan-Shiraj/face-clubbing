@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronUp,
   Cpu,
+  FolderOpen,
 } from 'lucide-react';
 import {
   OrbitalClusterVisualizer,
@@ -34,6 +35,7 @@ import {
 
 interface SettingsScreenProps {
   onRerunComplete?: () => void;
+  onOpenProject?: () => void;
 }
 
 const SPEC_6_2_DEFAULTS: Partial<Settings> = {
@@ -67,7 +69,7 @@ const FACE_CROP_OPTIONS: DropdownOption[] = [
   { value: 320, label: '320 px', desc: 'High Detail', badge: 'CRISP' },
 ];
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete }) => {
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete, onOpenProject }) => {
   const [settings, setSettings] = useState<Settings>({
     output_dir: 'export',
     distance_threshold: 0.50,
@@ -217,6 +219,21 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete 
 
         {/* Top Action Controls */}
         <div className="flex items-center gap-3">
+          {onOpenProject && (
+            <button
+              type="button"
+              id="settings-open-project-btn"
+              data-testid="settings-open-project-btn"
+              onClick={onOpenProject}
+              className="btn sm"
+              style={{ height: '42px', padding: '0 18px', fontSize: '15px', fontWeight: 700 }}
+              title="Open past export/work folder"
+            >
+              <FolderOpen className="w-4 h-4 text-[var(--accent)]" />
+              <span>Open saved project...</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleResetDefaults}

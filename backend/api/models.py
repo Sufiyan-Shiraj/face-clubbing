@@ -240,3 +240,31 @@ class SelectDialogResponse(BaseModel):
     selected: Optional[str] = None
     cancelled: bool = False
 
+
+class ProjectItem(BaseModel):
+    id: str
+    name: str
+    work_dir: str
+    export_path: Optional[str] = None
+    source_description: str
+    last_opened: str
+    counts: Dict[str, int] = Field(default_factory=dict)
+    exists: bool = True
+
+
+class OpenProjectRequest(BaseModel):
+    project_id: Optional[str] = None
+    work_dir: Optional[str] = None
+    export_path: Optional[str] = None
+
+
+class OpenProjectResponse(BaseModel):
+    success: bool
+    project: ProjectItem
+    people_count: int
+    photos_count: int
+    unrecognized_faces_count: int
+    read_only: bool = False
+    edits_error: Optional[str] = None
+    applied_edits_count: int = 0
+

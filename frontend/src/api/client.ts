@@ -8,6 +8,8 @@ import {
   PhotoInfo,
   DriveVerifyResult,
   BrowseFolderResult,
+  ProjectItem,
+  OpenProjectResponse,
 } from '../types';
 
 const BASE_URL = '/api';
@@ -319,4 +321,28 @@ export const api = {
       body: JSON.stringify({ initial_dir: initialDir || undefined }),
     });
   },
+
+  async getRecentProjects(): Promise<ProjectItem[]> {
+    return fetchJson(`${BASE_URL}/projects`);
+  },
+
+  async openProject(req: {
+    project_id?: string;
+    work_dir?: string;
+    export_path?: string;
+  }): Promise<OpenProjectResponse> {
+    return fetchJson(`${BASE_URL}/projects/open`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
+  async removeProject(projectId: string): Promise<{ success: boolean; message: string }> {
+    return fetchJson(`${BASE_URL}/projects/${encodeURIComponent(projectId)}`, {
+      method: 'DELETE',
+    });
+  },
 };
+
+export const apiClient = api;
+

@@ -161,6 +161,35 @@ export interface PhotoInfo {
   thumb?: string;
   download?: string;
   faces?: FaceItem[];
+  source_exists?: boolean;
+  original_path?: string | null;
+}
+
+export interface ProjectItem {
+  id: string;
+  name: string;
+  work_dir: string;
+  export_path?: string | null;
+  source_description?: string | null;
+  last_opened: string;
+  counts: {
+    people: number;
+    photos: number;
+    unrecognized?: number;
+  };
+  exists: boolean;
+}
+
+export interface OpenProjectResponse {
+  success: boolean;
+  message: string;
+  project: ProjectItem;
+  people_count: number;
+  photos_count: number;
+  unrecognized_faces_count: number;
+  applied_edits_count: number;
+  read_only: boolean;
+  edits_error?: string | null;
 }
 
 export type ActiveTab = 'home' | 'progress' | 'people' | 'export' | 'settings';

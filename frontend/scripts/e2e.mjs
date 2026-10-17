@@ -104,6 +104,48 @@ function fetchJson(endpoint, retries = 3) {
   });
 }
 
+function postJson(endpoint, body) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(`${API_BASE_URL}${endpoint}`);
+    const data = JSON.stringify(body);
+    const req = http.request(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(data),
+          Accept: 'application/json',
+        },
+        agent: false,
+        timeout: 10000,
+      },
+      (res) => {
+        let respData = '';
+        res.on('data', (chunk) => (respData += chunk));
+        res.on('end', () => {
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              resolve(JSON.parse(respData));
+            } catch (e) {
+              resolve(respData);
+            }
+          } else {
+            reject(new Error(`HTTP ${res.statusCode}: ${respData}`));
+          }
+        });
+      }
+    );
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error(`Timeout posting to ${endpoint}`));
+    });
+    req.on('error', (err) => reject(err));
+    req.write(data);
+    req.end();
+  });
+}
+
 async function waitForServer(url = `${API_BASE_URL}/api/health`, maxAttempts = 40) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
@@ -1049,6 +1091,100 @@ async function run() {
       throw new Error(`State was corrupted during failed save: pre=${JSON.stringify(preL)}, post=${JSON.stringify(postL)}`);
     }
     logMessage(`[STEP L] Failed save correctly rolled back / preserved state; invariant 1256 + 445 = 1701 holds intact.`);
+
+    // ----------------------------------------------------------------
+    // STEP M: Open saved project (reopen past export/work folder, edit, close, reopen)
+    // ----------------------------------------------------------------
+    {
+      logMessage('\n----------------------------------------------------------------');
+      logMessage('STEP M: Open saved project (reopen past export/work folder, edit, close, reopen)');
+      logMessage('----------------------------------------------------------------');
+
+      // 1. Initial invariant check before opening project
+      const preM = await checkInvariant('pre_m');
+
+      // 2. Click "Open saved project" in header
+      logMessage(`[STEP M ACTION] Clicking Open saved project in header`);
+      await safeClick('[title="Open saved project"]');
+      await page.waitForSelector('[data-testid="open-project-modal"]', { timeout: 15000 });
+      logMessage(`[STEP M] Recent projects modal opened successfully.`);
+
+      // 3. Open project folder using custom path input
+      const workDirPath = TEMP_WORK_DIR.replace(/\\/g, '/');
+      await page.fill('[data-testid="custom-project-path-input"]', workDirPath);
+      await sleep(200);
+      await safeClick('[data-testid="open-custom-path-btn"]');
+
+      // Wait for project to open and Review screen to load
+      await page.waitForSelector('#tab-people.on', { timeout: 15000 });
+      await sleep(500);
+
+      const postOpenM = await checkInvariant('m.1_after_open');
+      if (postOpenM.totalFaces !== 1701) {
+        throw new Error(`Invariant failed after project open: expected 1701, got ${postOpenM.totalFaces}`);
+      }
+      logMessage(`[STEP M] Project opened from work-dir: invariant 1256 + 445 = 1701 holds.`);
+
+      // 4. Make an edit: rename first person
+      const peopleBeforeEdit = await fetchJson('/api/people');
+      const targetPersonToRename = peopleBeforeEdit[0];
+      const targetAnchorId = targetPersonToRename.anchor_face_ids[0];
+      const newPersistedLabel = 'Persisted Project VIP';
+
+      logMessage(`[STEP M ACTION] Renaming person with anchor [${targetAnchorId}] to '${newPersistedLabel}'`);
+      await postJson('/api/edits', {
+        op: 'name',
+        person_id: targetPersonToRename.id,
+        label: newPersistedLabel,
+      });
+
+      // Verify edit applied in backend
+      for (let i = 0; i < 30; i++) {
+        try {
+          const p = await fetchJson('/api/people');
+          const match = p.find((x) => x.anchor_face_ids.includes(targetAnchorId));
+          if (match && match.label === newPersistedLabel) break;
+        } catch {}
+        await sleep(200);
+      }
+
+      const postEditM = await checkInvariant('m.2_after_edit');
+      logMessage(`[STEP M] Edit applied: invariant 1256 + 445 = 1701 holds.`);
+
+      // 5. Close and Reopen project to confirm persistence
+      logMessage(`[STEP M ACTION] Reopening project to verify edit persistence`);
+      await safeClick('[title="Open saved project"]');
+      await page.waitForSelector('[data-testid="open-project-modal"]', { timeout: 15000 });
+      await sleep(200);
+
+      // Reopen using custom path
+      await page.fill('[data-testid="custom-project-path-input"]', workDirPath);
+      await sleep(200);
+      await safeClick('[data-testid="open-custom-path-btn"]');
+      await page.waitForSelector('#tab-people.on', { timeout: 15000 });
+      await sleep(500);
+
+      // Confirm edit is STILL there!
+      const peopleAfterReopen = await fetchJson('/api/people');
+      const restoredPerson = peopleAfterReopen.find((x) => x.anchor_face_ids.includes(targetAnchorId));
+      if (!restoredPerson || restoredPerson.label !== newPersistedLabel) {
+        throw new Error(`Reopened project did NOT retain edit! expected label '${newPersistedLabel}', got '${restoredPerson?.label}'`);
+      }
+      logMessage(`[STEP M PASS] Reopened project successfully retained edit without re-scanning.`);
+
+      // 6. Confirm invariant holds
+      const postReopenM = await checkInvariant('m.3_reopened_project');
+      if (postReopenM.totalFaces !== 1701) {
+        throw new Error(`Invariant failed after project reopen: expected 1701, got ${postReopenM.totalFaces}`);
+      }
+      logMessage(`[STEP M PASS] Invariant 1256 + 445 = 1701 holds before, during, and after project open/close/reopen cycle.`);
+
+      // 7. Undo the rename edit so subsequent checks remain clean
+      await postJson('/api/edits', { op: 'undo' });
+      await sleep(300);
+      await checkInvariant('m.4_clean_undo');
+      logMessage(`[STEP M PASS] Undo restored clean baseline.`);
+    }
 
     // ----------------------------------------------------------------
     // ISOLATION AND CANONICAL PRESERVATION ASSERTION

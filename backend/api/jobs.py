@@ -243,6 +243,19 @@ class JobManager:
                         "unrecognized_faces": len(res.unrecognized.faces),
                         "unrecognized_photos": len(res.unrecognized.photo_ids),
                     }
+
+                # Auto-save recent project entry
+                try:
+                    from backend.api.projects import save_recent_project
+                    save_recent_project(
+                        work_dir=self.state.work_dir,
+                        export_path=self.state.settings.output_dir,
+                        source_description=self.state.settings.input_path,
+                        counts={"people": len(res.people), "photos": len(res.photos)},
+                    )
+                except Exception as e:
+                    print(f"[jobs] Warning: Failed to auto-save recent project: {e}")
+
                 self._broadcast_progress({"stage": "complete", "message": self.message})
             except InterruptedError:
                 with self._lock:

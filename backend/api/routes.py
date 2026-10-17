@@ -1,6 +1,7 @@
 """FastAPI route definitions for PhotoSorter API layer (BUILD_PLAN Phase 3)."""
 
 from typing import List, Dict, Any, Optional
+from pathlib import Path
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 
@@ -25,6 +26,9 @@ from backend.api.models import (
     MkdirRequest,
     SelectDialogRequest,
     SelectDialogResponse,
+    ProjectItem,
+    OpenProjectRequest,
+    OpenProjectResponse,
 )
 from backend.api.state import AppState
 from backend.api.jobs import JobManager
@@ -273,6 +277,18 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                 state.settings.output_dir = "export"
             exported_files = state.export_public_bundle(output_dir=out_dir)
 
+            # Auto-save recent project entry
+            try:
+                from backend.api.projects import save_recent_project
+                save_recent_project(
+                    work_dir=state.work_dir,
+                    export_path=out_dir,
+                    source_description=state.settings.input_path,
+                    counts={"people": len(state.people), "photos": len(state.photos)},
+                )
+            except Exception:
+                pass
+
             return ExportResponse(
                 success=True,
                 output_dir=str(out_dir),
@@ -408,5 +424,116 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             import traceback
             traceback.print_exc()
             return SelectDialogResponse(selected=None, cancelled=True)
+
+    # 8b. Download Original Source Photo (Edge Case: source missing / moved check)
+    @router.get("/photos/{photo_id}/download")
+    def download_original_photo(photo_id: str):
+        p_rec = state.photos.get(photo_id)
+        if not p_rec or not p_rec.original_path:
+            raise HTTPException(status_code=404, detail="Photo record not found")
+        orig_p = Path(p_rec.original_path)
+        if not orig_p.exists() or not orig_p.is_file():
+            raise HTTPException(status_code=404, detail=f"Source photo missing or moved: {p_rec.original_path}")
+        from fastapi.responses import FileResponse
+        return FileResponse(str(orig_p), filename=p_rec.file_name)
+
+    # 9. Recent Projects Endpoints (SPEC Open saved project)
+    @router.get("/projects", response_model=List[ProjectItem])
+    def list_projects():
+        from backend.api.projects import load_recent_projects
+        projects = load_recent_projects()
+        return [ProjectItem(**p) for p in projects]
+
+    @router.post("/projects/open", response_model=OpenProjectResponse)
+    def open_project(req: OpenProjectRequest):
+        from pathlib import Path
+        import hashlib
+        import datetime
+        from backend.api.projects import get_project_by_id, save_recent_project
+
+        # Edge case: Block if scan is currently running
+        if job_manager.get_status().status == "running":
+            raise HTTPException(
+                status_code=409,
+                detail="Cannot open project while a scan is currently running. Please wait for the scan to finish or cancel it first.",
+            )
+
+        proj = None
+        if req.project_id:
+            proj = get_project_by_id(req.project_id)
+        elif req.work_dir:
+            proj = get_project_by_id(req.work_dir)
+
+        if not proj and req.work_dir:
+            work_p = Path(req.work_dir).resolve()
+            if not work_p.exists() or not work_p.is_dir():
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Work folder '{work_p}' not found or was moved.",
+                )
+            proj = {
+                "id": hashlib.sha256(str(work_p).encode("utf-8")).hexdigest()[:12],
+                "name": work_p.name,
+                "work_dir": str(work_p),
+                "export_path": req.export_path,
+                "source_description": "Local Folder",
+                "last_opened": datetime.datetime.now().astimezone().isoformat(),
+                "counts": {"people": 0, "photos": 0},
+                "exists": True,
+            }
+
+        if not proj:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Project '{req.project_id or req.work_dir}' not found.",
+            )
+
+        # Edge case: Work folder moved or deleted
+        work_path = Path(proj["work_dir"])
+        if not work_path.exists() or not work_path.is_dir():
+            raise HTTPException(
+                status_code=404,
+                detail=f"Work folder '{work_path}' not found or was moved. Would you like to remove this entry from your recent projects?",
+            )
+
+        try:
+            res = state.open_saved_project(
+                work_dir=proj["work_dir"],
+                export_path=proj.get("export_path"),
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to open project: {e}")
+
+        # Update last_opened and counts in projects.json
+        updated = save_recent_project(
+            work_dir=proj["work_dir"],
+            export_path=proj.get("export_path"),
+            source_description=proj.get("source_description"),
+            counts={"people": res["people_count"], "photos": res["photos_count"]},
+            name=proj.get("name"),
+        )
+
+        return OpenProjectResponse(
+            success=True,
+            project=ProjectItem(**updated),
+            people_count=res["people_count"],
+            photos_count=res["photos_count"],
+            unrecognized_faces_count=res["unrecognized_faces_count"],
+            read_only=res["read_only"],
+            edits_error=res["edits_error"],
+            applied_edits_count=res["applied_edits_count"],
+        )
+
+    @router.post("/projects/{project_id}/open", response_model=OpenProjectResponse)
+    def open_project_by_id_endpoint(project_id: str):
+        return open_project(OpenProjectRequest(project_id=project_id))
+
+    @router.delete("/projects/{project_id}")
+    def delete_recent_project(project_id: str):
+        from backend.api.projects import remove_recent_project
+        success = remove_recent_project(project_id)
+        if not success:
+            raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found in recent projects.")
+        return {"success": True, "removed": project_id, "message": "Project removed from recent list. Files on disk remain intact."}
 
     return router

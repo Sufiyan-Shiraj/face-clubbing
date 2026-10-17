@@ -96,6 +96,7 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
 
   // Natural image dimensions state
   const [naturalDim, setNaturalDim] = useState<{ width: number; height: number } | null>(null);
+  const [imgFailed, setImgFailed] = useState<boolean>(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -118,13 +119,14 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activePopoverFaceId, showFacesDrawer, onClose]);
 
-  // Reset zoom and pan on photo change
+  // Reset zoom, pan, and error on photo change
   useEffect(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
     setHoveredFaceId(null);
     setActivePopoverFaceId(null);
     setPopoverSelectedPerson('');
+    setImgFailed(false);
   }, [photoId]);
 
   // Scroll active thumbnail into view in filmstrip
@@ -482,6 +484,20 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
               <span className="riso-tab-badge">
                 {currentIndex >= 0 ? `${currentIndex + 1} / ${allIds.length}` : ''}
               </span>
+              {(currentPhoto.source_exists === false || imgFailed) && (
+                <span
+                  data-testid="source-missing-badge"
+                  className="px-2 py-0.5 rounded text-xs font-bold"
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.2)',
+                    border: '1px solid #ef4444',
+                    color: '#f87171',
+                  }}
+                  title="Source photo missing or moved from disk"
+                >
+                  Source missing
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3 text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
               {imgWidth && imgHeight && (
@@ -584,17 +600,30 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
 
           {/* Download Original */}
           {currentPhoto.download && (
-            <a
-              href={currentPhoto.download}
-              target="_blank"
-              rel="noopener noreferrer"
-              download={fileName}
-              className="riso-btn-sec"
-              style={{ width: '40px', height: '40px', padding: 0 }}
-              title="Download Photo"
-            >
-              <Download className="w-4 h-4" />
-            </a>
+            currentPhoto.source_exists === false ? (
+              <button
+                type="button"
+                disabled
+                data-testid="download-missing-btn"
+                className="riso-btn-sec opacity-40 cursor-not-allowed"
+                style={{ width: '40px', height: '40px', padding: 0 }}
+                title="Source photo missing or moved on disk"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            ) : (
+              <a
+                href={currentPhoto.download}
+                target="_blank"
+                rel="noopener noreferrer"
+                download={fileName}
+                className="riso-btn-sec"
+                style={{ width: '40px', height: '40px', padding: 0 }}
+                title="Download Photo"
+              >
+                <Download className="w-4 h-4" />
+              </a>
+            )
           )}
 
           {/* Filmstrip Toggle */}
@@ -690,20 +719,57 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
             maxHeight: '100%',
           }}
         >
-          <img
-            ref={imgRef}
-            src={photoSrc}
-            alt={fileName}
-            draggable={false}
-            onLoad={(e) => {
-              const target = e.target as HTMLImageElement;
-              setNaturalDim({ width: target.naturalWidth, height: target.naturalHeight });
-            }}
-            className="w-full h-full object-contain rounded shadow-2xl pointer-events-none block"
-            style={{
-              border: '1.5px solid var(--line)',
-            }}
-          />
+          {imgFailed ? (
+            <div
+              data-testid="source-missing-placeholder"
+              className="w-full h-full min-h-[300px] flex flex-col items-center justify-center p-6 text-center rounded"
+              style={{
+                background: 'var(--panel)',
+                border: '2px dashed #ef4444',
+                color: 'var(--muted)',
+              }}
+            >
+              <Scan className="w-12 h-12 mb-3 text-red-400 opacity-60" />
+              <p className="font-bold text-base text-red-400">Source photo missing or moved</p>
+              <p className="text-xs mt-1 max-w-sm">The original photo file could not be found or loaded from disk.</p>
+              {currentPhoto.original_path && (
+                <p className="text-xs font-mono mt-2 opacity-70 break-all">{currentPhoto.original_path}</p>
+              )}
+            </div>
+          ) : (
+            <img
+              ref={imgRef}
+              src={photoSrc}
+              alt={fileName}
+              draggable={false}
+              onLoad={(e) => {
+                const target = e.target as HTMLImageElement;
+                setNaturalDim({ width: target.naturalWidth, height: target.naturalHeight });
+              }}
+              onError={() => setImgFailed(true)}
+              className="w-full h-full object-contain rounded shadow-2xl pointer-events-none block"
+              style={{
+                border: '1.5px solid var(--line)',
+              }}
+            />
+          )}
+
+          {/* Source Missing Floating Banner */}
+          {(currentPhoto.source_exists === false || imgFailed) && (
+            <div
+              data-testid="source-missing-banner"
+              className="absolute -top-12 left-1/2 -translate-x-1/2 z-40 px-3 py-1.5 rounded flex items-center gap-2 shadow-lg text-xs"
+              style={{
+                background: '#dc2626',
+                color: '#ffffff',
+                fontWeight: 600,
+                border: '1px solid #b91c1c',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span>Source photo missing or moved on disk</span>
+            </div>
+          )}
 
           {/* Face Highlights Overlay */}
           {showFaceHighlights &&

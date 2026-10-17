@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { AlertCircle, Folder, FolderArchive, Zap, Info, Check, Key, X, Loader2 } from 'lucide-react';
+import { AlertCircle, Folder, FolderArchive, Zap, Info, Check, Key, X, Loader2, FolderOpen } from 'lucide-react';
 import { RisoTheme } from './Header';
 import { api } from '../api/client';
 
@@ -9,6 +9,7 @@ export interface HomeScreenProps {
   currentInputPath?: string;
   onNavigateTab?: (tab: string) => void;
   theme?: RisoTheme;
+  onOpenProject?: () => void;
 
   // Lifted & Persisted state
   sourceMode?: 'drive' | 'local' | 'zip';
@@ -85,6 +86,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   discoveredFaceCrops = [],
   onApiKeySaved,
   isApiKeyConfigured: controlledApiKeyConfigured,
+  onOpenProject,
 }) => {
   // Support both controlled (lifted to App.tsx) and internal fallback state
   const [internalSourceMode, setInternalSourceMode] = useState<'drive' | 'local' | 'zip'>('drive');
@@ -482,6 +484,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <FolderArchive className="w-4 h-4 flex-shrink-0" />
             <span>Zip file</span>
           </button>
+
+          {onOpenProject && (
+            <button
+              type="button"
+              id="home-open-project-btn"
+              data-testid="home-open-project-btn"
+              onClick={onOpenProject}
+              className="source-mode-btn"
+              title="Open saved project"
+            >
+              <FolderOpen className="w-4 h-4 flex-shrink-0 text-[var(--accent)]" />
+              <span>Open saved project</span>
+            </button>
+          )}
         </div>
 
         {/* Main Source Selection Form */}
