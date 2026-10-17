@@ -21,14 +21,14 @@ from typing import List, Dict, Any, Optional
 
 
 def get_projects_file() -> Path:
-    """Returns path to projects.json, allowing override via PHOTOSORTER_PROJECTS_FILE for test isolation."""
-    env_override = os.environ.get("PHOTOSORTER_PROJECTS_FILE")
+    """Returns path to projects.json, allowing override via CATLOG_PROJECTS_FILE or PHOTOSORTER_PROJECTS_FILE for test isolation."""
+    env_override = os.environ.get("CATLOG_PROJECTS_FILE") or os.environ.get("PHOTOSORTER_PROJECTS_FILE")
     if env_override:
         p = Path(env_override).resolve()
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
-    default_dir = Path.home() / ".photosorter"
-    default_dir.mkdir(parents=True, exist_ok=True)
+    from backend.drive.config import get_user_settings_dir
+    default_dir = get_user_settings_dir()
     return default_dir / "projects.json"
 
 

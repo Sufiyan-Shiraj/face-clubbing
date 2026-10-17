@@ -31,8 +31,9 @@ class FaceDetector:
     ):
         self.model_name = model_name
         if model_root is None:
-            # SPEC section 9 & 13: Models stored under ~/.photosorter/models
-            model_root = str(Path.home() / ".photosorter")
+            # Models stored under ~/.catlog/models (with automatic legacy ~/.photosorter migration)
+            from backend.drive.config import get_user_settings_dir
+            model_root = str(get_user_settings_dir())
         self.model_root = model_root
         self.det_size = det_size
         self.min_det_score = min_det_score
@@ -59,15 +60,23 @@ class FaceDetector:
                 kwargs["providers"] = self.providers
 
             target_model_dir = Path(self.model_root) / "models" / self.model_name
+            legacy_model_dir = Path.home() / ".photosorter" / "models" / self.model_name
             fallback_model_dir = Path.home() / ".insightface" / "models" / self.model_name
 
-            # If default target model directory doesn't exist, check fallback and migrate to ~/.photosorter/models
-            if self.model_root == str(Path.home() / ".photosorter") and not target_model_dir.exists() and fallback_model_dir.exists():
-                try:
-                    target_model_dir.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copytree(fallback_model_dir, target_model_dir)
-                except Exception:
-                    pass
+            # If default target model directory doesn't exist, check legacy and fallback and copy
+            if not target_model_dir.exists() or not any(target_model_dir.glob("*.onnx")):
+                source_dir = None
+                if legacy_model_dir.exists() and any(legacy_model_dir.glob("*.onnx")):
+                    source_dir = legacy_model_dir
+                elif fallback_model_dir.exists() and any(fallback_model_dir.glob("*.onnx")):
+                    source_dir = fallback_model_dir
+
+                if source_dir:
+                    try:
+                        target_model_dir.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copytree(source_dir, target_model_dir, dirs_exist_ok=True)
+                    except Exception:
+                        pass
 
             if not target_model_dir.exists() or not any(target_model_dir.glob("*.onnx")):
                 if self.progress_callback:

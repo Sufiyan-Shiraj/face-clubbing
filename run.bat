@@ -2,7 +2,7 @@
 setlocal
 
 echo ===================================================
-echo Starting PhotoSorter Development Runner
+echo Starting CatLog Development Runner
 echo ===================================================
 
 if not exist ".venv\Scripts\python.exe" (
@@ -17,7 +17,7 @@ if not exist ".venv\Scripts\python.exe" (
     )
 )
 
-echo [INFO] Running PhotoSorter Desktop Shell...
+echo [INFO] Running CatLog Desktop Shell...
 .venv\Scripts\python.exe main.py %*
 
 endlocal

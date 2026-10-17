@@ -128,7 +128,7 @@ def wait_for_server(host: str, port: int, timeout: float = 10.0) -> bool:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="PhotoSorter Desktop Shell")
+    parser = argparse.ArgumentParser(description="CatLog Desktop Shell")
     parser.add_argument("--port", type=int, default=0, help="Port to run on (0 for random free port)")
     parser.add_argument("--host", default="127.0.0.1", help="Host to bind to")
     parser.add_argument("--no-gui", action="store_true", help="Run server only without opening GUI window")
@@ -158,7 +158,7 @@ def main():
     print(f"[STARTUP] Server healthy at {dt_health:.2f}s: {url}")
 
     if args.no_gui:
-        print(f"PhotoSorter server running at {url} (Ctrl+C to stop)")
+        print(f"CatLog server running at {url} (Ctrl+C to stop)")
         try:
             while server_thread.is_alive():
                 time.sleep(0.5)
@@ -171,7 +171,7 @@ def main():
     # Start native pywebview GUI
     api = WebviewApi()
     window = webview.create_window(
-        title="PhotoSorter",
+        title="CatLog",
         url=url,
         js_api=api,
         width=1320,

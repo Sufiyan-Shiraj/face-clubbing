@@ -81,12 +81,12 @@ def find_process_windows(target_pids: set[int]) -> list[tuple[int, int, str, str
 
 
 def get_process_tree_pids(root_pid: int) -> set[int]:
-    """Finds all PIDs spawned by the root process or belonging to photosorter.exe."""
+    """Finds all PIDs spawned by the root process or belonging to CatLog.exe / photosorter.exe."""
     pids = {root_pid}
     try:
         import psutil
         for p in psutil.process_iter(["pid", "ppid", "name"]):
-            if p.info["ppid"] == root_pid or (p.info["name"] and "photosorter" in p.info["name"].lower()):
+            if p.info["ppid"] == root_pid or (p.info["name"] and any(x in p.info["name"].lower() for x in ("catlog", "photosorter"))):
                 pids.add(p.info["pid"])
     except Exception:
         pass
@@ -95,10 +95,12 @@ def get_process_tree_pids(root_pid: int) -> set[int]:
 
 def main():
     repo_root = Path(__file__).resolve().parent.parent
-    exe_path = repo_root / "dist" / "photosorter.exe"
+    exe_path = repo_root / "dist" / "CatLog.exe"
+    if not exe_path.exists():
+        exe_path = repo_root / "dist" / "photosorter.exe"
 
     print("=" * 80)
-    print("PHOTOSORTER WINDOWED LAUNCH VERIFICATION (eval/verify_windowed.py)")
+    print("CATLOG / PHOTOSORTER WINDOWED LAUNCH VERIFICATION (eval/verify_windowed.py)")
     print("=" * 80)
 
     if sys.platform != "win32":
@@ -169,8 +171,8 @@ def main():
         assert "<title>" in html_content or "html" in html_content.lower(), "Root / did not return HTML"
         print(f"[PASS] (c) Frontend page loads successfully (status 200, HTML content served)")
 
-        # Wait for top-level window titled "PhotoSorter"
-        print("\n[INFO] Searching for top-level window titled 'PhotoSorter'...")
+        # Wait for top-level window titled "CatLog" (or "PhotoSorter")
+        print("\n[INFO] Searching for top-level window titled 'CatLog' (or 'PhotoSorter')...")
         window_found = False
         photosorter_hwnd = None
         window_title = ""
@@ -186,7 +188,7 @@ def main():
                     print(f"[FAIL] Found unexpected console window! (class={class_name}, hwnd={hwnd})")
                     sys.exit(1)
 
-                if title.strip() == "PhotoSorter":
+                if title.strip() in ("CatLog", "PhotoSorter"):
                     window_found = True
                     photosorter_hwnd = hwnd
                     window_title = title
@@ -198,14 +200,14 @@ def main():
 
         if not window_found:
             print("\n" + "!" * 70)
-            print("[NEEDS ORGANIZER REVIEW] Top-level window titled 'PhotoSorter' was not detected via EnumWindows.")
+            print("[NEEDS ORGANIZER REVIEW] Top-level window titled 'CatLog' was not detected via EnumWindows.")
             print("This can happen if running in a non-interactive session or headless build worker.")
             print("MANUAL VERIFICATION STEPS:")
-            print(" 1. Run dist\\photosorter.exe directly by double-clicking in File Explorer.")
-            print(" 2. Confirm a native desktop window titled 'PhotoSorter' appears without any console window.")
+            print(" 1. Run dist\\CatLog.exe (or dist\\photosorter.exe) directly by double-clicking in File Explorer.")
+            print(" 2. Confirm a native desktop window titled 'CatLog' appears without any console window.")
             print(" 3. Verify the React organizer UI loads completely inside the window.")
             print(" 4. Close the window by clicking the 'X' button in the titlebar.")
-            print(" 5. Confirm in Task Manager that photosorter.exe exits and the bound port is released.")
+            print(" 5. Confirm in Task Manager that CatLog.exe exits and the bound port is released.")
             print("!" * 70 + "\n")
             return
 
@@ -246,7 +248,7 @@ def main():
 
         print("\n" + "=" * 80)
         print("ALL WINDOWED LAUNCH CHECKS PASSED AUTOMATICALLY:")
-        print(" [PASS] (a) Top-level window titled 'PhotoSorter' appeared")
+        print(f" [PASS] (a) Top-level window titled '{window_title}' appeared")
         print(" [PASS] (b) No console window (PE Subsystem 2 GUI, no ConsoleWindowClass)")
         print(" [PASS] (c) Page loads (health check 200, HTML served on process port)")
         print(" [PASS] (d) WM_CLOSE cleanly terminated process and released bound port")

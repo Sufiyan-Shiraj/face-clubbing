@@ -2,7 +2,7 @@
 set -e
 
 echo "==================================================="
-echo "Starting PhotoSorter Desktop Shell"
+echo "Starting CatLog Desktop Shell"
 echo "==================================================="
 
 if [ ! -f ".venv/bin/python" ]; then
@@ -16,5 +16,5 @@ if [ ! -f ".venv/bin/python" ]; then
     fi
 fi
 
-echo "[INFO] Running PhotoSorter Desktop Shell..."
+echo "[INFO] Running CatLog Desktop Shell..."
 .venv/bin/python main.py "$@"

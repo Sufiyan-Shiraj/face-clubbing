@@ -25,7 +25,7 @@ VSVersionInfo(
             StringStruct('FileVersion', '1.0.0.0'),
             StringStruct('InternalName', 'CatLog'),
             StringStruct('LegalCopyright', 'Copyright (c) 2026 CatLog. All rights reserved.'),
-            StringStruct('OriginalFilename', 'photosorter.exe'),
+            StringStruct('OriginalFilename', 'CatLog.exe'),
             StringStruct('ProductName', 'CatLog'),
             StringStruct('ProductVersion', '1.0.0.0'),
           ]

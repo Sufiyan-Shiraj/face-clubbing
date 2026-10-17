@@ -84,11 +84,11 @@ def http_post(url: str, payload: dict, timeout: float = 10.0) -> tuple[int, dict
 
 def main():
     repo_root = Path(__file__).resolve().parent.parent
-    exe_path = repo_root / "dist" / "photosorter.exe"
+    exe_path = (repo_root / "dist" / "CatLog.exe") if (repo_root / "dist" / "CatLog.exe").exists() else (repo_root / "dist" / "photosorter.exe")
     test_photos = repo_root / "test_photos"
 
     print("=" * 80)
-    print("PHOTOSORTER STANDALONE EXECUTABLE VERIFICATION (eval/verify_exe.py)")
+    print("CATLOG STANDALONE EXECUTABLE VERIFICATION (eval/verify_exe.py)")
     print("=" * 80)
 
     # 1. Binary checks

@@ -133,8 +133,8 @@ class TestDriveConfig:
         set_drive_api_key("AIzaSySettingsFileKey987654321")
         assert get_drive_api_key() == "AIzaSySettingsFileKey987654321"
 
-        # Check file was written outside repo in ~/.photosorter/settings.json
-        settings_file = fake_profile / ".photosorter" / "settings.json"
+        # Check file was written outside repo in ~/.catlog/settings.json
+        settings_file = fake_profile / ".catlog" / "settings.json"
         assert settings_file.exists()
         with open(settings_file, "r") as f:
             data = json.load(f)
@@ -143,6 +143,32 @@ class TestDriveConfig:
         # Clear key
         set_drive_api_key("")
         assert get_drive_api_key() is None
+
+    def test_migration_legacy_photosorter_to_catlog(self, monkeypatch, tmp_path):
+        """Verify automatic migration from legacy ~/.photosorter to ~/.catlog on first run."""
+        monkeypatch.delenv("DRIVE_API_KEY", raising=False)
+        fake_profile = tmp_path / "fake_profile_migration"
+        monkeypatch.setenv("USERPROFILE", str(fake_profile))
+        monkeypatch.setenv("HOME", str(fake_profile))
+
+        legacy_dir = fake_profile / ".photosorter"
+        legacy_dir.mkdir(parents=True, exist_ok=True)
+        legacy_settings = legacy_dir / "settings.json"
+        with open(legacy_settings, "w") as f:
+            json.dump({"drive_api_key": "AIzaSyLegacyKey123"}, f)
+
+        catlog_dir = fake_profile / ".catlog"
+        assert not catlog_dir.exists()
+
+        # Calling get_drive_api_key() triggers get_user_settings_dir() which auto-migrates
+        key = get_drive_api_key()
+        assert key == "AIzaSyLegacyKey123"
+        assert catlog_dir.exists()
+        migrated_settings = catlog_dir / "settings.json"
+        assert migrated_settings.exists()
+        with open(migrated_settings, "r") as f:
+            migrated_data = json.load(f)
+        assert migrated_data.get("drive_api_key") == "AIzaSyLegacyKey123"
 
     def test_sanitize_logs(self, monkeypatch):
         monkeypatch.setenv("DRIVE_API_KEY", "AIzaSySecretKey999")
