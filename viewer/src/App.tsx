@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { ViewerConfig, PeopleData, PersonCluster } from './types';
 import { Header, ViewerTheme } from './components/Header';
 import { PeopleGrid } from './components/PeopleGrid';
-import { PhotoGallery } from './components/PhotoGallery';
-import { UnrecognizedGallery } from './components/UnrecognizedGallery';
 import { Footer } from './components/Footer';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+
+const PhotoGallery = React.lazy(() => import('./components/PhotoGallery').then(m => ({ default: m.PhotoGallery })));
+const UnrecognizedGallery = React.lazy(() => import('./components/UnrecognizedGallery').then(m => ({ default: m.UnrecognizedGallery })));
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<ViewerTheme>(() => {
@@ -206,22 +207,24 @@ export const App: React.FC = () => {
               />
             )}
 
-            {activeView === 'person' && selectedPerson && (
-              <PhotoGallery
-                person={selectedPerson}
-                photos={data.photos}
-                includeMaybe={config.include_maybe === true}
-                onBack={handleBackToGrid}
-              />
-            )}
+            <React.Suspense fallback={<div className="flex justify-center items-center py-20"><div className="w-7 h-7 rounded-full border-2 border-[var(--color-accent)] border-t-transparent animate-spin" /></div>}>
+              {activeView === 'person' && selectedPerson && (
+                <PhotoGallery
+                  person={selectedPerson}
+                  photos={data.photos}
+                  includeMaybe={config.include_maybe === true}
+                  onBack={handleBackToGrid}
+                />
+              )}
 
-            {activeView === 'unrecognized' && (
-              <UnrecognizedGallery
-                unrecognized={data.unrecognized}
-                photos={data.photos}
-                onBack={handleBackToGrid}
-              />
-            )}
+              {activeView === 'unrecognized' && (
+                <UnrecognizedGallery
+                  unrecognized={data.unrecognized}
+                  photos={data.photos}
+                  onBack={handleBackToGrid}
+                />
+              )}
+            </React.Suspense>
           </>
         )}
       </main>

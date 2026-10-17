@@ -11,13 +11,14 @@ import {
 } from './types';
 import { Header, RisoTheme } from './components/Header';
 import { HomeScreen } from './components/HomeScreen';
-import { ProgressScreen } from './components/ProgressScreen';
-import { ReviewPeopleScreen } from './components/ReviewPeopleScreen';
-import { ExportScreen } from './components/ExportScreen';
-import { SettingsScreen } from './components/SettingsScreen';
-import { OpenProjectModal } from './components/OpenProjectModal';
-import { TutorialSpotlight } from './components/TutorialSpotlight';
 import { AlertTriangle, X } from 'lucide-react';
+
+const ProgressScreen = React.lazy(() => import('./components/ProgressScreen').then(m => ({ default: m.ProgressScreen })));
+const ReviewPeopleScreen = React.lazy(() => import('./components/ReviewPeopleScreen').then(m => ({ default: m.ReviewPeopleScreen })));
+const ExportScreen = React.lazy(() => import('./components/ExportScreen').then(m => ({ default: m.ExportScreen })));
+const SettingsScreen = React.lazy(() => import('./components/SettingsScreen').then(m => ({ default: m.SettingsScreen })));
+const OpenProjectModal = React.lazy(() => import('./components/OpenProjectModal').then(m => ({ default: m.OpenProjectModal })));
+const TutorialSpotlight = React.lazy(() => import('./components/TutorialSpotlight').then(m => ({ default: m.TutorialSpotlight })));
 
 const DEMO_TUTORIAL_PEOPLE: PersonCluster[] = [
   {
@@ -976,6 +977,7 @@ export const App: React.FC = () => {
           />
         )}
 
+        <React.Suspense fallback={<div className="p-8 text-center text-xs font-mono opacity-50">Loading screen...</div>}>
         {activeTab === 'progress' && (
           <ProgressScreen
             status={
@@ -1056,39 +1058,42 @@ export const App: React.FC = () => {
             theme={theme}
           />
         )}
+        </React.Suspense>
       </div>
 
       {/* Open Saved Project Modal */}
-      {isOpenProjectModalOpen && (
-        <OpenProjectModal
-          onClose={() => setIsOpenProjectModalOpen(false)}
-          onProjectOpened={handleProjectOpened}
-          theme={theme}
-          hasUnexportedWork={hasUnexportedWork}
-          onNavigateToExport={() => {
-            setIsOpenProjectModalOpen(false);
-            handleTabChange('export');
-          }}
-        />
-      )}
+      <React.Suspense fallback={null}>
+        {isOpenProjectModalOpen && (
+          <OpenProjectModal
+            onClose={() => setIsOpenProjectModalOpen(false)}
+            onProjectOpened={handleProjectOpened}
+            theme={theme}
+            hasUnexportedWork={hasUnexportedWork}
+            onNavigateToExport={() => {
+              setIsOpenProjectModalOpen(false);
+              handleTabChange('export');
+            }}
+          />
+        )}
 
-      {/* Interactive Onboarding Spotlight Tour */}
-      {isTutorialOpen && (
-        <TutorialSpotlight
-          isOpen={isTutorialOpen}
-          onClose={() => {
-            setIsTutorialOpen(false);
-            setSelectedIds(new Set());
-            setReviewSubTab('people');
-          }}
-          onNavigateTab={handleTabChange}
-          onSetReviewSubTab={setReviewSubTab}
-          onSetSelectedPeopleIds={setSelectedIds}
-          onSetSourceMode={handleSourceModeChange}
-          activeTab={activeTab}
-          theme={theme}
-        />
-      )}
+        {/* Interactive Onboarding Spotlight Tour */}
+        {isTutorialOpen && (
+          <TutorialSpotlight
+            isOpen={isTutorialOpen}
+            onClose={() => {
+              setIsTutorialOpen(false);
+              setSelectedIds(new Set());
+              setReviewSubTab('people');
+            }}
+            onNavigateTab={handleTabChange}
+            onSetReviewSubTab={setReviewSubTab}
+            onSetSelectedPeopleIds={setSelectedIds}
+            onSetSourceMode={handleSourceModeChange}
+            activeTab={activeTab}
+            theme={theme}
+          />
+        )}
+      </React.Suspense>
     </div>
   );
 };
