@@ -16,17 +16,18 @@ export const Footer: React.FC<FooterProps> = ({ config, generatedAt }) => {
     : null;
 
   return (
-    <footer className="mt-auto py-8 border-t border-neutral-900 text-center text-xs text-neutral-500">
-      <div className="max-w-7xl mx-auto px-4 space-y-1.5">
-        <p className="font-medium text-neutral-400">
-          {config.footer || 'Published with PhotoSorter'}
+    <footer className="mt-auto py-6 border-t border-[var(--border-color)] text-center text-xs text-[var(--text-dim)]">
+      <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <p className="font-semibold text-[var(--text-muted)]">
+          {config.footer || 'Published with CatLog'}
         </p>
         {formattedDate && (
-          <p className="text-[11px] text-neutral-600">
-            Exported on {formattedDate}
+          <p className="text-[11px] text-[var(--text-dim)]">
+            Exported {formattedDate}
           </p>
         )}
       </div>
     </footer>
   );
 };
+export default Footer;

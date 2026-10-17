@@ -155,6 +155,7 @@ class BundleExporter:
                 "name": record.file_name,
                 "thumb": thumb_rel,
                 "download": record.download_url,
+                "download_url": record.download_url,
                 "drive_url": drive_url,
                 "share_url": share_url,
                 "drive_file_id": getattr(record, "drive_file_id", None),

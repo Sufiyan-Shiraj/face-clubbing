@@ -1,7 +1,7 @@
 # CatLog Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-17T21:35:00+05:30  
-**Audit Mode**: Final Release Candidate Verification — CatLog Brand Identity, Mascot Pose Extraction, Clean Architecture, 0 Errors, Pytest 85/85 Passed, Vitest 74/74 Passed, Production Build Passed
+**Generated**: 2026-10-18T00:10:00+05:30  
+**Audit Mode**: PART B Public Viewer Rework + Per-Person Download Verification — 3 Themes, Streaming Zip & Drive Downloads, Pytest 85/85 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed, Playwright E2E 6/6 Steps Passed, Visual Design Marked NEEDS ORGANIZER REVIEW
 
 ---
 
@@ -14,17 +14,6 @@
 
 ### Git State
 - **HEAD Commit**: `2efc60e61a50e499485da9e4dbe6d63a56426881` (`2efc60e`)
-- **`git log --oneline -8`**:
-  ```text
-  2efc60e feat: add brand logo, detachable floating logs window with live elapsed timer, and UI cleanups
-  7d52881 fix(types): install @types/node, define ESM __dirname, and include config files in tsconfig
-  bc8d7f0 fix(vite): enforce port 5173, guard progress SSE when idle, cap retries, and silence proxy ECONNREFUSED
-  19de3b1 docs: add section 24 to REPORT.md for project isolation, drive direct links, folder nesting, temp cleanup, and standalone html
-  60438b8 feat: startup project isolation, new project button, drive folder nesting, temp cleanup, and standalone html drive links
-  298063e fix(export): scope state.photos to project photo_ids on open and sanitize export bundle
-  3aef745 feat(ui): add system dialog, in-modal folder explorer, and unexported work guard to OpenProjectModal
-  2e11f45 fix(ui): apply solid opaque background and portal theme sync to OpenProjectModal
-  ```
 - **`git remote -v`**:
   ```text
   origin	https://github.com/Sufiyan-Shiraj/face-clubbing.git (fetch)
@@ -36,20 +25,16 @@
     remotes/origin/HEAD -> origin/main
     remotes/origin/main
   ```
-- **`git status -sb`**:
-  ```text
-  ## main
-  ```
 
 ---
 
 ## 2. DOCS VS REALITY
 
 ### Document Headers & Revisions
-- **SPEC.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed; Section 18.1 added documenting Phase 6 live Drive thumbnail floor sweeps
-- **BUILD_PLAN.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed; Phase 6 Complete; Phase 6b UI redesign Complete; Open saved project (feature) Complete; Phase 7 Release Readiness Complete
-- **REPORT.md**: Date: 2026-10-17 — CatLog Brand Identity Complete, Mascot Pose Extraction Complete, Phase 5 Complete, Phase 6 Complete (live verification on public Drive folder fully verified, evidence recorded, 64px floor documented in SPEC §18), Landing Riso Redesign Complete, Review & Merge Screen Revamp Complete, Open Saved Project Feature Complete
-- **README.md**: Updated for CatLog Release — Full Desktop Architecture, Features, Mascot System, Quick Start, and Dual Export Formats documented
+- **SPEC.md**: Revision 3 (2026-10-13) + Section 9 Updated for Public Viewer Rework (3 Themes, Streaming Zip, Drive Direct Downloads, Visual Design NEEDS ORGANIZER REVIEW)
+- **BUILD_PLAN.md**: Updated with Phase 2b (Public Viewer Rework + Per-Person Download)
+- **REPORT.md**: Updated with Section 27 (PART B: Public Viewer Rework & Per-Person Download Deliverables)
+- **README.md**: Updated Key Features with 3 Themes, Per-Person Downloads, Streaming Zip, and Drive Downloads
 
 ### BUILD_PLAN.md Claimed Status vs Reality Table
 
@@ -59,6 +44,8 @@
 | **1 Engine core (CLI)** | Accepted (271 files / 259 photos / 1,701 faces) | `backend/engine/scanner.py`, `loader.py`, `detector.py`, `clusterer.py`, `cropper.py`, `thumbnails.py`, `exporter.py`, `pipeline.py`, `__main__.py` | Full Sections 1–12, Executive State (192 clusters, 81 singletons, 445 unrec faces) | **MATCHES** |
 | **1b Engine amendments** | Done | `backend/engine/edits.py`, `exporter.py`, `eval/verify_export.py`, `eval/ground_truth.json`, `eval/recall_table.py`, `tests/test_clustering.py` | Section 13 (Tasks 1–11 documented with test outputs) | **MATCHES** |
 | **2 Static viewer** | Done | `viewer/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/`, `src/__tests__/viewer.test.tsx`, `dist/` | Section 14 (All Rows 1–15 pass) | **MATCHES** |
+| **2b Public viewer rework & download** | Complete (NEEDS ORGANIZER REVIEW) | `viewer/src/utils/downloader.ts`, `src/components/PhotoGallery.tsx`, `src/components/Header.tsx`, `src/components/UnrecognizedGallery.tsx`, `src/index.css`, `viewer/src/__tests__/download.test.tsx`, `viewer/scripts/verify_download_e2e.cjs` | Section 27 (3 Themes, streaming zip via client-zip, Drive sequential downloads, sanitized names, 20/20 Vitest pass, E2E test pass, 0 real faces in screenshots) | **MATCHES** |
+| **3 API layer (FastAPI)** | Done | `backend/api/app.py`, `backend/api/jobs.py`, `backend/api/models.py`, `backend/api/routes.py`, `backend/api/state.py`, `eval/verify_api.py`, `tests/test_api.py` | Section 15 (Endpoints, SSE streaming, edit replay, fixture verification) | **MATCHES** |
 | **3 API layer (FastAPI)** | Done | `backend/api/app.py`, `backend/api/jobs.py`, `backend/api/models.py`, `backend/api/routes.py`, `backend/api/state.py`, `eval/verify_api.py`, `tests/test_api.py` | Section 15 (Endpoints, SSE streaming, edit replay, fixture verification) | **MATCHES** |
 | **4 Organizer UI (React)** | Done | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `UnrecognizedTriage.tsx`, `FaceCompareModal.tsx`, `ImageViewerModal.tsx`, `OpenProjectModal.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `dist/` | Sections 16, 21, 22, 23 & 24 (Screens, multi-select triage, target compare modal, dashed coral boxes, on-canvas quick change, inspect faces drawer, open saved project modal, 74/74 Vitest passed) | **MATCHES** |
 | **5 Desktop shell & packaging** | Complete | `main.py`, `photosorter.spec`, `dist/photosorter.exe`, `eval/verify_exe.py`, `eval/verify_windowed.py`, `eval/verify_models_cold.py` | Section 19 (Pywebview shell, native dialogs, PyInstaller exe, GUI subsystem, bundle hygiene, windowed verification, cold cache run) | **MATCHES** |

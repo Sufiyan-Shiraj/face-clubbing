@@ -43,6 +43,12 @@ It takes an event's photo collection, detects faces, extracts mathematical embed
 - **🌐 Dual Export Options**  
   - **Standalone Single-File HTML**: An ultra-fast, zero-dependency, single HTML gallery file with embedded CSS, thumbnails, and client-side attendee filtering.
   - **Static Web Bundle**: A complete React web gallery ready for zero-cost deployment to GitHub Pages, Cloudflare Pages, AWS S3, or Netlify.
+- **🎨 Public Static Viewer Rework & Per-Person Downloads**  
+  - **3 Color Themes**: Instant toggle between *Dark Slate*, *Riso Paper*, and *Deep Navy* with persistent theme memory.
+  - **Per-Person Downloads**: Attendees can click "Download all N photos" or enter **Select Mode** to tick specific photos and download a custom selection.
+  - **Client-Side ZIP Streaming**: Local exports stream-build a single ZIP using `client-zip` directly in the browser with live progress and cancel—no server required and low memory footprint.
+  - **Sequential Google Drive Direct Downloads**: Google Drive exports download photos one by one via direct Drive URLs with clear browser permission prompts and "Open in Drive" fallback.
+  - **Sanitized Filenames**: Downloads follow clean `personname_001.jpg` naming without exposing private directory paths or attendee IDs.
 - **🔄 Open Saved Projects**  
   Resume past events instantly! Reopen existing export directories without re-scanning or re-embedding photos.
 - **⚡ Zero Photo Duplication**  

@@ -1,6 +1,8 @@
 import React from 'react';
 import { ViewerConfig } from '../types';
-import { Users, Image as ImageIcon, Search, ArrowLeft } from 'lucide-react';
+import { Users, Image as ImageIcon, Search, ArrowLeft, Sun, Moon, Compass } from 'lucide-react';
+
+export type ViewerTheme = 't-dark' | 't-paper' | 't-navy';
 
 interface HeaderProps {
   config: ViewerConfig;
@@ -10,6 +12,8 @@ interface HeaderProps {
   onSearchChange: (q: string) => void;
   activeView: 'grid' | 'person' | 'unrecognized';
   onBackToGrid: () => void;
+  theme?: ViewerTheme;
+  onThemeChange?: (newTheme: ViewerTheme) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,69 +24,120 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   activeView,
   onBackToGrid,
+  theme = 't-dark',
+  onThemeChange = () => {},
 }) => {
   return (
     <header className="sticky top-0 z-30 glass-nav transition-all duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           
-          {/* Left: Title, Logo, & Navigation */}
-          <div className="flex items-center gap-3.5">
+          {/* Left: Brand Identity & Back Navigation */}
+          <div className="flex items-center gap-3">
             {activeView !== 'grid' && (
               <button
                 onClick={onBackToGrid}
-                className="p-2 -ml-2 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800/80 transition-colors focus:outline-none focus:ring-2 focus:ring-accent"
-                title="Back to All People"
-                aria-label="Back to All People"
+                className="touch-target p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] transition-colors focus:outline-none focus-visible:ring-2"
+                title="Back to all people"
+                aria-label="Back to all people"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
             )}
 
-            {config.logo && (
-              <img
-                src={config.logo}
-                alt="Event Logo"
-                className="w-10 h-10 object-contain rounded-lg"
-              />
-            )}
-
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-                {config.title || 'Event Gallery'}
-              </h1>
-              {config.subtitle && (
-                <p className="text-xs sm:text-sm text-neutral-400 mt-0.5 line-clamp-1">
-                  {config.subtitle}
-                </p>
-              )}
+            {/* CatLog Brand Logo & Title */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[var(--color-accent)] text-[var(--color-accent-text)] flex items-center justify-center font-bold text-base shadow-sm select-none">
+                🐱
+              </div>
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2">
+                  {config.title || 'CatLog Gallery'}
+                </h1>
+                {config.subtitle && (
+                  <p className="text-xs text-[var(--text-muted)] line-clamp-1">
+                    {config.subtitle}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Right: Badges and Search (only on grid view) */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between md:justify-end gap-2.5 sm:gap-3 w-full md:w-auto">
+          {/* Right: Theme Switcher, Stats Badges & Search */}
+          <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5 w-full md:w-auto">
+            {/* Theme Selector (3 Themes: Dark, Paper, Navy) */}
+            <div className="inline-flex items-center p-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] gap-1" role="radiogroup" aria-label="Select theme">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={theme === 't-dark'}
+                onClick={() => onThemeChange('t-dark')}
+                className={`touch-target px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
+                  theme === 't-dark'
+                    ? 'bg-[var(--color-accent)] text-[var(--color-accent-text)] shadow-sm'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                }`}
+                title="Dark theme"
+              >
+                <Moon className="w-3.5 h-3.5 mr-1 inline" />
+                <span>Dark</span>
+              </button>
+
+              <button
+                type="button"
+                role="radio"
+                aria-checked={theme === 't-paper'}
+                onClick={() => onThemeChange('t-paper')}
+                className={`touch-target px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
+                  theme === 't-paper'
+                    ? 'bg-[var(--color-accent)] text-[var(--color-accent-text)] shadow-sm'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                }`}
+                title="Paper theme"
+              >
+                <Sun className="w-3.5 h-3.5 mr-1 inline" />
+                <span>Paper</span>
+              </button>
+
+              <button
+                type="button"
+                role="radio"
+                aria-checked={theme === 't-navy'}
+                onClick={() => onThemeChange('t-navy')}
+                className={`touch-target px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
+                  theme === 't-navy'
+                    ? 'bg-[var(--color-accent)] text-[var(--color-accent-text)] shadow-sm'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                }`}
+                title="Navy theme"
+              >
+                <Compass className="w-3.5 h-3.5 mr-1 inline" />
+                <span>Navy</span>
+              </button>
+            </div>
+
             {/* Stats Badges */}
-            <div className="flex items-center gap-2 text-xs font-medium text-neutral-300 flex-shrink-0">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-800 shadow-sm">
-                <Users className="w-3.5 h-3.5 text-accent" />
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)]">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)]">
+                <Users className="w-3.5 h-3.5 text-[var(--color-accent)]" />
                 <span>{totalPeople} People</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-800 shadow-sm">
-                <ImageIcon className="w-3.5 h-3.5 text-accent" />
+              <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)]">
+                <ImageIcon className="w-3.5 h-3.5 text-[var(--color-accent)]" />
                 <span>{totalPhotos} Photos</span>
               </span>
             </div>
 
-            {/* Search Bar - Responsive full width on mobile, w-64 on desktop, never clipped */}
+            {/* Search Input on Grid View */}
             {activeView === 'grid' && (
-              <div className="relative w-full sm:w-64 max-w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+              <div className="relative w-full sm:w-56">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-dim)] pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search person or ID..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
-                  className="w-full box-border pl-9 pr-3.5 py-1.5 text-sm bg-neutral-900/90 text-neutral-100 placeholder-neutral-500 rounded-xl border border-neutral-800 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                  className="w-full h-11 pl-9 pr-3 text-sm bg-[var(--bg-card)] text-[var(--text-main)] placeholder-[var(--text-dim)] rounded-xl border border-[var(--border-color)] focus:outline-none focus:border-[var(--color-accent)] transition-all"
                 />
               </div>
             )}
@@ -93,4 +148,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
-
+export default Header;

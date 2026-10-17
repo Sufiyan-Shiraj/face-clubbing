@@ -288,14 +288,25 @@ id_map.json          # pre-merge -> final cluster IDs (debug)
 
 ## 9. Viewer site (public, static)
 
-- Reads `config.json` and `people.json`; no backend.
-- **People grid:** one grid of face thumbnails sorted by photo count (most frequent first). A toolbar toggle, **"Hide single-photo people"**, filters out people with one photo (its initial state comes from `hide_single_photo_default`). The toggle never changes the data; nobody is removed from the export. *(Replaces the earlier "collapsible long-tail section".)*
-- **Unrecognized entry** at the end of the grid. It opens two parts: (a) a grid of the unrecognized **face crops**, each opening its photo, and (b) a separate list of photos in which no face was detected. Every photo is therefore reachable.
-- **Gallery:** clicking a person shows their photos (thumbnails, lazy-loaded), with an enlarged preview view. If `include_maybe` is true, possible matches appear in a separate, labelled section.
-- **Downloads:** per-photo download button linking to the Drive original. **Zip download is deferred:** Drive's CORS blocks client-side zipping, and the alternatives (a small backend, or Cloudflare R2) need extra setup. Start with individual downloads only.
-- Responsive and mobile-friendly (attendees will open it on phones).
-- Hosting: GitHub Pages or Cloudflare Pages, linked to the club's domain. Use an **unguessable URL slug** for privacy.
-- Only thumbnails live on the static host (tens of MB), never the originals.
+- Reads `config.json` and `people.json`; no backend server.
+- **Design & Branding:** Features CatLog brand identity (🐱 mascot / logo). Clean, mobile-first design with high contrast, visible focus rings (`:focus-visible`), and accessible touch targets (minimum 44×44 px). All filler subtitles and helper text are eliminated; every line of UI text earns its place.
+- **3 Color Themes:** Built-in instant theme switcher with persistent storage (`localStorage`):
+  1. `t-dark`: Dark slate with high-contrast neutral backgrounds (`#090d16`).
+  2. `t-paper`: Warm Riso paper clean light palette (`#fbf9f5`).
+  3. `t-navy`: Deep nautical midnight palette (`#081021`).
+- **People Grid:** One responsive grid of face thumbnails sorted by photo count (most frequent first). A toolbar toggle, **"Hide single-photo people"**, filters out singletons (initial state controlled by `config.hide_single_photo_default`). The toggle never alters data; nobody is removed from the export.
+- **Unrecognized Entry:** Positioned at the end of the grid. Opens two subsections: (a) grid of unrecognized face crops with rejection reasons, and (b) photos without any detected human faces. Every photo remains reachable. **Unrecognized has no "Download all" button.**
+- **Per-Person Gallery:**
+  - **"Download all N photos" primary button:** Explicitly displays the person's photo count (e.g., "Download all 12 photos").
+  - **Per-photo download button:** Individual action button/link on each photo card and in the zoom modal.
+  - **Select Mode:** "Select" / "Exit select" toggle. Ticking photos displays a sticky bottom action bar showing "X of Y selected", "Select all" / "Deselect all", and a "Download selected (K)" button.
+  - **Local Export:** Builds zip archive directly in the browser via `client-zip` (ESM streaming generator) without buffering all photos in memory at once. Displays progress counter and cancel button (`AbortSignal`).
+  - **Drive Export:** Because browsers cannot zip Drive files due to lack of CORS headers, Drive downloads reuse the existing `download_url` field (`https://drive.google.com/uc?id=<ID>&export=download`) one by one. Displays a sequential progress counter, a one-time note warning that the browser may ask to allow multiple downloads, and an "Open in Drive instead" fallback. No server required.
+  - **Sanitized File Names:** Downloads are named in the format `personname_001.jpg`, `personname_002.jpg`, etc. All special characters, spaces, and private filesystem paths are stripped. Zero private data leaked.
+  - **Possible Matches (`maybe_photos`):** When `config.include_maybe` is true, possible matches are shown in a separate, labelled section. **Possible matches have NO "Download all" button.**
+  - **Resilience:** Drive-unavailable fallback tiles ("unavailable - open in Drive ↗") and lazy-loading thumbnails (`loading="lazy"`) ensure fast page loads even on large photo sets.
+- **Visual Design Status:** Marked `NEEDS ORGANIZER REVIEW` (screenshots captured with zero real faces in `scratch/screenshots/`).
+- Hosting: Static deployment on GitHub Pages or Cloudflare Pages with an unguessable URL slug. Originals are never hosted on the static site.
 
 ## 10. Secrets handling
 

@@ -2,72 +2,149 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   CatLog Public Viewer Design System: 3 Themes, Mobile-First, Accessible
+   ========================================================================== */
+
 :root {
-  --color-accent: #3b82f6;
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --touch-target: 44px;
+}
+
+/* Theme 1: CatLog Dark */
+.t-dark {
+  --bg-main: #141211;
+  --bg-card: rgba(26, 24, 22, 0.9);
+  --bg-card-hover: rgba(38, 35, 32, 0.95);
+  --bg-nav: rgba(20, 18, 17, 0.88);
+  --border-color: #3d352e;
+  --border-strong: #5a5048;
+  --text-main: #f5eedf;
+  --text-muted: #b8a896;
+  --text-dim: #8c7e6f;
+  --color-accent: #fa7175;
+  --color-accent-hover: #e8595d;
+  --color-accent-text: #141211;
+  --focus-ring: #fa7175;
+  color-scheme: dark;
+}
+
+/* Theme 2: CatLog Paper (Risograph Warm Cream) */
+.t-paper {
+  --bg-main: #efe8db;
+  --bg-card: rgba(245, 239, 229, 0.92);
+  --bg-card-hover: rgba(255, 255, 255, 0.98);
+  --bg-nav: rgba(239, 232, 219, 0.92);
+  --border-color: #a6b5c4;
+  --border-strong: #7c8f9f;
+  --text-main: #0e1c2f;
+  --text-muted: #384656;
+  --text-dim: #607185;
+  --color-accent: #e5781a;
+  --color-accent-hover: #cf6710;
+  --color-accent-text: #ffffff;
+  --focus-ring: #e5781a;
+  color-scheme: light;
+}
+
+/* Theme 3: CatLog Navy */
+.t-navy {
+  --bg-main: #1a3350;
+  --bg-card: rgba(30, 56, 88, 0.9);
+  --bg-card-hover: rgba(42, 74, 112, 0.95);
+  --bg-nav: rgba(26, 51, 80, 0.9);
+  --border-color: #4d75a3;
+  --border-strong: #729acb;
+  --text-main: #ffffff;
+  --text-muted: #d0e0f2;
+  --text-dim: #9bb7d4;
+  --color-accent: #f28f24;
+  --color-accent-hover: #db7a15;
+  --color-accent-text: #13243a;
+  --focus-ring: #f28f24;
+  color-scheme: dark;
 }
 
 body {
   font-family: var(--font-family);
-  background-color: #09090b;
-  color: #f4f4f5;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  min-height: 100vh;
+  transition: background-color 0.25s ease, color 0.25s ease;
   overflow-x: hidden;
 }
 
-/* Glassmorphism utilities */
+/* Glassmorphism navigation and cards using theme variables */
 .glass-nav {
-  background: rgba(15, 15, 18, 0.75);
+  background: var(--bg-nav);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .glass-card {
-  background: rgba(24, 24, 27, 0.6);
+  background: var(--bg-card);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-card:hover {
-  background: rgba(39, 39, 42, 0.8);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: var(--bg-card-hover);
+  border-color: var(--border-strong);
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 20px -8px rgba(0, 0, 0, 0.35);
 }
 
-/* Custom scrollbar */
+/* Strict Accessibility: Visible Focus Rings */
+:focus-visible {
+  outline: 2px solid var(--focus-ring) !important;
+  outline-offset: 2px !important;
+}
+
+/* Accessible Minimum 44px Touch Targets */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: var(--bg-main);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--border-strong);
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
-}
-
-/* Subtle pulse animation for loaders */
+/* Shimmer animation for lazy-loading placeholders */
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .shimmer-placeholder {
-  background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--border-color) 50%, var(--bg-card) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

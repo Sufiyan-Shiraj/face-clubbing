@@ -83,6 +83,33 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
+## Phase 2b: Public Viewer Rework & Per-Person Download [DONE - NEEDS ORGANIZER REVIEW]
+
+**Build** (in `viewer/`)
+1. **Design & Theming**:
+   - 3 cohesive themes: `t-dark` (Dark Slate), `t-paper` (Riso Paper), `t-navy` (Deep Navy) with CatLog branding.
+   - Removed filler subtitles and helper text; every line of UI text earns its place.
+   - Mobile-first, fast, accessible (contrast, visible focus rings, minimum 44px touch targets).
+2. **Per-Person Downloads**:
+   - Primary "Download all N photos" button showing the exact photo count.
+   - Per-photo download links with sanitized `personname_001.jpg` filenames.
+   - Select mode with checkbox selection on photos, "Select all" / "Deselect all", and sticky bottom action bar ("Download selected (K)").
+   - **Local Export**: Client-side streaming zip built with `client-zip`, progress counter, cancel via `AbortSignal`, without buffering all photos in memory.
+   - **Drive Export**: Sequential single-photo download loop reusing existing `download_url` (`https://drive.google.com/uc?id=<ID>&export=download`) with progress counter, one-time browser permission guidance note, and "Open in Drive" fallback. No server.
+   - Unrecognized and maybe-match groups have NO "Download all" button.
+   - Fallback tiles for unavailable images and lazy loading (`loading="lazy"`).
+3. **Verification & Testing**:
+   - 20 Vitest unit/integration tests (`viewer.test.tsx` and `download.test.tsx`) covering filename sanitization, zero cross-person data leakage, select mode, zip streaming, Drive downloads, and config swap.
+   - Headless Playwright E2E verification (`verify_download_e2e.cjs`) testing themes, selection, local zip streaming download, and Unrecognized guard.
+   - Screenshots captured with zero real human faces saved in `scratch/screenshots/`:
+     - `viewer_01_grid.png`
+     - `viewer_02_person_download.png`
+     - `viewer_03_select_mode.png`
+
+**Done when:** All tests pass, local zip and Drive downloads succeed without data leaks, bundle size measured before/after, and visual design marked `NEEDS ORGANIZER REVIEW`.
+
+---
+
 ## Phase 3: API layer (FastAPI) [DONE]
 
 **Build** (in `backend/api/`)

@@ -14,6 +14,10 @@ export interface PhotoInfo {
   name: string;
   thumb: string;
   download?: string | null;
+  download_url?: string | null;
+  drive_url?: string | null;
+  share_url?: string | null;
+  drive_file_id?: string | null;
   width?: number;
   height?: number;
 }

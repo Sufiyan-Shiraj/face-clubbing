@@ -1,7 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { PersonCluster, PhotoInfo } from '../types';
-import { ArrowLeft, Download, ZoomIn, HelpCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Download,
+  ZoomIn,
+  HelpCircle,
+  Check,
+  X,
+  ExternalLink,
+  AlertCircle,
+  CheckSquare,
+  Square,
+  ImageOff,
+} from 'lucide-react';
 import { PhotoModal } from './PhotoModal';
+import {
+  getCleanDownloadName,
+  isDrivePhoto,
+  downloadLocalZip,
+  downloadDriveSequential,
+  PhotoDownloadItem,
+} from '../utils/downloader';
 
 interface PhotoGalleryProps {
   person: PersonCluster;
@@ -21,11 +40,33 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     index: number;
   } | null>(null);
 
+  // Selection mode
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<string>>(new Set());
+
+  // Download state & progress
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [showDriveNoteModal, setShowDriveNoteModal] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Track failed images for fallback tile
+  const [imageErrorMap, setImageErrorMap] = useState<Record<string, boolean>>({});
+
   const displayName = person.label || person.id.toUpperCase();
-  const photoIds = person.photos || person.photo_ids;
+  const photoIds = person.photos || person.photo_ids || [];
   const maybePhotos = person.maybe_photos || [];
 
+  // Determine if this person's photos are sourced from Google Drive
+  const hasDrivePhotos = photoIds.some((pid) => {
+    const p = photos[pid];
+    return p ? isDrivePhoto(p) : false;
+  });
+
+  // Modal navigation
   const handleOpenModal = (list: string[], idx: number) => {
+    if (isSelectMode) return;
     setModalState({ list, index: idx });
   };
 
@@ -48,15 +89,149 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   const activePhotoId = modalState ? modalState.list[modalState.index] : null;
   const activePhoto = activePhotoId ? photos[activePhotoId] : null;
 
+  // Selection toggle
+  const toggleSelectPhoto = (pid: string) => {
+    setSelectedPhotoIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(pid)) {
+        next.delete(pid);
+      } else {
+        next.add(pid);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedPhotoIds.size === photoIds.length) {
+      setSelectedPhotoIds(new Set());
+    } else {
+      setSelectedPhotoIds(new Set(photoIds));
+    }
+  };
+
+  const handleCancelDownload = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsDownloading(false);
+    setDownloadProgress(null);
+  };
+
+  // Perform bulk download (either all confirmed or selected)
+  const executeDownload = async (targetIds: string[]) => {
+    const validItems: PhotoDownloadItem[] = targetIds
+      .map((pid) => ({ id: pid, photo: photos[pid] }))
+      .filter((item): item is PhotoDownloadItem => Boolean(item.photo));
+
+    if (validItems.length === 0) return;
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    setIsDownloading(true);
+    setDownloadProgress({ current: 0, total: validItems.length });
+    setDownloadError(null);
+
+    try {
+      if (hasDrivePhotos) {
+        await downloadDriveSequential(
+          validItems,
+          (cur, tot) => setDownloadProgress({ current: cur, total: tot }),
+          controller.signal
+        );
+      } else {
+        await downloadLocalZip(
+          displayName,
+          validItems,
+          (cur, tot) => setDownloadProgress({ current: cur, total: tot }),
+          controller.signal
+        );
+      }
+    } catch (err: any) {
+      if (err?.name !== 'AbortError' && !controller.signal.aborted) {
+        console.error('Download error:', err);
+        setDownloadError(err?.message || 'Download failed');
+      }
+    } finally {
+      setIsDownloading(false);
+      setDownloadProgress(null);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleDownloadClick = (targetIds: string[]) => {
+    if (hasDrivePhotos) {
+      const acknowledged = sessionStorage.getItem('catlog-drive-dl-note-shown');
+      if (!acknowledged) {
+        setShowDriveNoteModal(true);
+        return;
+      }
+    }
+    executeDownload(targetIds);
+  };
+
+  const handleConfirmDriveDownload = () => {
+    sessionStorage.setItem('catlog-drive-dl-note-shown', '1');
+    setShowDriveNoteModal(false);
+    const targetIds = isSelectMode && selectedPhotoIds.size > 0
+      ? Array.from(selectedPhotoIds)
+      : photoIds;
+    executeDownload(targetIds);
+  };
+
+  // Single photo download
+  const handleDownloadSingle = async (photo: PhotoInfo, idx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const cleanName = getCleanDownloadName(displayName, idx, photo.name);
+    
+    if (isDrivePhoto(photo)) {
+      const url = photo.download_url || photo.download || (photo.drive_file_id ? `https://drive.google.com/uc?id=${photo.drive_file_id}&export=download` : null);
+      if (url) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = cleanName;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } else {
+      // Local single photo download
+      const url = photo.download || photo.download_url || photo.thumb;
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const objUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objUrl;
+        a.download = cleanName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
+      } catch (err) {
+        console.error('Single photo download failed:', err);
+      }
+    }
+  };
+
+  // Find representative Drive folder/link for fallback
+  const firstDriveUrl = photoIds
+    .map((pid) => photos[pid]?.drive_url)
+    .find((url) => Boolean(url));
+
   return (
-    <div className="space-y-8 pb-16 animate-fadeIn">
+    <div className="space-y-6 pb-24 animate-fadeIn">
       {/* Top Profile Banner */}
-      <div className="p-4 sm:p-6 rounded-2xl glass-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="p-4 sm:p-5 rounded-2xl glass-card flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
           <button
             onClick={onBack}
-            className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+            className="touch-target p-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] transition-colors focus:outline-none focus-visible:ring-2"
             title="Back to all people"
+            aria-label="Back to all people"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -64,32 +239,125 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
           <img
             src={person.face}
             alt={displayName}
-            className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover border border-neutral-700/80 shadow-md"
+            loading="lazy"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover border border-[var(--border-color)] shadow-sm bg-[var(--bg-main)] flex-shrink-0"
           />
 
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-main)] tracking-tight">
               {displayName}
             </h2>
-            <p className="text-xs sm:text-sm text-neutral-400">
-              Appears in {photoIds.length} {photoIds.length === 1 ? 'photo' : 'photos'}
-              {includeMaybe && maybePhotos.length > 0 && ` • ${maybePhotos.length} possible additional`}
+            <p className="text-xs sm:text-sm font-medium text-[var(--text-muted)] mt-0.5">
+              {photoIds.length} {photoIds.length === 1 ? 'photo' : 'photos'}
             </p>
           </div>
         </div>
 
-        <button
-          onClick={onBack}
-          className="text-xs sm:text-sm text-neutral-400 hover:text-accent font-medium transition-colors"
-        >
-          View all people
-        </button>
+        {/* Action Buttons: Download all N photos, Select Mode, Drive Fallback */}
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          {/* Primary: Download all N photos (shows person's photo count) */}
+          {photoIds.length > 0 && (
+            <button
+              onClick={() => handleDownloadClick(photoIds)}
+              disabled={isDownloading}
+              className="touch-target inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-accent)] text-[var(--color-accent-text)] font-semibold text-xs sm:text-sm shadow-sm hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2"
+              title={`Download all ${photoIds.length} photos for ${displayName}`}
+            >
+              <Download className="w-4 h-4" />
+              <span>
+                {photoIds.length === 1
+                  ? 'Download 1 photo'
+                  : `Download all ${photoIds.length} photos`}
+              </span>
+            </button>
+          )}
+
+          {/* Toggle Select Mode */}
+          {photoIds.length > 1 && (
+            <button
+              onClick={() => {
+                setIsSelectMode(!isSelectMode);
+                setSelectedPhotoIds(new Set());
+              }}
+              className={`touch-target inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs sm:text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 ${
+                isSelectMode
+                  ? 'bg-[var(--text-main)] text-[var(--bg-main)] border-transparent'
+                  : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)]'
+              }`}
+            >
+              {isSelectMode ? (
+                <>
+                  <X className="w-4 h-4" />
+                  <span>Exit select</span>
+                </>
+              ) : (
+                <>
+                  <CheckSquare className="w-4 h-4" />
+                  <span>Select</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Drive Fallback Button (if Drive-sourced) */}
+          {hasDrivePhotos && firstDriveUrl && (
+            <a
+              href={firstDriveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2"
+              title="Open folder in Google Drive"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Drive</span>
+            </a>
+          )}
+        </div>
       </div>
+
+      {/* Progress Dialog when Downloading */}
+      {isDownloading && downloadProgress && (
+        <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] shadow-md flex items-center justify-between gap-4 animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+            <div>
+              <p className="text-xs sm:text-sm font-semibold text-[var(--text-main)]">
+                {hasDrivePhotos
+                  ? `Downloading photo ${downloadProgress.current} of ${downloadProgress.total}...`
+                  : `Creating zip: ${downloadProgress.current} of ${downloadProgress.total} photos...`}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleCancelDownload}
+            className="touch-target px-3 py-1.5 rounded-lg border border-[var(--border-color)] text-xs font-semibold text-[var(--text-muted)] hover:text-red-400 hover:border-red-400/40 transition-colors focus:outline-none focus-visible:ring-2"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Download Error Banner */}
+      {downloadError && (
+        <div className="p-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-xs flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{downloadError}</span>
+          </div>
+          <button
+            onClick={() => setDownloadError(null)}
+            className="touch-target p-1 text-red-400 hover:text-red-300"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Confirmed Photos Section */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-neutral-300">
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">
             Confirmed Photos ({photoIds.length})
           </h3>
         </div>
@@ -99,71 +367,166 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
             const photo = photos[pid];
             if (!photo) return null;
 
+            const isSelected = selectedPhotoIds.has(pid);
+            const hasError = imageErrorMap[pid];
+
             return (
               <div
                 key={pid}
-                className="group relative rounded-xl overflow-hidden glass-card border border-neutral-800 aspect-[4/3] bg-neutral-900"
+                onClick={() => {
+                  if (isSelectMode) {
+                    toggleSelectPhoto(pid);
+                  } else {
+                    handleOpenModal(photoIds, idx);
+                  }
+                }}
+                className={`group relative rounded-xl overflow-hidden glass-card aspect-[4/3] bg-[var(--bg-main)] cursor-pointer select-none transition-all duration-200 ${
+                  isSelectMode && isSelected
+                    ? 'ring-2 ring-[var(--color-accent)] border-transparent'
+                    : 'border-[var(--border-color)]'
+                }`}
               >
-                {/* Thumbnail with lazy load */}
-                <img
-                  src={photo.thumb}
-                  alt={photo.name}
-                  loading="lazy"
-                  onClick={() => handleOpenModal(photoIds, idx)}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-pointer"
-                />
-
-                {/* Hover Overlay with filename & actions */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2.5 flex flex-col justify-between pointer-events-none">
-                  <div className="flex justify-end pointer-events-auto">
-                    <button
-                      onClick={() => handleOpenModal(photoIds, idx)}
-                      className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-accent transition-colors"
-                      title="Zoom preview"
-                    >
-                      <ZoomIn className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-1 pointer-events-auto">
-                    <span className="text-[11px] text-white/90 truncate font-mono">
-                      {photo.name}
-                    </span>
-
-                    {photo.download && (
+                {/* Thumbnail with lazy load and error fallback */}
+                {hasError ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center bg-[var(--bg-card)]">
+                    {photo.drive_url || photo.drive_file_id ? (
                       <a
-                        href={photo.download}
+                        href={photo.drive_url || `https://drive.google.com/file/d/${photo.drive_file_id}/view`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        download={photo.name}
                         onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-accent transition-colors flex-shrink-0"
-                        title="Download photo"
+                        className="touch-target px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-sm inline-flex items-center gap-1"
+                        title="Open photo in Google Drive"
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        <span>unavailable - open in Drive ↗</span>
                       </a>
+                    ) : (
+                      <div className="text-[var(--text-dim)] flex flex-col items-center">
+                        <ImageOff className="w-6 h-6 mb-1 opacity-50" />
+                        <span className="text-[11px]">Image unavailable</span>
+                      </div>
                     )}
                   </div>
-                </div>
+                ) : (
+                  <img
+                    src={photo.thumb}
+                    alt={photo.name}
+                    loading="lazy"
+                    onError={() =>
+                      setImageErrorMap((prev) => ({ ...prev, [pid]: true }))
+                    }
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                )}
+
+                {/* Selection Tick Box Overlay in Select Mode */}
+                {isSelectMode && (
+                  <div className="absolute top-2 left-2 z-10">
+                    <div
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center border shadow-sm transition-colors ${
+                        isSelected
+                          ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent-text)]'
+                          : 'bg-[var(--bg-main)]/80 border-[var(--border-strong)] text-transparent'
+                      }`}
+                    >
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Hover / Action Overlay */}
+                {!isSelectMode && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2.5 flex flex-col justify-between pointer-events-none">
+                    <div className="flex justify-end pointer-events-auto">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenModal(photoIds, idx);
+                        }}
+                        className="touch-target p-1.5 rounded-lg bg-black/60 text-white hover:bg-[var(--color-accent)] transition-colors focus:outline-none focus-visible:ring-2"
+                        title="Zoom preview"
+                      >
+                        <ZoomIn className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-1 pointer-events-auto">
+                      <span className="text-[11px] text-white font-mono truncate">
+                        {photo.name}
+                      </span>
+
+                      {/* Per-Photo Download */}
+                      {(photo.download || photo.download_url) && (
+                        <a
+                          href={photo.download || photo.download_url || undefined}
+                          download={getCleanDownloadName(displayName, idx, photo.name)}
+                          target={isDrivePhoto(photo) ? '_blank' : undefined}
+                          rel={isDrivePhoto(photo) ? 'noopener noreferrer' : undefined}
+                          onClick={(e) => e.stopPropagation()}
+                          className="touch-target p-1.5 rounded-lg bg-black/60 text-white hover:bg-[var(--color-accent)] transition-colors flex-shrink-0 focus:outline-none focus-visible:ring-2 flex items-center justify-center"
+                          title="Download photo"
+                          aria-label={`Download ${photo.name}`}
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* "Possible matches" Row/Section (Shown only when includeMaybe is true and maybe_photos exist) */}
-      {includeMaybe && maybePhotos.length > 0 && (
-        <div className="pt-6 border-t border-neutral-800/80">
-          <div className="mb-4">
+      {/* Sticky Bottom Bar in Select Mode */}
+      {isSelectMode && (
+        <div className="fixed bottom-0 inset-x-0 z-40 p-3 sm:p-4 glass-nav border-t border-[var(--border-color)] shadow-2xl animate-fadeIn">
+          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-amber-400" />
-                Possible matches ({maybePhotos.length})
-              </h3>
+              <span className="text-xs sm:text-sm font-semibold text-[var(--text-main)]">
+                {selectedPhotoIds.size} of {photoIds.length} selected
+              </span>
+              <button
+                onClick={handleSelectAll}
+                className="touch-target px-2.5 py-1 text-xs font-semibold text-[var(--color-accent)] hover:underline focus:outline-none focus-visible:ring-2"
+              >
+                {selectedPhotoIds.size === photoIds.length ? 'Deselect all' : 'Select all'}
+              </button>
             </div>
-            <p className="text-xs text-neutral-400 mt-0.5">
-              Potential photo matches from connected visual similarity groups (cosine distance 0.50 – 0.60).
-            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setIsSelectMode(false);
+                  setSelectedPhotoIds(new Set());
+                }}
+                className="touch-target px-3.5 py-2 rounded-xl border border-[var(--border-color)] text-xs sm:text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none focus-visible:ring-2"
+              >
+                Cancel
+              </button>
+
+              <button
+                disabled={selectedPhotoIds.size === 0 || isDownloading}
+                onClick={() => handleDownloadClick(Array.from(selectedPhotoIds))}
+                className="touch-target inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent)] text-[var(--color-accent-text)] font-semibold text-xs sm:text-sm shadow-sm hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-40 focus:outline-none focus-visible:ring-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download selected ({selectedPhotoIds.size})</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* "Possible matches" Section: NO download all button allowed! */}
+      {includeMaybe && maybePhotos.length > 0 && (
+        <div className="pt-6 border-t border-[var(--border-color)]">
+          <div className="mb-3">
+            <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+              <HelpCircle className="w-4 h-4 text-amber-400" />
+              Possible matches ({maybePhotos.length})
+            </h3>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
@@ -175,27 +538,30 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
               return (
                 <div
                   key={`${mItem.photo_id}-${idx}`}
-                  className="group relative rounded-xl overflow-hidden glass-card border border-amber-500/30 hover:border-amber-400/60 aspect-[4/3] bg-neutral-900 transition-colors"
+                  onClick={() => handleOpenModal(maybeList, idx)}
+                  className="group relative rounded-xl overflow-hidden glass-card border border-amber-500/30 hover:border-amber-400 aspect-[4/3] bg-[var(--bg-main)] cursor-pointer select-none transition-colors"
                 >
                   <img
                     src={photo.thumb}
                     alt={photo.name}
                     loading="lazy"
-                    onClick={() => handleOpenModal(maybeList, idx)}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-pointer"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
 
-                  {/* Badge top-left: Source cluster & distance */}
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-neutral-950/80 backdrop-blur-md border border-amber-500/30 text-[10px] font-medium text-amber-300 pointer-events-none">
-                    From {mItem.source_cluster} • d: {mItem.distance.toFixed(2)}
+                  {/* Badge top-left */}
+                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-[var(--bg-main)]/90 border border-amber-500/30 text-[10px] font-semibold text-amber-300 pointer-events-none">
+                    From {mItem.source_cluster}
                   </div>
 
                   {/* Hover Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2.5 flex flex-col justify-between pointer-events-none">
                     <div className="flex justify-end pointer-events-auto">
                       <button
-                        onClick={() => handleOpenModal(maybeList, idx)}
-                        className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-amber-500 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenModal(maybeList, idx);
+                        }}
+                        className="touch-target p-1.5 rounded-lg bg-black/60 text-white hover:bg-amber-500 transition-colors focus:outline-none focus-visible:ring-2"
                         title="Zoom preview"
                       >
                         <ZoomIn className="w-4 h-4" />
@@ -203,19 +569,21 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                     </div>
 
                     <div className="flex items-center justify-between gap-1 pointer-events-auto">
-                      <span className="text-[11px] text-white/90 truncate font-mono">
+                      <span className="text-[11px] text-white font-mono truncate">
                         {photo.name}
                       </span>
 
-                      {photo.download && (
+                      {/* Per-Photo Download */}
+                      {(photo.download || photo.download_url) && (
                         <a
-                          href={photo.download}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download={photo.name}
+                          href={photo.download || photo.download_url || undefined}
+                          download={getCleanDownloadName(displayName, idx, photo.name)}
+                          target={isDrivePhoto(photo) ? '_blank' : undefined}
+                          rel={isDrivePhoto(photo) ? 'noopener noreferrer' : undefined}
                           onClick={(e) => e.stopPropagation()}
-                          className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-amber-500 transition-colors flex-shrink-0"
+                          className="touch-target p-1.5 rounded-lg bg-black/60 text-white hover:bg-amber-500 transition-colors flex-shrink-0 focus:outline-none focus-visible:ring-2 flex items-center justify-center"
                           title="Download photo"
+                          aria-label={`Download ${photo.name}`}
                         >
                           <Download className="w-3.5 h-3.5" />
                         </a>
@@ -225,6 +593,47 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* One-Time Google Drive Multi-Download Permission Notice Modal */}
+      {showDriveNoteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+          <div className="max-w-md w-full p-5 sm:p-6 rounded-2xl glass-card border border-[var(--border-strong)] bg-[var(--bg-main)] shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/20 text-[var(--color-accent)] flex items-center justify-center flex-shrink-0">
+                <Download className="w-5 h-5" />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-[var(--text-main)]">
+                Downloading Drive Photos
+              </h3>
+            </div>
+
+            <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+              Photos from Google Drive will download one by one. Your browser may display a prompt asking to <strong>allow multiple file downloads</strong>. Please click <strong>Allow</strong> to proceed.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2">
+              {firstDriveUrl && (
+                <a
+                  href={firstDriveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="touch-target w-full sm:w-auto px-3.5 py-2 rounded-xl border border-[var(--border-color)] text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors inline-flex items-center justify-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open in Drive instead</span>
+                </a>
+              )}
+
+              <button
+                onClick={handleConfirmDriveDownload}
+                className="touch-target w-full sm:w-auto px-4 py-2 rounded-xl bg-[var(--color-accent)] text-[var(--color-accent-text)] text-xs font-bold shadow-sm hover:brightness-105 transition-all"
+              >
+                Continue Download
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -239,8 +648,10 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
           onPrev={handlePrev}
           onNext={handleNext}
           onClose={handleCloseModal}
+          personLabel={displayName}
         />
       )}
     </div>
   );
 };
+export default PhotoGallery;

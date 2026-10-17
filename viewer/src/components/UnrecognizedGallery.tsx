@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { UnrecognizedGroup, PhotoInfo } from '../types';
-import { ArrowLeft, ZoomIn, HelpCircle, ImageOff, UserX } from 'lucide-react';
+import { ArrowLeft, ZoomIn, HelpCircle, ImageOff } from 'lucide-react';
 import { PhotoModal } from './PhotoModal';
 
 interface UnrecognizedGalleryProps {
@@ -16,7 +16,7 @@ export const UnrecognizedGallery: React.FC<UnrecognizedGalleryProps> = ({
 }) => {
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
 
-  // 1. Separate face crops and photos with no detected faces
+  // Separate face crops and photos
   const faceCrops = unrecognized.faces || [];
   const facePhotoIdSet = useMemo(() => new Set(faceCrops.map((f) => f.photo_id)), [faceCrops]);
   const noFacePhotoIds = useMemo(
@@ -24,7 +24,6 @@ export const UnrecognizedGallery: React.FC<UnrecognizedGalleryProps> = ({
     [unrecognized.photo_ids, facePhotoIdSet]
   );
 
-  // Ordered list of photo IDs for modal prev/next navigation
   const allModalPhotoIds = useMemo(() => {
     const ids: string[] = [];
     for (const f of faceCrops) {
@@ -52,157 +51,111 @@ export const UnrecognizedGallery: React.FC<UnrecognizedGalleryProps> = ({
   };
 
   return (
-    <div className="space-y-8 pb-16 animate-fadeIn">
-      {/* Top Banner */}
-      <div className="p-4 sm:p-6 rounded-2xl glass-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-amber-500/20">
-        <div className="flex items-center gap-4">
+    <div className="space-y-6 pb-20 animate-fadeIn">
+      {/* Top Banner: Notice NO "Download all" button here! */}
+      <div className="p-4 sm:p-5 rounded-2xl glass-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-amber-500/30">
+        <div className="flex items-center gap-3.5">
           <button
             onClick={onBack}
-            className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+            className="touch-target p-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] transition-colors focus:outline-none focus-visible:ring-2"
             title="Back to all people"
+            aria-label="Back to all people"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-            <HelpCircle className="w-7 h-7" />
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
+            <HelpCircle className="w-6 h-6" />
           </div>
 
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <span>Unrecognized Faces</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-medium">
-                {faceCrops.length} faces
-              </span>
+            <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-main)] tracking-tight">
+              Unrecognized Faces ({faceCrops.length})
             </h2>
-            <p className="text-xs sm:text-sm text-neutral-400 mt-0.5">
-              Faces that could not attach to any cluster (profile angles, small faces, low confidence).
-            </p>
           </div>
         </div>
 
         <button
           onClick={onBack}
-          className="text-xs sm:text-sm text-neutral-400 hover:text-white font-medium transition-colors"
+          className="touch-target text-xs sm:text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--color-accent)] transition-colors focus:outline-none focus-visible:ring-2"
         >
           View all people
         </button>
       </div>
 
-      {/* 1. Unrecognized Face Crops Grid */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base sm:text-lg font-semibold text-white tracking-tight flex items-center gap-2">
-            <UserX className="w-5 h-5 text-amber-400" />
-            <span>Unattached Face Crops</span>
-            <span className="text-xs font-normal text-neutral-400">
-              ({faceCrops.length} crops — click to open photo)
-            </span>
+      {/* Grid of Unrecognized Face Crops */}
+      {faceCrops.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            Detected Face Crops ({faceCrops.length})
           </h3>
-        </div>
 
-        {faceCrops.length === 0 ? (
-          <p className="text-neutral-500 text-sm">No unrecognized face crops found.</p>
-        ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-3">
-            {faceCrops.map((item, idx) => {
-              const photo = photos[item.photo_id];
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-3">
+            {faceCrops.map((fItem, idx) => {
+              const photo = photos[fItem.photo_id];
               return (
                 <div
-                  key={`${item.face}-${idx}`}
-                  onClick={() => setSelectedPhotoId(item.photo_id)}
-                  className="group relative rounded-xl overflow-hidden glass-card border border-neutral-800 bg-neutral-900 aspect-square cursor-pointer hover:border-amber-500/60 hover:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all duration-300"
-                  title={`Click to open ${photo ? photo.name : item.photo_id}`}
+                  key={`${fItem.face_id || fItem.photo_id}-${idx}`}
+                  onClick={() => setSelectedPhotoId(fItem.photo_id)}
+                  className="group relative rounded-xl overflow-hidden glass-card border border-[var(--border-color)] hover:border-amber-400 aspect-square bg-[var(--bg-main)] cursor-pointer select-none transition-all duration-200"
                 >
                   <img
-                    src={item.face}
-                    alt={photo?.name || 'Unrecognized face'}
+                    src={fItem.face}
+                    alt={fItem.file_name || fItem.face_id || 'Face'}
                     loading="lazy"
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-1.5 flex flex-col justify-end pointer-events-none">
-                    <span className="text-[10px] text-white/90 truncate font-mono">
-                      {photo?.name || item.photo_id}
-                    </span>
-                  </div>
+                  {fItem.rejection_reason && (
+                    <div className="absolute bottom-1 inset-x-1 px-1.5 py-0.5 rounded bg-black/80 text-[9px] text-amber-300 truncate text-center font-mono">
+                      {fItem.rejection_reason}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-                  <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    <span className="p-1 rounded-md bg-black/60 text-amber-300 inline-block">
-                      <ZoomIn className="w-3 h-3" />
+      {/* Photos without any detected faces */}
+      {noFacePhotoIds.length > 0 && (
+        <div className="space-y-3 pt-6 border-t border-[var(--border-color)]">
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            Photos Without Faces ({noFacePhotoIds.length})
+          </h3>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+            {noFacePhotoIds.map((pid) => {
+              const photo = photos[pid];
+              if (!photo) return null;
+
+              return (
+                <div
+                  key={pid}
+                  onClick={() => setSelectedPhotoId(pid)}
+                  className="group relative rounded-xl overflow-hidden glass-card border border-[var(--border-color)] aspect-[4/3] bg-[var(--bg-main)] cursor-pointer select-none transition-all duration-200"
+                >
+                  <img
+                    src={photo.thumb}
+                    alt={photo.name}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2 flex items-end">
+                    <span className="text-[11px] text-white font-mono truncate">
+                      {photo.name}
                     </span>
                   </div>
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
-
-      {/* 2. Photos with No Detected Face (Separate Small List) */}
-      {noFacePhotoIds.length > 0 && (
-        <div className="pt-6 border-t border-neutral-800/80">
-          <div className="p-4 sm:p-5 rounded-2xl glass-card border-neutral-800 bg-neutral-900/60 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <ImageOff className="w-5 h-5 text-neutral-400" />
-                <h3 className="text-base sm:text-lg font-semibold text-white tracking-tight">
-                  Photos With No Detected Face
-                </h3>
-              </div>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-800 text-neutral-300 border border-neutral-700/50">
-                {noFacePhotoIds.length} {noFacePhotoIds.length === 1 ? 'photo' : 'photos'}
-              </span>
-            </div>
-
-            <p className="text-xs text-neutral-400">
-              Captures without human faces (scenic or room shots). Click to view full photo.
-            </p>
-
-            {/* Small compact list */}
-            <div className="divide-y divide-neutral-800/80 border border-neutral-800/90 rounded-xl overflow-hidden bg-neutral-950/70 mt-2">
-              {noFacePhotoIds.map((pid) => {
-                const photo = photos[pid];
-                if (!photo) return null;
-
-                return (
-                  <div
-                    key={pid}
-                    onClick={() => setSelectedPhotoId(pid)}
-                    className="group flex items-center justify-between p-2.5 sm:p-3 hover:bg-neutral-800/50 cursor-pointer transition-colors"
-                    title={`View ${photo.name}`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <img
-                        src={photo.thumb}
-                        alt={photo.name}
-                        loading="lazy"
-                        className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg object-cover border border-neutral-800 flex-shrink-0 group-hover:border-accent transition-colors"
-                      />
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-sm font-medium text-neutral-200 group-hover:text-white truncate font-mono">
-                          {photo.name}
-                        </p>
-                        <p className="text-[11px] text-neutral-400">
-                          {photo.width && photo.height ? `${photo.width} × ${photo.height} px • ` : ''}No face detected
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-xs text-neutral-400 group-hover:text-accent flex-shrink-0 pl-2">
-                      <span className="hidden sm:inline text-[11px]">View photo</span>
-                      <ZoomIn className="w-4 h-4" />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
       )}
 
-      {/* Photo Modal */}
-      {selectedPhotoId && activePhoto && (
+      {/* Modal Preview */}
+      {selectedPhotoId !== null && activePhoto && (
         <PhotoModal
           photo={activePhoto}
           photoId={selectedPhotoId}
@@ -211,8 +164,10 @@ export const UnrecognizedGallery: React.FC<UnrecognizedGalleryProps> = ({
           onPrev={handlePrev}
           onNext={handleNext}
           onClose={() => setSelectedPhotoId(null)}
+          personLabel="unrecognized"
         />
       )}
     </div>
   );
 };
+export default UnrecognizedGallery;

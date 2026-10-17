@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ViewerConfig, PeopleData, PersonCluster } from './types';
-import { Header } from './components/Header';
+import { Header, ViewerTheme } from './components/Header';
 import { PeopleGrid } from './components/PeopleGrid';
 import { PhotoGallery } from './components/PhotoGallery';
 import { UnrecognizedGallery } from './components/UnrecognizedGallery';
@@ -8,12 +8,21 @@ import { Footer } from './components/Footer';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export const App: React.FC = () => {
+  const [theme, setTheme] = useState<ViewerTheme>(() => {
+    try {
+      const saved = localStorage.getItem('catlog-viewer-theme');
+      if (saved === 't-dark' || saved === 't-paper' || saved === 't-navy') {
+        return saved;
+      }
+    } catch {}
+    return 't-dark';
+  });
+
   const [config, setConfig] = useState<ViewerConfig>({
-    title: 'Event Gallery',
-    subtitle: 'Photos grouped by person',
-    accent: '#3b82f6',
+    title: 'CatLog Gallery',
+    accent: '#fa7175',
     font: 'Inter',
-    footer: 'Published with PhotoSorter',
+    footer: 'Published with CatLog',
     show_labels: true,
   });
 
@@ -24,6 +33,21 @@ export const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<'grid' | 'person' | 'unrecognized'>('grid');
   const [selectedPerson, setSelectedPerson] = useState<PersonCluster | null>(null);
+
+  // Sync theme with DOM and localStorage
+  useEffect(() => {
+    document.documentElement.classList.remove('t-dark', 't-paper', 't-navy');
+    document.body.classList.remove('t-dark', 't-paper', 't-navy');
+    document.documentElement.classList.add(theme);
+    document.body.classList.add(theme);
+    try {
+      localStorage.setItem('catlog-viewer-theme', theme);
+    } catch {}
+  }, [theme]);
+
+  const handleThemeChange = (newTheme: ViewerTheme) => {
+    setTheme(newTheme);
+  };
 
   // Fetch bundle files: config.json and people.json
   const loadData = async () => {
@@ -37,7 +61,6 @@ export const App: React.FC = () => {
           const configJson = await configRes.json();
           setConfig((prev) => ({ ...prev, ...configJson }));
 
-          // Apply theme CSS variables
           if (configJson.accent) {
             document.documentElement.style.setProperty('--color-accent', configJson.accent);
           }
@@ -52,7 +75,7 @@ export const App: React.FC = () => {
           }
         }
       } catch (err) {
-        console.warn('Could not load custom config.json, using defaults.', err);
+        console.warn('Could not load config.json, using defaults.', err);
       }
 
       // 2. Fetch people.json
@@ -62,8 +85,6 @@ export const App: React.FC = () => {
       }
       const peopleJson: PeopleData = await peopleRes.json();
       setData(peopleJson);
-
-      // Initial hash navigation handled in separate effect
     } catch (err: any) {
       console.error('Error loading gallery bundle:', err);
       setError(err.message || 'Failed to load gallery data');
@@ -76,7 +97,7 @@ export const App: React.FC = () => {
     loadData();
   }, []);
 
-  // Listen to hash changes (e.g. #p001, #unrecognized, back/forward button)
+  // Hash-based routing: #p001, #unrecognized
   useEffect(() => {
     if (!data) return;
     const handleHash = () => {
@@ -124,12 +145,11 @@ export const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Total unique photos count across people + unrecognized
   const totalPhotos = data ? Object.keys(data.photos).length : 0;
   const totalPeople = data ? data.people.length : 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-neutral-950 text-neutral-100">
+    <div className={`min-h-screen flex flex-col bg-[var(--bg-main)] text-[var(--text-main)] ${theme}`}>
       <Header
         config={config}
         totalPeople={totalPeople}
@@ -138,13 +158,15 @@ export const App: React.FC = () => {
         onSearchChange={setSearchQuery}
         activeView={activeView}
         onBackToGrid={handleBackToGrid}
+        theme={theme}
+        onThemeChange={handleThemeChange}
       />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 w-full">
         {loading && (
-          <div className="py-24 flex flex-col items-center justify-center space-y-4">
-            <div className="w-10 h-10 border-3 border-accent border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-neutral-400 font-medium">Loading event gallery...</p>
+          <div className="py-24 flex flex-col items-center justify-center space-y-3">
+            <div className="w-8 h-8 border-3 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs sm:text-sm text-[var(--text-muted)] font-medium">Loading gallery...</p>
           </div>
         )}
 
@@ -154,15 +176,15 @@ export const App: React.FC = () => {
               <AlertCircle className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Gallery Data Missing</h3>
-              <p className="text-xs text-neutral-400 mt-1">
-                Could not find <code className="text-neutral-200">people.json</code> in this folder.
-                Please ensure the static export bundle files are located in the root or public directory.
+              <h3 className="text-base font-bold text-white">Gallery Data Missing</h3>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                Could not find <code className="text-[var(--text-main)]">people.json</code>.
+                Ensure export bundle files are located in the gallery folder.
               </p>
             </div>
             <button
               onClick={loadData}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-medium transition-colors"
+              className="touch-target inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-accent)] text-[var(--color-accent-text)] text-xs font-bold transition-all shadow-sm"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Retry</span>

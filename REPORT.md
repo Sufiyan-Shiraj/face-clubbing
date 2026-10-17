@@ -3951,6 +3951,56 @@ The changes were verified with the complete automated test suite and live build 
 
 ---
 
+## 27. PART B: PUBLIC VIEWER REWORK & PER-PERSON DOWNLOAD DELIVERABLES (2026-10-18)
+
+**Status**: **Complete & Verified**  
+**Visual Design Review Status**: `NEEDS ORGANIZER REVIEW`
+
+### 27.1 Architecture & Requirement Compliance Matrix
+
+| Requirement | Specification | Implementation in `viewer/` | Verification Evidence |
+| :--- | :--- | :--- | :--- |
+| **1. 3 Themes & Branding** | `t-dark`, `t-paper`, `t-navy` with CatLog branding. Remove filler subtitles and helper text; every line earns its place. Mobile-first, fast, accessible (contrast, visible focus rings, min 44px touch targets). | Implemented CSS variables in `index.css` for 3 themes; radio toggle buttons in `Header.tsx`; CatLog branding (🐱 logo); `:focus-visible` styling (`--focus-ring`) and `.touch-target` min 44px. | Verified via `viewer.test.tsx` (Requirement 12) & Playwright E2E Step 2 (switches to Paper, Navy, and Dark). |
+| **2. Per-Person Page & Downloads** | "Download all N photos" primary button, individual per-photo download button, and Select Mode (tick photos, "Download selected"). | `PhotoGallery.tsx` renders primary "Download all N photos", per-photo `<a>` download links, and select mode with sticky bottom action bar. | Verified via `download.test.tsx` & Playwright E2E Steps 3 & 4. |
+| **2a. Local Export** | Browser zip built with `client-zip` (streaming ESM generator), with progress and cancel, without loading everything into memory. | `downloadLocalZip()` in `viewer/src/utils/downloader.ts` uses async generator yielding file entries directly to `downloadZip()` and streams blob with `AbortSignal` cancellation. | Unit tested with progress callbacks and aborts (`download.test.tsx`); E2E verified via Playwright download interception (`verify_download_e2e.cjs`). |
+| **2b. Drive Export** | Reuses existing `download_url` field (`uc?id=<ID>&export=download`) one by one; progress counter; one-time note warning about multiple downloads; "Open in Drive" fallback. No server. | `downloadDriveSequential()` in `downloader.ts` iterates photos sequentially with progress callbacks; modal warning shown once with "Open in Drive instead" link; `exporter.py` populates `download_url` in `photos_json`. | Unit tested with mock Drive URLs, delay throttle, and permission modal (`download.test.tsx`). |
+| **2c. File Names** | `personname_001.jpg` style, no private data in names. | `getCleanDownloadName()` sanitizes label/id, zero-pads to 3 digits (`_001.jpg`), preserves extension, and strips private filesystem paths or special chars. | Tested in `download.test.tsx` (tests for special chars, spaces, null labels, path traversal attempts, and zero leakage). |
+| **3. Exact Count & Guards** | Button shows person's photo count ("Download all 12 photos"). Unrecognized and maybe-match groups get NO "download all". | `photoIds.length` rendered in button text; Unrecognized gallery and maybe-matches sections explicitly omit "Download all". | Tested in `viewer.test.tsx`, `download.test.tsx`, and E2E Step 6 (`verify_download_e2e.cjs`). |
+| **4. Fallback & Lazy Loading** | Drive-unavailable tile and slow-load states intact; thumbnails lazy-load (`loading="lazy"`). | Handled via `imageErrorMap` in `PhotoGallery.tsx`, rendering "unavailable - open in Drive ↗" fallback buttons and `loading="lazy"` on thumbnails. | Verified in component render and build. |
+| **5. Cross-Person Privacy** | No download code path leaks other people's names or photos. | Download payloads strictly scope to person's confirmed `photo_ids`. | Tested via dedicated privacy leak test in `download.test.tsx`. |
+
+### 27.2 Static Viewer Bundle Size Comparison
+
+| Bundle Asset | Before Rework | After Rework | Delta | Notes |
+| :--- | :---: | :---: | :---: | :--- |
+| **JavaScript (`dist/assets/index-*.js`)** | 176,892 B (172.75 KB) | 198,276 B (193.63 KB) | +21,384 B (+20.88 KB) | Added `client-zip` library, streaming zip generator, Drive sequential downloader, 3-theme switching, and multi-photo selection state. |
+| **CSS (`dist/assets/index-*.css`)** | 26,583 B (25.96 KB) | 27,276 B (26.64 KB) | +693 B (+0.68 KB) | Added CSS custom properties for 3 themes, visible focus ring utilities, and 44px touch targets. |
+| **HTML (`dist/index.html`)** | 1,230 B (1.20 KB) | 1,230 B (1.20 KB) | 0 B | Clean static entry point. |
+| **Total Production Assets** | **203,475 B (198.71 KB)** | **225,552 B (220.27 KB)** | **+22,077 B (+21.56 KB)** | Ultra-lightweight: entire client-side static viewer remains under 221 KB uncompressed (~66 KB gzipped). |
+
+### 27.3 Saved Screenshots (ZERO Real Human Faces)
+
+The visual design is marked **`NEEDS ORGANIZER REVIEW`**. Automated screenshots were taken using synthetic/SVG neutral graphics to guarantee that zero real attendee faces appear:
+
+| Screenshot | Path | SHA-256 Checksum | Dimensions |
+| :--- | :--- | :--- | :--- |
+| **01. Grid View (3 Themes & Branding)** | `scratch/screenshots/viewer_01_grid.png` | `24543EC04DE64B00AB5FACEA41D1959BCE5312C61847612878F9F4D38D20AAFC` | 1280 × 800 px (49,526 B) |
+| **02. Person Page (Download all N photos)** | `scratch/screenshots/viewer_02_person_download.png` | `0153F3434B87E6FA647D765D19E89286941CFB392106EDB1B31A23F2618949D8` | 1280 × 800 px (53,611 B) |
+| **03. Select Mode (Multi-Photo Sticky Bar)** | `scratch/screenshots/viewer_03_select_mode.png` | `45BB2BBC6178A3BEE1EDC5794EBBB0C58962BF0A0A8B7ACE7C19CCDA4EB097F3` | 1280 × 800 px (59,781 B) |
+
+### 27.4 Complete Verification Evidence Matrix
+
+| Verification Target | Command & Parameters | Outcome | Notes |
+| :--- | :--- | :---: | :--- |
+| **Baseline Canonical Invariants** | `python eval/check_baseline.py` | **100% OK (All 13 checks passed)** | Verified 192 clusters, 1,256 clustered faces, 445 unrec faces ($1,256 + 445 = 1,701$), 259 photos, 168 unrec photos, 81 singletons, 1 collision cluster. |
+| **Backend Engine & API Tests** | `.venv\Scripts\pytest.exe -q -rs` | **85 / 85 passed (100%)** in 78.95s | Complete test coverage across clustering, exporter, pipeline, API routes, and edits replay. |
+| **Organizer Frontend Tests** | `npm test -- --run` (in `frontend/`) | **74 / 74 passed (100%)** in 68.90s | All 13 test files pass cleanly. |
+| **Public Viewer Vitest Suite** | `npm test -- --run` (in `viewer/`) | **20 / 20 passed (100%)** in 4.93s | 6 tests in `viewer.test.tsx` + 14 tests in `download.test.tsx` verifying clean filenames, privacy leak guards, select mode, zip streaming, and Drive sequential flow. |
+| **Playwright Local Download E2E** | `node viewer/scripts/verify_download_e2e.cjs` | **Exit code 0 (100% passed)** in 5.3s | Verified 3-theme switching, photo count display, select mode, local streaming zip generation (`alex_river_photos.zip`), and Unrecognized download-all guard. |
+| **Viewer TypeScript & Vite Build** | `npm run build` (in `viewer/`) | **Exit code 0 (Success)** in 13.89s | 1,597 modules transformed, 0 TypeScript errors. Output written to `viewer/dist/`. |
+
+---
+
 ## APPENDIX A: HISTORICAL ENGINE EVOLUTION & INTERMEDIATE STAGES (SUPERSEDED)
 
 
