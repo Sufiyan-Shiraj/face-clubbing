@@ -16,7 +16,7 @@ import { ReviewPeopleScreen } from './components/ReviewPeopleScreen';
 import { ExportScreen } from './components/ExportScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 import { OpenProjectModal } from './components/OpenProjectModal';
-import { Lock, AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<RisoTheme>(() => {
@@ -93,7 +93,7 @@ export const App: React.FC = () => {
   const isProjectActive = people.length > 0 || Object.keys(photos).length > 0;
 
   const handleTabChange = (t: ActiveTab) => {
-    if ((t === 'people' || t === 'export') && !isProjectActive) {
+    if (t === 'people' && !isProjectActive) {
       return;
     }
     setActiveTab(t);
@@ -144,9 +144,9 @@ export const App: React.FC = () => {
 
   const [folderPath, setFolderPath] = useState<string>(() => {
     try {
-      return localStorage.getItem('photosorter-folder-path') || 'test_photos';
+      return localStorage.getItem('photosorter-folder-path') || '';
     } catch (e) { }
-    return 'test_photos';
+    return '';
   });
 
   const [driveLink, setDriveLink] = useState<string>(() => {
@@ -186,7 +186,15 @@ export const App: React.FC = () => {
   });
 
   const [discoveredFaceIds, setDiscoveredFaceIds] = useState<string[]>([]);
-  const [isApiKeyConfigured, setIsApiKeyConfigured] = useState<boolean>(false);
+
+  const [isApiKeyConfigured, setIsApiKeyConfigured] = useState<boolean | undefined>(() => {
+    try {
+      const val = localStorage.getItem('photosorter-api-key-configured');
+      if (val === 'true') return true;
+      if (val === 'false') return false;
+    } catch (e) { }
+    return undefined;
+  });
 
   const handleSourceModeChange = (mode: 'drive' | 'local' | 'zip') => {
     setSourceMode(mode);
@@ -233,6 +241,10 @@ export const App: React.FC = () => {
   const loadAllData = useCallback(async () => {
     setIsRefreshing(true);
     try {
+      const settingsPromise = (api && typeof api.getSettings === 'function')
+        ? Promise.resolve(api.getSettings()).catch(() => null)
+        : Promise.resolve(null);
+
       const [peopleData, unrecData, sugData, photoData, settingsData] = await Promise.all([
         api.getPeople().catch(() => []),
         api.getUnrecognized().catch(() => ({ total_unrecognized_photos: 0, no_face_photos: [], faces: [] })),
@@ -245,7 +257,7 @@ export const App: React.FC = () => {
           ambiguous_faces: [],
         })),
         api.getPhotos().catch(() => ({})),
-        api.getSettings().catch(() => null),
+        settingsPromise,
       ]);
 
       setPeople(peopleData);
@@ -253,13 +265,45 @@ export const App: React.FC = () => {
       setSuggestions(sugData);
       setPhotos(photoData);
       if (settingsData) {
-        setIsApiKeyConfigured(Boolean(settingsData.drive_api_key_configured));
+        const isConf = Boolean(settingsData.drive_api_key_configured);
+        setIsApiKeyConfigured(isConf);
+        try {
+          localStorage.setItem('photosorter-api-key-configured', String(isConf));
+        } catch (e) { }
       }
     } catch (err) {
       console.error('Failed to load dataset from API:', err);
     } finally {
       setIsRefreshing(false);
     }
+  }, []);
+
+  // Periodic background check & focus sync for API key status
+  useEffect(() => {
+    const checkSettings = () => {
+      try {
+        const p = api?.getSettings?.();
+        if (p && typeof p.then === 'function') {
+          p.then((s) => {
+            if (s) {
+              const isConf = Boolean(s.drive_api_key_configured);
+              setIsApiKeyConfigured(isConf);
+              try {
+                localStorage.setItem('photosorter-api-key-configured', String(isConf));
+              } catch (e) { }
+            }
+          }).catch(() => {});
+        }
+      } catch (e) {}
+    };
+
+    checkSettings();
+    const interval = setInterval(checkSettings, 4000);
+    window.addEventListener('focus', checkSettings);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', checkSettings);
+    };
   }, []);
 
   // Initial load
@@ -269,7 +313,7 @@ export const App: React.FC = () => {
         api.getActiveProject()
           .then((proj) => {
             if (!proj.active) {
-              setActiveTab((prev) => (prev === 'people' || prev === 'export' ? 'home' : prev));
+              setActiveTab((prev) => (prev === 'people' ? 'home' : prev));
             }
           })
           .catch(() => {});
@@ -313,7 +357,7 @@ export const App: React.FC = () => {
         if (last && last.current === status.current && last.stage === status.stage && last.status === status.status && last.percent === status.percent) {
           return prev;
         }
-        return [...prev.slice(-49), status];
+        return [...prev.slice(-4999), status];
       });
       if (status.status === 'completed') {
         loadAllData();
@@ -343,7 +387,7 @@ export const App: React.FC = () => {
             if (last && last.current === st.current && last.stage === st.stage && last.status === st.status && last.percent === st.percent) {
               return prev;
             }
-            return [...prev.slice(-49), st];
+            return [...prev.slice(-4999), st];
           });
           if (st.status === 'completed') {
             loadAllData();
@@ -740,10 +784,9 @@ export const App: React.FC = () => {
           <button
             type="button"
             id="tab-export"
-            onClick={() => isProjectActive && handleTabChange('export')}
-            className={`step ${activeTab === 'export' ? 'on' : ''} ${!isProjectActive ? 'opacity-40 cursor-not-allowed' : ''}`}
-            disabled={!isProjectActive}
-            title={!isProjectActive ? 'Start a scan or open a project first' : 'Publish standalone gallery'}
+            onClick={() => handleTabChange('export')}
+            className={`step ${activeTab === 'export' ? 'on' : ''}`}
+            title="Publish standalone gallery"
           >
             <b>04</b>
             <span>Publish</span>
@@ -753,19 +796,11 @@ export const App: React.FC = () => {
             id="tab-settings"
             onClick={() => handleTabChange('settings')}
             className={`step ${activeTab === 'settings' ? 'on' : ''}`}
+            title="Configure clustering parameters and cloud keys"
           >
             <b>05</b>
             <span>Settings</span>
           </button>
-        </div>
-
-        <div className="rail-footer">
-          <div style={{ fontWeight: 700, color: 'var(--text)', letterSpacing: '0.04em' }}>ORGANIZER</div>
-          <div>On-Device Engine</div>
-          <div style={{ color: 'var(--accent-ink)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)' }}></span>
-            <span>Local Mode</span>
-          </div>
         </div>
       </div>
 
@@ -893,12 +928,6 @@ export const App: React.FC = () => {
           }}
         />
       )}
-
-      {/* Reassurance Footer matching screenshot */}
-      <div className="ftr">
-        <Lock className="w-3.5 h-3.5 text-[var(--accent)] flex-shrink-0" />
-        <span>Projects and credentials stay on this computer. Nothing is uploaded or shared.</span>
-      </div>
     </div>
   );
 };

@@ -1,6 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 /* ==========================================================================
    PhotoSorter Authentic Tactile Risograph Paper Design System
@@ -111,7 +111,7 @@ html, body {
   box-sizing: border-box;
   display: grid;
   grid-template-columns: 240px 1fr;
-  grid-template-rows: 64px 1fr 48px;
+  grid-template-rows: 64px 1fr;
   background: var(--bg);
   background-image: var(--bg-pattern);
   background-repeat: repeat;
@@ -363,14 +363,6 @@ html, body {
   font-family: inherit;
   width: 28px;
   letter-spacing: 0.02em;
-}
-
-.rail-footer {
-  padding: 16px 12px 0;
-  border-top: 1px solid var(--line);
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.6;
 }
 
 /* ==========================================================================
@@ -1275,27 +1267,7 @@ html, body {
   margin: 0;
 }
 
-/* ==========================================================================
-   Footer Reassurance (Fixed at bottom)
-   ========================================================================== */
-.ftr {
-  grid-column: 1 / 3;
-  grid-row: 3 / 4;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 clamp(20px, 3vw, 40px);
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 14px;
-  height: 48px;
-  background: var(--bg);
-  background-image: var(--bg-pattern);
-  background-repeat: repeat;
-  background-size: 512px 512px;
-  position: relative;
-  z-index: 20;
-}
+
 
 /* ==========================================================================
    Scan Progress Screen Elements

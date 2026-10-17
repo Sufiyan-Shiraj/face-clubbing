@@ -4,8 +4,9 @@ from __future__ import annotations
 import math
 from pathlib import Path
 from typing import List, Optional, Tuple
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageFilter
 import numpy as np
+import cv2
 
 from backend.engine.models import FaceDetection, PersonCluster
 
@@ -17,23 +18,93 @@ except ImportError:
     pass
 
 
-def compute_face_quality_score(face: FaceDetection) -> float:
+def compute_image_sharpness(img_input: Path | str | Image.Image | np.ndarray) -> float:
+    """Computes the sharpness score of an image or crop using variance of Laplacian.
+    Higher values indicate sharp, in-focus images, while lower values (< 30) indicate blurriness."""
+    try:
+        if isinstance(img_input, (str, Path)):
+            p = Path(img_input)
+            if not p.exists():
+                return 0.0
+            gray = cv2.imread(str(p), cv2.IMREAD_GRAYSCALE)
+            if gray is None:
+                return 0.0
+        elif isinstance(img_input, Image.Image):
+            gray = np.array(img_input.convert("L"))
+        elif isinstance(img_input, np.ndarray):
+            if img_input.ndim == 3:
+                gray = cv2.cvtColor(img_input, cv2.COLOR_BGR2GRAY if img_input.shape[2] == 3 else cv2.COLOR_RGB2GRAY)
+            else:
+                gray = img_input
+        else:
+            return 0.0
+        return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+    except Exception:
+        return 0.0
+
+
+def compute_face_quality_score(
+    face: FaceDetection,
+    crop_path: Optional[Path | str] = None,
+) -> float:
     """
-    Computes a composite score for representative face selection.
-    Favors higher detection score, larger face area, and frontal poses.
+    Computes a composite quality score for selecting an optimal, high-quality avatar for a person.
+    Prioritizes:
+      1. Resolution & Face Size: strongly rewards large, sharp faces; penalizes tiny distant faces (< 70px)
+      2. Detection Confidence: favors high detector certainty (det_score)
+      3. Flattering Pose: rewards frontal eye-level view; penalizes severe yaw/profile (> 25°), pitch (> 15°), or tilted roll (> 8°)
+      4. Facial Symmetry: rewards horizontal eyes, centered nose, and upright proportions
+      5. Sharpness / In-focus: rewards high Laplacian variance and penalizes motion-blurred or soft faces
+      6. Quality Flag: penalizes faces marked as poor quality or rejected
     """
     x1, y1, x2, y2 = face.bbox
     w = max(1.0, x2 - x1)
     h = max(1.0, y2 - y1)
-    area = w * h
+    min_dim = min(w, h)
 
-    # Area component (logarithmic scaling)
-    area_score = math.log10(max(100.0, area))
+    # 1. Size & Resolution (progressive square root curve)
+    # 60px -> 12.4 pts, 120px -> 17.5 pts, 200px -> 22.6 pts, 400px+ -> 32 pts
+    size_score = math.sqrt(min(min_dim, 400.0)) * 1.6
+    if min_dim < 70.0:
+        # Severe penalty for tiny distant faces that upscale into blurry pixels
+        size_score -= (70.0 - min_dim) * 0.35
 
-    # Base score combines det_score and area
-    score = face.det_score * 3.0 + area_score
+    # 2. Confidence component (quadratic scaling)
+    conf_score = (face.det_score ** 2) * 15.0
+    if face.det_score < 0.65:
+        conf_score -= (0.65 - face.det_score) * 20.0
 
-    # Frontalness bonus if 5-point landmarks exist:
+    # 3. 3D Head Pose (pitch, yaw, roll)
+    pose_score = 0.0
+    if face.pose and len(face.pose) >= 3:
+        pitch, yaw, roll = face.pose[:3]
+        abs_yaw = abs(yaw)
+        abs_pitch = abs(pitch)
+        abs_roll = abs(roll)
+
+        # Yaw (horizontal face angle):
+        if abs_yaw <= 10.0:
+            pose_score += 4.0  # Perfect frontal portrait
+        elif abs_yaw <= 20.0:
+            pose_score += 2.0  # Slight 3/4 turn
+        elif abs_yaw > 25.0:
+            # Turned head / profile shot looks awkward as an avatar
+            pose_score -= min(14.0, (abs_yaw - 20.0) * 0.6)
+
+        # Pitch (looking up or down):
+        if abs_pitch <= 10.0:
+            pose_score += 2.0  # Eye-level
+        elif abs_pitch > 15.0:
+            # Chin to chest or looking up
+            pose_score -= min(8.0, (abs_pitch - 12.0) * 0.4)
+
+        # Roll (head tilt sideways):
+        if abs_roll <= 6.0:
+            pose_score += 2.0  # Upright head
+        elif abs_roll > 10.0:
+            pose_score -= min(8.0, (abs_roll - 8.0) * 0.5)
+
+    # 4. 5-point facial landmarks geometry & symmetry:
     # [left_eye, right_eye, nose, left_mouth, right_mouth]
     if face.landmarks and len(face.landmarks) >= 5:
         le, re, nose, lm, rm = face.landmarks[:5]
@@ -42,31 +113,76 @@ def compute_face_quality_score(face: FaceDetection) -> float:
         eye_dist = math.hypot(eye_dx, eye_dy)
 
         if eye_dist > 1e-4:
-            # 1. Roll penalty (eyes not horizontal)
-            roll_ratio = abs(eye_dy) / eye_dist
-            roll_penalty = min(2.0, roll_ratio * 4.0)
+            # Roll tilt from eye horizontal
+            tilt_ratio = abs(eye_dy) / eye_dist
+            if tilt_ratio > 0.12:
+                pose_score -= min(6.0, (tilt_ratio - 0.12) * 20.0)
 
-            # 2. Yaw symmetry: nose x relative to eye midpoint
-            eye_mid_x = (le[0] + re[0]) / 2.0
-            yaw_ratio = abs(nose[0] - eye_mid_x) / eye_dist
-            yaw_penalty = min(2.0, yaw_ratio * 4.0)
+            # Nose horizontal symmetry between eyes:
+            d_left = abs(nose[0] - le[0])
+            d_right = abs(re[0] - nose[0])
+            max_d = max(d_left, d_right)
+            if max_d > 1e-4:
+                symmetry = min(d_left, d_right) / max_d
+                if symmetry > 0.7:
+                    pose_score += (symmetry - 0.7) * 5.0
+                elif symmetry < 0.5:
+                    pose_score -= (0.5 - symmetry) * 10.0
 
-            score -= (roll_penalty + yaw_penalty)
+            # Mouth vertically below nose check:
+            mouth_mid_y = (lm[1] + rm[1]) / 2.0
+            if mouth_mid_y < nose[1]:
+                # Distorted/inverted face detection
+                pose_score -= 20.0
 
-    return score
+    # 5. Sharpness & Clarity
+    sharpness = getattr(face, "sharpness", None)
+    if sharpness is None and crop_path:
+        sharpness = compute_image_sharpness(crop_path)
+        face.sharpness = sharpness
+
+    sharpness_score = 0.0
+    if sharpness is not None and sharpness > 0.0:
+        if sharpness < 35.0:
+            # Blurry / out-of-focus penalty
+            sharpness_score -= min(10.0, (35.0 - sharpness) * 0.3)
+        else:
+            # Sharpness bonus
+            sharpness_score += min(10.0, math.log10(max(1.0, sharpness)) * 3.5)
+
+    # 6. Quality flag & rejection penalty
+    quality_penalty = 0.0
+    if not getattr(face, "is_good_quality", True):
+        quality_penalty += 25.0
+    if getattr(face, "rejection_reason", None):
+        quality_penalty += 15.0
+
+    return size_score + conf_score + pose_score + sharpness_score - quality_penalty
 
 
-def select_representative_face(faces: List[FaceDetection]) -> FaceDetection:
-    """Pick the highest scoring face in a cluster to represent the person."""
+def select_representative_face(
+    faces: List[FaceDetection],
+    cache_crops: Optional[Path | str] = None,
+) -> FaceDetection:
+    """Pick the highest quality, most flattering face in a cluster to represent the person."""
     if not faces:
         raise ValueError("Cannot select representative face from empty face list.")
-    return max(faces, key=compute_face_quality_score)
+    if len(faces) == 1:
+        return faces[0]
+
+    cache_p = Path(cache_crops) if cache_crops else None
+
+    def _score(f: FaceDetection) -> float:
+        crop_path = (cache_p / f"{f.face_id}.jpg") if (cache_p and getattr(f, "face_id", None)) else None
+        return compute_face_quality_score(f, crop_path=crop_path)
+
+    return max(faces, key=_score)
 
 
 class ThumbnailGenerator:
-    """Generates photo thumbnails and square face crops for static export."""
+    """Generates photo thumbnails and high-quality square face crops for static export."""
 
-    def __init__(self, thumb_size: int = 400, face_crop_size: int = 256):
+    def __init__(self, thumb_size: int = 400, face_crop_size: int = 384):
         self.thumb_size = thumb_size
         self.face_crop_size = face_crop_size
 
@@ -119,11 +235,12 @@ class ThumbnailGenerator:
         bbox: List[float],
         output_path: Path | str,
         margin_factor: float = 1.45,
-        quality: int = 88,
+        quality: int = 95,
     ) -> None:
         """
         Generates a centered, square crop of the face with margin directly from a PIL Image.
-        Handles image boundaries cleanly without aspect-ratio distortion or stitching artifacts.
+        Handles image boundaries cleanly without aspect-ratio distortion or stretching artifacts.
+        Saves with 4:4:4 color subsampling (subsampling=0) and high quality for crystal-clear avatars.
         """
         out_p = Path(output_path)
         out_p.parent.mkdir(parents=True, exist_ok=True)
@@ -135,9 +252,11 @@ class ThumbnailGenerator:
 
         # Center with slight upward bias to include hair/forehead
         cx = (x1 + x2) / 2.0
-        cy = (y1 + y2) / 2.0 - 0.06 * h
+        cy = (y1 + y2) / 2.0 - 0.07 * h
 
         side = max(w, h) * margin_factor
+        # Prevent crop box from exceeding full image dimensions
+        side = min(side, float(min(img_w, img_h)))
 
         # Calculate bounding box
         half = side / 2.0
@@ -164,41 +283,41 @@ class ThumbnailGenerator:
             top -= shift
             bottom -= shift
 
-        int_left = int(math.floor(left))
-        int_top = int(math.floor(top))
-        int_right = int(math.ceil(right))
-        int_bottom = int(math.ceil(bottom))
+        int_left = max(0, int(math.floor(left)))
+        int_top = max(0, int(math.floor(top)))
+        int_right = min(img_w, int(math.ceil(right)))
+        int_bottom = min(img_h, int(math.ceil(bottom)))
 
-        # Enforce exact 1:1 square integer dimensions
-        side_px = max(int_right - int_left, int_bottom - int_top)
+        # Enforce exact 1:1 square integer dimensions within image bounds
+        side_px = min(max(int_right - int_left, int_bottom - int_top), img_w, img_h)
+        if int_left + side_px > img_w:
+            int_left = max(0, img_w - side_px)
+        if int_top + side_px > img_h:
+            int_top = max(0, img_h - side_px)
         int_right = int_left + side_px
         int_bottom = int_top + side_px
 
-        # Extract valid overlap
-        val_left = max(0, int_left)
-        val_top = max(0, int_top)
-        val_right = min(img_w, int_right)
-        val_bottom = min(img_h, int_bottom)
-
-        if val_right <= val_left or val_bottom <= val_top:
-            # Fallback if entirely out of bounds
-            cropped = img.crop((0, 0, min(img_w, img_h), min(img_w, img_h)))
-        else:
-            patch = img.crop((val_left, val_top, val_right, val_bottom))
-            if patch.size == (side_px, side_px):
-                cropped = patch
-            else:
-                # Square canvas with edge padding to avoid stretching/stitching
-                cropped = Image.new("RGB", (side_px, side_px), (0, 0, 0))
-                offset_x = val_left - int_left
-                offset_y = val_top - int_top
-                cropped.paste(patch, (offset_x, offset_y))
+        cropped = img.crop((int_left, int_top, int_right, int_bottom))
 
         cropped_resized = cropped.resize(
             (self.face_crop_size, self.face_crop_size),
             Image.Resampling.LANCZOS,
         )
-        cropped_resized.save(out_p, format="JPEG", quality=quality, optimize=True)
+
+        # Subtle unsharp mask when upscaling to maintain crisp facial detail
+        if side_px < self.face_crop_size:
+            cropped_resized = cropped_resized.filter(
+                ImageFilter.UnsharpMask(radius=1.0, percent=35, threshold=2)
+            )
+
+        # Save with quality=95 and subsampling=0 (4:4:4 lossless chroma, zero color bleeding)
+        cropped_resized.save(
+            out_p,
+            format="JPEG",
+            quality=quality,
+            subsampling=0,
+            optimize=True,
+        )
 
     def generate_square_face_crop(
         self,
@@ -206,7 +325,7 @@ class ThumbnailGenerator:
         bbox: List[float],
         output_path: Path | str,
         margin_factor: float = 1.45,
-        quality: int = 88,
+        quality: int = 95,
     ) -> None:
         """
         Generates a centered, square crop of the face with margin from file path.

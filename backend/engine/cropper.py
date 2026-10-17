@@ -54,7 +54,7 @@ def compute_frontal_score(kps: list[list[float]] | None) -> float:
 
 def pick_representative_face(faces: Sequence[DetectedFace]) -> DetectedFace:
     """Selects the best representative face for a person based on detection score,
-    face area, and frontalness.
+    face resolution, sharpness, and frontalness.
     """
     if not faces:
         raise ValueError("Cannot select representative face from an empty list.")
@@ -62,18 +62,26 @@ def pick_representative_face(faces: Sequence[DetectedFace]) -> DetectedFace:
         return faces[0]
 
     best_face = faces[0]
-    best_score = -1.0
+    best_score = -1e9
 
     for face in faces:
         w = max(1.0, face.bbox[2] - face.bbox[0])
         h = max(1.0, face.bbox[3] - face.bbox[1])
-        area = w * h
+        min_dim = min(w, h)
 
-        det_score = face.det_score
+        # Resolution score (smooth square root curve, penalized if tiny)
+        size_score = math.sqrt(min(min_dim, 400.0)) * 1.6
+        if min_dim < 70.0:
+            size_score -= (70.0 - min_dim) * 0.35
+
+        # Confidence component
+        conf_score = (face.det_score ** 2) * 15.0
+
+        # Frontal score
         frontal = compute_frontal_score(face.kps)
+        frontal_score = (frontal - 0.5) * 10.0
 
-        # Composite score prioritizing detection confidence, face resolution, and frontalness
-        score = (det_score ** 1.5) * (math.sqrt(area)) * frontal
+        score = size_score + conf_score + frontal_score
         if score > best_score:
             best_score = score
             best_face = face
@@ -85,11 +93,11 @@ def crop_face_square(
     image_path: Path | str,
     face: DetectedFace,
     out_path: Path | str,
-    crop_size: int = 256,
+    crop_size: int = 384,
     margin_ratio: float = 0.35,
     vertical_shift: float = 0.08,
 ) -> None:
-    """Extracts a square face crop with padding around the face and saves as JPEG.
+    """Extracts a square face crop with padding around the face and saves as high-quality JPEG.
     
     Args:
         image_path: Path to the original image file.
@@ -145,31 +153,19 @@ def crop_face_square(
             top -= shift
             bottom -= shift
 
-        int_left = int(math.floor(left))
-        int_top = int(math.floor(top))
-        int_right = int(math.ceil(right))
-        int_bottom = int(math.ceil(bottom))
+        int_left = max(0, int(math.floor(left)))
+        int_top = max(0, int(math.floor(top)))
+        int_right = min(orig_w, int(math.ceil(right)))
+        int_bottom = min(orig_h, int(math.ceil(bottom)))
 
-        side_px = max(int_right - int_left, int_bottom - int_top)
+        side_px = min(max(int_right - int_left, int_bottom - int_top), orig_w, orig_h)
+        if int_left + side_px > orig_w:
+            int_left = max(0, orig_w - side_px)
+        if int_top + side_px > orig_h:
+            int_top = max(0, orig_h - side_px)
         int_right = int_left + side_px
         int_bottom = int_top + side_px
 
-        val_left = max(0, int_left)
-        val_top = max(0, int_top)
-        val_right = min(orig_w, int_right)
-        val_bottom = min(orig_h, int_bottom)
-
-        if val_right <= val_left or val_bottom <= val_top:
-            cropped = img.crop((0, 0, min(orig_w, orig_h), min(orig_w, orig_h)))
-        else:
-            patch = img.crop((val_left, val_top, val_right, val_bottom))
-            if patch.size == (side_px, side_px):
-                cropped = patch
-            else:
-                cropped = Image.new("RGB", (side_px, side_px), (0, 0, 0))
-                offset_x = val_left - int_left
-                offset_y = val_top - int_top
-                cropped.paste(patch, (offset_x, offset_y))
-
+        cropped = img.crop((int_left, int_top, int_right, int_bottom))
         cropped = cropped.resize((crop_size, crop_size), Image.Resampling.LANCZOS)
-        cropped.save(out_p, format="JPEG", quality=88, optimize=True)
+        cropped.save(out_p, format="JPEG", quality=95, subsampling=0, optimize=True)

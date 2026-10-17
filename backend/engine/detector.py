@@ -182,6 +182,20 @@ class FaceDetector:
                     except Exception:
                         pass
 
+            # 3b. Sharpness estimation (Laplacian variance on face patch)
+            sharpness = None
+            try:
+                py1 = max(0, int(orig_bbox[1]))
+                py2 = min(orig_h, int(orig_bbox[3]))
+                px1 = max(0, int(orig_bbox[0]))
+                px2 = min(orig_w, int(orig_bbox[2]))
+                if py2 > py1 and px2 > px1:
+                    patch = orig_bgr[py1:py2, px1:px2]
+                    gray_patch = cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY)
+                    sharpness = float(cv2.Laplacian(gray_patch, cv2.CV_64F).var())
+            except Exception:
+                sharpness = None
+
             # 4. Quality filtering: score, min size, and extreme head pose
             face_w = orig_bbox[2] - orig_bbox[0]
             face_h = orig_bbox[3] - orig_bbox[1]
@@ -214,6 +228,7 @@ class FaceDetector:
                     embedding_flipped=embedding_flipped,
                     landmarks=landmarks,
                     pose=pose,
+                    sharpness=sharpness,
                     is_good_quality=is_good,
                     rejection_reason=rejection_reason,
                 )

@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-17  
 **Project**: Face Sorting Engine (`face-clubbing`)  
-**Status**: Phase 1b Complete, Phase 2 Complete (All Rows 1-15 PASS), Phase 3 Complete, Phase 4 Complete, Hygiene & Isolation Round Complete (Tasks 0-7 COMPLETE), Phase 5 Complete, Phase 6 Complete (Live Google Drive integration verified on real public folder; 100% thumbnails, 92.1% bandwidth saved, 64px floor documented in SPEC §18), Landing & HomeScreen Riso Redesign Complete, Review & Merge Screen Revamp, Unrecognized Triage Multi-Select, Compact Card Layouts, Image Viewer Unknown Face Bounding Boxes & On-Canvas Reassignment Controls Complete, Open Saved Project Feature Complete, and Startup Isolation, Drive Direct Photo Linking, Drive Folder Auto-Nesting, Temporary Cleanup & Standalone HTML Gallery Complete.
+**Status**: Phase 1b Complete, Phase 2 Complete (All Rows 1-15 PASS), Phase 3 Complete, Phase 4 Complete, Hygiene & Isolation Round Complete (Tasks 0-7 COMPLETE), Phase 5 Complete, Phase 6 Complete (Live Google Drive integration verified on real public folder; 100% thumbnails, 92.1% bandwidth saved, 64px floor documented in SPEC §18), Landing & HomeScreen Riso Redesign Complete, Review & Merge Screen Revamp, Unrecognized Triage Multi-Select, Compact Card Layouts, Image Viewer Unknown Face Bounding Boxes & On-Canvas Reassignment Controls Complete, Open Saved Project Feature Complete, Startup Isolation, Drive Direct Photo Linking, Drive Folder Auto-Nesting, Temporary Cleanup & Standalone HTML Gallery Complete, and Avatar Quality Scoring, 384px 4:4:4 Crop Generation & System Stability Complete.
 
 ### Working Rules Compliance Confirmation
 - **No Cluster IDs (`pNNN`)**: Strictly enforced. Cluster IDs are display handles only for a single export and are never persisted, tested, compared, or allowlisted. All tests, edits, and verification scripts key strictly by anchor face IDs and photo IDs. Check 14 of `eval/verify_export.py` enforces zero `\bp\d{3}\b` tokens in code outside comments across `eval/` and `tests/`.
@@ -3848,6 +3848,49 @@ The changes were verified with the complete automated test suite and live build 
 | **API Layer Verification** | `.venv\Scripts\python.exe -m pytest tests/test_api.py` | **12 / 12 passed (100%)** | Active project API, new project reset, and public export hygiene verified. |
 | **Standalone HTML Tests** | `.venv\Scripts\python.exe -m pytest tests/test_standalone_html.py` | **1 / 1 passed (100%)** | Zero external JS scripts, DOM components, and JSON island validity verified. |
 | **Production Frontend Build** | `npm run build` (in `frontend/`) | **Exit code 0 (Success)** in 17.99s | 1,606 modules transformed, 0 TypeScript errors. Production bundle emitted to `dist/`. |
+
+---
+
+## 25. AVATAR QUALITY SCORING, HIGH-DEFINITION CROPS & SYSTEM STABILITY DELIVERABLES
+
+### 25.1 Architectural Changes & Requirements Addressed
+
+1. **Clear, Flattering Representative Face Selection ("the face looks nice")**:
+   - **Resolution Scaling**: In `backend/engine/thumbnails.py` (`compute_face_quality_score`) and `backend/engine/cropper.py` (`pick_representative_face`), replaced flat logarithmic scaling with progressive square root curve: `math.sqrt(min(min_dim, 400.0)) * 1.6`. High-resolution faces receive up to 32 points, while distant faces (< 70px) receive a penalty `(70.0 - min_dim) * 0.35` to prevent small, blurry faces from being chosen as avatars.
+   - **3D Head Pose Scoring**: Evaluates `[pitch, yaw, roll]` in degrees from the detector:
+     - **Frontal angle bonus**: `|yaw| <= 10.0°` adds +4.0 pts; `|yaw| <= 20.0°` adds +2.0 pts.
+     - **Profile penalty**: Side shots (`|yaw| > 25.0°`) are penalized heavily by `- min(14.0, (|yaw| - 20.0) * 0.6)`.
+     - **Pitch & Roll**: Looking down/up (`|pitch| > 15.0°`) and tilted heads (`|roll| > 10.0°`) receive penalties.
+   - **Facial Landmark Geometry & Symmetry**:
+     - Eye level horizontal alignment checked (`tilt_ratio = abs(eye_dy) / eye_dist`).
+     - Nose horizontal centering between eye midpoint checked (`symmetry = min(d_left, d_right) / max_d`). Centered noses receive +5.0 pts; asymmetrical/turned faces penalized.
+     - Mouth vertically below nose verified (`mouth_mid_y > nose[1]`) to prevent occluded/inverted detections.
+   - **Laplacian Variance Sharpness Scoring**:
+     - Added `compute_image_sharpness` using OpenCV Laplacian variance.
+     - `FaceDetector.detect_and_embed` extracts face patches and computes sharpness in `orig_bgr`, storing in `FaceDetection.sharpness`.
+     - Motion-blurred and soft faces (`sharpness < 35.0`) are penalized; sharp, in-focus faces receive up to +10.0 pts.
+   - **Quality & Rejection Enforcement**: Faces marked with `is_good_quality = False` or `rejection_reason` receive severe deductions (-25 to -40 pts).
+
+2. **High-Definition Avatar Crop Generation**:
+   - **384x384 Target Resolution**: Upgraded default face crop size from `256` to `384` across `ThumbnailGenerator`, `PipelineConfig`, `BundleExporter`, and `ScanSettings`. Avatars render crisp and high-DPI on modern Retina and 4K displays.
+   - **4:4:4 Chroma Subsampling (`subsampling=0`) & Quality 95**: JPEG crops are encoded with `quality=95` and `subsampling=0` (4:4:4 full chroma), eliminating color bleeding around pupils, eyelashes, lips, and hair edges.
+   - **Boundary Clamping Without Black Bars**: In `ThumbnailGenerator.generate_square_face_crop_from_image`, `side` is clamped to `min(side, min(img_w, img_h))` and integer coordinates are shifted cleanly within image bounds, guaranteeing zero black bar padding or edge distortion.
+   - **Adaptive Unsharp Masking**: If a face is upscaled from a smaller original resolution to 384x384, a subtle unsharp mask filter (`radius=1.0, percent=35, threshold=2`) is applied so fine features remain crisp.
+   - **Dynamic Cluster Avatar Route**: In `backend/api/app.py`, `/faces/{file_path}` resolves cluster IDs (e.g. `p001.jpg`) to the cluster's representative face crop, with on-demand generation from source photos if needed.
+
+3. **System Stability & Development Workflow**:
+   - Resolved port 8000 socket permission conflict (`WinError 10013`) by clearing dangling background processes and separating manual server execution.
+   - Unlocked Publish navigation tab (`tab-export`) in `frontend/src/App.tsx` so the directory explorer is accessible at all times.
+   - Capped SSE retry attempts (`MAX_RETRIES = 3`) and suppressed spurious `ECONNREFUSED` Vite proxy spam during server startup.
+
+### 25.2 Verification Evidence & Test Suite Matrix
+
+| Verification Target | Command & Parameters | Outcome | Notes |
+| :--- | :--- | :---: | :--- |
+| **Complete Backend Test Suite** | `uv run pytest tests/` | **83 / 83 passed (100%)** in 58.14s | All 83 tests across 12 test modules pass cleanly. |
+| **Avatar Quality & Sharpness Suite** | `uv run pytest tests/test_thumbnails.py` | **5 / 5 passed (100%)** in 1.48s | Sharpness differentiation, frontal vs profile scoring, 384px crop size, and boundary clamping verified. |
+| **Frontend Unit & Component Suite** | `npm --prefix frontend test` | **56 / 56 passed (100%)** in 26.66s | All 11 test suites pass cleanly. |
+| **Production Frontend Build** | `npm --prefix frontend run build` | **Exit code 0 (Success)** in 13.64s | 1,606 modules transformed, 0 TypeScript errors. Production bundle emitted to `frontend/dist/`. |
 
 ---
 

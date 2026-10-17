@@ -75,6 +75,51 @@ def create_app(
         for p in candidates:
             if p.exists() and p.is_file():
                 return FileResponse(str(p))
+
+        # Check if file_path is a cluster ID (e.g. p001.jpg) and resolve to its representative face
+        cluster = state.get_cluster_by_id(Path(file_path).stem)
+        if cluster:
+            if cluster.rep_face is None and cluster.faces:
+                from backend.engine.thumbnails import select_representative_face
+                cache_crops_dir = None
+                if state.work_dir:
+                    cache_crops_dir = state.work_dir / "crops"
+                elif state.settings.cache_dir:
+                    cache_crops_dir = Path(state.settings.cache_dir).resolve() / "crops"
+                cluster.rep_face = select_representative_face(cluster.faces, cache_crops=cache_crops_dir)
+
+            if cluster.rep_face:
+                rep_face_file = f"{cluster.rep_face.face_id}.jpg"
+                rep_candidates = [
+                    out_dir / "faces" / rep_face_file,
+                    repo_root / "export" / "faces" / rep_face_file,
+                ]
+                if state.settings.cache_dir:
+                    rep_candidates.append(Path(state.settings.cache_dir).resolve() / "crops" / rep_face_file)
+                    rep_candidates.append(Path(state.settings.cache_dir).resolve() / ".cache" / "crops" / rep_face_file)
+                if state.work_dir:
+                    rep_candidates.append(state.work_dir / "crops" / rep_face_file)
+                    rep_candidates.append(state.work_dir / ".cache" / "crops" / rep_face_file)
+                rep_candidates.append(repo_root / "export.work" / "crops" / rep_face_file)
+
+                for p in rep_candidates:
+                    if p.exists() and p.is_file():
+                        return FileResponse(str(p))
+
+                # On-demand generation from original photo if available
+                orig_photo = state.photos.get(cluster.rep_face.photo_id)
+                if orig_photo and orig_photo.original_path and Path(orig_photo.original_path).exists():
+                    from backend.engine.thumbnails import ThumbnailGenerator
+                    thumb_gen = ThumbnailGenerator(face_crop_size=state.settings.face_crop_size)
+                    target_p = out_dir / "faces" / file_path
+                    thumb_gen.generate_square_face_crop(
+                        image_path=orig_photo.original_path,
+                        bbox=cluster.rep_face.bbox,
+                        output_path=target_p,
+                    )
+                    if target_p.exists():
+                        return FileResponse(str(target_p))
+
         raise HTTPException(status_code=404, detail="Face crop not found")
 
     @app.get("/thumbs/{file_path:path}")

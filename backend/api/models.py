@@ -19,7 +19,7 @@ class SettingsModel(BaseModel):
     seed_max_yaw: float = 60.0
     max_image_dim: int = 1600
     thumb_size: int = 400
-    face_crop_size: int = 256
+    face_crop_size: int = 384
     second_pass_merge: bool = True
     merge_threshold: float = 0.50
     maybe_threshold: float = 0.65

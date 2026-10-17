@@ -1,6 +1,20 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { JobStatus } from '../types';
-import { XCircle, ArrowRight, ShieldCheck, Check, AlertTriangle, Sparkles, Clock } from 'lucide-react';
+import {
+  XCircle,
+  ArrowRight,
+  ShieldCheck,
+  Check,
+  AlertTriangle,
+  Sparkles,
+  Clock,
+  Terminal,
+  Copy,
+  Search,
+  X,
+  ExternalLink,
+} from 'lucide-react';
+import { DetachedLogsWindow } from './DetachedLogsWindow';
 
 export interface ProgressScreenProps {
   status: JobStatus;
@@ -19,11 +33,19 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
   onGoToReview,
   isCancelling,
   discoveredFaceCrops = [],
+  theme = 't-dark',
 }) => {
   const isCompleted = status.status === 'completed';
   const isRunning = status.status === 'running';
   const isCancelled = status.status === 'cancelled';
   const isFailed = status.status === 'failed';
+
+  // Modal and detached log window state
+  const [showLogsModal, setShowLogsModal] = useState<boolean>(false);
+  const [isDetached, setIsDetached] = useState<boolean>(false);
+  const [logSearchQuery, setLogSearchQuery] = useState<string>('');
+  const [isCopied, setIsCopied] = useState<boolean>(false);
+  const logsContainerRef = useRef<HTMLDivElement>(null);
 
   // Map backend stages to 4 visible pipeline steps
   const stage = (status.stage || '').toLowerCase();
@@ -64,19 +86,34 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
 
   const moreFacesCount = Math.max(0, totalFacesCount - MAX_VISIBLE_FACES);
 
-  // Track elapsed scan time
+  // Track elapsed scan time with start_time reference so minimizing main window causes no drift
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(() => status.elapsed_seconds || 0);
+  const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof status.elapsed_seconds === 'number' && status.elapsed_seconds > 0) {
       setElapsedSeconds(status.elapsed_seconds);
+      if (!startTimeRef.current && isRunning) {
+        startTimeRef.current = Date.now() - status.elapsed_seconds * 1000;
+      }
     }
-  }, [status.elapsed_seconds]);
+  }, [status.elapsed_seconds, isRunning]);
 
   useEffect(() => {
-    if (!isRunning) return;
+    if (!isRunning) {
+      startTimeRef.current = null;
+      return;
+    }
+    if (!startTimeRef.current) {
+      startTimeRef.current = status.start_time ? status.start_time * 1000 : Date.now() - (elapsedSeconds * 1000);
+    }
     const interval = setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1);
+      if (startTimeRef.current) {
+        const exact = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        setElapsedSeconds(exact);
+      } else {
+        setElapsedSeconds((prev) => prev + 1);
+      }
     }, 1000);
     return () => clearInterval(interval);
   }, [isRunning]);
@@ -92,10 +129,11 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Ensure log updates for e2e tests
-  const displayLogs = useMemo(() => {
+  // Complete list of all activity logs (showing ALL logs, not just recent ones)
+  const allLogs = useMemo(() => {
     if (progressHistory.length > 0) {
-      return progressHistory.slice(-12).map((p, idx) => ({
+      return progressHistory.map((p, idx) => ({
+        id: idx,
         stage: p.stage || p.status || 'INFO',
         message: p.message || `Processing batch step (${p.current}/${p.total})`,
         percent: p.percent ?? 0,
@@ -103,12 +141,49 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
     }
     return [
       {
+        id: 0,
         stage: status.stage || status.status || 'START',
         message: status.message || 'Tracking facial recognition engine on your computer.',
         percent: status.percent ?? 0,
       },
     ];
   }, [progressHistory, status]);
+
+  const filteredLogs = useMemo(() => {
+    if (!logSearchQuery.trim()) return allLogs;
+    const q = logSearchQuery.toLowerCase();
+    return allLogs.filter(
+      (l) => l.stage.toLowerCase().includes(q) || l.message.toLowerCase().includes(q)
+    );
+  }, [allLogs, logSearchQuery]);
+
+  // Auto-scroll logs window to bottom as new entries stream in
+  useEffect(() => {
+    if (showLogsModal && logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+    }
+  }, [showLogsModal, allLogs.length]);
+
+  // Close modal on ESC key
+  useEffect(() => {
+    if (!showLogsModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowLogsModal(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showLogsModal]);
+
+  // Copy logs to clipboard
+  const handleCopyLogs = () => {
+    const text = allLogs
+      .map((l, i) => `[${(i + 1).toString().padStart(3, '0')}] [${l.stage}] (${l.percent}%) ${l.message}`)
+      .join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    });
+  };
 
   return (
     <div className="main-content-flow" style={{ maxWidth: '960px', width: '100%', textAlign: 'left', alignItems: 'stretch' }}>
@@ -145,7 +220,48 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            id="btn-open-logs"
+            data-testid="btn-open-logs"
+            onClick={() => {
+              if (isDetached) {
+                setIsDetached(false);
+                setTimeout(() => setIsDetached(true), 10);
+              } else {
+                setShowLogsModal(true);
+              }
+            }}
+            className="btn sm"
+            style={{ height: '36px', padding: '0 14px' }}
+            title={isDetached ? 'Focus detached logs window' : 'Open complete engine activity log window'}
+          >
+            <Terminal className="w-4 h-4 text-[var(--accent)]" />
+            <span>Logs</span>
+            {allLogs.length > 0 && (
+              <span className="ml-1 text-xs px-1.5 py-0.2 rounded bg-[var(--input)] text-[var(--muted)] font-mono">
+                {allLogs.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            id="btn-detach-logs"
+            data-testid="btn-detach-logs"
+            onClick={() => {
+              setShowLogsModal(false);
+              setIsDetached(true);
+            }}
+            className={`btn sm ${isDetached ? 'pri' : ''}`}
+            style={{ height: '36px', padding: '0 12px' }}
+            title="Detach logs into separate floating window (stays open when main window is minimized)"
+          >
+            <ExternalLink className="w-3.5 h-3.5 mr-1 text-[var(--accent)]" />
+            <span>{isDetached ? 'Detached ↗' : 'Detach'}</span>
+          </button>
+
           {isRunning && (
             <button
               id="cancel-job-btn"
@@ -362,9 +478,6 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
             </div>
           </div>
 
-          <p className="hint text-sm md:text-base" style={{ textAlign: 'left', margin: '12px 0 0' }}>
-            Face crops stay on this computer. Updated in real time as scan runs.
-          </p>
         </div>
 
         {/* Right 1 Col: Stages Checklist */}
@@ -407,28 +520,231 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
         </div>
       </div>
 
-      {/* Engine Activity Log (Always mounts #progress-updates-log for tests) */}
-      <div className="mt-8 pt-4 border-t border-[var(--line)]">
-        <div className="flex items-center justify-between mb-2">
-          <div className="label text-sm" style={{ margin: 0 }}>Engine Activity Log</div>
-          <span className="text-xs font-mono text-[var(--muted)]">SSE Live Feed</span>
+      {/* Activity Logs trigger bar */}
+      <div className="mt-8 pt-4 border-t border-[var(--line)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 font-mono text-sm text-[var(--muted)]">
+          <Terminal className="w-4 h-4 text-[var(--accent)]" />
+          <span>Activity Log: {allLogs.length} events recorded</span>
+          {isRunning && (
+            <span className="flex items-center gap-1.5 text-xs text-[var(--accent-ink)] font-bold ml-2">
+              <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
+              Live Feed
+            </span>
+          )}
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            id="btn-view-all-logs"
+            data-testid="btn-view-all-logs"
+            onClick={() => setShowLogsModal(true)}
+            className="btn sm"
+            style={{ height: '36px', padding: '0 16px', fontWeight: 600 }}
+            title="Open complete engine activity log modal"
+          >
+            <Terminal className="w-3.5 h-3.5 mr-1 text-[var(--accent)]" />
+            <span>Open Logs Window</span>
+          </button>
 
-        <div
-          id="progress-updates-log"
-          className="bg-[var(--panel)] border border-[var(--line)] rounded-md p-3 max-h-36 overflow-y-auto font-mono text-sm text-[var(--muted)] space-y-2"
-        >
-          {displayLogs.map((p, idx) => (
-            <div key={idx} className="flex items-center justify-between gap-4">
-              <span className="truncate">
-                <span className="text-[var(--accent-ink)] font-bold uppercase mr-2">[{p.stage}]</span>
-                <span>{p.message}</span>
-              </span>
-              <span className="text-[var(--accent-ink)] font-bold flex-shrink-0">{p.percent}%</span>
+          <button
+            type="button"
+            id="btn-detach-bottom"
+            data-testid="btn-detach-bottom"
+            onClick={() => {
+              setShowLogsModal(false);
+              setIsDetached(true);
+            }}
+            className="btn sm"
+            style={{ height: '36px', padding: '0 14px' }}
+            title="Pop out into a separate window you can keep on screen while minimizing the main app"
+          >
+            <ExternalLink className="w-3.5 h-3.5 mr-1 text-[var(--accent)]" />
+            <span>Detach to Desktop</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Hidden test-hook for progress-updates-log if modal is closed */}
+      {!showLogsModal && (
+        <div id="progress-updates-log" data-testid="progress-updates-log" style={{ display: 'none' }} aria-hidden="true">
+          {allLogs.map((p, idx) => (
+            <div key={idx}>
+              <span>[{p.stage}] {p.message}</span>
+              <span>{p.percent}%</span>
             </div>
           ))}
         </div>
-      </div>
+      )}
+
+      {/* Dedicated Engine Activity Logs Modal Window */}
+      {showLogsModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Engine Activity Logs"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(3px)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowLogsModal(false);
+          }}
+        >
+          <div
+            className="card relative flex flex-col w-full max-w-3xl overflow-hidden shadow-2xl"
+            style={{
+              maxHeight: '85vh',
+              background: 'var(--panel)',
+              border: '2px solid var(--line)',
+              padding: 0,
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--line)] bg-[var(--bg)]"
+              style={{ flexShrink: 0 }}
+            >
+              <div className="flex items-center gap-2.5">
+                <Terminal className="w-4 h-4 text-[var(--accent)]" />
+                <span className="font-bold text-sm md:text-base text-[var(--text)] tracking-wide">
+                  Engine Activity Log
+                </span>
+                <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-[var(--input)] text-[var(--accent-ink)] border border-[var(--line)]">
+                  {allLogs.length} events
+                </span>
+                {isRunning && (
+                  <span className="flex items-center gap-1.5 text-xs text-[var(--accent-ink)] font-mono">
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
+                    Live
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="btn-detach-modal"
+                  data-testid="btn-detach-modal"
+                  onClick={() => {
+                    setShowLogsModal(false);
+                    setIsDetached(true);
+                  }}
+                  className="btn sm"
+                  style={{ height: '30px', padding: '0 10px', fontSize: '12px' }}
+                  title="Pop out into separate window so you can minimize the main window"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-1 text-[var(--accent)]" />
+                  <span>Detach Window</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-copy-logs"
+                  data-testid="btn-copy-logs"
+                  onClick={handleCopyLogs}
+                  className="btn sm"
+                  style={{ height: '30px', padding: '0 10px', fontSize: '12px' }}
+                  title="Copy all logs to clipboard"
+                >
+                  {isCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-green-500 mr-1" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 mr-1 text-[var(--muted)]" />
+                      <span>Copy All</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  id="btn-close-logs-modal"
+                  data-testid="btn-close-logs-modal"
+                  onClick={() => setShowLogsModal(false)}
+                  className="p-1 rounded hover:bg-[var(--input)] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+                  title="Close log window (Esc)"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Search Bar */}
+            <div className="px-5 py-2.5 border-b border-[var(--line)] bg-[var(--panel)] flex items-center gap-2 flex-shrink-0">
+              <Search className="w-4 h-4 text-[var(--muted)] flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Filter logs by stage or message..."
+                value={logSearchQuery}
+                onChange={(e) => setLogSearchQuery(e.target.value)}
+                className="bg-transparent border-none text-xs md:text-sm text-[var(--text)] font-mono outline-none w-full"
+              />
+              {logSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setLogSearchQuery('')}
+                  className="text-xs text-[var(--muted)] hover:text-[var(--text)]"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* Modal Body - Terminal Output */}
+            <div
+              id="progress-updates-log"
+              data-testid="progress-updates-log"
+              ref={logsContainerRef}
+              className="flex-1 p-4 overflow-y-auto font-mono text-xs md:text-sm space-y-2 bg-[var(--input)]"
+              style={{ minHeight: '320px', maxHeight: '55vh' }}
+            >
+              {filteredLogs.length === 0 ? (
+                <div className="p-8 text-center text-[var(--muted)] font-mono text-sm">
+                  {logSearchQuery ? 'No log entries match the search query.' : 'No activity logged yet.'}
+                </div>
+              ) : (
+                filteredLogs.map((log, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start justify-between gap-3 p-1.5 rounded hover:bg-[var(--panel)] transition-colors"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                  >
+                    <div className="flex items-start gap-2 overflow-hidden">
+                      <span className="text-[var(--muted)] select-none text-xs min-w-[28px] text-right font-mono">
+                        {idx + 1}.
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded text-[11px] font-bold uppercase bg-[var(--panel)] text-[var(--accent-ink)] border border-[var(--line)] flex-shrink-0">
+                        {log.stage}
+                      </span>
+                      <span className="text-[var(--text)] break-words leading-relaxed">
+                        {log.message}
+                      </span>
+                    </div>
+                    <span className="text-[var(--accent-ink)] font-bold text-xs flex-shrink-0">
+                      {log.percent}%
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              className="flex items-center justify-between px-5 py-2.5 border-t border-[var(--line)] bg-[var(--bg)] text-xs font-mono text-[var(--muted)]"
+              style={{ flexShrink: 0 }}
+            >
+              <span>Showing {filteredLogs.length} of {allLogs.length} events</span>
+              <button
+                type="button"
+                onClick={() => setShowLogsModal(false)}
+                className="btn sm"
+                style={{ height: '28px', padding: '0 12px' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Failure / Interrupted Alert */}
       {(isFailed || isCancelled) && (
@@ -442,6 +758,21 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
           </button>
         </div>
       )}
+      {/* Detachable Native Desktop Logs Window */}
+      <DetachedLogsWindow
+        isOpen={isDetached}
+        onClose={() => setIsDetached(false)}
+        onDock={() => {
+          setIsDetached(false);
+          setShowLogsModal(true);
+        }}
+        allLogs={allLogs}
+        isRunning={isRunning}
+        status={status}
+        elapsedSeconds={elapsedSeconds}
+        formatElapsedTime={formatElapsedTime}
+        theme={theme}
+      />
     </div>
   );
 };

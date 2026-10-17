@@ -17,6 +17,7 @@ class FaceDetection:
     embedding_flipped: Optional[np.ndarray] = None  # 512-d normalized flipped embedding
     landmarks: Optional[List[List[float]]] = None  # 5 facial landmarks
     pose: Optional[List[float]] = None  # [pitch, yaw, roll] in degrees
+    sharpness: Optional[float] = None  # Laplacian variance (higher = sharper, in-focus)
     is_good_quality: bool = True
     rejection_reason: Optional[str] = None
     cluster_id: Optional[str] = None
@@ -34,6 +35,7 @@ class FaceDetection:
             "embedding_flipped": self.embedding_flipped.tolist() if self.embedding_flipped is not None else None,
             "landmarks": self.landmarks,
             "pose": self.pose,
+            "sharpness": float(self.sharpness) if self.sharpness is not None else None,
         }
 
     @classmethod
@@ -53,6 +55,7 @@ class FaceDetection:
             embedding_flipped=emb_flipped,
             landmarks=data.get("landmarks"),
             pose=data.get("pose"),
+            sharpness=float(data["sharpness"]) if data.get("sharpness") is not None else None,
             is_good_quality=data.get("is_good_quality", True),
             rejection_reason=data.get("rejection_reason"),
             cluster_id=data.get("cluster_id"),

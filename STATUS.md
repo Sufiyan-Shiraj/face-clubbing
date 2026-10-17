@@ -1,7 +1,7 @@
 # PhotoSorter Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-17T07:37:00+05:30  
-**Audit Mode**: "Open Saved Project" Feature, Edge Case Recovery, Invariant Preservation, and Privacy Closeout  
+**Generated**: 2026-10-17T12:05:00+05:30  
+**Audit Mode**: Avatar Quality Scoring, 384px 4:4:4 Crop Generation, System Stability, Startup Isolation, and Standalone Gallery Verification  
 
 ---
 
@@ -67,6 +67,7 @@
 | **8 Method 2 (Upload to Drive)** | Removed | None (Purged in Rev 3) | None | **REMOVED** |
 | **9 Polish / extras** | Not started | None | None | **NOT STARTED** |
 | **Open saved project (feature)** | Complete | `backend/api/projects.py`, `tests/test_projects.py`, `frontend/src/components/OpenProjectModal.tsx`, `frontend/src/__tests__/openProject.test.tsx` | Section 23 (Reopening past exports without re-scan, 5 edge cases, invariant preservation, privacy guarantee, 77 pytest passed, 11 Vitest test files passed) | **COMPLETE** |
+| **Avatar Quality & High-Def Crops** | Complete | `backend/engine/thumbnails.py`, `cropper.py`, `detector.py`, `models.py`, `tests/test_thumbnails.py` | Section 7 (Face sharpness, flattering 3D pose, symmetry, 384px crops, 4:4:4 chroma, 83/83 pytest pass) | **COMPLETE** |
 
 ### SPEC.md vs Code Verification (`eval/check_settings_spec.py`)
 Ran with `.venv/Scripts/python.exe`:
@@ -1513,4 +1514,31 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 6. **Test Suite & Build Health**:
    - Pytest suite: **78 / 78 passed (100%)** in 57.69s.
    - Frontend build (`npm run build` in `frontend/`): **0 errors, exit code 0**.
+
+---
+
+## 7. AVATAR QUALITY SCORING, HIGH-DEFINITION CROPS & SYSTEM STABILITY AUDIT (2026-10-17)
+
+### Requirements Implemented and Verified
+1. **Clear, Flattering Representative Face Selection ("the face looks nice")**:
+   - Upgraded `compute_face_quality_score` in `backend/engine/thumbnails.py` and `pick_representative_face` in `backend/engine/cropper.py`.
+   - **Resolution & Size Prioritization**: Replaced flat logarithmic scoring with progressive square root scaling (`math.sqrt(min(min_dim, 400.0)) * 1.6`). Small distant faces (`< 70px`) receive steep penalties to prevent blurry upscaling.
+   - **Flattering Head Pose**: Evaluates 3D head pose `[pitch, yaw, roll]`. Frontal eye-level faces receive bonuses (+4.0 to +6.0 pts). Turned profile faces (`|yaw| > 25°`), awkward chin-up/chin-down angles (`|pitch| > 15°`), and tilted heads (`|roll| > 10°`) receive severe penalties.
+   - **Facial Landmark Symmetry**: 5-point keypoint geometry checks ensure horizontal eye-lines, nose centered between eyes, and mouth upright below nose.
+   - **In-Focus / Sharpness Scoring**: Implemented `compute_image_sharpness` using Laplacian variance. `FaceDetector.detect_and_embed` calculates sharpness during detection and stores it in `FaceDetection.sharpness`. Motion-blurred or out-of-focus faces are penalized, while sharp, crisp portraits receive a boost.
+2. **High-Definition Avatar Generation**:
+   - **Increased Target Dimension**: Raised default square face crop size from 256x256 to **384x384** px across `ThumbnailGenerator`, `PipelineConfig`, `BundleExporter`, and `ScanSettings`.
+   - **4:4:4 Chroma Subsampling & Quality 95**: JPEG crops are encoded with `quality=95` and `subsampling=0` (4:4:4 lossless chroma), eliminating color bleeding around pupils, eyelashes, and hair contours.
+   - **Clean Edge Clamping**: Capped crop box dimensions to image boundaries and shifted coordinates so that faces near photo borders never produce black bars or stretched padding.
+   - **Adaptive Unsharp Masking**: If a face is upscaled from a smaller original resolution to 384x384, a subtle unsharp mask filter (`radius=1.0, percent=35, threshold=2`) is applied to maintain crisp facial definition.
+   - **Cluster Avatar Fallback Route**: Added fallback in `/faces/{file_path}` in `backend/api/app.py` to resolve cluster IDs (e.g. `p001.jpg`) to the cluster's representative face crop, with on-demand generation from source photos if needed.
+3. **System Stability & Terminal Management**:
+   - Eliminated background process conflicts on port 8000 by terminating dangling daemons and decoupling dev server auto-spawning from Vite.
+   - Unlocked Publish navigation tab (`tab-export`) in `frontend/src/App.tsx` so the directory explorer is accessible at all times.
+   - Capped SSE retry attempts (`MAX_RETRIES = 3`) and suppressed spurious `ECONNREFUSED` Vite proxy spam during server startup.
+4. **Test Suite & Build Health**:
+   - Pytest suite: **83 / 83 passed (100%)** in 58.14s (including `tests/test_thumbnails.py`).
+   - Vitest suite: **56 / 56 passed (100%)** in 26.66s.
+   - Frontend production bundle: **0 errors, exit code 0** (`npm run build`).
+
 

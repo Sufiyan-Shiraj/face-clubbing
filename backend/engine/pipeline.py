@@ -46,7 +46,7 @@ class EngineConfig:
     seed_min_det_score: float = 0.70
     max_image_dim: int = 1600
     thumb_size: int = 400
-    face_crop_size: int = 256
+    face_crop_size: int = 384
     event_title: str = "Event Gallery"
     event_subtitle: str = "Photos grouped by person"
     second_pass_merge: bool = True

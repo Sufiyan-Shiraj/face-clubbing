@@ -19,7 +19,7 @@ class BundleExporter:
         output_dir: Path | str,
         cache_dir: Optional[Path | str] = None,
         thumb_size: int = 400,
-        face_crop_size: int = 256,
+        face_crop_size: int = 384,
     ):
         out_dir_str = str(output_dir or "export")
         if out_dir_str.startswith("http://") or out_dir_str.startswith("https://") or "drive.google.com" in out_dir_str:
@@ -92,7 +92,7 @@ class BundleExporter:
         for person in result.people:
             # Pick representative face if not assigned
             if person.rep_face is None:
-                person.rep_face = select_representative_face(person.faces)
+                person.rep_face = select_representative_face(person.faces, cache_crops=cache_crops)
 
             face_rel = f"faces/{person.id}.jpg"
             face_dest = self.output_dir / face_rel
