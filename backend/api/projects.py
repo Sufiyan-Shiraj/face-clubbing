@@ -142,7 +142,6 @@ def save_recent_project(
         "source_description": clean_source,
         "last_opened": now_iso,
         "counts": counts or {"people": 0, "photos": 0},
-        "exists": is_existing,
     }
 
     new_list: List[Dict[str, Any]] = []
@@ -158,7 +157,12 @@ def save_recent_project(
             new_list.append(project_entry)
             updated = True
         else:
-            new_list.append(item)
+            if isinstance(item, dict):
+                cleaned = dict(item)
+                cleaned.pop("exists", None)
+                new_list.append(cleaned)
+            else:
+                new_list.append(item)
 
     if not updated:
         new_list.append(project_entry)
@@ -172,7 +176,7 @@ def save_recent_project(
         json.dump({"version": 1, "projects": new_list}, f, indent=2)
     tmp_path.replace(file_path)
 
-    return project_entry
+    return dict(project_entry, exists=is_existing)
 
 
 def remove_recent_project(project_id: str) -> bool:

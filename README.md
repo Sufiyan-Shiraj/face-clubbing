@@ -15,9 +15,11 @@ PhotoSorter is a free, privacy-first, desktop application and static site genera
 | **Phase 3** | FastAPI API layer (SSE streaming, edit replay, suggestions API) | **Completed** |
 | **Phase 4** | Organizer UI (React, review people, multi-merge, suggestions) | **Completed** |
 | **Phase 5** | Desktop shell & packaging (pywebview, native pickers, PyInstaller) | **Completed** |
-| **Phase 6** | Method 1: Google Drive link input | Not started |
+| **Phase 6** | Method 1: Google Drive link input | In verification |
+| **Phase 6b** | UI redesign (Risograph theme, 2-stage landing flow, compact triage, bboxes) | Complete (pending organizer review) |
 | **Phase 7** | Release automation | Not started |
 | **Phase 9** | Polish & extras | Not started |
+| **Feature** | Open saved project (feature) | **Complete** |
 
 ---
 

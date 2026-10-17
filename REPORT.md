@@ -3575,7 +3575,7 @@ OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
 
 ### 23.1 Feature Overview & Scope
 The "Open saved project" feature allows users to reopen a previously scanned work directory or export directory instantly without re-scanning source photos or re-computing embeddings.
-1. **Instant State Restoration**: Loads `edits.json`, the embedding cache (`embeddings.pkl` / `pose_cache.json`), and `people.json` directly from the specified directory. Restores people clusters, unrecognized faces, suggestions, and full undo history to the Review screen.
+1. **Instant State Restoration & Undo Across Reopening**: Loads `edits.json`, the embedding cache (`embeddings.pkl` / `pose_cache.json`), and `people.json` directly from the specified directory. Restores people clusters, unrecognized faces, and suggestions. The sequence of persisted edits in `edits.json` is loaded into the active edit stack; organizers can undo edits made prior to closing, which sequentially pops edits from `edits.json`, atomically updates disk storage, and reverts state to the prior baseline state.
 2. **Zero Cluster ID Persistence**: Edits and associations remain strictly keyed by permanent face IDs (`f_<photo_id>_<idx>`) and photo IDs (`<photo_id>`). Cluster IDs (`pNNN`) are purely ephemeral UI labels.
 3. **Automatic Registration**: Every successful scan and export automatically records or updates the project entry in the recent projects registry.
 4. **File Safety Guarantee**: Removing a project from the recent list via `DELETE /api/projects/{id}` or the UI "Remove" action removes the metadata entry only and **never deletes any files or folders on disk**.
@@ -3598,12 +3598,13 @@ Recent projects are recorded outside the workspace in `~/.photosorter/projects.j
       "counts": {
         "people": 192,
         "photos": 259
-      },
-      "exists": true
+      }
     }
   ]
 }
 ```
+
+> **Dynamic Computation of `exists`**: Notice that `"exists"` is **not** stored on disk in `projects.json`. When listing projects via `GET /api/projects`, `exists` is computed dynamically (`work_path.exists() and work_path.is_dir()`), guaranteeing that if folders are deleted, renamed, or unmounted while the application is closed, the status returned to the frontend is always 100% accurate.
 
 #### Privacy & Security Guarantees
 - **No Biometric Data**: Zero face embeddings (512-d float vectors), landmarks, or bounding boxes are stored in `projects.json`.
@@ -3627,15 +3628,15 @@ All 9 core test and verification suites were executed with outputs persisted to 
 
 | Verification Suite | Target & Scope | Result | Raw Output File & SHA-256 Digest |
 | :--- | :--- | :---: | :--- |
-| **Full Pytest Suite** | 77 unit & integration tests (`tests/test_projects.py`, `tests/test_drive.py`, `tests/test_api.py`, etc.) | **77 passed** (56.12s) | `scratch/pytest_run.txt`<br>`ede3e05ca62375c90fc07f4f10d375b61a407051bb918913359872e8c082755d` |
-| **Phase 1b Audit** | Invariants, bundle hygiene, zero cluster IDs across 43 files (`eval/verify_export.py`) | **14 / 14 checks passed** | `scratch/verify_export.txt`<br>`d090dd36d0a7c2ec3aebe352b4f39307e8b8482a50cc75183037fad2f01e3a82` |
-| **Phase 3 API Audit** | Fixtures, live server endpoints, edit replay (`eval/verify_api.py --mode all`) | **8 fixture + 7 live checks passed** | `scratch/verify_api.txt`<br>`f7c4cf03b204fddd64b0fededa2934f3752367f46b227770e93d3dfb8a0910ee` |
-| **Baseline Audit** | Pinned baseline metrics reproduction (`eval/check_baseline.py`) | **100% OK** | `scratch/check_baseline.txt`<br>`fb46d19d9a9258e665c64c249ceb2073597123e674444274646ff016702d27e8` |
-| **E2E Invariant Test** | Browser pipeline Steps A–M: open project, edit, close, reopen (`frontend/scripts/e2e.mjs`) | **Step M passed** ($1,256 + 445 = 1,701$) | `scratch/e2e_run.txt`<br>`51eaf8fd5c2418ba8960ac973487c4b4896d4818eb8e78bafae5e6f9e0befbfe` |
-| **Frontend Vitest** | 50 unit/component tests across 11 files (`frontend/`) | **50 passed** (11 files) | `scratch/vitest_frontend.txt`<br>`93203fa7e7425979851768774eab888a692c5aaadc3ac276507854001120bd4d` |
-| **Viewer Vitest** | 6 unit tests (`viewer/`) | **6 passed** (1 file) | `scratch/vitest_viewer.txt`<br>`02c14091f81959ca76965b19d2eb54deed7541cd14e7ef785ff60bfcff14af63` |
-| **Standalone EXE** | Standalone binary startup, PE subsystem, progress & metrics (`eval/verify_exe.py`) | **All checks passed** | `scratch/verify_exe.txt`<br>`73c0873f937f3a654fcede85dc236c37bf3d5505f129fba3f1f52ba9e7084627` |
-| **Windowed Mode** | Windowed GUI execution (`eval/verify_windowed.py`) | **All checks passed** | `scratch/windowed_run.txt`<br>`c03a6295229f7cd2f3867a4634bf479794b8316d98d0dbd0326a9de562d1b0b6` |
+| **Full Pytest Suite** | 77 unit & integration tests (`tests/test_projects.py`, `tests/test_drive.py`, `tests/test_api.py`, etc.) | **77 passed** (59.27s) | `scratch/pytest_run.txt`<br>`424674820304b7ad27b9758df97e6479d990d139e3981c21fd3a539ce3a4b85d` |
+| **Phase 1b Audit** | Invariants, bundle hygiene, zero cluster IDs across 46 files (`eval/verify_export.py`) | **14 / 14 checks passed** (Check 6: 77 passed) | `scratch/verify_export.txt`<br>`40b3e223005d3ae67e3dbe2a625aca96d63893f0e7fd1a84e59cc6d9b7306317` |
+| **Phase 3 API Audit** | Fixtures, live server endpoints, edit replay (`eval/verify_api.py --mode all`) | **8 fixture + 7 live checks passed** | `scratch/verify_api.txt`<br>`a978286b52d9684e884874dee07dfa314e8ebd7d1ae80db769fc294a1157c07c` |
+| **Baseline Audit** | Pinned baseline metrics reproduction (`eval/check_baseline.py`) | **100% OK** | `scratch/check_baseline.txt`<br>`0db15d5276b0f0a2cc7303f69540e8f4fd641a55db5d4c2a36fbd9fa421a4825` |
+| **E2E Invariant Test** | Browser pipeline Steps A–M: open project, edit, close, reopen, undo (`frontend/scripts/e2e.mjs`) | **Step M passed** ($1,256 + 445 = 1,701$) | `scratch/e2e_run.txt`<br>`3543e57d7a4a36e803e364e7d967c8f17ab0c1caba8e8def768f16c72929e39a` |
+| **Frontend Vitest** | 50 unit/component tests across 11 files (`frontend/`) | **50 passed** (11 files) | `scratch/vitest_frontend.txt`<br>`5b0d1480eb1f7dcdcd07b6c8a352a3d69a929a1075f7989d73235889f7b67516` |
+| **Viewer Vitest** | 6 unit tests (`viewer/`) | **6 passed** (1 file) | `scratch/vitest_viewer.txt`<br>`c1e206e53154fcf727459037b9d23ffc148fb2ef092b6944279636f6f99c8a18` |
+| **Standalone EXE** | Standalone binary startup, PE subsystem, progress & metrics (`eval/verify_exe.py`) | **All checks passed** | `scratch/verify_exe.txt`<br>`4617c8139f9f598f1e7abf59b590cb2c9d803be5720f6fa309d33d84c3dd5205` |
+| **Windowed Mode** | Windowed GUI execution (`eval/verify_windowed.py`) | **All checks passed** | `scratch/windowed_run.txt`<br>`2793bc544a73651e75f90b7fa256bb7a3f48321e9eded3c265a6edcbecf258c8` |
 
 ### 23.5 Organizer Review Items & Visual Evidence
 To uphold complete privacy and zero real-face leakage, all visual verification captures use synthetic SVG vector placeholder avatars:

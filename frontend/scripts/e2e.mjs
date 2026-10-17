@@ -1179,11 +1179,23 @@ async function run() {
       }
       logMessage(`[STEP M PASS] Invariant 1256 + 445 = 1701 holds before, during, and after project open/close/reopen cycle.`);
 
-      // 7. Undo the rename edit so subsequent checks remain clean
-      await postJson('/api/edits', { op: 'undo' });
+      // 7. Undo the rename edit after reopen and confirm previous state returns
+      logMessage(`[STEP M ACTION] Triggering undo after reopen to confirm previous state returns`);
+      const undoRes = await postJson('/api/edits', { op: 'undo' });
+      if (!undoRes.success) {
+        throw new Error(`Undo after reopen failed: ${undoRes.message}`);
+      }
       await sleep(300);
+
+      const peopleAfterUndo = await fetchJson('/api/people');
+      const restoredAfterUndo = peopleAfterUndo.find((x) => x.anchor_face_ids.includes(targetAnchorId));
+      if (!restoredAfterUndo || restoredAfterUndo.label === newPersistedLabel) {
+        throw new Error(`Undo after reopen failed to revert label: still '${restoredAfterUndo?.label}'`);
+      }
+      logMessage(`[STEP M PASS] Undo after reopen reverted label from '${newPersistedLabel}' back to '${restoredAfterUndo.label}'.`);
+
       await checkInvariant('m.4_clean_undo');
-      logMessage(`[STEP M PASS] Undo restored clean baseline.`);
+      logMessage(`[STEP M PASS] Undo restored clean baseline and invariant holds.`);
     }
 
     // ----------------------------------------------------------------

@@ -149,7 +149,7 @@ def create_synthetic_project(work_dir: Path, export_dir: Path, photos_missing: b
 
 
 def test_recent_projects_crud_and_privacy(temp_env):
-    """Test saving, listing, and removing recent projects with privacy guarantees."""
+    """Test saving, listing, and removing recent projects with privacy guarantees and undo-after-reopen."""
     work_dir = temp_env["work_dir"]
     export_dir = temp_env["export_dir"]
 
@@ -176,11 +176,49 @@ def test_recent_projects_crud_and_privacy(temp_env):
     assert "SecretApiKey" not in raw_json
     assert "key=" not in raw_json
 
-    # List recent projects
+    # Requirement 5: Verify 'exists' is NOT stored in projects.json on disk (computed dynamically)
+    parsed_json = json.loads(raw_json)
+    assert "exists" not in parsed_json["projects"][0]
+
+    # List recent projects: dynamically computes exists=True
     projects = load_recent_projects()
     assert len(projects) == 1
     assert projects[0]["id"] == entry["id"]
+    assert projects[0]["exists"] is True
     assert projects[0]["source_description"] == "Drive folder 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs"
+
+    # Requirement 4: Undo-after-reopen test (open project, make edit, close, reopen, undo, confirm previous state returns)
+    create_synthetic_project(work_dir, export_dir)
+    app = create_app(work_dir=work_dir, output_dir=export_dir)
+    client = TestClient(app)
+
+    # Open project
+    open_resp = client.post("/api/projects/open", json={"project_id": entry["id"]})
+    assert open_resp.status_code == 200
+    people_before = client.get("/api/people").json()
+    assert people_before[0]["label"] == "Person One"
+
+    # Make edit: rename person_test_01
+    edit_resp = client.post("/api/edits", json={
+        "op": "name",
+        "person_id": "person_test_01",
+        "label": "Renamed VIP",
+    })
+    assert edit_resp.status_code == 200
+    assert client.get("/api/people").json()[0]["label"] == "Renamed VIP"
+
+    # Close and reopen (simulate fresh server restart)
+    app_reopened = create_app(work_dir=work_dir, output_dir=export_dir)
+    client_reopened = TestClient(app_reopened)
+    reopen_resp = client_reopened.post("/api/projects/open", json={"project_id": entry["id"]})
+    assert reopen_resp.status_code == 200
+    assert client_reopened.get("/api/people").json()[0]["label"] == "Renamed VIP"
+
+    # Undo after reopen: confirm previous state returns
+    undo_resp = client_reopened.post("/api/edits", json={"op": "undo"})
+    assert undo_resp.status_code == 200
+    assert undo_resp.json()["success"] is True
+    assert client_reopened.get("/api/people").json()[0]["label"] == "Person One"
 
     # Remove project (verify metadata removed, disk files untouched)
     test_marker = work_dir / "marker.txt"

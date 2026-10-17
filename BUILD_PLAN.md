@@ -155,7 +155,29 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
+## Phase 6b: UI redesign (Risograph theme, compact triage, bboxes)
+
+**Status:** **Complete (pending organizer review)**
+- 2-stage landing flow (Risograph paper/navy palette, large single-photo dropzone, batch action bar).
+- Compact unrecognized triage grid with target person preview and batch multi-select.
+- Image viewer with dual-mode bounding boxes (solid cyan for selected person, dashed coral for other detected faces).
+- On-canvas quick-change re-assignment popover and slide-over "Inspect faces" drawer.
+
+---
+
+## Feature: Open saved project
+
+**Status:** **Complete**
+- Reopen past work and export folders instantly without re-scanning source photos or re-computing embeddings.
+- Sequence of persisted edits in `edits.json` restored into session edit stack with undo history restored across reopenings.
+- Dynamic calculation of `exists` at listing time; `exists` is never persisted into `projects.json`.
+- Automatic registration upon scan/export, 5 recovery edge cases, zero cluster ID persistence, and strict privacy sanitization.
+
+---
+
 ## Phase 7: Release automation
+
+**Status:** **Not started**
 
 **Build**
 1. GitHub Actions workflow: on a version tag, build on Windows, macOS (arm64 and Intel), and Linux runners; PyInstaller each; attach artifacts to a GitHub release.
@@ -174,6 +196,8 @@ Method 2 (upload to Drive with Google sign-in) is no longer part of the project 
 
 ## Phase 9: Polish and later options
 
+**Status:** **Not started**
+
 - Tune the review UI based on real organizer use.
 - **Recognition quality experiments** (use the SPEC 18 table): `flip_average` on the full set, a larger InsightFace recognition model, a wider singleton-only suggestion range. Change a default only with the evidence table and 15+ labelled sets.
 - Selfie search in the viewer (needs in-browser face matching or a backend; not free-trivial).
@@ -187,17 +211,19 @@ Method 2 (upload to Drive with Google sign-in) is no longer part of the project 
 
 | # | Phase | Why this order |
 |---|---|---|
-| 0 | Setup + risk check | Confirm InsightFace works and you have real test data |
-| 1 | Engine core (CLI) | Riskiest part: validate clustering quality first (done) |
-| 1b | Engine amendments | Stable identity and the 0.65 band must exist before an API stores edits |
-| 2 | Static viewer | Proves the output format end to end |
-| 3 | FastAPI layer | Engine becomes controllable; edits persist across re-runs |
-| 4 | Organizer UI | Human review is the quality safety net, not an extra |
-| 5 | Desktop shell + exe | Double-click experience on Windows |
-| 6 | Method 1 (Drive link) | Second input source, no sign-in |
-| 7 | CI release builds | Cross-platform distribution |
+| 0 | Setup + risk check | Confirm InsightFace works and you have real test data (Done) |
+| 1 | Engine core (CLI) | Riskiest part: validate clustering quality first (Accepted) |
+| 1b | Engine amendments | Stable identity and the 0.65 band must exist before an API stores edits (Done) |
+| 2 | Static viewer | Proves the output format end to end (Done) |
+| 3 | FastAPI layer | Engine becomes controllable; edits persist across re-runs (Done) |
+| 4 | Organizer UI | Human review is the quality safety net, not an extra (Done) |
+| 5 | Desktop shell + exe | Double-click experience on Windows (Done) |
+| 6 | Method 1 (Drive link) | Second input source, no sign-in (In verification) |
+| 6b | UI redesign | Risograph theme, landing flow, compact triage (Complete, pending organizer review) |
+| 7 | CI release builds | Cross-platform distribution (Not started) |
 | 8 | ~~Method 2 (upload)~~ | Removed 2026-10-13 |
-| 9 | Polish / extras | Only after core is solid |
+| 9 | Polish / extras | Only after core is solid (Not started) |
+| - | Open saved project | Reopen past exports without re-scan (Complete) |
 
 ## Working rules for the AI building this
 
