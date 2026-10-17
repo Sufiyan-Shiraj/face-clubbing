@@ -18,7 +18,9 @@ import {
   ChevronDown,
   ChevronUp,
   Cpu,
+  Compass,
 } from 'lucide-react';
+import { MascotSticker } from './MascotSticker';
 import {
   OrbitalClusterVisualizer,
   MergeFusionVisualizer,
@@ -35,6 +37,8 @@ import {
 interface SettingsScreenProps {
   onRerunComplete?: () => void;
   onOpenProject?: () => void;
+  onOpenTutorial?: () => void;
+  theme?: string;
 }
 
 const SPEC_6_2_DEFAULTS: Partial<Settings> = {
@@ -68,7 +72,12 @@ const FACE_CROP_OPTIONS: DropdownOption[] = [
   { value: 320, label: '320 px', desc: 'High Detail', badge: 'CRISP' },
 ];
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete, onOpenProject }) => {
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({
+  onRerunComplete,
+  onOpenProject,
+  onOpenTutorial,
+  theme = 't-dark',
+}) => {
   const [settings, setSettings] = useState<Settings>({
     output_dir: 'export',
     distance_threshold: 0.50,
@@ -88,7 +97,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
     attach_distance_cap: 0.45,
     flip_average: false,
     include_maybe: false,
-    event_title: 'Face Clubbing Gallery',
+    event_title: 'CatLog Gallery',
     event_subtitle: 'Auto-sorted face albums and photo gallery',
   });
 
@@ -254,6 +263,51 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
         </div>
       )}
 
+      {/* Interactive Tutorial & Tour Banner */}
+      {onOpenTutorial && (
+        <div
+          id="card-settings-tutorial-launcher"
+          data-testid="card-settings-tutorial-launcher"
+          className="p-5 sm:p-6 rounded-lg border-2 border-[var(--accent)] bg-[var(--card-bg)] flex flex-col md:flex-row items-center justify-between gap-5 transition-all shadow-[3px_3px_0px_var(--line)]"
+        >
+          <div className="flex items-center gap-4 sm:gap-5 w-full md:w-auto">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-[var(--input)] border-2 border-[var(--line)] flex items-center justify-center p-1.5 flex-shrink-0 shadow-[2px_2px_0px_var(--line)]">
+              <MascotSticker pose={1} theme={theme} className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="settings-badge accent text-xs uppercase px-2 py-0.5">
+                  Spotlight Guide
+                </span>
+                <span className="text-xs font-mono text-[var(--muted)] font-semibold">
+                  11 Interactive Steps
+                </span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-black text-[var(--text)] uppercase font-mono mt-1">
+                Interactive Tutorial &amp; Feature Walkthrough
+              </h3>
+              <p className="text-xs sm:text-sm text-[var(--muted)] mt-1 max-w-2xl leading-relaxed">
+                Step-by-step spotlight tour across all features: photo source selection, live engine scan &amp; logs, multi-select cluster merging, smart match suggestions, triage, and offline gallery export.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0 w-full md:w-auto flex justify-end">
+            <button
+              type="button"
+              id="btn-launch-tutorial-settings"
+              data-testid="btn-launch-tutorial-settings"
+              onClick={onOpenTutorial}
+              className="btn pri w-full md:w-auto flex items-center justify-center gap-2.5 px-6 shadow-[3px_3px_0px_var(--line)]"
+              style={{ height: '46px', fontSize: '15px', fontWeight: 800 }}
+            >
+              <Compass className="w-4 h-4" />
+              <span>Launch Interactive Tutorial</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* SECTION 1: Clustering Sensitivity Thresholds (Top Spacious Section) */}
       <div className="space-y-3.5">
         <div className="flex items-center justify-between text-xs md:text-sm font-mono px-1">
@@ -266,7 +320,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
         {/* 2x2 Grid of Spacious Visualizer Slider Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Slider 1: Distance Threshold */}
-          <div className="settings-slider-card">
+          <div id="card-slider-distance" className="settings-slider-card">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <label htmlFor="setting-distance-threshold" className="text-base md:text-lg font-black text-[var(--text)] block leading-tight">
@@ -315,7 +369,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
           </div>
 
           {/* Slider 2: Merge Threshold */}
-          <div className="settings-slider-card">
+          <div id="card-slider-merge" className="settings-slider-card">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <label htmlFor="setting-merge-threshold" className="text-base md:text-lg font-black text-[var(--text)] block leading-tight">
@@ -364,7 +418,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
           </div>
 
           {/* Slider 3: Maybe Threshold */}
-          <div className="settings-slider-card">
+          <div id="card-slider-maybe" className="settings-slider-card">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <label htmlFor="setting-maybe-threshold" className="text-base md:text-lg font-black text-[var(--text)] block leading-tight">
@@ -413,7 +467,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
           </div>
 
           {/* Slider 4: Same-Photo Guard */}
-          <div className="settings-slider-card">
+          <div id="card-slider-guard" className="settings-slider-card">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <label htmlFor="setting-same-photo-guard" className="text-base md:text-lg font-black text-[var(--text)] block leading-tight">
@@ -498,7 +552,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Left Side: Google Drive Cloud API Configuration (6 Cols) */}
           <div className="lg:col-span-6 flex flex-col gap-4">
-            <div className="settings-panel p-5 space-y-3.5">
+            <div id="card-settings-drive-key" className="settings-panel p-5 space-y-3.5">
               <div className="flex items-center justify-between border-b-2 border-[var(--line)] pb-2.5">
                 <div className="flex items-center gap-2">
                   <Key className="w-5 h-5 text-amber-500" />
@@ -633,7 +687,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
                           Google Cloud Console <ExternalLink className="w-3 h-3" />
                         </a>.
                       </li>
-                      <li>Create or select a project (e.g. <code className="text-[var(--text)]">PhotoSorter</code>).</li>
+                      <li>Create or select a project (e.g. <code className="text-[var(--text)]">CatLog</code>).</li>
                       <li>Go to <strong>APIs & Services &gt; Library</strong>, search for <strong>Google Drive API</strong>, click <strong>Enable</strong>.</li>
                       <li>Go to <strong>Credentials</strong>, click <strong>+ Create Credentials &gt; API key</strong>.</li>
                       <li>Paste the generated key above and click <strong>Save</strong>.</li>

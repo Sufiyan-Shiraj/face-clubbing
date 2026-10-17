@@ -35,6 +35,9 @@ interface ReviewPeopleScreenProps {
   onUndo?: () => void;
   appliedEditsCount?: number;
   isMerging?: boolean;
+  activeSubTab?: 'people' | 'suggestions' | 'unrecognized';
+  onSubTabChange?: (tab: 'people' | 'suggestions' | 'unrecognized') => void;
+  theme?: string;
 }
 
 export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
@@ -60,8 +63,16 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
   onUndo,
   appliedEditsCount = 0,
   isMerging = false,
+  activeSubTab: controlledSubTab,
+  onSubTabChange,
+  theme = 't-dark',
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'people' | 'suggestions' | 'unrecognized'>('people');
+  const [internalSubTab, setInternalSubTab] = useState<'people' | 'suggestions' | 'unrecognized'>('people');
+  const activeSubTab = controlledSubTab !== undefined ? controlledSubTab : internalSubTab;
+  const setActiveSubTab = (tab: 'people' | 'suggestions' | 'unrecognized') => {
+    setInternalSubTab(tab);
+    onSubTabChange?.(tab);
+  };
   const [inspectingPerson, setInspectingPerson] = useState<PersonCluster | null>(null);
   const [viewingPhotoId, setViewingPhotoId] = useState<string | null>(null);
   const [viewingContextPhotoIds, setViewingContextPhotoIds] = useState<string[] | undefined>(undefined);
@@ -115,7 +126,7 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
         style={{ borderBottom: '1.5px solid var(--line)' }}
       >
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div id="review-subtabs-nav" className="flex items-center gap-3 flex-wrap">
           <button
             id="tab-people-grid"
             onClick={() => setActiveSubTab('people')}
@@ -200,6 +211,7 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
           onMergeSelected={onMergeSelected}
           onSelectPerson={(p) => setInspectingPerson(p)}
           isMerging={isMerging}
+          theme={theme}
         />
       )}
 
@@ -210,6 +222,7 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
           onAccept={onAcceptSuggestion}
           onReject={onRejectSuggestion}
           rejectedPairs={rejectedPairs}
+          theme={theme}
         />
       )}
 
@@ -223,6 +236,7 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
           onAssignMultipleFaces={onAssignMultipleFaces}
           onAssignPhotos={onAssignPhotos}
           onOpenPhotoViewer={(pid) => handleOpenPhotoViewer(pid)}
+          theme={theme}
         />
       )}
 

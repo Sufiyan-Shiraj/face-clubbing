@@ -16,7 +16,125 @@ import { ReviewPeopleScreen } from './components/ReviewPeopleScreen';
 import { ExportScreen } from './components/ExportScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 import { OpenProjectModal } from './components/OpenProjectModal';
+import { TutorialSpotlight } from './components/TutorialSpotlight';
 import { AlertTriangle, X } from 'lucide-react';
+
+const DEMO_TUTORIAL_PEOPLE: PersonCluster[] = [
+  {
+    id: 'demo_p001',
+    label: 'Maya Lin',
+    face: '/faces/f_demo_001.jpg',
+    photo_ids: ['photo_demo_001', 'photo_demo_002'],
+    photos: ['photo_demo_001', 'photo_demo_002'],
+    photo_count: 14,
+    faces: [
+      { face_id: 'f_demo_001', photo_id: 'photo_demo_001', det_score: 0.95, bbox: [100, 100, 300, 300] },
+      { face_id: 'f_demo_002', photo_id: 'photo_demo_002', det_score: 0.92, bbox: [200, 200, 400, 400] },
+    ],
+    anchor_face_ids: ['f_demo_001'],
+  },
+  {
+    id: 'demo_p002',
+    label: 'David Kim',
+    face: '/faces/f_demo_003.jpg',
+    photo_ids: ['photo_demo_003'],
+    photos: ['photo_demo_003'],
+    photo_count: 8,
+    faces: [
+      { face_id: 'f_demo_003', photo_id: 'photo_demo_003', det_score: 0.89, bbox: [150, 150, 350, 350] },
+    ],
+    anchor_face_ids: ['f_demo_003'],
+  },
+  {
+    id: 'demo_p003',
+    label: 'Sarah Chen',
+    face: '/faces/f_demo_004.jpg',
+    photo_ids: ['photo_demo_004'],
+    photos: ['photo_demo_004'],
+    photo_count: 3,
+    faces: [
+      { face_id: 'f_demo_004', photo_id: 'photo_demo_004', det_score: 0.88, bbox: [180, 180, 380, 380] },
+    ],
+    anchor_face_ids: ['f_demo_004'],
+  },
+];
+
+const DEMO_TUTORIAL_PHOTOS: Record<string, PhotoInfo> = {
+  photo_demo_001: {
+    photo_id: 'photo_demo_001',
+    file_name: 'gala_001.jpg',
+    width: 1920,
+    height: 1080,
+    faces: [{ face_id: 'f_demo_001', photo_id: 'photo_demo_001', bbox: [100, 100, 300, 300] }],
+  },
+  photo_demo_002: {
+    photo_id: 'photo_demo_002',
+    file_name: 'gala_002.jpg',
+    width: 1920,
+    height: 1080,
+    faces: [{ face_id: 'f_demo_002', photo_id: 'photo_demo_002', bbox: [200, 200, 400, 400] }],
+  },
+  photo_demo_003: {
+    photo_id: 'photo_demo_003',
+    file_name: 'gala_003.jpg',
+    width: 1920,
+    height: 1080,
+    faces: [{ face_id: 'f_demo_003', photo_id: 'photo_demo_003', bbox: [150, 150, 350, 350] }],
+  },
+  photo_demo_004: {
+    photo_id: 'photo_demo_004',
+    file_name: 'gala_004.jpg',
+    width: 1920,
+    height: 1080,
+    faces: [{ face_id: 'f_demo_004', photo_id: 'photo_demo_004', bbox: [180, 180, 380, 380] }],
+  },
+};
+
+const DEMO_TUTORIAL_SUGGESTIONS: SuggestionsData = {
+  maybe_groups_count: 0,
+  maybe_groups: [],
+  possibly_the_same_count: 1,
+  possibly_the_same: [
+    {
+      person_a_id: 'demo_p001',
+      person_b_id: 'demo_p002',
+      person_a_anchors: ['f_demo_001'],
+      person_b_anchors: ['f_demo_003'],
+      distance: 0.52,
+      confidence: 'medium',
+      reason: 'High facial feature similarity',
+      person_a_photos: 14,
+      person_b_photos: 8,
+      person_a_best_face: '/faces/f_demo_001.jpg',
+      person_b_best_face: '/faces/f_demo_003.jpg',
+    },
+  ],
+  ambiguous_faces_count: 0,
+  ambiguous_faces: [],
+};
+
+const DEMO_TUTORIAL_UNRECOGNIZED: UnrecognizedData = {
+  total_unrecognized_photos: 1,
+  no_face_photos: [],
+  faces: [
+    {
+      face_id: 'f_demo_unrec_01',
+      photo_id: 'photo_demo_001',
+      face: '/faces/f_demo_unrec_01.jpg',
+      rejection_reason: 'low_confidence',
+      bbox: [50, 50, 120, 120],
+      det_score: 0.42,
+    },
+    {
+      face_id: 'f_demo_unrec_02',
+      photo_id: 'photo_demo_002',
+      face: '/faces/f_demo_unrec_02.jpg',
+      rejection_reason: 'small_face',
+      bbox: [80, 80, 140, 140],
+      det_score: 0.55,
+    },
+  ],
+};
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<RisoTheme>(() => {
@@ -90,12 +208,10 @@ export const App: React.FC = () => {
 
   const [people, setPeople] = useState<PersonCluster[]>([]);
   const [photos, setPhotos] = useState<Record<string, PhotoInfo>>({});
-  const isProjectActive = people.length > 0 || Object.keys(photos).length > 0;
+  const [isOpenProjectModalOpen, setIsOpenProjectModalOpen] = useState<boolean>(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
 
   const handleTabChange = (t: ActiveTab) => {
-    if (t === 'people' && !isProjectActive) {
-      return;
-    }
     setActiveTab(t);
     try {
       localStorage.setItem('photosorter-active-tab', t);
@@ -125,6 +241,7 @@ export const App: React.FC = () => {
   });
   const [progressHistory, setProgressHistory] = useState<JobStatus[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [reviewSubTab, setReviewSubTab] = useState<'people' | 'suggestions' | 'unrecognized'>('people');
   const [rejectedPairs, setRejectedPairs] = useState<Set<string>>(new Set());
   const [appliedEditsCount, setAppliedEditsCount] = useState<number>(0);
   const [hasExportedCurrentSession, setHasExportedCurrentSession] = useState<boolean>(false);
@@ -654,11 +771,14 @@ export const App: React.FC = () => {
 
   const hasUnexportedWork = (people.length > 0 || Object.keys(photos).length > 0) && !hasExportedCurrentSession;
 
-  const [isOpenProjectModalOpen, setIsOpenProjectModalOpen] = useState<boolean>(false);
   const [projectReadOnlyNotice, setProjectReadOnlyNotice] = useState<string | null>(null);
 
   const handleOpenProject = () => {
     setIsOpenProjectModalOpen(true);
+  };
+
+  const handleOpenTutorial = () => {
+    setIsTutorialOpen(true);
   };
 
   const handleNewProject = async () => {
@@ -747,6 +867,7 @@ export const App: React.FC = () => {
         onThemeChange={handleThemeChange}
         onOpenProject={handleOpenProject}
         onNewProject={handleNewProject}
+        onOpenTutorial={handleOpenTutorial}
       />
 
       {/* Left Vertical Step Rail matching screenshot */}
@@ -773,10 +894,9 @@ export const App: React.FC = () => {
           <button
             type="button"
             id="tab-people"
-            onClick={() => isProjectActive && handleTabChange('people')}
-            className={`step ${activeTab === 'people' ? 'on' : ''} ${!isProjectActive ? 'opacity-40 cursor-not-allowed' : ''}`}
-            disabled={!isProjectActive}
-            title={!isProjectActive ? 'Start a scan or open a project first' : 'Review people and edits'}
+            onClick={() => handleTabChange('people')}
+            className={`step ${activeTab === 'people' ? 'on' : ''}`}
+            title="Review people and edits"
           >
             <b>03</b>
             <span>Review</span>
@@ -852,12 +972,25 @@ export const App: React.FC = () => {
             onApiKeySaved={loadAllData}
             isApiKeyConfigured={isApiKeyConfigured}
             onOpenProject={handleOpenProject}
+            onOpenTutorial={handleOpenTutorial}
           />
         )}
 
         {activeTab === 'progress' && (
           <ProgressScreen
-            status={jobStatus}
+            status={
+              isTutorialOpen && jobStatus.status === 'idle'
+                ? {
+                    status: 'running',
+                    stage: 'detecting',
+                    current: 82,
+                    total: 105,
+                    percent: 78,
+                    message: 'Scanning face embeddings (buffalo_l)...',
+                    elapsed_seconds: 14,
+                  }
+                : jobStatus
+            }
             progressHistory={progressHistory}
             onCancelJob={handleCancelJob}
             onGoToReview={() => {
@@ -865,17 +998,21 @@ export const App: React.FC = () => {
               loadAllData();
             }}
             isCancelling={isCancelling}
-            discoveredFaceCrops={allDiscoveredFaces}
+            discoveredFaceCrops={
+              isTutorialOpen && allDiscoveredFaces.length === 0
+                ? ['f_demo_001', 'f_demo_002', 'f_demo_003', 'f_demo_004']
+                : allDiscoveredFaces
+            }
             theme={theme}
           />
         )}
 
         {activeTab === 'people' && (
           <ReviewPeopleScreen
-            people={people}
-            photos={photos}
-            unrecognized={unrecognized}
-            suggestions={suggestions}
+            people={isTutorialOpen && people.length === 0 ? DEMO_TUTORIAL_PEOPLE : people}
+            photos={isTutorialOpen && Object.keys(photos).length === 0 ? DEMO_TUTORIAL_PHOTOS : photos}
+            unrecognized={isTutorialOpen && unrecognized.faces.length === 0 ? DEMO_TUTORIAL_UNRECOGNIZED : unrecognized}
+            suggestions={isTutorialOpen && suggestions.possibly_the_same.length === 0 ? DEMO_TUTORIAL_SUGGESTIONS : suggestions}
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
             onSelectAll={handleSelectAll}
@@ -894,6 +1031,9 @@ export const App: React.FC = () => {
             onUndo={handleUndo}
             appliedEditsCount={appliedEditsCount}
             isMerging={isMerging}
+            activeSubTab={reviewSubTab}
+            onSubTabChange={setReviewSubTab}
+            theme={theme}
           />
         )}
 
@@ -904,6 +1044,7 @@ export const App: React.FC = () => {
             photosCount={Object.keys(photos).length}
             onRefreshStats={loadAllData}
             onExportSuccess={() => setHasExportedCurrentSession(true)}
+            theme={theme}
           />
         )}
 
@@ -911,6 +1052,8 @@ export const App: React.FC = () => {
           <SettingsScreen
             onRerunComplete={loadAllData}
             onOpenProject={handleOpenProject}
+            onOpenTutorial={handleOpenTutorial}
+            theme={theme}
           />
         )}
       </div>
@@ -926,6 +1069,24 @@ export const App: React.FC = () => {
             setIsOpenProjectModalOpen(false);
             handleTabChange('export');
           }}
+        />
+      )}
+
+      {/* Interactive Onboarding Spotlight Tour */}
+      {isTutorialOpen && (
+        <TutorialSpotlight
+          isOpen={isTutorialOpen}
+          onClose={() => {
+            setIsTutorialOpen(false);
+            setSelectedIds(new Set());
+            setReviewSubTab('people');
+          }}
+          onNavigateTab={handleTabChange}
+          onSetReviewSubTab={setReviewSubTab}
+          onSetSelectedPeopleIds={setSelectedIds}
+          onSetSourceMode={handleSourceModeChange}
+          activeTab={activeTab}
+          theme={theme}
         />
       )}
     </div>

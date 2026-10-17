@@ -308,17 +308,17 @@ describe('Open Saved Project Feature', () => {
   it('toggles in-modal folder explorer, renders subfolders, and selects a directory', async () => {
     vi.mocked(apiClient.getRecentProjects).mockResolvedValue(mockProjects);
     vi.mocked(apiClient.browseFolder).mockResolvedValue({
-      current_path: 'C:/Users/DELL/Pictures',
-      parent_path: 'C:/Users/DELL',
+      current_path: 'D:/TestUser/Pictures',
+      parent_path: 'D:/TestUser',
       name: 'Pictures',
       exists: true,
       is_directory: true,
       directories: [
-        { name: 'Trip2026.work', path: 'C:/Users/DELL/Pictures/Trip2026.work' },
-        { name: 'FamilyPhotos', path: 'C:/Users/DELL/Pictures/FamilyPhotos' },
+        { name: 'Trip2026.work', path: 'D:/TestUser/Pictures/Trip2026.work' },
+        { name: 'FamilyPhotos', path: 'D:/TestUser/Pictures/FamilyPhotos' },
       ],
       shortcuts: [
-        { label: 'Desktop', path: 'C:/Users/DELL/Desktop' },
+        { label: 'Desktop', path: 'D:/TestUser/Desktop' },
       ],
     });
 
@@ -341,7 +341,7 @@ describe('Open Saved Project Feature', () => {
     // Clicking a subfolder selects it
     fireEvent.click(screen.getByText('Trip2026.work'));
     const input = screen.getByTestId('custom-project-path-input') as HTMLInputElement;
-    expect(input.value).toBe('C:/Users/DELL/Pictures/Trip2026.work');
+    expect(input.value).toBe('D:/TestUser/Pictures/Trip2026.work');
   });
 
   describe('Unexported Work Guard', () => {

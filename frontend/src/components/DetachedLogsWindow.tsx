@@ -88,7 +88,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
 
     // Set initial title with elapsed time in the name
     const initialElapsed = formatElapsedTime(elapsedSeconds);
-    popup.document.title = `[${initialElapsed}] Engine Activity Log - PhotoSorter`;
+    popup.document.title = `[${initialElapsed}] Engine Activity Log - CatLog`;
 
     // Clear popup document body
     popup.document.body.innerHTML = '';
@@ -178,7 +178,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
     const stageStr = isRunning
       ? (status.stage || 'Scanning')
       : (status.status === 'completed' ? 'Completed' : status.status || 'Ready');
-    externalWindowRef.current.document.title = `[${timeStr}] ${stageStr} • Engine Activity Log (${allLogs.length}) - PhotoSorter`;
+    externalWindowRef.current.document.title = `[${timeStr}] ${stageStr} • Engine Activity Log (${allLogs.length}) - CatLog`;
   }, [isOpen, elapsedSeconds, isRunning, status.stage, status.status, allLogs.length, formatElapsedTime]);
 
   // Sync theme changes to detached window

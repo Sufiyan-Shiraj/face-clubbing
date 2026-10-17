@@ -26,6 +26,10 @@ from pathlib import Path
 from collections import defaultdict
 import numpy as np
 
+repo_root = Path(__file__).resolve().parent.parent
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
@@ -567,11 +571,118 @@ def run_verification(
             all_passed = False
 
         # -------------------------------------------------------------------------
+        # CHECK 15: Drive Export Invariants (Task 4)
+        # -------------------------------------------------------------------------
+        drive_export_test_dir = t_path / "drive_export_test"
+        drive_export_test_dir.mkdir(parents=True, exist_ok=True)
+        drive_cache_dir = t_path / "drive_cache"
+        drive_cache_dir.mkdir(parents=True, exist_ok=True)
+        (drive_cache_dir / "thumbs").mkdir(parents=True, exist_ok=True)
+        (drive_cache_dir / "crops").mkdir(parents=True, exist_ok=True)
+
+        from backend.engine.exporter import BundleExporter
+        from backend.engine.models import EngineResult, PhotoRecord, PersonCluster, UnrecognizedGroup, FaceDetection
+        from PIL import Image
+
+        # Create dummy thumb & crop in cache
+        dummy_img = Image.new("RGB", (100, 100), color=(100, 150, 200))
+        dummy_thumb_path = drive_cache_dir / "thumbs" / "p_drive1.jpg"
+        dummy_img.save(dummy_thumb_path)
+        dummy_crop_path = drive_cache_dir / "crops" / "f_drive1.jpg"
+        dummy_img.save(dummy_crop_path)
+
+        dummy_face = FaceDetection(
+            face_id="f_drive1",
+            photo_id="p_drive1",
+            bbox=[10.0, 10.0, 60.0, 60.0],
+            det_score=0.95,
+            embedding=np.zeros(512, dtype=np.float32),
+            is_good_quality=True,
+        )
+
+        dummy_photo = PhotoRecord(
+            photo_id="p_drive1",
+            original_path="/tmp/non_existent_drive_temp.jpg",
+            file_name="event_drive_01.jpg",
+            width=1920,
+            height=1080,
+            drive_file_id="1DriveTestFileIdAbc123",
+            drive_url="https://drive.google.com/file/d/1DriveTestFileIdAbc123/view",
+            faces=[dummy_face],
+        )
+
+        dummy_person = PersonCluster(
+            id="p_drive_cluster",
+            label="Drive Person",
+            face_path="faces/p_drive_cluster.jpg",
+            photo_ids=["p_drive1"],
+            faces=[dummy_face],
+        )
+
+        dummy_unrec = UnrecognizedGroup(photo_ids=[], faces=[])
+
+        dummy_engine_res = EngineResult(
+            photos={"p_drive1": dummy_photo},
+            people=[dummy_person],
+            unrecognized=dummy_unrec,
+            distance_threshold=0.50,
+            id_map={},
+        )
+
+        exporter = BundleExporter(
+            output_dir=drive_export_test_dir,
+            cache_dir=drive_cache_dir,
+        )
+        exporter.export(
+            result=dummy_engine_res,
+            title="Drive Export Test",
+            generate_html=True,
+        )
+
+        # 1. Assert zero full-size local photos exist outside thumbs/ and faces/
+        full_size_photos = []
+        for root, dirs, files in os.walk(drive_export_test_dir):
+            rel_root = Path(root).relative_to(drive_export_test_dir)
+            for f in files:
+                if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+                    if rel_root.as_posix() not in ("thumbs", "faces"):
+                        full_size_photos.append(str(rel_root / f))
+
+        has_zero_full_size = (len(full_size_photos) == 0)
+
+        # 2. Assert every photo in people.json has a valid Drive view link
+        drive_people_json_path = drive_export_test_dir / "people.json"
+        with open(drive_people_json_path, "r", encoding="utf-8") as dpf:
+            dp_data = json.load(dpf)
+
+        all_photos_have_drive_url = True
+        for pid, prec in dp_data.get("photos", {}).items():
+            durl = prec.get("drive_url")
+            if not durl or "drive.google.com/file/d/" not in durl:
+                all_photos_have_drive_url = False
+                break
+
+        # 3. Assert "unavailable - open in Drive" tile shows when an image fails to load
+        drive_html_path = drive_export_test_dir / "index.html"
+        drive_html_text = drive_html_path.read_text(encoding="utf-8") if drive_html_path.exists() else ""
+        has_unavailable_tile = (
+            "unavailable - open in Drive" in drive_html_text and
+            "unavailable-tile" in drive_html_text and
+            "handleImageError" in drive_html_text
+        )
+
+        if has_zero_full_size and all_photos_have_drive_url and has_unavailable_tile:
+            print("[PASS] Check 15: Drive Export Invariants verified (0 full-size local photos, 100% photos have Drive view links, 'unavailable - open in Drive' tile on image failure)")
+        else:
+            print(f"[FAIL] Check 15: Drive Export Invariants failed: zero_full_size={has_zero_full_size} (found {full_size_photos}), drive_urls={all_photos_have_drive_url}, unavailable_tile={has_unavailable_tile}")
+            all_passed = False
+
+        # -------------------------------------------------------------------------
         # FINAL SUMMARY
         # -------------------------------------------------------------------------
         print("=" * 80)
         if all_passed:
-            print("OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)")
+            print("OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (15/15 CHECKS & TABLES VERIFIED)")
         else:
             print("OVERALL VERIFICATION STATUS: FAILURES DETECTED")
         print("=" * 80)

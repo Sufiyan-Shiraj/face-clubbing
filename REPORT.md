@@ -1,8 +1,9 @@
-# PhotoSorter Verification & Phase 5 Delivery Report
+# CatLog Final Verification & Release Candidate Report
 
 **Date**: 2026-10-17  
-**Project**: Face Sorting Engine (`face-clubbing`)  
-**Status**: Phase 1b Complete, Phase 2 Complete (All Rows 1-15 PASS), Phase 3 Complete, Phase 4 Complete, Hygiene & Isolation Round Complete (Tasks 0-7 COMPLETE), Phase 5 Complete, Phase 6 Complete (Live Google Drive integration verified on real public folder; 100% thumbnails, 92.1% bandwidth saved, 64px floor documented in SPEC §18), Landing & HomeScreen Riso Redesign Complete, Review & Merge Screen Revamp, Unrecognized Triage Multi-Select, Compact Card Layouts, Image Viewer Unknown Face Bounding Boxes & On-Canvas Reassignment Controls Complete, Open Saved Project Feature Complete, Startup Isolation, Drive Direct Photo Linking, Drive Folder Auto-Nesting, Temporary Cleanup & Standalone HTML Gallery Complete, and Avatar Quality Scoring, 384px 4:4:4 Crop Generation & System Stability Complete.
+**Project**: CatLog — Who was at the event? (`face-clubbing`)  
+**Status**: Release Candidate Ready. All Phases Complete: Phase 1 & 1b Engine Core, Phase 2 Static Viewer, Phase 3 FastAPI Layer, Phase 4 Organizer UI (React 19), Phase 5 Desktop Shell & Packaging, Phase 6 Google Drive Link Input, Phase 6b Risograph Redesign (Dark Slate, Navy, Paper), Open Saved Project Feature, High-Def 384px 4:4:4 Avatar Quality Scoring, CatLog Brand Identity & Tagline, Automated Mascot Extraction (24 Transparent Poses), 11-Step Interactive Spotlight Tour, Standalone HTML Gallery, and Full Codebase Cleanup.
+
 
 ### Working Rules Compliance Confirmation
 - **No Cluster IDs (`pNNN`)**: Strictly enforced. Cluster IDs are display handles only for a single export and are never persisted, tested, compared, or allowlisted. All tests, edits, and verification scripts key strictly by anchor face IDs and photo IDs. Check 14 of `eval/verify_export.py` enforces zero `\bp\d{3}\b` tokens in code outside comments across `eval/` and `tests/`.
@@ -237,7 +238,7 @@ Exact Byte Match: True
 ```
 
 #### 2. Public Bundle Path and Directory Listing
-- **Public Bundle Path**: `c:\Users\DELL\face-clubbing\export` (relative: `export/`)
+- **Public Bundle Path**: `<REPO_ROOT>\export` (relative: `export/`)
 - **Top-Level Entries**:
   - `config.json` (269 bytes)
   - `people.json` (736,814 bytes)
@@ -339,20 +340,20 @@ OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
 
 | Row | Requirement / Check | Status | Verification Evidence / File Path |
 | :---: | :--- | :---: | :--- |
-| **1** | React + Vite + Tailwind project structure | **PASS** | [`viewer/package.json`](file:///c:/Users/DELL/face-clubbing/viewer/package.json), [`viewer/vite.config.ts`](file:///c:/Users/DELL/face-clubbing/viewer/vite.config.ts). Builds cleanly with `npm run build`. |
-| **2** | Single people grid sorted by photo count | **PASS** | [`viewer/src/components/PeopleGrid.tsx`](file:///c:/Users/DELL/face-clubbing/viewer/src/components/PeopleGrid.tsx). Renders unified grid sorted descending by `photos.length`. |
-| **3** | Toolbar toggle "Hide single-photo people" | **PASS** | [`viewer/src/components/Toolbar.tsx`](file:///c:/Users/DELL/face-clubbing/viewer/src/components/Toolbar.tsx). Toggle switch initialized from `config.hide_single_photo_default`. |
+| **1** | React + Vite + Tailwind project structure | **PASS** | [`viewer/package.json`](<REPO_ROOT>/viewer/package.json), [`viewer/vite.config.ts`](<REPO_ROOT>/viewer/vite.config.ts). Builds cleanly with `npm run build`. |
+| **2** | Single people grid sorted by photo count | **PASS** | [`viewer/src/components/PeopleGrid.tsx`](<REPO_ROOT>/viewer/src/components/PeopleGrid.tsx). Renders unified grid sorted descending by `photos.length`. |
+| **3** | Toolbar toggle "Hide single-photo people" | **PASS** | [`viewer/src/components/Toolbar.tsx`](<REPO_ROOT>/viewer/src/components/Toolbar.tsx). Toggle switch initialized from `config.hide_single_photo_default`. |
 | **4** | No collapsible long-tail section | **PASS** | Removed all collapsible long-tail components. Single scrollable grid. |
-| **5** | Unrecognized entry at end of people grid | **PASS** | [`viewer/src/components/UnrecognizedGrid.tsx`](file:///c:/Users/DELL/face-clubbing/viewer/src/components/UnrecognizedGrid.tsx). Displays at the end of the grid. |
+| **5** | Unrecognized entry at end of people grid | **PASS** | [`viewer/src/components/UnrecognizedGrid.tsx`](<REPO_ROOT>/viewer/src/components/UnrecognizedGrid.tsx). Displays at the end of the grid. |
 | **6** | Unrecognized faces grid opens photo modal | **PASS** | Clicking face crop opens high-resolution photo viewer modal with highlight. |
 | **7** | Separate list of photos with no detected face | **PASS** | Listed in dedicated "No Faces Detected" sub-gallery (4 photos). |
-| **8** | Per-person gallery with lazy-loaded thumbnails | **PASS** | [`viewer/src/components/PhotoGallery.tsx`](file:///c:/Users/DELL/face-clubbing/viewer/src/components/PhotoGallery.tsx). `loading="lazy"` on all image thumbnails. |
-| **9** | Large preview modal | **PASS** | [`viewer/src/components/Modal.tsx`](file:///c:/Users/DELL/face-clubbing/viewer/src/components/Modal.tsx). High-res preview with keyboard navigation (Esc, Left, Right). |
+| **8** | Per-person gallery with lazy-loaded thumbnails | **PASS** | [`viewer/src/components/PhotoGallery.tsx`](<REPO_ROOT>/viewer/src/components/PhotoGallery.tsx). `loading="lazy"` on all image thumbnails. |
+| **9** | Large preview modal | **PASS** | [`viewer/src/components/Modal.tsx`](<REPO_ROOT>/viewer/src/components/Modal.tsx). High-res preview with keyboard navigation (Esc, Left, Right). |
 | **10** | "Possible matches" section when `include_maybe: true` | **PASS** | Conditionally renders `maybe_photos` in distinct labelled section. |
 | **11** | Download button per photo (hidden when null) | **PASS** | Download button rendered conditionally on `photo.download_url != null`. |
 | **12** | Swapping `config.json` changes look without code change | **PASS** | Verified via Vitest (`npm test -- -t "Config Swap"`). Verifies title, `--color-accent`, footer, and toggle state. |
 | **13** | Mobile-first responsive layout | **PASS** | Verified via Playwright headless Chromium at 390px (2 columns) vs 1280px (6 columns). |
-| **14** | Deploy test to GitHub Pages / Cloudflare Pages | **PASS** | [`eval/build_synthetic_bundle.py`](file:///c:/Users/DELL/face-clubbing/eval/build_synthetic_bundle.py), [`eval/deploy_gh_pages.py`](file:///c:/Users/DELL/face-clubbing/eval/deploy_gh_pages.py). Deployed 20-photo privacy-safe synthetic bundle (zero real test photos) to GitHub Pages: `https://sufiyan-shiraj.github.io/face-clubbing/`. Both `config.json` and `people.json` load with HTTP 200. |
+| **14** | Deploy test to GitHub Pages / Cloudflare Pages | **PASS** | [`eval/build_synthetic_bundle.py`](<REPO_ROOT>/eval/build_synthetic_bundle.py), [`eval/deploy_gh_pages.py`](<REPO_ROOT>/eval/deploy_gh_pages.py). Deployed 20-photo privacy-safe synthetic bundle (zero real test photos) to GitHub Pages: `https://sufiyan-shiraj.github.io/face-clubbing/`. Both `config.json` and `people.json` load with HTTP 200. |
 | **15** | Every photo reachable from some screen | **PASS** | Invariant check: all 259 photos reachable via person gallery or unrecognized gallery. |
 
 ---
@@ -362,16 +363,16 @@ OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
 | Task | Description | Status | Evidence Command / File Path | Key Verification Output Summary |
 | :---: | :--- | :---: | :--- | :--- |
 | **TASK 0** | Repo sanity & branch consistency | **COMPLETE** | `git log --oneline -8`<br>`git status -s`<br>`python -m pytest --collect-only -q` | Confirmed Phase 2 viewer fixes and Phase 3 API tests reside on the same commit HEAD. 33 tests collected. |
-| **TASK 1a** | Viewport rendering evidence | **COMPLETE** | `node viewer/scripts/verify_viewport.cjs`<br>File: [`viewer/scripts/verify_viewport.cjs`](file:///c:/Users/DELL/face-clubbing/viewer/scripts/verify_viewport.cjs) | Headless Chromium rendering proved 2 columns at 390px (mobile) vs 6 columns at 1280px (desktop). |
+| **TASK 1a** | Viewport rendering evidence | **COMPLETE** | `node viewer/scripts/verify_viewport.cjs`<br>File: [`viewer/scripts/verify_viewport.cjs`](<REPO_ROOT>/viewer/scripts/verify_viewport.cjs) | Headless Chromium rendering proved 2 columns at 390px (mobile) vs 6 columns at 1280px (desktop). |
 | **TASK 1b** | Deploy test documentation | **INCOMPLETE** | Section 15.3.2 | Documented complete deployment procedures for GitHub Pages and Cloudflare Pages. Row 14 marked INCOMPLETE pending remote credentials. |
-| **TASK 1c** | Config swap through viewer code path | **COMPLETE** | `npm test -- -t "Config Swap"`<br>Files: [`viewer/src/__tests__/viewer.test.tsx`](file:///c:/Users/DELL/face-clubbing/viewer/src/__tests__/viewer.test.tsx), [`viewer/scripts/test_config_swap.py`](file:///c:/Users/DELL/face-clubbing/viewer/scripts/test_config_swap.py) | Vitest test loads Profile A vs Profile B through App code path, asserting title, accent color, footer, and toggle differ. |
-| **TASK 2** | Remove unsafe state-loading code | **COMPLETE** | `python -m pytest tests/test_api.py -k test_state_missing_embedding_raises_error -q`<br>File: [`backend/api/state.py`](file:///c:/Users/DELL/face-clubbing/backend/api/state.py) | Removed stale cache search paths and fake detection fallbacks. Raises loud `RuntimeError` if any face has missing or None embedding. |
-| **TASK 3** | Unrecognized count bug & face invariants | **COMPLETE** | `python -m pytest tests/test_api.py -k test_api_unrecognized_count_bug_and_invariants -q`<br>File: [`tests/test_api.py`](file:///c:/Users/DELL/face-clubbing/tests/test_api.py) | Assign drops unrecognized from 445 to 444, moves face to target person, undo restores 445. Invariant $1,256 + 445 = 1,701$ holds across all edit ops. |
-| **TASK 4** | Rerun replay under real clustering change | **COMPLETE** | `python -m pytest tests/test_api.py -k test_api_rerun_replay_under_real_clustering_change -q`<br>File: [`tests/test_api.py`](file:///c:/Users/DELL/face-clubbing/tests/test_api.py) | `attach_distance_cap=0.35` changes clustering (194 people / 528 unrec base). Asserted by face ID that 3 merged anchors remain in 1 cluster and assigned face remains in target person. |
-| **TASK 5** | Real job with SSE streaming & cancel | **COMPLETE** | `python eval/test_task5_real_job.py`<br>File: [`eval/test_task5_real_job.py`](file:///c:/Users/DELL/face-clubbing/eval/test_task5_real_job.py) | Full job captured 281 SSE events with required keys, finished with 192 people / 445 unrec matching CLI export. Second job cancelled mid-way with `current=3 > 0` and status `cancelled`. |
-| **TASK 6** | Repeatable drive script to isolated directory | **COMPLETE** | `python eval/drive_curl.py`<br>File: [`eval/drive_curl.py`](file:///c:/Users/DELL/face-clubbing/eval/drive_curl.py) | Configured isolated `export.api_test/`, resets `edits.json` before each run, never touches `export/` or `export.work/edits.json`. Ran twice consecutively with 100% identical counts. |
-| **TASK 7** | Script-check numbers with verify_api.py | **COMPLETE** | `python eval/verify_api.py --mode all`<br>File: [`eval/verify_api.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_api.py) | Checked all 7 canonical metrics: 192 people, 168 unrec photos, 445 unrec faces, 4 no-face photos, 28 maybe groups, 29 ranked pairs, 68 ambiguous faces. All PASS. |
-| **TASK 8** | Report hygiene & appendix organization | **COMPLETE** | `python eval/verify_export.py --export export --report REPORT.md`<br>File: [`REPORT.md`](file:///c:/Users/DELL/face-clubbing/REPORT.md) | Relocated historical intermediate stages 1 to 5, contact sheets, and 59-photo baseline to Appendix A. Main body describes current state only. Complete evidence pasted. |
+| **TASK 1c** | Config swap through viewer code path | **COMPLETE** | `npm test -- -t "Config Swap"`<br>Files: [`viewer/src/__tests__/viewer.test.tsx`](<REPO_ROOT>/viewer/src/__tests__/viewer.test.tsx), [`viewer/scripts/test_config_swap.py`](<REPO_ROOT>/viewer/scripts/test_config_swap.py) | Vitest test loads Profile A vs Profile B through App code path, asserting title, accent color, footer, and toggle differ. |
+| **TASK 2** | Remove unsafe state-loading code | **COMPLETE** | `python -m pytest tests/test_api.py -k test_state_missing_embedding_raises_error -q`<br>File: [`backend/api/state.py`](<REPO_ROOT>/backend/api/state.py) | Removed stale cache search paths and fake detection fallbacks. Raises loud `RuntimeError` if any face has missing or None embedding. |
+| **TASK 3** | Unrecognized count bug & face invariants | **COMPLETE** | `python -m pytest tests/test_api.py -k test_api_unrecognized_count_bug_and_invariants -q`<br>File: [`tests/test_api.py`](<REPO_ROOT>/tests/test_api.py) | Assign drops unrecognized from 445 to 444, moves face to target person, undo restores 445. Invariant $1,256 + 445 = 1,701$ holds across all edit ops. |
+| **TASK 4** | Rerun replay under real clustering change | **COMPLETE** | `python -m pytest tests/test_api.py -k test_api_rerun_replay_under_real_clustering_change -q`<br>File: [`tests/test_api.py`](<REPO_ROOT>/tests/test_api.py) | `attach_distance_cap=0.35` changes clustering (194 people / 528 unrec base). Asserted by face ID that 3 merged anchors remain in 1 cluster and assigned face remains in target person. |
+| **TASK 5** | Real job with SSE streaming & cancel | **COMPLETE** | `python eval/test_task5_real_job.py`<br>File: [`eval/test_task5_real_job.py`](<REPO_ROOT>/eval/test_task5_real_job.py) | Full job captured 281 SSE events with required keys, finished with 192 people / 445 unrec matching CLI export. Second job cancelled mid-way with `current=3 > 0` and status `cancelled`. |
+| **TASK 6** | Repeatable drive script to isolated directory | **COMPLETE** | `python eval/drive_curl.py`<br>File: [`eval/drive_curl.py`](<REPO_ROOT>/eval/drive_curl.py) | Configured isolated `export.api_test/`, resets `edits.json` before each run, never touches `export/` or `export.work/edits.json`. Ran twice consecutively with 100% identical counts. |
+| **TASK 7** | Script-check numbers with verify_api.py | **COMPLETE** | `python eval/verify_api.py --mode all`<br>File: [`eval/verify_api.py`](<REPO_ROOT>/eval/verify_api.py) | Checked all 7 canonical metrics: 192 people, 168 unrec photos, 445 unrec faces, 4 no-face photos, 28 maybe groups, 29 ranked pairs, 68 ambiguous faces. All PASS. |
+| **TASK 8** | Report hygiene & appendix organization | **COMPLETE** | `python eval/verify_export.py --export export --report REPORT.md`<br>File: [`REPORT.md`](<REPO_ROOT>/REPORT.md) | Relocated historical intermediate stages 1 to 5, contact sheets, and 59-photo baseline to Appendix A. Main body describes current state only. Complete evidence pasted. |
 
 ---
 
@@ -485,7 +486,7 @@ tests/test_scanner.py::test_scan_single_file
 Execution command: `node viewer/scripts/verify_viewport.cjs`
 ```text
 === Verifying Built Viewer Viewport Rendering (TASK 1a) ===
-Serving built viewer from: C:\Users\DELL\face-clubbing\viewer\dist
+Serving built viewer from: <REPO_ROOT>\viewer\dist
 Local test server running at: http://127.0.0.1:52788/
 
 [Mobile Viewport: 390px]
@@ -551,12 +552,12 @@ Execution command: `python viewer/scripts/test_config_swap.py`
 ```text
 === PhotoSorter Viewer Config Swap Verification (TASK 1c / Requirement 12) ===
 Executing Vitest through viewer code path: npm test -- -t loads two different config.json files through App code path
-Working directory: C:\Users\DELL\face-clubbing\viewer
+Working directory: <REPO_ROOT>\viewer
 
 > photosorter-viewer@1.0.0 test
 > vitest run -t loads two different config.json files through App code path
 
- RUN  v5.0.3 C:/Users/DELL/face-clubbing/viewer
+ RUN  v5.0.3 <REPO_ROOT>/viewer
 
  ✓ src/__tests__/viewer.test.tsx (6 tests | 5 skipped) 481ms
    ✓ Requirement 12: Config Swap Look Changes Without Code Change (2)
@@ -664,7 +665,7 @@ Execution command: `python -m pytest tests/test_api.py -k test_api_rerun_replay_
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0
-rootdir: C:\Users\DELL\face-clubbing
+rootdir: <REPO_ROOT>
 configfile: pytest.ini
 plugins: anyio-4.15.1
 collected 9 items / 8 deselected / 1 selected
@@ -683,7 +684,7 @@ unrecognized_faces_count_after: 527
 
 ### 15.7 Task 5 Evidence: Real Job Execution with SSE Streaming and Cancellation
 
-Script: [`eval/test_task5_real_job.py`](file:///c:/Users/DELL/face-clubbing/eval/test_task5_real_job.py)  
+Script: [`eval/test_task5_real_job.py`](<REPO_ROOT>/eval/test_task5_real_job.py)  
 Execution command: `python eval/test_task5_real_job.py`
 
 > [!NOTE]
@@ -804,7 +805,7 @@ TASK 5 VERIFICATION RESULT: PASS
 
 ### 15.8 Task 6 Evidence: Repeatable Drive Script to Isolated Directory
 
-Script: [`eval/drive_curl.py`](file:///c:/Users/DELL/face-clubbing/eval/drive_curl.py)  
+Script: [`eval/drive_curl.py`](<REPO_ROOT>/eval/drive_curl.py)  
 Execution command: `python eval/drive_curl.py` (executed twice consecutively).  
 Working directory: Writes only to `export.api_test/`, resetting `export.api_test/edits.json` at the start of each run. Never touches canonical `export/` or `export.work/edits.json`.
 
@@ -1090,7 +1091,7 @@ FULL DRIVE TRANSCRIPT COMPLETE - ALL PHASE 3 API WORKFLOWS VERIFIED
 
 ### 15.9 Task 7 Evidence: Script-Check Report Numbers Against Live API
 
-Script: [`eval/verify_api.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_api.py)  
+Script: [`eval/verify_api.py`](<REPO_ROOT>/eval/verify_api.py)  
 Execution command: `python eval/verify_api.py --mode all`
 
 ```text
@@ -1167,14 +1168,14 @@ OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
 
 | Task | Description | Status | Evidence Command | Key Verification Output Summary | File Path |
 | :---: | :--- | :---: | :--- | :--- | :--- |
-| **TASK 0** | Hygiene & Repository Sanity | **COMPLETE** | `git show --stat HEAD`<br>`git ls-files \| Select-String -Pattern 'test_photos','\.venv','node_modules','/\.cache/','client_secret','token','\.onnx','^(export\|viewer/public)/(faces\|thumbs)/'` | 0 unwanted files tracked. Hygiene check returns empty (0 matches). 0 real face crops, 0 secrets, 0 `.cache/` dirs, 0 virtualenvs, 0 node_modules, 0 ONNX model weights. | [`.gitignore`](file:///c:/Users/DELL/face-clubbing/.gitignore) |
-| **TASK 1** | Frontend Scaffolding | **COMPLETE** | `npm run build` in `frontend/` | React 18 + Vite + Tailwind CSS + TypeScript. Proxies `/api` to uvicorn. Built cleanly (`dist/` servable by FastAPI at `/`). Reused `@viewer/components/PhotoModal`. | [`frontend/package.json`](file:///c:/Users/DELL/face-clubbing/frontend/package.json)<br>[`frontend/vite.config.ts`](file:///c:/Users/DELL/face-clubbing/frontend/vite.config.ts) |
-| **TASK 2** | Five Screens Implementation | **COMPLETE**<br>*(Layout/wording: NEEDS ORGANIZER REVIEW)* | Browser rendering via Playwright (`node frontend/scripts/e2e.mjs`) | All 5 screens implemented: Home (source picker with path input, disabled Drive field labelled "Phase 6"), Progress (SSE bar with current, total, percent, stage, ETA, cancel), Review People, Export, Settings. Subjective visual layout and typography require organizer review. | [`HomeScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/HomeScreen.tsx)<br>[`ProgressScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ProgressScreen.tsx)<br>[`ReviewPeopleScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ReviewPeopleScreen.tsx)<br>[`ExportScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx)<br>[`SettingsScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SettingsScreen.tsx) |
-| **TASK 3** | Review People Core Workflow | **COMPLETE**<br>*(UI ergonomics: NEEDS ORGANIZER REVIEW)* | `node frontend/scripts/e2e.mjs` (Steps B, C, D, E, F) | People grid with multi-select and multi-merge in one action. Side-by-side suggestion review with persistent session rejection. Ranked low-confidence singletons. Per-person remove face/photo, hide, rename. Unrecognized triage with top-3 candidates for ambiguous faces. Global/per-edit Undo. Dynamic count refresh. | [`PeopleGrid.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/PeopleGrid.tsx)<br>[`SuggestionReview.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SuggestionReview.tsx)<br>[`UnrecognizedTriage.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/UnrecognizedTriage.tsx)<br>[`PersonModal.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/PersonModal.tsx) |
-| **TASK 4** | Export & Settings Screens | **COMPLETE**<br>*(Copy/instructions: NEEDS ORGANIZER REVIEW)* | `python eval/check_settings_spec.py`<br>`node frontend/scripts/e2e.mjs` (Steps G, H) | Export calls API, outputs strictly to configured folder (`export.e2e_temp`), documents GitHub and Cloudflare Pages publishing steps. Settings maps sensitivity slider to SPEC 6.2 parameters (100% verified match), thumb size, API key stub, Method 2 stub. Clustering rerun triggers edit replay and displays unapplied edits list. | [`ExportScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx)<br>[`SettingsScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SettingsScreen.tsx)<br>[`eval/check_settings_spec.py`](file:///c:/Users/DELL/face-clubbing/eval/check_settings_spec.py) |
-| **TASK 5** | End-to-End Browser Verification (Playwright) | **COMPLETE** | `node frontend/scripts/e2e.mjs` (Run 1 & Run 2) | Steps A through H passed 100% against uvicorn serving built UI. Ran twice in complete isolation; both runs yielded identical counts and zero changes to canonical files. 7-way split merged on clean baseline. Honest Step G rerun accounting verified. Zero `pNNN` in printed assertions. | [`frontend/scripts/e2e.mjs`](file:///c:/Users/DELL/face-clubbing/frontend/scripts/e2e.mjs) |
-| **TASK 6** | Unit & Regression Tests | **COMPLETE** | `npm test` in `frontend/`<br>`python -m pytest -v`<br>`python eval/verify_export.py`<br>`python eval/verify_api.py --mode all` | Vitest: 11 passed (100%, pure logic only). Pytest: 34 passed (100%, test 34 is `test_api_photos_endpoint_and_remove_by_photo`). Verify export: 14/14 checks passed (Check 14 scanned 27 files in eval/, tests/, and frontend/). Verify API: all modes passed (100%). Zero regressions. | [`frontend/src/__tests__/`](file:///c:/Users/DELL/face-clubbing/frontend/src/__tests__/)<br>[`tests/test_api.py`](file:///c:/Users/DELL/face-clubbing/tests/test_api.py)<br>[`eval/verify_export.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_export.py) |
-| **TASK 7** | Verification Documentation & Build Plan | **COMPLETE** | Verification audits | Phase 4 documented with task matrix, invariant accounting, Step C clean-state evidence, honest Step G accounting, Settings slider verification, and double E2E execution transcripts. `BUILD_PLAN.md` updated to "In verification" with status table fixed. | [`REPORT.md`](file:///c:/Users/DELL/face-clubbing/REPORT.md)<br>[`BUILD_PLAN.md`](file:///c:/Users/DELL/face-clubbing/BUILD_PLAN.md) |
+| **TASK 0** | Hygiene & Repository Sanity | **COMPLETE** | `git show --stat HEAD`<br>`git ls-files \| Select-String -Pattern 'test_photos','\.venv','node_modules','/\.cache/','client_secret','token','\.onnx','^(export\|viewer/public)/(faces\|thumbs)/'` | 0 unwanted files tracked. Hygiene check returns empty (0 matches). 0 real face crops, 0 secrets, 0 `.cache/` dirs, 0 virtualenvs, 0 node_modules, 0 ONNX model weights. | [`.gitignore`](<REPO_ROOT>/.gitignore) |
+| **TASK 1** | Frontend Scaffolding | **COMPLETE** | `npm run build` in `frontend/` | React 18 + Vite + Tailwind CSS + TypeScript. Proxies `/api` to uvicorn. Built cleanly (`dist/` servable by FastAPI at `/`). Reused `@viewer/components/PhotoModal`. | [`frontend/package.json`](<REPO_ROOT>/frontend/package.json)<br>[`frontend/vite.config.ts`](<REPO_ROOT>/frontend/vite.config.ts) |
+| **TASK 2** | Five Screens Implementation | **COMPLETE**<br>*(Layout/wording: NEEDS ORGANIZER REVIEW)* | Browser rendering via Playwright (`node frontend/scripts/e2e.mjs`) | All 5 screens implemented: Home (source picker with path input, disabled Drive field labelled "Phase 6"), Progress (SSE bar with current, total, percent, stage, ETA, cancel), Review People, Export, Settings. Subjective visual layout and typography require organizer review. | [`HomeScreen.tsx`](<REPO_ROOT>/frontend/src/components/HomeScreen.tsx)<br>[`ProgressScreen.tsx`](<REPO_ROOT>/frontend/src/components/ProgressScreen.tsx)<br>[`ReviewPeopleScreen.tsx`](<REPO_ROOT>/frontend/src/components/ReviewPeopleScreen.tsx)<br>[`ExportScreen.tsx`](<REPO_ROOT>/frontend/src/components/ExportScreen.tsx)<br>[`SettingsScreen.tsx`](<REPO_ROOT>/frontend/src/components/SettingsScreen.tsx) |
+| **TASK 3** | Review People Core Workflow | **COMPLETE**<br>*(UI ergonomics: NEEDS ORGANIZER REVIEW)* | `node frontend/scripts/e2e.mjs` (Steps B, C, D, E, F) | People grid with multi-select and multi-merge in one action. Side-by-side suggestion review with persistent session rejection. Ranked low-confidence singletons. Per-person remove face/photo, hide, rename. Unrecognized triage with top-3 candidates for ambiguous faces. Global/per-edit Undo. Dynamic count refresh. | [`PeopleGrid.tsx`](<REPO_ROOT>/frontend/src/components/PeopleGrid.tsx)<br>[`SuggestionReview.tsx`](<REPO_ROOT>/frontend/src/components/SuggestionReview.tsx)<br>[`UnrecognizedTriage.tsx`](<REPO_ROOT>/frontend/src/components/UnrecognizedTriage.tsx)<br>[`PersonModal.tsx`](<REPO_ROOT>/frontend/src/components/PersonModal.tsx) |
+| **TASK 4** | Export & Settings Screens | **COMPLETE**<br>*(Copy/instructions: NEEDS ORGANIZER REVIEW)* | `python eval/check_settings_spec.py`<br>`node frontend/scripts/e2e.mjs` (Steps G, H) | Export calls API, outputs strictly to configured folder (`export.e2e_temp`), documents GitHub and Cloudflare Pages publishing steps. Settings maps sensitivity slider to SPEC 6.2 parameters (100% verified match), thumb size, API key stub, Method 2 stub. Clustering rerun triggers edit replay and displays unapplied edits list. | [`ExportScreen.tsx`](<REPO_ROOT>/frontend/src/components/ExportScreen.tsx)<br>[`SettingsScreen.tsx`](<REPO_ROOT>/frontend/src/components/SettingsScreen.tsx)<br>[`eval/check_settings_spec.py`](<REPO_ROOT>/eval/check_settings_spec.py) |
+| **TASK 5** | End-to-End Browser Verification (Playwright) | **COMPLETE** | `node frontend/scripts/e2e.mjs` (Run 1 & Run 2) | Steps A through H passed 100% against uvicorn serving built UI. Ran twice in complete isolation; both runs yielded identical counts and zero changes to canonical files. 7-way split merged on clean baseline. Honest Step G rerun accounting verified. Zero `pNNN` in printed assertions. | [`frontend/scripts/e2e.mjs`](<REPO_ROOT>/frontend/scripts/e2e.mjs) |
+| **TASK 6** | Unit & Regression Tests | **COMPLETE** | `npm test` in `frontend/`<br>`python -m pytest -v`<br>`python eval/verify_export.py`<br>`python eval/verify_api.py --mode all` | Vitest: 11 passed (100%, pure logic only). Pytest: 34 passed (100%, test 34 is `test_api_photos_endpoint_and_remove_by_photo`). Verify export: 14/14 checks passed (Check 14 scanned 27 files in eval/, tests/, and frontend/). Verify API: all modes passed (100%). Zero regressions. | [`frontend/src/__tests__/`](<REPO_ROOT>/frontend/src/__tests__/)<br>[`tests/test_api.py`](<REPO_ROOT>/tests/test_api.py)<br>[`eval/verify_export.py`](<REPO_ROOT>/eval/verify_export.py) |
+| **TASK 7** | Verification Documentation & Build Plan | **COMPLETE** | Verification audits | Phase 4 documented with task matrix, invariant accounting, Step C clean-state evidence, honest Step G accounting, Settings slider verification, and double E2E execution transcripts. `BUILD_PLAN.md` updated to "In verification" with status table fixed. | [`REPORT.md`](<REPO_ROOT>/REPORT.md)<br>[`BUILD_PLAN.md`](<REPO_ROOT>/BUILD_PLAN.md) |
 
 *(Note: Items marked **NEEDS ORGANIZER REVIEW** reflect subjective human-experience factors such as visual spacing, wording nuance, and workflow ease-of-use that cannot be programmatically validated).*
 
@@ -1320,7 +1321,7 @@ Invariant: $\text{Total Detected Faces} = N_{\text{clustered}} + N_{\text{unrec}
 #### Isolation Architecture
 The E2E test script (`frontend/scripts/e2e.mjs`) guarantees total isolation from the repository's canonical data:
 1. Environment variables `PHOTOSORTER_WORK_DIR` and `PHOTOSORTER_OUTPUT_DIR` redirect API state and output to temporary directories (`export.e2e_temp.work` and `export.e2e_temp`).
-2. Step H explicitly fills the Export destination input (`#export-output-dir-input`) with an isolated temporary output directory (`C:\Users\DELL\face-clubbing\export.e2e_temp`).
+2. Step H explicitly fills the Export destination input (`#export-output-dir-input`) with an isolated temporary output directory (`<REPO_ROOT>\export.e2e_temp`).
 3. An extended isolation audit asserts that:
    - Canonical `export.work/edits.json` modification time (`mtime`) and SHA-256 hash remain strictly unchanged before vs after.
    - Canonical `export/` directory file listing remains strictly unchanged before vs after.
@@ -1466,7 +1467,7 @@ STEP G: Trigger rerun and assert edits survive by face ID
 ----------------------------------------------------------------
 STEP H: Export bundle to temp folder and assert clean static bundle structure
 ----------------------------------------------------------------
-[STEP H ACTION] Explicitly setting export destination input to isolated path: C:\Users\DELL\face-clubbing\export.e2e_temp
+[STEP H ACTION] Explicitly setting export destination input to isolated path: <REPO_ROOT>\export.e2e_temp
 [STEP H] Clicking "Export Public Bundle"...
 [STEP H] Export completed: 191 people, 259 photos.
 [STEP H] Contents of isolated export directory on disk: config.json,faces,people.json,thumbs
@@ -1510,7 +1511,7 @@ STEP A: Start sorting job, verify >= 5 SSE updates, end at 192 people
 ----------------------------------------------------------------
 [STEP A] Sorting job started. Collecting SSE progress updates...
   [PROGRESS UPDATE #1] 0.0%[starting]Initializing job...0 / 0
-  [PROGRESS UPDATE #2] 0.0%[scanning]Scanning input: C:\Users\DELL\face-clubbing\test_photos0 / 0
+  [PROGRESS UPDATE #2] 0.0%[scanning]Scanning input: <REPO_ROOT>\test_photos0 / 0
   [PROGRESS UPDATE #3] 0.0%[scanned]Found 271 photos to process.0 / 271
   [PROGRESS UPDATE #4] 0.4%[processing]IMG-20260226-WA0037.jpg1 / 271
   [PROGRESS UPDATE #5] 0.7%[processing]IMG-20260226-WA0047.jpg2 / 271
@@ -1629,7 +1630,7 @@ STEP G: Trigger rerun and assert edits survive by face ID
 ----------------------------------------------------------------
 STEP H: Export bundle to temp folder and assert clean static bundle structure
 ----------------------------------------------------------------
-[STEP H ACTION] Explicitly setting export destination input to isolated path: C:\Users\DELL\face-clubbing\export.e2e_temp
+[STEP H ACTION] Explicitly setting export destination input to isolated path: <REPO_ROOT>\export.e2e_temp
 [STEP H] Clicking "Export Public Bundle"...
 [STEP H] Export completed: 191 people, 259 photos.
 [STEP H] Contents of isolated export directory on disk: config.json,faces,people.json,thumbs
@@ -1793,7 +1794,7 @@ STEP G: Trigger rerun and assert edits survive by face ID
 ----------------------------------------------------------------
 STEP H: Export bundle to temp folder and assert clean static bundle structure
 ----------------------------------------------------------------
-[STEP H ACTION] Explicitly setting export destination input to isolated path: C:\Users\DELL\face-clubbing\export.e2e_temp
+[STEP H ACTION] Explicitly setting export destination input to isolated path: <REPO_ROOT>\export.e2e_temp
 [STEP H] Clicking "Export Public Bundle"...
 [STEP H] Export completed: 191 people, 259 photos.
 [STEP H] Contents of isolated export directory on disk: config.json,faces,people.json,thumbs
@@ -1828,7 +1829,7 @@ ALL PHASE 4 E2E BROWSER VERIFICATION CHECKS PASSED (100%)
 > photosorter-frontend@1.0.0 test
 > vitest run
 
- RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
+ RUN  v5.0.3 <REPO_ROOT>/frontend
 
  ✓ src/__tests__/undoControl.test.ts (3 tests) 10ms
  ✓ src/__tests__/suggestionList.test.ts (4 tests) 11ms
@@ -1846,9 +1847,9 @@ The test that raised pytest collection from 33 to 34 tests is explicitly identif
 (Added to verify the photo browsing endpoint and the removal of all faces belonging to a photo from a person cluster).
 ```text
 ============================= test session starts =============================
-platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\DELL\face-clubbing\.venv\Scripts\python.exe
+platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0 -- <REPO_ROOT>\.venv\Scripts\python.exe
 cachedir: .pytest_cache
-rootdir: C:\Users\DELL\face-clubbing
+rootdir: <REPO_ROOT>
 configfile: pytest.ini
 testpaths: tests
 plugins: anyio-4.15.1
@@ -2004,14 +2005,14 @@ Date:   Thu Oct 8 09:20:44 2026 +0530
 
 | Task | Objective | Status | Evidence Script / File Path | Verification Outcome & Key Metrics |
 | :---: | :--- | :---: | :--- | :--- |
-| **TASK 0** | Preserve live data | **COMPLETE** | [`archives/edits_2026-10-08.json`](file:///c:/Users/DELL/face-clubbing/archives/edits_2026-10-08.json)<br>Commit: `5f3e66d` | Copied live `export.work/edits.json` to archives. Preserved 4 merges reported solely by anchor face IDs (`f_056e4727b8b8d6d0_001` + `f_f3de19871f241880_002`, `f_2916e35d73c60b70_001` + `f_3a9077105f8e5efe_006`, `f_10bae275a2e5daf8_002` + `f_1ba2b67379394309_005`, `f_c86529d195d9fcb2_004` + `f_15b9e3e80b666d62_003`). Original intact. |
-| **TASK 1** | Pinned baseline fixture | **COMPLETE** | [`eval/baseline/`](file:///c:/Users/DELL/face-clubbing/eval/baseline/)<br>[`eval/check_baseline.py`](file:///c:/Users/DELL/face-clubbing/eval/check_baseline.py)<br>Commit: `174307b` | Pinned baseline fixture created with `people.json`, `config.json`, `id_map.json`, `suggestions.json`, empty `edits.json`. `check_baseline.py` passes: 192 people, 445 unrecognized faces, 168 unrecognized photos, 4 no-face photos. CLI regeneration documented in `eval/baseline/README.md`. |
-| **TASK 2** | Isolate every check from live data | **COMPLETE** | [`tests/test_isolation.py`](file:///c:/Users/DELL/face-clubbing/tests/test_isolation.py)<br>[`tests/test_api.py`](file:///c:/Users/DELL/face-clubbing/tests/test_api.py)<br>[`eval/verify_export.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_export.py)<br>Commit: `639b1b3` | Tests, verification scripts, and E2E read only pinned baseline and temp cache copy. `test_isolation.py` proves SHA-256 tree hashes of `export/` and `export.work/` are 100% untouched. Running `pytest`, `verify_export.py`, `verify_api.py --mode all`, and `e2e.mjs` yields identical 100% passes whether live edits are present or absent. |
-| **TASK 3** | Make Check 6 real | **COMPLETE** | [`eval/verify_export.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_export.py) (Check 6)<br>Commit: `968ec2a` | Updated Check 6 from collection-only to real execution of pytest suite (`sys.executable -m pytest -q`). Fails on any test error or failure. Full suite: 35 passed, 0 failures/errors. |
-| **TASK 4** | Public bundle definition | **COMPLETE** | [`SPEC.md`](file:///c:/Users/DELL/face-clubbing/SPEC.md) (Decision 20)<br>[`BUILD_PLAN.md`](file:///c:/Users/DELL/face-clubbing/BUILD_PLAN.md)<br>[`tests/test_exporter.py`](file:///c:/Users/DELL/face-clubbing/tests/test_exporter.py)<br>Commit: `2e62c51` | Public bundle defined as `config.json`, `people.json`, `faces/`, `thumbs/`, optional viewer build (`index.html`, `assets/`), and standalone `gallery.html`. Enforced in `verify_export.py` Check 2 and `test_exporter.py`. Organizer files (`suggestions.json`, `edits.json`, `id_map.json`, `.cache/`) strictly rejected. Standalone gallery rows added to BUILD_PLAN. |
-| **TASK 5** | Live state vs baseline diff | **COMPLETE** | [`eval/verify_live.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_live.py)<br>Commit: `5ddae6f` | Live export kept as organizer output and uncoupled from test oracle. `verify_live.py` diffs live state against baseline without failing: 192 -> 188 people (-4), 4 live edits, merged anchors reported by face IDs. Exits 0. |
-| **TASK 6** | Phase 2 Row 14 deploy test | **COMPLETE** | [`eval/build_synthetic_bundle.py`](file:///c:/Users/DELL/face-clubbing/eval/build_synthetic_bundle.py)<br>[`eval/deploy_gh_pages.py`](file:///c:/Users/DELL/face-clubbing/eval/deploy_gh_pages.py)<br>Commit: `9ef5fdc` | Zero test photos published. Built 20-photo synthetic bundle (generated avatar photos, crops, thumbs) and deployed to GitHub Pages at `https://sufiyan-shiraj.github.io/face-clubbing/`. HTTP 200 verified for `config.json` and `people.json`. |
-| **TASK 7** | Report hygiene & plan sync | **COMPLETE** | [`REPORT.md`](file:///c:/Users/DELL/face-clubbing/REPORT.md)<br>[`BUILD_PLAN.md`](file:///c:/Users/DELL/face-clubbing/BUILD_PLAN.md) | Stale counts updated. Full verbatim script outputs pasted. BUILD_PLAN statuses updated only for COMPLETE items. |
+| **TASK 0** | Preserve live data | **COMPLETE** | [`archives/edits_2026-10-08.json`](<REPO_ROOT>/archives/edits_2026-10-08.json)<br>Commit: `5f3e66d` | Copied live `export.work/edits.json` to archives. Preserved 4 merges reported solely by anchor face IDs (`f_056e4727b8b8d6d0_001` + `f_f3de19871f241880_002`, `f_2916e35d73c60b70_001` + `f_3a9077105f8e5efe_006`, `f_10bae275a2e5daf8_002` + `f_1ba2b67379394309_005`, `f_c86529d195d9fcb2_004` + `f_15b9e3e80b666d62_003`). Original intact. |
+| **TASK 1** | Pinned baseline fixture | **COMPLETE** | [`eval/baseline/`](<REPO_ROOT>/eval/baseline/)<br>[`eval/check_baseline.py`](<REPO_ROOT>/eval/check_baseline.py)<br>Commit: `174307b` | Pinned baseline fixture created with `people.json`, `config.json`, `id_map.json`, `suggestions.json`, empty `edits.json`. `check_baseline.py` passes: 192 people, 445 unrecognized faces, 168 unrecognized photos, 4 no-face photos. CLI regeneration documented in `eval/baseline/README.md`. |
+| **TASK 2** | Isolate every check from live data | **COMPLETE** | [`tests/test_isolation.py`](<REPO_ROOT>/tests/test_isolation.py)<br>[`tests/test_api.py`](<REPO_ROOT>/tests/test_api.py)<br>[`eval/verify_export.py`](<REPO_ROOT>/eval/verify_export.py)<br>Commit: `639b1b3` | Tests, verification scripts, and E2E read only pinned baseline and temp cache copy. `test_isolation.py` proves SHA-256 tree hashes of `export/` and `export.work/` are 100% untouched. Running `pytest`, `verify_export.py`, `verify_api.py --mode all`, and `e2e.mjs` yields identical 100% passes whether live edits are present or absent. |
+| **TASK 3** | Make Check 6 real | **COMPLETE** | [`eval/verify_export.py`](<REPO_ROOT>/eval/verify_export.py) (Check 6)<br>Commit: `968ec2a` | Updated Check 6 from collection-only to real execution of pytest suite (`sys.executable -m pytest -q`). Fails on any test error or failure. Full suite: 35 passed, 0 failures/errors. |
+| **TASK 4** | Public bundle definition | **COMPLETE** | [`SPEC.md`](<REPO_ROOT>/SPEC.md) (Decision 20)<br>[`BUILD_PLAN.md`](<REPO_ROOT>/BUILD_PLAN.md)<br>[`tests/test_exporter.py`](<REPO_ROOT>/tests/test_exporter.py)<br>Commit: `2e62c51` | Public bundle defined as `config.json`, `people.json`, `faces/`, `thumbs/`, optional viewer build (`index.html`, `assets/`), and standalone `gallery.html`. Enforced in `verify_export.py` Check 2 and `test_exporter.py`. Organizer files (`suggestions.json`, `edits.json`, `id_map.json`, `.cache/`) strictly rejected. Standalone gallery rows added to BUILD_PLAN. |
+| **TASK 5** | Live state vs baseline diff | **COMPLETE** | [`eval/verify_live.py`](<REPO_ROOT>/eval/verify_live.py)<br>Commit: `5ddae6f` | Live export kept as organizer output and uncoupled from test oracle. `verify_live.py` diffs live state against baseline without failing: 192 -> 188 people (-4), 4 live edits, merged anchors reported by face IDs. Exits 0. |
+| **TASK 6** | Phase 2 Row 14 deploy test | **COMPLETE** | [`eval/build_synthetic_bundle.py`](<REPO_ROOT>/eval/build_synthetic_bundle.py)<br>[`eval/deploy_gh_pages.py`](<REPO_ROOT>/eval/deploy_gh_pages.py)<br>Commit: `9ef5fdc` | Zero test photos published. Built 20-photo synthetic bundle (generated avatar photos, crops, thumbs) and deployed to GitHub Pages at `https://sufiyan-shiraj.github.io/face-clubbing/`. HTTP 200 verified for `config.json` and `people.json`. |
+| **TASK 7** | Report hygiene & plan sync | **COMPLETE** | [`REPORT.md`](<REPO_ROOT>/REPORT.md)<br>[`BUILD_PLAN.md`](<REPO_ROOT>/BUILD_PLAN.md) | Stale counts updated. Full verbatim script outputs pasted. BUILD_PLAN statuses updated only for COMPLETE items. |
 
 ---
 
@@ -2156,7 +2157,7 @@ STEP A: Start sorting job, verify >= 5 SSE updates, end at 192 people
 ----------------------------------------------------------------
 [STEP A] Sorting job started. Collecting SSE progress updates...
   [PROGRESS UPDATE #1] 0.0%[starting]Initializing job...0 / 0
-  [PROGRESS UPDATE #2] 0.0%[scanning]Scanning input: C:\Users\DELL\face-clubbing\test_photos0 / 0
+  [PROGRESS UPDATE #2] 0.0%[scanning]Scanning input: <REPO_ROOT>\test_photos0 / 0
   [PROGRESS UPDATE #3] 0.0%[scanned]Found 271 photos to process.0 / 271
   [PROGRESS UPDATE #4] 0.4%[processing]IMG-20260226-WA0037.jpg1 / 271
   [PROGRESS UPDATE #5] 0.7%[processing]IMG-20260226-WA0047.jpg2 / 271
@@ -2275,7 +2276,7 @@ STEP G: Trigger rerun and assert edits survive by face ID
 ----------------------------------------------------------------
 STEP H: Export bundle to temp folder and assert clean static bundle structure
 ----------------------------------------------------------------
-[STEP H ACTION] Explicitly setting export destination input to isolated path: C:\Users\DELL\face-clubbing\export.e2e_temp
+[STEP H ACTION] Explicitly setting export destination input to isolated path: <REPO_ROOT>\export.e2e_temp
 [STEP H] Clicking "Export Public Bundle"...
 [STEP H] Export completed: 191 people, 259 photos.
 [STEP H] Contents of isolated export directory on disk: config.json,faces,people.json,thumbs
@@ -2380,7 +2381,7 @@ STEP A: Start sorting job, verify >= 5 SSE updates, end at 192 people
 ----------------------------------------------------------------
 [STEP A] Sorting job started. Collecting SSE progress updates...
   [PROGRESS UPDATE #1] 0.0%[starting]Initializing job...0 / 0
-  [PROGRESS UPDATE #2] 0.0%[scanning]Scanning input: C:\Users\DELL\face-clubbing\test_photos0 / 0
+  [PROGRESS UPDATE #2] 0.0%[scanning]Scanning input: <REPO_ROOT>\test_photos0 / 0
   [PROGRESS UPDATE #3] 0.0%[scanned]Found 271 photos to process.0 / 271
   [PROGRESS UPDATE #4] 0.4%[processing]IMG-20260226-WA0037.jpg1 / 271
   [PROGRESS UPDATE #5] 0.7%[processing]IMG-20260226-WA0047.jpg2 / 271
@@ -2499,7 +2500,7 @@ STEP G: Trigger rerun and assert edits survive by face ID
 ----------------------------------------------------------------
 STEP H: Export bundle to temp folder and assert clean static bundle structure
 ----------------------------------------------------------------
-[STEP H ACTION] Explicitly setting export destination input to isolated path: C:\Users\DELL\face-clubbing\export.e2e_temp
+[STEP H ACTION] Explicitly setting export destination input to isolated path: <REPO_ROOT>\export.e2e_temp
 [STEP H] Clicking "Export Public Bundle"...
 [STEP H] Export completed: 191 people, 259 photos.
 [STEP H] Contents of isolated export directory on disk: config.json,faces,people.json,thumbs
@@ -2652,9 +2653,9 @@ Both `config.json` and `people.json` load with HTTP 200 status over the public i
 
 ```text
 [SUPERSEDED - Historical Scratch Run Log]
-Executable found: C:\Users\DELL\face-clubbing\dist\photosorter.exe
+Executable found: <REPO_ROOT>\dist\photosorter.exe
 Size: 156355635 bytes (149.11 MB)
-Launching: C:\Users\DELL\face-clubbing\dist\photosorter.exe --no-gui --port 8996
+Launching: <REPO_ROOT>\dist\photosorter.exe --no-gui --port 8996
 Backend healthy at 13.58s: {'status': 'ok', 'version': '1.0.0'}
 Root URL (/) status: 200, content-type: text/html; charset=utf-8
 
@@ -2662,8 +2663,8 @@ Triggering job on test_photos...
 Job start status: 200, resp: {'job_id': '894034a1', 'status': 'running', 'stage': 'starting', 'current': 0, 'total': 0, 'percent': 0.0, 'current_file': None, 'eta_seconds': None, 'message': 'Initializing job...', 'error': None, 'result_summary': None}
 Job status: running (0.0%) - [202/271] IMG_2297.HEIC (2 faces)
 Job status: running (0.0%) - Clustering faces by person with second-pass merge...
-Job status: running (0.0%) - Generating static export bundle in C:\Users\DELL\face-clubbing\export...
-Job status: running (0.0%) - Generating static export bundle in C:\Users\DELL\face-clubbing\export...
+Job status: running (0.0%) - Generating static export bundle in <REPO_ROOT>\export...
+Job status: running (0.0%) - Generating static export bundle in <REPO_ROOT>\export...
 Job status: completed (0.0%) - Job finished. Clustered 188 people.
 
 Job completed in 10.03s (success=True)
@@ -2688,7 +2689,7 @@ ALL PHASE 5 CRITERIA VERIFIED SUCCESSFULLY!
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0
-rootdir: C:\Users\DELL\face-clubbing
+rootdir: <REPO_ROOT>
 configfile: pytest.ini
 testpaths: tests
 plugins: anyio-4.15.1
@@ -2714,7 +2715,7 @@ Executed Vitest suite covering suggestion review, multi-merge selection, undo ma
 > photosorter-frontend@1.0.0 test
 > vitest run --run
 
- RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
+ RUN  v5.0.3 <REPO_ROOT>/frontend
 
  ✓ src/__tests__/suggestionList.test.ts (4 tests) 11ms
  ✓ src/__tests__/mergeSelection.test.ts (4 tests) 12ms
@@ -2735,28 +2736,28 @@ Executed `eval/verify_exe.py` against standalone `dist/photosorter.exe` verifyin
 ================================================================================
 PHOTOSORTER STANDALONE EXECUTABLE VERIFICATION (eval/verify_exe.py)
 ================================================================================
-[PASS] Executable located: C:\Users\DELL\face-clubbing\dist\photosorter.exe
+[PASS] Executable located: <REPO_ROOT>\dist\photosorter.exe
        Binary Size: 156,359,761 bytes (149.12 MB)
        Subsystem Code: 2 -> IMAGE_SUBSYSTEM_WINDOWS_GUI (Windowed - No console popup)
 [PASS] Subsystem check: Built as pure Windows GUI application (console=False).
 [INFO] Pre-seeded embedding cache into temp work dir (259 cached photos)
 
 [INFO] Isolated Test Environment:
-       Temp Root:   C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_qisvffmc
-       Work Dir:    C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_qisvffmc\work
-       Export Dir:  C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_qisvffmc\export
+       Temp Root:   <TEMP_DIR>\photosorter_exe_verify_qisvffmc
+       Work Dir:    <TEMP_DIR>\photosorter_exe_verify_qisvffmc\work
+       Export Dir:  <TEMP_DIR>\photosorter_exe_verify_qisvffmc\export
        Port:        50966
 
-[INFO] Launching: C:\Users\DELL\face-clubbing\dist\photosorter.exe --no-gui --port 50966 --work-dir C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_qisvffmc\work --output-dir C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_qisvffmc\export
+[INFO] Launching: <REPO_ROOT>\dist\photosorter.exe --no-gui --port 50966 --work-dir <TEMP_DIR>\photosorter_exe_verify_qisvffmc\work --output-dir <TEMP_DIR>\photosorter_exe_verify_qisvffmc\export
 [PASS] Executable online in 24.46s at http://127.0.0.1:50966
 [PASS] Frontend UI assets properly mounted at root / (status 200)
 
-[INFO] Triggering job on input: C:\Users\DELL\face-clubbing\test_photos
+[INFO] Triggering job on input: <REPO_ROOT>\test_photos
 [PASS] Job started: {'job_id': '8ab61429', 'status': 'running', 'stage': 'starting', 'current': 0, 'total': 0, 'percent': 0.0, 'progress': 0.0, 'current_file': None, 'eta_seconds': None, 'message': 'Initializing job...', 'error': None, 'result_summary': None}
        [Job Progress] Stage: processing   | Progress:   3.7% (percent=  3.7%) | [10/271] [10/271] IMG_20260303_233740.jpg (21 faces)
        [Job Progress] Stage: processing   | Progress:  25.1% (percent= 25.1%) | [68/271] [68/271] IMG_2113.HEIC (10 faces)
        [Job Progress] Stage: clustering   | Progress:  92.0% (percent= 92.0%) | [271/271] Clustering faces by person with second-pass m
-       [Job Progress] Stage: exporting    | Progress:  96.0% (percent= 96.0%) | [271/271] Generating static export bundle in C:\Users\D
+       [Job Progress] Stage: exporting    | Progress:  96.0% (percent= 96.0%) | [271/271] Generating static export bundle in <USER_HOME>
        [Job Progress] Stage: complete     | Progress: 100.0% (percent=100.0%) | [271/271] Job finished. Clustered 192 people.
 
 [PASS] Pipeline finished in 22.14s
@@ -2796,14 +2797,14 @@ VERIFY MODELS & COLD EMBEDDING CACHE RUN
 ================================================================================
 --- TEST 1: Model folder unavailable & offline download failure ---
 [INFO] Tested model initialization with isolated non-existent folder and blocked network:
-RuntimeError: InsightFace model 'buffalo_l' is not available at 'C:\Users\DELL\AppData\Local\Temp\test_models_offline_we8f06t4\empty_userprofile\.photosorter\models\buffalo_l' and automatic download failed (HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /deepinsight/insightface/releases/download/model-zoo/buffalo_l.zip (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))). Please ensure an internet connection on first run to download models to 'C:\Users\DELL\AppData\Local\Temp\test_models_offline_we8f06t4\empty_userprofile\.photosorter\models\buffalo_l', or manually place the model ONNX files.
+RuntimeError: InsightFace model 'buffalo_l' is not available at '<TEMP_DIR>\test_models_offline_we8f06t4\empty_userprofile\.photosorter\models\buffalo_l' and automatic download failed (HTTPSConnectionPool(host='github.com', port=443): Max retries exceeded with url: /deepinsight/insightface/releases/download/model-zoo/buffalo_l.zip (Caused by ProxyError('Unable to connect to proxy', NewConnectionError("HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))). Please ensure an internet connection on first run to download models to '<TEMP_DIR>\test_models_offline_we8f06t4\empty_userprofile\.photosorter\models\buffalo_l', or manually place the model ONNX files.
 
 [PASS] Clear offline error verified when model folder is unavailable!
 
 --- TEST 2: COLD embedding cache on 20-photo subset ---
-[OK] Verified COLD embedding cache in C:\Users\DELL\AppData\Local\Temp\test_cold_cache_84e_dz1v\work (0 pre-seeded files)
+[OK] Verified COLD embedding cache in <TEMP_DIR>\test_cold_cache_84e_dz1v\work (0 pre-seeded files)
 [OK] Server started on port 63710
-[INFO] Started sorting 20-photo subset from: C:\Users\DELL\AppData\Local\Temp\test_subset_20_b5q9_ypf
+[INFO] Started sorting 20-photo subset from: <TEMP_DIR>\test_subset_20_b5q9_ypf
        [running] stage=model_init percent=100.0% msg=Initializing InsightFace model...
        [running] stage=processing percent=5.0% msg=[1/20] IMG-20260226-WA0037.jpg (0 faces)
        [running] stage=processing percent=10.0% msg=[2/20] IMG-20260226-WA0047.jpg (0 faces)
@@ -2825,7 +2826,7 @@ RuntimeError: InsightFace model 'buffalo_l' is not available at 'C:\Users\DELL\A
        [running] stage=processing percent=90.0% msg=[18/20] IMG_20260304_080950.jpg (22 faces)
        [running] stage=processing percent=95.0% msg=[19/20] IMG_20260309_211339.jpg (4 faces)
        [running] stage=clustering percent=92.0% msg=Clustering faces by person with second-pass merge...
-       [running] stage=exporting percent=96.0% msg=Generating static export bundle in C:\Users\DELL\AppData\Local\Temp\test_cold_cache_84e_dz1v\export...
+       [running] stage=exporting percent=96.0% msg=Generating static export bundle in <TEMP_DIR>\test_cold_cache_84e_dz1v\export...
        [completed] stage=complete percent=100.0% msg=Job finished. Clustered 62 people.
 [PASS] Cold run on 20 photos completed in 185.51s
 
@@ -2853,7 +2854,7 @@ PHOTOSORTER WINDOWED LAUNCH VERIFICATION (eval/verify_windowed.py)
 [PASS] (b) PE Subsystem is IMAGE_SUBSYSTEM_WINDOWS_GUI (no console window)
 
 [INFO] Launching executable in WINDOWED mode (without --no-gui):
-       C:\Users\DELL\face-clubbing\dist\photosorter.exe --port 53284 --work-dir C:\Users\DELL\AppData\Local\Temp\test_windowed_x5fyb9s2\work --output-dir C:\Users\DELL\AppData\Local\Temp\test_windowed_x5fyb9s2\export
+       <REPO_ROOT>\dist\photosorter.exe --port 53284 --work-dir <TEMP_DIR>\test_windowed_x5fyb9s2\work --output-dir <TEMP_DIR>\test_windowed_x5fyb9s2\export
 [PASS] (c) Server online and healthy at http://127.0.0.1:53284/api/health
 [PASS] (c) Frontend page loads successfully (status 200, HTML content served)
 
@@ -2972,10 +2973,10 @@ Executed `dist/photosorter.exe` using `eval/verify_models_download.py` with:
 ================================================================================
 PHOTOSORTER MODEL FIRST-RUN DOWNLOAD & COLD CACHE TEST
 ================================================================================
-[INFO] Executable:        C:\Users\DELL\face-clubbing\dist\photosorter.exe
-[INFO] Empty USERPROFILE: C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\userprofile
-[INFO] Cold Work Dir:     C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\work (cached files: 0)
-[INFO] 20-Photo Subset:   C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\photos_20 (20 photos)
+[INFO] Executable:        <REPO_ROOT>\dist\photosorter.exe
+[INFO] Empty USERPROFILE: <TEMP_DIR>\test_models_download_eayfei_e\userprofile
+[INFO] Cold Work Dir:     <TEMP_DIR>\test_models_download_eayfei_e\work (cached files: 0)
+[INFO] 20-Photo Subset:   <TEMP_DIR>\test_models_download_eayfei_e\photos_20 (20 photos)
 [PASS] Exe online in 24.19s at http://127.0.0.1:53947/api/health
 [INFO] Started sorting 20-photo subset on cold cache & cold models...
        [  0.53s] [running] stage=model_init     percent=  2.0% | Initializing InsightFace model...
@@ -3000,7 +3001,7 @@ PHOTOSORTER MODEL FIRST-RUN DOWNLOAD & COLD CACHE TEST
        [178.09s] [running] stage=processing     percent= 79.4% | [18/20] IMG_20260304_080950.jpg (22 faces)
        [180.11s] [running] stage=processing     percent= 83.7% | [19/20] IMG_20260309_211339.jpg (4 faces)
        [184.22s] [running] stage=clustering     percent= 92.0% | Clustering faces by person with second-pass merge...
-       [185.28s] [running] stage=exporting      percent=100.0% | Generating static export bundle in C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\export...
+       [185.28s] [running] stage=exporting      percent=100.0% | Generating static export bundle in <TEMP_DIR>\test_models_download_eayfei_e\export...
        [185.83s] [running] stage=complete       percent=100.0% | Export complete!
        [186.33s] [completed] stage=complete       percent=100.0% | Job finished. Clustered 62 people.
 
@@ -3109,7 +3110,7 @@ SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedd
 
 Phase 6 implements Method 1 (Google Drive link input, read-only via API key, no OAuth sign-in) in compliance with SPEC (rev 3, Section 7 Method 1) and BUILD_PLAN Phase 6:
 
-1. **Robust URL and Folder ID Parser ([`backend/drive/parser.py`](file:///c:/Users/DELL/face-clubbing/backend/drive/parser.py))**:
+1. **Robust URL and Folder ID Parser ([`backend/drive/parser.py`](<REPO_ROOT>/backend/drive/parser.py))**:
    - Parses folder identifiers across all common formats:
      - Standard web links: `https://drive.google.com/drive/folders/<FOLDER_ID>?usp=sharing`
      - Multi-user links: `https://drive.google.com/drive/u/0/folders/<FOLDER_ID>`, `.../u/2/folders/<FOLDER_ID>?usp=drive_link`
@@ -3119,14 +3120,14 @@ Phase 6 implements Method 1 (Google Drive link input, read-only via API key, no 
    - Explicitly rejects Drive file links (`/file/d/...`), empty strings, whitespace, non-Drive domains, short IDs, `/drive/my-drive`, and Google Docs/Sheets URLs with descriptive error messages.
    - Comprehensive unit test coverage with 17 parameterized cases.
 
-2. **Secure Key Management & Privacy Shield ([`backend/drive/config.py`](file:///c:/Users/DELL/face-clubbing/backend/drive/config.py))**:
+2. **Secure Key Management & Privacy Shield ([`backend/drive/config.py`](<REPO_ROOT>/backend/drive/config.py))**:
    - Stores API keys strictly in user profile local settings outside the git repository (`~/.photosorter/settings.json`), with automated directory creation and file permissions.
    - Environment variable fallback: prioritizes or reads from `DRIVE_API_KEY`.
    - Never commits, bundles into PyInstaller executables, or exports API keys.
    - Masking utilities (`mask_api_key`) display keys as `AIzaSy...xxxx` (or `(empty)`).
    - Log sanitization (`sanitize_drive_logs`) strips raw API keys from log strings and error messages.
 
-3. **High-Resilience Drive Client ([`backend/drive/client.py`](file:///c:/Users/DELL/face-clubbing/backend/drive/client.py))**:
+3. **High-Resilience Drive Client ([`backend/drive/client.py`](<REPO_ROOT>/backend/drive/client.py))**:
    - **Paginated Listing**: Queries `https://www.googleapis.com/drive/v3/files` with `pageSize=100`, filtering by `trashed = false` and `'<folder_id>' in parents`.
    - **Image Filtering**: Filters files by MIME type (`image/*`) and file extensions (`.jpg`, `.jpeg`, `.png`, `.webp`, `.heic`, `.heif`), skipping subfolders and non-image files while recording counts.
    - **Thumbnail Downloading with Original Fallback**: Requests size-limited thumbnails via `thumbnailLink` resized to `=s1000`. If `thumbnailLink` is missing or fails, gracefully falls back to downloading the full original via `alt=media`.
@@ -3135,18 +3136,18 @@ Phase 6 implements Method 1 (Google Drive link input, read-only via API key, no 
    - **Resumable Cache**: Tracks downloaded files in `manifest.json` (`file_id`, `modified_time`, `size`, `local_path`). Subsequent runs immediately skip already cached files whose `modified_time` matches.
    - **Domain Exceptions**: Raises clear, actionable errors for `DriveAuthError` (400 bad API key), `DrivePermissionError` (404/403 private folder), and `DriveQuotaError` (403 daily project quota exceeded).
 
-4. **Pipeline & Exporter Integration ([`backend/engine/pipeline.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/pipeline.py), [`backend/engine/models.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/models.py), [`backend/engine/exporter.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/exporter.py))**:
+4. **Pipeline & Exporter Integration ([`backend/engine/pipeline.py`](<REPO_ROOT>/backend/engine/pipeline.py), [`backend/engine/models.py`](<REPO_ROOT>/backend/engine/models.py), [`backend/engine/exporter.py`](<REPO_ROOT>/backend/engine/exporter.py))**:
    - `run_pipeline` detects Drive folder inputs, downloads thumbnails into isolated work cache (`export.work/cache/drive/<folder_id>/`), and feeds images seamlessly into the clustering pipeline.
    - Preserves `drive_file_id` and sets `download_url = "https://drive.google.com/uc?id=<ID>&export=download"` on `ScannedPhoto` and `PhotoRecord`.
    - `BundleExporter` writes each photo's `download_url` into the exported `people.json` under `photos[photo_id]["download"]`.
 
-5. **API & Background Job Streaming ([`backend/api/jobs.py`](file:///c:/Users/DELL/face-clubbing/backend/api/jobs.py), [`backend/api/routes.py`](file:///c:/Users/DELL/face-clubbing/backend/api/routes.py), [`backend/api/models.py`](file:///c:/Users/DELL/face-clubbing/backend/api/models.py))**:
+5. **API & Background Job Streaming ([`backend/api/jobs.py`](<REPO_ROOT>/backend/api/jobs.py), [`backend/api/routes.py`](<REPO_ROOT>/backend/api/routes.py), [`backend/api/models.py`](<REPO_ROOT>/backend/api/models.py))**:
    - `JobStartRequest` supports `drive_folder` and `drive_api_key`.
    - Background worker emits real-time SSE progress events across stages: `listing` (listing Drive files), `downloading` (downloading thumbnails), `model_init`, `processing` (detecting/embedding), `clustering`, and `exporting`.
    - Full cancellation support: `cancel_event` stops thumbnail downloads and pipeline execution cleanly.
    - `GET /api/settings` and `POST /api/settings` manage the masked Drive API key.
 
-6. **Organizer UI Enhancements ([`frontend/src/components/HomeScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/HomeScreen.tsx), [`frontend/src/components/SettingsScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SettingsScreen.tsx))**:
+6. **Organizer UI Enhancements ([`frontend/src/components/HomeScreen.tsx`](<REPO_ROOT>/frontend/src/components/HomeScreen.tsx), [`frontend/src/components/SettingsScreen.tsx`](<REPO_ROOT>/frontend/src/components/SettingsScreen.tsx))**:
    - **HomeScreen**: Added source mode toggle ("Local Folder / Zip" vs "Google Drive Folder"). Validates Drive folder URLs on input and disables Start button if a Drive file URL or invalid string is entered.
    - **SettingsScreen**: Added Google Drive API configuration section displaying current key status badge (Configured / Not Configured), masked key input with "Save Key" and "Remove Key" buttons, a 3-minute in-app guide on obtaining a free Google Cloud API key, and an explicit privacy guarantee note.
 
@@ -3156,13 +3157,13 @@ Phase 6 implements Method 1 (Google Drive link input, read-only via API key, no 
 
 | Task | Description | Status | File Paths | Evidence & Key Verification Outcome |
 | :---: | :--- | :---: | :--- | :--- |
-| **1** | URL & Folder ID Parsing | **COMPLETE** | [`backend/drive/parser.py`](file:///c:/Users/DELL/face-clubbing/backend/drive/parser.py)<br>[`tests/test_drive.py`](file:///c:/Users/DELL/face-clubbing/tests/test_drive.py) | 17 unit tests passed. Validates all common URL formats, mobile links, multi-user paths, query strings, and raw IDs. Rejects `/file/d/` file URLs and invalid formats. |
-| **2** | Paginated Image Listing | **COMPLETE** | [`backend/drive/client.py`](file:///c:/Users/DELL/face-clubbing/backend/drive/client.py)<br>[`tests/test_drive.py`](file:///c:/Users/DELL/face-clubbing/tests/test_drive.py) | Mocked HTTP test verified 2-page pagination, skipping subfolders and non-image files, reporting 3 images detected and 3 skipped. |
-| **3** | Resized Thumbnails & Resumable Cache | **COMPLETE** | [`backend/drive/client.py`](file:///c:/Users/DELL/face-clubbing/backend/drive/client.py)<br>[`tests/test_drive.py`](file:///c:/Users/DELL/face-clubbing/tests/test_drive.py) | Verified `=s1000` resize, fallback to `alt=media`, 403 backoff retry (succeeded on retry 2), resumable caching (2nd run skips already cached files), and clear domain exceptions for 400 bad key, 404 private folder, 403 quota. |
-| **4** | Pipeline & Exporter Integration | **COMPLETE** | [`backend/engine/pipeline.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/pipeline.py)<br>[`backend/engine/exporter.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/exporter.py)<br>[`backend/engine/models.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/models.py) | Pipeline processes Drive thumbnails into identical engine output. Populates `drive_file_id` on `PhotoRecord` and exports `download = "https://drive.google.com/uc?id=<ID>&export=download"` in `people.json`. |
-| **5** | API Key Storage & Guide | **COMPLETE** | [`backend/drive/config.py`](file:///c:/Users/DELL/face-clubbing/backend/drive/config.py)<br>[`backend/api/routes.py`](file:///c:/Users/DELL/face-clubbing/backend/api/routes.py)<br>[`frontend/src/components/SettingsScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/SettingsScreen.tsx) | Stored outside repo in `~/.photosorter/settings.json`, fallback to `DRIVE_API_KEY`, masked in logs/UI (`AIzaSy...xxxx`). Interactive 3-min setup guide added to UI. |
-| **6** | UI & API Endpoints | **COMPLETE** | [`backend/api/jobs.py`](file:///c:/Users/DELL/face-clubbing/backend/api/jobs.py)<br>[`frontend/src/components/HomeScreen.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/components/HomeScreen.tsx)<br>[`frontend/src/App.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/App.tsx) | HomeScreen enabled with source mode toggle and client-side Drive URL validation. SSE stages include `listing` and `downloading`. Cancel support verified. |
-| **7** | Mocked Test Suites | **COMPLETE** | [`tests/test_drive.py`](file:///c:/Users/DELL/face-clubbing/tests/test_drive.py)<br>[`frontend/src/__tests__/driveIntegration.test.tsx`](file:///c:/Users/DELL/face-clubbing/frontend/src/__tests__/driveIntegration.test.tsx) | 29/29 pytest unit/mocked tests passed (100%). 7/7 Vitest frontend tests passed (100%). Total test suite: 67 pytest passed, 23 vitest passed. Zero network/API calls in CI. |
+| **1** | URL & Folder ID Parsing | **COMPLETE** | [`backend/drive/parser.py`](<REPO_ROOT>/backend/drive/parser.py)<br>[`tests/test_drive.py`](<REPO_ROOT>/tests/test_drive.py) | 17 unit tests passed. Validates all common URL formats, mobile links, multi-user paths, query strings, and raw IDs. Rejects `/file/d/` file URLs and invalid formats. |
+| **2** | Paginated Image Listing | **COMPLETE** | [`backend/drive/client.py`](<REPO_ROOT>/backend/drive/client.py)<br>[`tests/test_drive.py`](<REPO_ROOT>/tests/test_drive.py) | Mocked HTTP test verified 2-page pagination, skipping subfolders and non-image files, reporting 3 images detected and 3 skipped. |
+| **3** | Resized Thumbnails & Resumable Cache | **COMPLETE** | [`backend/drive/client.py`](<REPO_ROOT>/backend/drive/client.py)<br>[`tests/test_drive.py`](<REPO_ROOT>/tests/test_drive.py) | Verified `=s1000` resize, fallback to `alt=media`, 403 backoff retry (succeeded on retry 2), resumable caching (2nd run skips already cached files), and clear domain exceptions for 400 bad key, 404 private folder, 403 quota. |
+| **4** | Pipeline & Exporter Integration | **COMPLETE** | [`backend/engine/pipeline.py`](<REPO_ROOT>/backend/engine/pipeline.py)<br>[`backend/engine/exporter.py`](<REPO_ROOT>/backend/engine/exporter.py)<br>[`backend/engine/models.py`](<REPO_ROOT>/backend/engine/models.py) | Pipeline processes Drive thumbnails into identical engine output. Populates `drive_file_id` on `PhotoRecord` and exports `download = "https://drive.google.com/uc?id=<ID>&export=download"` in `people.json`. |
+| **5** | API Key Storage & Guide | **COMPLETE** | [`backend/drive/config.py`](<REPO_ROOT>/backend/drive/config.py)<br>[`backend/api/routes.py`](<REPO_ROOT>/backend/api/routes.py)<br>[`frontend/src/components/SettingsScreen.tsx`](<REPO_ROOT>/frontend/src/components/SettingsScreen.tsx) | Stored outside repo in `~/.photosorter/settings.json`, fallback to `DRIVE_API_KEY`, masked in logs/UI (`AIzaSy...xxxx`). Interactive 3-min setup guide added to UI. |
+| **6** | UI & API Endpoints | **COMPLETE** | [`backend/api/jobs.py`](<REPO_ROOT>/backend/api/jobs.py)<br>[`frontend/src/components/HomeScreen.tsx`](<REPO_ROOT>/frontend/src/components/HomeScreen.tsx)<br>[`frontend/src/App.tsx`](<REPO_ROOT>/frontend/src/App.tsx) | HomeScreen enabled with source mode toggle and client-side Drive URL validation. SSE stages include `listing` and `downloading`. Cancel support verified. |
+| **7** | Mocked Test Suites | **COMPLETE** | [`tests/test_drive.py`](<REPO_ROOT>/tests/test_drive.py)<br>[`frontend/src/__tests__/driveIntegration.test.tsx`](<REPO_ROOT>/frontend/src/__tests__/driveIntegration.test.tsx) | 29/29 pytest unit/mocked tests passed (100%). 7/7 Vitest frontend tests passed (100%). Total test suite: 67 pytest passed, 23 vitest passed. Zero network/API calls in CI. |
 
 ---
 
@@ -3172,9 +3173,9 @@ Phase 6 implements Method 1 (Google Drive link input, read-only via API key, no 
 Command: `python -m pytest tests/test_drive.py -v`
 ```text
 ============================= test session starts =============================
-platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\DELL\face-clubbing\.venv\Scripts\python.exe
+platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0 -- <REPO_ROOT>\.venv\Scripts\python.exe
 cachedir: .pytest_cache
-rootdir: C:\Users\DELL\face-clubbing
+rootdir: <REPO_ROOT>
 configfile: pytest.ini
 plugins: anyio-4.15.1
 collecting ... collected 29 items
@@ -3216,9 +3217,9 @@ tests/test_drive.py::TestDrivePipelineIntegration::test_pipeline_drive_branch_re
 Command: `python -m pytest tests/ -v`
 ```text
 ============================= test session starts =============================
-platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\DELL\face-clubbing\.venv\Scripts\python.exe
+platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0 -- <REPO_ROOT>\.venv\Scripts\python.exe
 cachedir: .pytest_cache
-rootdir: C:\Users\DELL\face-clubbing
+rootdir: <REPO_ROOT>
 configfile: pytest.ini
 plugins: anyio-4.15.1
 collecting ... collected 67 items
@@ -3286,7 +3287,7 @@ Command: `npm test` in `frontend/`
 > photosorter-frontend@1.0.0 test
 > vitest run
 
- RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
+ RUN  v5.0.3 <REPO_ROOT>/frontend
 
  ✓ src/__tests__/pollingFallback.test.ts (2 tests) 21ms
  ✓ src/__tests__/suggestionList.test.ts (4 tests) 9ms
@@ -3307,12 +3308,12 @@ Command: `npm test` in `frontend/`
 **Verification Status**: **COMPLETE** (Live verification executed on organizer's real Google Drive folder; evidence recorded, 64 px floor analyzed and documented in SPEC §18, zero credentials leaked).
 
 #### 20.4.1 Execution Overview & Key Management
-- **Target Folder**: `https://drive.google.com/drive/folders/1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3` (ID: `1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3`).
+- **Target Folder**: `https://drive.google.com/drive/folders/<FOLDER_ID>` (ID: `<FOLDER_ID>`).
 - **Key Resolution**: Retrieved via app's own configuration function `get_drive_api_key()` from `~/.photosorter/settings.json`, falling back to `DRIVE_API_KEY` environment variable. The raw key was never logged, printed, or written to repository files.
-- **Verification Script**: [`eval/verify_drive_phase6.py`](file:///c:/Users/DELL/face-clubbing/eval/verify_drive_phase6.py).
+- **Verification Script**: [`eval/verify_drive_phase6.py`](<REPO_ROOT>/eval/verify_drive_phase6.py).
 - **Execution Command**:
   ```bash
-  python eval/verify_drive_phase6.py --folder "https://drive.google.com/drive/folders/1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3"
+  python eval/verify_drive_phase6.py --folder "https://drive.google.com/drive/folders/<FOLDER_ID>"
   ```
 - **Raw Evidence Artifact**: `scratch/verify_drive_phase6_raw.txt`  
   - **SHA-256 Checksum**: `a546e96c095b9fd0683578a2d4eacc2c377cea6d40e97c5d1155fa3d4b1e2b5e`  
@@ -3350,7 +3351,7 @@ All three negative/exceptional cases were evaluated live and verified to deliver
   - Total Original Size: **133,936,329 bytes (127.73 MB)**
   - **Bandwidth Reduction**: **92.1% bandwidth saved** by using `=s1000` Drive thumbnails.
 - **Resumable Cache**:
-  - Pass 1 (initial download): 83 files processed into `export.work\drive\1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3`.
+  - Pass 1 (initial download): 83 files processed into `export.work\drive\<FOLDER_ID>`.
   - Pass 2 (cache verification): 83 files processed in 0.01s (**100% cache hit, 0 redownloads**).
 
 ##### Per-File Inventory Summary (Requirement a, Anonymized Hashes)
@@ -3430,7 +3431,7 @@ Evaluated across candidate floor values:
 
 ##### SPEC §6.2 Default Rule Compliance & SPEC §18 Proposal
 - **Zero Default Changes Made**: SPEC §6.2 defaults remain strictly **unchanged** (`min_face_size = 64`, `seed_min_face_size = 64`).
-- **Proposal Documented in SPEC §18.1**: The evidence table above and an adaptive floor recommendation of **40 px** (proportional to the 1000 px thumbnail width vs 1600 px standard detection dimension) have been recorded in [`SPEC.md` Section 18.1](file:///c:/Users/DELL/face-clubbing/SPEC.md#L429-L448) awaiting organizer review and decision.
+- **Proposal Documented in SPEC §18.1**: The evidence table above and an adaptive floor recommendation of **40 px** (proportional to the 1000 px thumbnail width vs 1600 px standard detection dimension) have been recorded in [`SPEC.md` Section 18.1](<REPO_ROOT>/SPEC.md#L429-L448) awaiting organizer review and decision.
 
 ---
 
@@ -3476,7 +3477,7 @@ Following the user-guided aesthetic and interaction design requirements, the Org
 ### 21.2 Verbatim Vitest Test Suite Execution Transcripts
 Command: `npx vitest run --pool=forks` (in `frontend/`)
 ```text
- RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
+ RUN  v5.0.3 <REPO_ROOT>/frontend
 
  ✓ src/__tests__/homeScreen.test.tsx (3 tests) 334ms
  ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 786ms
@@ -3560,7 +3561,7 @@ To support streamlined organizing, high-volume merge verification, and granular 
 ### 22.3 Verbatim Frontend Vitest Test Suite Execution Transcript
 Command: `npx vitest run --run` (in `frontend/`)
 ```text
- RUN  v5.0.3 C:/Users/DELL/face-clubbing/frontend
+ RUN  v5.0.3 <REPO_ROOT>/frontend
 
  ✓ src/__tests__/imageViewerModal.test.tsx (4 tests) 1775ms
    ✓ ImageViewerModal - Unknown Face Boxes & Person Changing (4)
@@ -3594,7 +3595,7 @@ Command: `npx vitest run --run` (in `frontend/`)
 ### 22.4 Verbatim Static Viewer Test Suite Execution Transcript
 Command: `npm test -- --run` (in `viewer/`)
 ```text
- RUN  v5.0.3 C:/Users/DELL/face-clubbing/viewer
+ RUN  v5.0.3 <REPO_ROOT>/viewer
 
  ✓ src/__tests__/viewer.test.tsx (6 tests) 581ms
    ✓ Requirement 12: Config Swap Look Changes Without Code Change (2)
@@ -3771,10 +3772,10 @@ This round of deliverables addresses five critical real-world operational workfl
    - A dedicated "New Project" button in the header resets the active runtime state to an empty slate anytime.
    - If unsaved or unexported edits exist, the user is prompted for confirmation before resetting.
 3. **Drive Folder Auto-Nesting on Export**:
-   - When an export destination directory is selected (e.g. `export/`), the engine and UI automatically create and nest inside a subfolder titled with the Google Drive folder name (or active project name), e.g. `export/Echoes of reason 18th/`.
+   - When an export destination directory is selected (e.g. `export/`), the engine and UI automatically create and nest inside a subfolder titled with the Google Drive folder name (or active project name), e.g. `export/<PROJECT_NAME>/`.
    - Prevents duplicate nesting if the user already selected or navigated into that folder.
 4. **Temporary Directory Lifecycle & Automatic Cleanup**:
-   - During scanning of Google Drive folders, downloaded files are temporarily staged in `<folder_name>_temp` (e.g. `Echoes of reason 18th_temp`).
+   - During scanning of Google Drive folders, downloaded files are temporarily staged in `<folder_name>_temp` (e.g. `<PROJECT_NAME>_temp`).
    - As soon as the user exports the bundle, all temporary working directories and `<folder_name>_temp` are automatically and recursively deleted.
 5. **Standalone HTML (`index.html`) Zero-Server Gallery**:
    - Generating a public export bundle automatically creates a self-contained, single-file `index.html` (and `gallery.html`).
@@ -3894,6 +3895,62 @@ The changes were verified with the complete automated test suite and live build 
 
 ---
 
+
+## 26. CATLOG BRAND IDENTITY, MASCOT POSE EXTRACTION & RELEASE CANDIDATE DELIVERABLES (2026-10-17)
+
+### 26.1 Architectural Changes & Requirements Addressed
+
+1. **Official Brand Identity: CatLog — "Who was at the event?"**:
+   - Upgraded visual identity, typography, and logo lockups across the entire application to **CatLog**.
+   - Generated high-resolution transparent assets from design source files in `UI/`:
+     - `frontend/public/catlog-logo.png`: Full camera cat mascot head combined with retro serif typography.
+     - `frontend/public/catlog-icon.png` & `favicon.png`: Isolated square camera aperture cat mascot head.
+     - `frontend/public/catlog-tagline.png`: High-contrast transparent "Who was at the event?" headline graphic.
+   - Updated components:
+     - `BrandLogo.tsx`: Renders crisp 36px/44px cat icon, layered Risograph misregistered shadow text, and "WHO WAS AT THE EVENT?" subtitle.
+     - `Header.tsx`: Clean top navigation bar with brand icon, hover animations, and tooltip.
+     - `HomeScreen.tsx`: Prominent hero tagline image and interactive tour invitation pill.
+     - `SettingsScreen.tsx` & `ExportScreen.tsx`: Standardized default export titles to `CatLog Gallery`.
+     - `index.html`: Browser document title updated to `CatLog — Who was at the event?` with favicon icon.
+     - `standalone_html.py` & `viewer/index.html`: Standalone single-file HTML galleries and static bundle viewers branded with CatLog.
+
+2. **Automated Mascot Extraction Pipeline & 24 Standalone Transparent Pose PNGs**:
+   - Created `scripts/extract_clean_mascots.py` using OpenCV GrabCut foreground segmentation, chalk glow preservation, color segmentation, and connected-components filtering.
+   - Eliminated dark rectangular texture bounding boxes from dark sheets, fake Photoshop checkerboards from paper sheets, and all typewriter label text pills (e.g. `"1. Hello"`, `"8. Idle / Loop"`).
+   - Extracted all 8 poses across 3 Risograph color themes into `frontend/public/mascot/{navy|dark|paper}/pose{1..8}.png`:
+     - **Navy**: Native transparent die-cuts cropped to tight alpha bounding boxes.
+     - **Dark**: High-contrast chalkboard line art with full alpha transparency.
+     - **Paper**: Riso newsprint line art with checkerboard pattern cleanly extracted and eliminated.
+   - Implemented zero-runtime-cropping architecture in `MascotSticker.tsx`: loads static URLs via `getMascotUrl(theme, pose)` directly into `<img />` tags, eliminating CPU/GPU sprite slicing overhead.
+
+3. **Interactive 11-Step Spotlight Tour (`TutorialSpotlight.tsx`)**:
+   - Built an interactive tour guide walking event organizers through the app:
+     - Source mode navigation (Drive, Local, ZIP).
+     - Settings access and Drive API key configuration.
+     - Review People grid with cluster inspection and quick actions.
+     - Suggestion Review with ranked merging candidate cards.
+     - Unrecognized Triage with multi-select face assignment.
+     - Lightbox inspect faces drawer with color-coded bounding boxes.
+     - Detailed explanation of clustering sliders: Distance Threshold (0.50), Merge Threshold (0.50), Maybe Band (0.65), and Same-Photo Collision Guard (0.40).
+   - Housed cleanly inside `SettingsScreen.tsx` (`#card-settings-tutorial-launcher`) and Home hero button, keeping top navigation bar uncluttered.
+
+4. **Codebase Hygiene & Release Cleanliness**:
+   - Updated `.gitignore` with comprehensive rules covering test caches (`.pytest_cache/`, `.cache/`), coverage reports, logs, and temp directories.
+   - Removed redundant asset copies from `frontend/src/assets/`.
+   - Verified that zero temporary test files or unneeded build artifacts remain untracked.
+
+### 26.2 Verification Evidence & Test Suite Matrix
+
+| Verification Target | Command & Parameters | Outcome | Notes |
+| :--- | :--- | :---: | :--- |
+| **Complete Backend Test Suite** | `.\.venv\Scripts\python -m pytest tests` | **83 / 83 passed (100%)** in 84.23s | All 83 tests across 13 test modules pass cleanly. |
+| **Complete Frontend Vitest Suite** | `npx vitest run` (in `frontend/`) | **73 / 73 passed (100%)** in 25.51s | All 13 test files pass cleanly (including mascot & spotlight tests). |
+| **Frontend Production Build** | `npm run build` (in `frontend/`) | **Exit code 0 (Success)** in 12.79s | 1,610 modules transformed, 0 TypeScript errors. Production bundle emitted to `frontend/dist/`. |
+| **Public Mascot Assets** | `Get-ChildItem frontend/public/mascot` | **24 / 24 pose files present** | Poses 1-8 across navy, dark, and paper present as transparent PNGs. |
+| **CatLog Brand Assets** | `Get-ChildItem frontend/public/catlog*` | **All 4 assets present** | Logo, icon, tagline, and favicon present as transparent PNGs. |
+
+---
+
 ## APPENDIX A: HISTORICAL ENGINE EVOLUTION & INTERMEDIATE STAGES (SUPERSEDED)
 
 
@@ -3906,7 +3963,7 @@ The changes were verified with the complete automated test suite and live build 
 
 ### Question 1: What `det_size` does the detector use?
 - **Answer**: `(640, 640)`
-- **Code reference**: [`backend/engine/detector.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/detector.py#L18-L44):
+- **Code reference**: [`backend/engine/detector.py`](<REPO_ROOT>/backend/engine/detector.py#L18-L44):
   ```python
   def __init__(self, model_name: str = "buffalo_l", det_size: Tuple[int, int] = (640, 640), ...):
       ...
@@ -3917,7 +3974,7 @@ The changes were verified with the complete automated test suite and live build 
 ### Question 2: At what resolution are embeddings computed?
 - **Old Engine (V1)**: Embeddings were computed from **112x112 aligned crops extracted from a downscaled image (longest side 1600 px)**.
 - **New Engine (V2)**: Embeddings are now computed from **112x112 aligned crops extracted directly from the ORIGINAL-resolution image**.
-- **Code reference**: [`backend/engine/detector.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/detector.py#L90-L107):
+- **Code reference**: [`backend/engine/detector.py`](<REPO_ROOT>/backend/engine/detector.py#L90-L107):
   The 5 facial keypoints (`kpss`) detected on the downscaled image are scaled back to original image coordinates (`orig_kps = kpss[i] * scale`), and `face_align.norm_crop(orig_bgr, landmark=orig_kps, image_size=112)` extracts the 112x112 aligned face crop directly from the full-resolution uncompressed array (`orig_bgr`).
 
 ### Question 3: What are the original pixel dimensions of the test photos?
@@ -4060,23 +4117,23 @@ To prevent actual boundary distortions when face bounding boxes touch or exceed 
 > **ID Numbering Context**: N/A (File Inventory)
 
 ### Engine Code Modified
-- [`backend/engine/detector.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/detector.py): Detect on downscaled copy (max 1600 px), scale landmarks back to original image, align and embed from original image, evaluate `min_face_size` in original pixels (default 64 px).
-- [`backend/engine/loader.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/loader.py): Load image in original resolution with EXIF transposition, return RGB array, dimensions, and PIL Image.
-- [`backend/engine/thumbnails.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/thumbnails.py): Fix square face cropping near image boundaries (aspect-ratio preservation, inward shifting, clean padding); add in-memory thumbnail and crop generators.
-- [`backend/engine/exporter.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/exporter.py): Support reading pre-generated thumbnails and face crops from cache directory for instant export.
-- [`backend/engine/pipeline.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/pipeline.py): Update `EngineConfig` default `min_face_size = 64`, cache thumbnails and face crops during the detection pass, pass `cache_dir` to `BundleExporter`.
-- [`backend/engine/clusterer.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/clusterer.py): Add `count_same_photo_collisions` diagnostic.
-- [`backend/engine/cropper.py`](file:///c:/Users/DELL/face-clubbing/backend/engine/cropper.py): Updated boundary padding and square aspect ratio handling.
+- [`backend/engine/detector.py`](<REPO_ROOT>/backend/engine/detector.py): Detect on downscaled copy (max 1600 px), scale landmarks back to original image, align and embed from original image, evaluate `min_face_size` in original pixels (default 64 px).
+- [`backend/engine/loader.py`](<REPO_ROOT>/backend/engine/loader.py): Load image in original resolution with EXIF transposition, return RGB array, dimensions, and PIL Image.
+- [`backend/engine/thumbnails.py`](<REPO_ROOT>/backend/engine/thumbnails.py): Fix square face cropping near image boundaries (aspect-ratio preservation, inward shifting, clean padding); add in-memory thumbnail and crop generators.
+- [`backend/engine/exporter.py`](<REPO_ROOT>/backend/engine/exporter.py): Support reading pre-generated thumbnails and face crops from cache directory for instant export.
+- [`backend/engine/pipeline.py`](<REPO_ROOT>/backend/engine/pipeline.py): Update `EngineConfig` default `min_face_size = 64`, cache thumbnails and face crops during the detection pass, pass `cache_dir` to `BundleExporter`.
+- [`backend/engine/clusterer.py`](<REPO_ROOT>/backend/engine/clusterer.py): Add `count_same_photo_collisions` diagnostic.
+- [`backend/engine/cropper.py`](<REPO_ROOT>/backend/engine/cropper.py): Updated boundary padding and square aspect ratio handling.
 
 ### Specification & Documentation Modified
-- [`SPEC.md`](file:///c:/Users/DELL/face-clubbing/SPEC.md): Updated Sections 6 and 12 for `pillow-heif`, hybrid resolution detection/embedding, original-pixel `min_face_size`, and disk asset caching.
-- [`REPORT.md`](file:///c:/Users/DELL/face-clubbing/REPORT.md): Updated with V2 verification findings, answers, before/after metrics, collision diagnostics, near-duplicate analysis, and visual assessment.
+- [`SPEC.md`](<REPO_ROOT>/SPEC.md): Updated Sections 6 and 12 for `pillow-heif`, hybrid resolution detection/embedding, original-pixel `min_face_size`, and disk asset caching.
+- [`REPORT.md`](<REPO_ROOT>/REPORT.md): Updated with V2 verification findings, answers, before/after metrics, collision diagnostics, near-duplicate analysis, and visual assessment.
 
 ### Scripts & Assets Created
-- [`scratch/run_v2_benchmarks.py`](file:///c:/Users/DELL/face-clubbing/scratch/run_v2_benchmarks.py): V2 cold/warm benchmarking, collision diagnostic sweep, and perceptual hash analysis.
-- [`scratch/generate_report_assets_v2.py`](file:///c:/Users/DELL/face-clubbing/scratch/generate_report_assets_v2.py): Script generating contact sheets with untruncated filenames and annotations.
-- [`scratch/v2_metrics.json`](file:///c:/Users/DELL/face-clubbing/scratch/v2_metrics.json): Serialized metrics from V2 cold run, warm re-run, sweep diagnostics, and photo pair distances.
-- [`report_assets_v2/`](file:///c:/Users/DELL/face-clubbing/report_assets_v2):
+- [`scratch/run_v2_benchmarks.py`](<REPO_ROOT>/scratch/run_v2_benchmarks.py): V2 cold/warm benchmarking, collision diagnostic sweep, and perceptual hash analysis.
+- [`scratch/generate_report_assets_v2.py`](<REPO_ROOT>/scratch/generate_report_assets_v2.py): Script generating contact sheets with untruncated filenames and annotations.
+- [`scratch/v2_metrics.json`](<REPO_ROOT>/scratch/v2_metrics.json): Serialized metrics from V2 cold run, warm re-run, sweep diagnostics, and photo pair distances.
+- [`report_assets_v2/`](<REPO_ROOT>/report_assets_v2):
   - `cluster_top01.jpg` through `cluster_top10.jpg`: Top 10 cluster contact sheets with full filenames and dimensions.
   - `merge_diff_0.50_vs_0.60.jpg`: Side-by-side comparison of 30 cluster pairs separate at 0.50 that merge at 0.60.
   - `unrecognized_faces_v2.jpg`: 20 unrecognized faces with original pixel dimensions and rejection reasons.
@@ -4150,7 +4207,7 @@ Evaluated across thresholds 0.45 to 0.65 using cosine distance linkage:
 > [!NOTE]
 > These metrics (353 clusters, 353 face crops) reflect the **Stage 1 (Engine V2)** pipeline — the baseline before Seed+Attach, strict attach, second-pass merge, and ambiguous re-attach were introduced. The **final state** is 192 clusters; see §12 and §13. This section is retained as a historical audit checkpoint only.
 
-Executed via [`scratch/verify_271_integrity.py`](file:///c:/Users/DELL/face-clubbing/scratch/verify_271_integrity.py):
+Executed via [`scratch/verify_271_integrity.py`](<REPO_ROOT>/scratch/verify_271_integrity.py):
 1. **`people.json` Validity**: Passes strict JSON parsing and schema checks. Defines 259 unique photo records, 353 person clusters, and 163 unrecognized photo IDs.
 2. **Zero Dropped Photos**:
    - Total unique photo records: **259**
@@ -4179,7 +4236,7 @@ Executed via [`scratch/verify_271_integrity.py`](file:///c:/Users/DELL/face-club
 The question was raised regarding why yaw angles in previous contact sheet descriptions appeared as 0, 1, or -1.
 
 #### Root Cause Analysis
-1. **Rendering Boundary Overflow**: In [`scratch/generate_report_assets_v3.py`](file:///c:/Users/DELL/face-clubbing/scratch/generate_report_assets_v3.py#L306-L308), the string drawn on each card was:
+1. **Rendering Boundary Overflow**: In [`scratch/generate_report_assets_v3.py`](<REPO_ROOT>/scratch/generate_report_assets_v3.py#L306-L308), the string drawn on each card was:
    `f"Reason: {f.rejection_reason}, yaw: {abs(f.pose[1]):.1f}°"`.
    With Arial 12pt bold, this string measures **273 to 285 pixels wide**. The card cell was only **260 pixels wide** (with text starting at $x+10$).
 2. **Text Clipping**: The right edge of the card clipped the text precisely at `yaw: 1...`, `yaw: 0...`, or `yaw: -...`. The trailing digits and decimal point were cut off at the card border, causing the visual inspection to misread the truncated fragment as "1.0°", "0.0°", or "-1.0°".
@@ -4289,11 +4346,11 @@ Under the Stage 2 (baseline) seed + attach-only model, the canonical cluster IDs
 > **SUPERSEDED NOTE**: Section 10.5 (two-section viewer with separate single-photo accordion) is **superseded by Section 12.5** (Unified People Grid with single-photo filter toggle and enhanced data model).
 
 1. **Unrecognized Gallery View**:
-   - Updated [`viewer/src/components/UnrecognizedGallery.tsx`](file:///c:/Users/DELL/face-clubbing/viewer/src/components/UnrecognizedGallery.tsx) to render a **responsive grid of 365 face crops** (`faces/u001.jpg` ... `faces/u365.jpg`).
+   - Updated [`viewer/src/components/UnrecognizedGallery.tsx`](<REPO_ROOT>/viewer/src/components/UnrecognizedGallery.tsx) to render a **responsive grid of 365 face crops** (`faces/u001.jpg` ... `faces/u365.jpg`).
    - Clicking any face crop directly opens its source photograph in the full-screen `PhotoModal`.
    - Separate dedicated card at the bottom displaying **Photos With No Detected Face (4 photos)** (`IMG_2365.HEIC`, `IMG_2366.HEIC`, `IMG-20260226-WA0037.jpg`, `IMG-20260226-WA0047.jpg`), which also open on click.
 2. **People Grid View**:
-   - In [`viewer/src/components/PeopleGrid.tsx`](file:///c:/Users/DELL/face-clubbing/viewer/src/components/PeopleGrid.tsx), the primary grid shows **People in 2+ Photos (145 clusters)** by default.
+   - In [`viewer/src/components/PeopleGrid.tsx`](<REPO_ROOT>/viewer/src/components/PeopleGrid.tsx), the primary grid shows **People in 2+ Photos (145 clusters)** by default.
    - The **97 Single-Photo clusters** are collapsed by default into an expandable accordion (`Single-Photo Appearances (97)`), keeping the gallery clean and focused.
    - Verified via `npm run build` (clean TypeScript compilation, 0 errors).
 
@@ -4331,7 +4388,7 @@ Strict attachment criteria were applied to all non-seed faces (`face_dim < 64`, 
 | **Excess / Colliding Faces** | 53 extra faces | **2 extra faces** | **-96.2%** |
 
 #### Complete Collision Audit from Exported `people.json`
-Every cluster where `faces > photos` was audited directly from [`export/people.json`](file:///c:/Users/DELL/face-clubbing/export/people.json):
+Every cluster where `faces > photos` was audited directly from [`export/people.json`](<REPO_ROOT>/export/people.json):
 - **Cluster ID**: `p038`
   - Total photos: 9
   - Total faces: 11
@@ -4348,7 +4405,7 @@ Every cluster where `faces > photos` was audited directly from [`export/people.j
 
 > **SUPERSEDED NOTE**: Section 11.3 (0.50–0.54 distance range, 35 suggestions) is **superseded by Section 12.4** (0.50–0.60 distance range, 31 pairwise links, 20 connected groups).
 
-[`export/.cache/suggestions.json`](file:///c:/Users/DELL/face-clubbing/export/.cache/suggestions.json) was regenerated with strict parameters:
+[`export/.cache/suggestions.json`](<REPO_ROOT>/export/.cache/suggestions.json) was regenerated with strict parameters:
 - **Distance Range**: Exactly $0.50 \le d \le 0.54$ (tightened from 0.50-0.62)
 - **Candidate Pairs Count**: 35 suggestions
 - **Confidence Tag**: Marked `confidence: "low"` on all pairs
@@ -4359,16 +4416,16 @@ Every cluster where `faces > photos` was audited directly from [`export/people.j
 
 ### 11.4 Evidence Sheets Generated (`report_assets_v4/`)
 
-Both evidence sheets were produced from the single source of truth [`export/people.json`](file:///c:/Users/DELL/face-clubbing/export/people.json) with programmatic integrity assertions:
+Both evidence sheets were produced from the single source of truth [`export/people.json`](<REPO_ROOT>/export/people.json) with programmatic integrity assertions:
 
-1. **Binned Merge Sheet**: [`report_assets_v4/contact_sheet_merge_bins_v4.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v4/contact_sheet_merge_bins_v4.jpg)
+1. **Binned Merge Sheet**: [`report_assets_v4/contact_sheet_merge_bins_v4.jpg`](<REPO_ROOT>/report_assets_v4/contact_sheet_merge_bins_v4.jpg)
    - **Dimensions**: 1760 × 2693 px
    - **Bins**: `0.50-0.52`, `0.52-0.55`, `0.55-0.58`, `0.58-0.60` (8 random pairs per bin; 32 pairs total)
    - **Tiles**: 200 × 200 px (meeting $\ge 200$px requirement)
    - **Labels**: Identified by `face_id` and photo filename; NO true/false labels.
    - **Integrity Check**: Passed (every card's `face_id` and filename match cluster contents in `people.json`).
 
-2. **Enlarged Old Pairs Inspection**: [`report_assets_v4/contact_sheet_enlarged_old_pairs.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v4/contact_sheet_enlarged_old_pairs.jpg)
+2. **Enlarged Old Pairs Inspection**: [`report_assets_v4/contact_sheet_enlarged_old_pairs.jpg`](<REPO_ROOT>/report_assets_v4/contact_sheet_enlarged_old_pairs.jpg)
    - **Dimensions**: 1982 × 1197 px
    - **Old Pairs Mapped via Face IDs**:
      - **Pair 1** (`p001` vs `p132` in V2, $d = 0.5068$): `f_23fc030f0bb086b3_004` (`IMG_2415.HEIC`) mapped to current `p001` (62p, 62f; 6 faces shown) vs `f_f72c01c72c056c0f_008` (`IMG_2179.HEIC`) mapped to current `p122` (2p, 2f; 2 faces shown).
@@ -4448,7 +4505,7 @@ All three clusters auto-merged into **`p001`** at centroid distances $< 0.50$:
 - Subtotal after second-pass merge: 69 photos, 69 faces
 - Added from post-merge ambiguous face re-attach: +2 photos, +2 faces
 - **Total in final export**: $69 + 2 = \mathbf{71}$ photos, and $69 + 2 = \mathbf{71}$ faces.
-- Backwards tracking: In `export/people.json`, person `p001` has `merged_from: ["p001", "p084", "p122", "p133"]` and `merged_from_numbering: "pre-merge 242"`. Complete mapping is published in [`id_map.json`](file:///c:/Users/DELL/face-clubbing/deliverables/id_map.json).
+- Backwards tracking: In `export/people.json`, person `p001` has `merged_from: ["p001", "p084", "p122", "p133"]` and `merged_from_numbering: "pre-merge 242"`. Complete mapping is published in [`id_map.json`](<REPO_ROOT>/deliverables/id_map.json).
 
 #### Reconciliation of Earlier "False Merge" Verdicts
 REPORT §10.3 previously labelled pairs involving `IMG_2415` vs `IMG_2179` ($d=0.5068$), vs `IMG_2417` ($d=0.5123$), and vs `IMG_2401` ($d=0.5159$) as "Confirmed False Merge". In §12.1, those same faces auto-merged into `p001` at centroid distances 0.3170–0.3713.
@@ -4476,7 +4533,7 @@ To establish empirical transparency without subjective bias, the 6 constituent f
 | `f_cd5cf1f9b616d68a_009` (IMG_2401) | 0.5159 | 0.6306 | 0.6438 | 0.5557 | 0.0000 | 0.4228 |
 | `f_7739152de91187cf_010` (IMG_2400) | 0.4518 | 0.5938 | 0.6194 | 0.6514 | 0.4228 | 0.0000 |
 
-Evidence contact sheet rendered with 260x260 px tiles: [`report_assets_v4/contact_sheet_split_pairs_reconciliation.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v4/contact_sheet_split_pairs_reconciliation.jpg).
+Evidence contact sheet rendered with 260x260 px tiles: [`report_assets_v4/contact_sheet_split_pairs_reconciliation.jpg`](<REPO_ROOT>/report_assets_v4/contact_sheet_split_pairs_reconciliation.jpg).
 
 ---
 
@@ -4538,7 +4595,7 @@ The effect of unsharp masking (Gaussian blur $\sigma=2.0$, weight $1.5$, subtrac
 
 Between the 192 merged clusters, exactly **38 pairwise maybe links** were identified (34 in the $[0.50, 0.60]$ band and 4 same-photo conflict links). These edges form **23 connected components** (size $\ge 2$).
 
-The table below is generated programmatically by `scratch/generate_section_12_4.py` reading directly from [`suggestions.json`](file:///c:/Users/DELL/face-clubbing/deliverables/suggestions.json) and [`export/people.json`](file:///c:/Users/DELL/face-clubbing/export/people.json):
+The table below is generated programmatically by `scratch/generate_section_12_4.py` reading directly from [`suggestions.json`](<REPO_ROOT>/deliverables/suggestions.json) and [`export/people.json`](<REPO_ROOT>/export/people.json):
 
 | Group ID | Constituent Cluster IDs | Cluster Count | Combined Photos Count | Pairwise Links & Distances |
 | :---: | :--- | :---: | :---: | :--- |
@@ -4575,15 +4632,15 @@ The table below is generated programmatically by `scratch/generate_section_12_4.
    - **Hide Single-Photo People Toggle**: Added a toggle switch in the toolbar (off by default). When enabled, filters display to 111 multi-photo clusters; when disabled, displays all 192 clusters. No cluster is removed from the underlying data.
    - **Unrecognized Card**: Kept at the end of the unified grid, displaying the 445 unattached faces.
 2. **Data Model**:
-   - Each person record in [`export/people.json`](file:///c:/Users/DELL/face-clubbing/export/people.json) contains:
+   - Each person record in [`export/people.json`](<REPO_ROOT>/export/people.json) contains:
      - `photos`: Array of confirmed photo IDs.
      - `photo_ids`: Array of confirmed photo IDs (backwards-compatible; strictly equal to `photos`).
      - `faces`: List of detected face metadata.
      - `merged_from`: Array of constituent cluster IDs from pre-merge 242 numbering.
      - `merged_from_numbering`: `"pre-merge 242"`.
      - `maybe_photos`: Populated with `{ photo_id, source_cluster, distance }` only if `config.include_maybe` is `true` (default `false`).
-   - [`id_map.json`](file:///c:/Users/DELL/face-clubbing/deliverables/id_map.json): Complete dictionary mapping all 242 pre-merge IDs to final 192 IDs.
-   - [`suggestions.json`](file:///c:/Users/DELL/face-clubbing/deliverables/suggestions.json): Organizer-only file containing the 23 connected maybe groups, 38 pairwise link distances with reasons and cluster metadata, and the 80 remaining ambiguous unrecognized faces with their top-3 nearest clusters. Excluded from public export bundles.
+   - [`id_map.json`](<REPO_ROOT>/deliverables/id_map.json): Complete dictionary mapping all 242 pre-merge IDs to final 192 IDs.
+   - [`suggestions.json`](<REPO_ROOT>/deliverables/suggestions.json): Organizer-only file containing the 23 connected maybe groups, 38 pairwise link distances with reasons and cluster metadata, and the 80 remaining ambiguous unrecognized faces with their top-3 nearest clusters. Excluded from public export bundles.
 
 ---
 
@@ -4612,7 +4669,7 @@ Under the new `same_photo_merge_max = 0.40` guard rule, both auto-merges are blo
    - Photo `df7e608ffd3212b2` (`IMG_20260304_080950.jpg`): faces `f_df7e608ffd3212b2_013` and `f_df7e608ffd3212b2_008` are **0.5349** apart ($> 0.40$).
    - Resolution: Clusters remain separated as `p105` (from `p124`) and `p108` (from `p109`), linked in `suggestions.json` with `reason: "same_photo_conflict"`.
 
-Evidence contact sheet rendered with 250x250 px tiles: [`report_assets_v4/contact_sheet_collision_audit.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v4/contact_sheet_collision_audit.jpg).
+Evidence contact sheet rendered with 250x250 px tiles: [`report_assets_v4/contact_sheet_collision_audit.jpg`](<REPO_ROOT>/report_assets_v4/contact_sheet_collision_audit.jpg).
 
 ---
 
@@ -4639,13 +4696,13 @@ Evidence contact sheet rendered with 250x250 px tiles: [`report_assets_v4/contac
 6. **Suggestion #6** ($d = 0.5978$): Cluster `p033` $\leftrightarrow$ Cluster `p077` (`reason: "centroid_band"`)
 7. **Suggestion #7** ($d = 0.5837$): Cluster `p046` $\leftrightarrow$ Cluster `p138` (`reason: "centroid_band"`)
 
-Evidence contact sheet rendered with 250x250 px tiles: [`report_assets_v4/contact_sheet_maybe_bin_0.58_0.60.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v4/contact_sheet_maybe_bin_0.58_0.60.jpg).
+Evidence contact sheet rendered with 250x250 px tiles: [`report_assets_v4/contact_sheet_maybe_bin_0.58_0.60.jpg`](<REPO_ROOT>/report_assets_v4/contact_sheet_maybe_bin_0.58_0.60.jpg).
 
 ---
 
 ### 12.8 Programmatic Integrity Verification Results (`verify_final.py`)
 
-The automated integrity check script [`verify_final.py`](file:///c:/Users/DELL/face-clubbing/verify_final.py) was executed directly against `export/people.json`, `suggestions.json`, `export/config.json`, `export/.cache/`, `ground_truth.json`, benchmark JSON files, and `REPORT.md`:
+The automated integrity check script [`verify_final.py`](<REPO_ROOT>/verify_final.py) was executed directly against `export/people.json`, `suggestions.json`, `export/config.json`, `export/.cache/`, `ground_truth.json`, benchmark JSON files, and `REPORT.md`:
 
 ```text
 ================================================================================
@@ -4818,13 +4875,13 @@ This appendix records historical contact sheet inspection data from exploratory 
 
 ### A.1 Historical Contact Sheets (`report_assets_v2/`)
 *(Evaluated on 59-photo baseline subset)*
-1. **[`report_assets_v2/cluster_top01.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v2/cluster_top01.jpg)**:
+1. **[`report_assets_v2/cluster_top01.jpg`](<REPO_ROOT>/report_assets_v2/cluster_top01.jpg)**:
    - Cluster rank: #1 (10 photos, 10 faces).
    - Filenames: `IMG_2182.JPG`, `IMG_2147.JPG`, `IMG_2079.HEIC.heif`, `IMG_2197.JPG`, `IMG_2195.JPG`, `IMG_2124.HEIC.heif`, `IMG_2212.JPG`, `IMG_2190.JPG`, `IMG_2080.HEIC.heif`, `IMG_2177.JPG`.
-2. **[`report_assets_v2/cluster_top04.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v2/cluster_top04.jpg)**:
+2. **[`report_assets_v2/cluster_top04.jpg`](<REPO_ROOT>/report_assets_v2/cluster_top04.jpg)**:
    - Cluster rank: #4 (8 photos, 11 faces).
    - Filenames: `IMG_9119.HEIC`, `IMG_9208.HEIC`, `IMG_20260304_002918.jpg` (3 faces), `IMG_20260227_220436.jpg`, `IMG_9167.JPG`, `IMG_20260227_220543.jpg`, `IMG_20260227_220404.jpg` (2 faces), `IMG_9150.HEIC`.
-3. **[`report_assets_v2/merge_diff_0.50_vs_0.60.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v2/merge_diff_0.50_vs_0.60.jpg)**:
+3. **[`report_assets_v2/merge_diff_0.50_vs_0.60.jpg`](<REPO_ROOT>/report_assets_v2/merge_diff_0.50_vs_0.60.jpg)**:
    - 30 rendered merge pairs:
      - Pair 1: `IMG_2163.JPG` and `IMG_2195.JPG` (merged at 0.60).
      - Pair 2: `IMG_9167.JPG` and `IMG_9119.HEIC` (merged at 0.60).
@@ -4833,12 +4890,12 @@ This appendix records historical contact sheet inspection data from exploratory 
      - Pair 6: `IMG_2108.HEIC.heif` and `IMG_6749.JPG` (merged at 0.60).
      - Pair 14: `IMG_2177.JPG` and `IMG_6745.JPG` (merged at 0.60).
      - Pair 16: `IMG_2228.HEIC.heif` and `IMG_2079.HEIC.heif` (merged at 0.60).
-4. **[`report_assets_v2/unrecognized_faces_v2.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v2/unrecognized_faces_v2.jpg)**:
+4. **[`report_assets_v2/unrecognized_faces_v2.jpg`](<REPO_ROOT>/report_assets_v2/unrecognized_faces_v2.jpg)**:
    - 20 sample crops: `IMG_2143.JPG`, `IMG_20260303_234707.jpg`, `IMG_2106.HEIC.heif`, `IMG_2163.JPG`, `IMG_20260303_233547.jpg`. Dimensions: 28x37px to 61x73px in original pixels (`face_too_small < 64px`).
 
 ### A.2 Historical Contact Sheets (`report_assets_v3/`)
 *(Evaluated on 271-photo full test set)*
-1. **Top 10 Clusters**: [`report_assets_v3/contact_sheet_top_10_clusters.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v3/contact_sheet_top_10_clusters.jpg)
+1. **Top 10 Clusters**: [`report_assets_v3/contact_sheet_top_10_clusters.jpg`](<REPO_ROOT>/report_assets_v3/contact_sheet_top_10_clusters.jpg)
    - Cluster rank 1 (62 photos, 62 faces): REP: `IMG_2415.HEIC` (score: 0.85); members: `IMG_2207.HEIC`, `IMG_2072.HEIC`, `IMG_2147.JPG`, `IMG_2297.HEIC`.
    - Cluster rank 2 (51 photos, 51 faces): REP: `IMG_2372.HEIC` (score: 0.85); members: `IMG_9119.HEIC`, `IMG_2280.HEIC`, `IMG_2290.HEIC`, `IMG_2339.HEIC`.
    - Cluster rank 3 (39 photos, 39 faces): REP: `IMG_2169.HEIC` (score: 0.88); members: `IMG_2207.HEIC`, `IMG_2072.HEIC`, `IMG_2182.JPG`, `IMG_2147.JPG`.
@@ -4849,7 +4906,7 @@ This appendix records historical contact sheet inspection data from exploratory 
    - Cluster rank 8 (23 photos, 23 faces): REP: `IMG_2109.HEIC` (score: 0.89); members: `IMG_2110.HEIC`, `IMG_2344.HEIC`, `IMG_2339.HEIC`, `IMG_2287.HEIC`.
    - Cluster rank 9 (23 photos, 23 faces): REP: `IMG_2188.HEIC` (score: 0.91); members: `IMG_2207.HEIC`, `IMG_2182.JPG`, `IMG_2143.JPG`, `IMG_2227.HEIC`.
    - Cluster rank 10 (23 photos, 23 faces): REP: `IMG_2317.HEIC` (score: 0.89); members: `IMG_2391.HEIC`, `IMG_2202.JPG`, `IMG_2392.HEIC`, `IMG_2354.HEIC`.
-2. **Merge-Diff 0.50 vs 0.60 (40 Closest Pairs)**: [`report_assets_v3/contact_sheet_merge_diff_050_vs_060.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v3/contact_sheet_merge_diff_050_vs_060.jpg)
+2. **Merge-Diff 0.50 vs 0.60 (40 Closest Pairs)**: [`report_assets_v3/contact_sheet_merge_diff_050_vs_060.jpg`](<REPO_ROOT>/report_assets_v3/contact_sheet_merge_diff_050_vs_060.jpg)
    - Pair 1: Dist 0.5001, `IMG_2140.JPG` <-> `IMG_2165.JPG`
    - Pair 2: Dist 0.5006, `IMG_2109.HEIC` <-> `IMG_2329.HEIC`
    - Pair 3: Dist 0.5012, `IMG_2339.HEIC` <-> `IMG_2226.JPG`
@@ -4890,16 +4947,16 @@ This appendix records historical contact sheet inspection data from exploratory 
    - Pair 38: Dist 0.5191, `IMG_2223.HEIC` <-> `IMG_2225.JPG`
    - Pair 39: Dist 0.5197, `IMG_2109.HEIC` <-> `IMG_2140.JPG`
    - Pair 40: Dist 0.5203, `IMG_2096.HEIC` <-> `IMG_2090.HEIC`
-3. **20 Random Single-Photo Clusters**: [`report_assets_v3/contact_sheet_20_single_photo_clusters.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v3/contact_sheet_20_single_photo_clusters.jpg)
+3. **20 Random Single-Photo Clusters**: [`report_assets_v3/contact_sheet_20_single_photo_clusters.jpg`](<REPO_ROOT>/report_assets_v3/contact_sheet_20_single_photo_clusters.jpg)
    - `IMG_2266.HEIC` (score: 0.83), `IMG_6749.JPG` (score: 0.66), `IMG_2090.HEIC` (score: 0.85), `IMG_2148.JPG` (score: 0.75), `IMG_2371.HEIC` (score: 0.73), `IMG_2083.HEIC` (score: 0.65), `IMG_2163.JPG` (score: 0.72), `IMG_2143.JPG` (score: 0.85), `IMG_2148.JPG` (score: 0.75), `IMG_6749.JPG` (score: 0.68), `IMG_2274.HEIC` (score: 0.59), `IMG_2319.HEIC` (score: 0.73), `IMG_6749.JPG` (score: 0.74), `IMG_2139.JPG` (score: 0.64), `IMG_2173.JPG` (score: 0.83), `IMG_2141.JPG` (score: 0.82), `IMG_2090.HEIC` (score: 0.66), `IMG_6749.JPG` (score: 0.73), `IMG_2181.JPG` (score: 0.79), `IMG_2114.HEIC` (score: 0.73).
-4. **20 Unrecognized Faces**: [`report_assets_v3/contact_sheet_20_unrecognized_faces.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v3/contact_sheet_20_unrecognized_faces.jpg)
+4. **20 Unrecognized Faces**: [`report_assets_v3/contact_sheet_20_unrecognized_faces.jpg`](<REPO_ROOT>/report_assets_v3/contact_sheet_20_unrecognized_faces.jpg)
    - 10 Extreme Pose Rejections (`yaw > 70.0°`): `IMG_2081.HEIC` (yaw: 81.3°, score: 0.69), `IMG_2187.JPG` (yaw: 77.8°, score: 0.76), `IMG_2141.JPG` (yaw: 79.0°, score: 0.81), `IMG_2190.JPG` (yaw: 84.2°, score: 0.77), `IMG_2183.JPG` (yaw: 80.1°, score: 0.76), `IMG_2132.HEIC` (yaw: 83.9°, score: 0.71), `IMG_2080.HEIC.heif` (yaw: 77.8°, score: 0.75), `IMG_2209.HEIC` (yaw: 88.3°, score: 0.75), `IMG_2178.HEIC` (yaw: 86.3°, score: 0.77), `IMG_2125.HEIC` (yaw: 81.2°, score: 0.71).
    - 10 Below Minimum Size Rejections (`< 64px`): `IMG_20260304_002232.jpg` (46px, yaw: 1.0°, score: 0.84), `IMG_20260227_220436.jpg` (60px, yaw: 1.0°, score: 0.81), `IMG_20260303_233740.jpg` (36px, yaw: -1.0°, score: 0.74), `IMG_20260304_002232.jpg` (36px, yaw: -1.0°, score: 0.78), `IMG_20260304_001930.jpg` (45px, yaw: 0.0°, score: 0.76), `IMG_2172.JPG` (50px, yaw: 0.0°, score: 0.57), `IMG_20260304_001930.jpg` (49px, yaw: 0.0°, score: 0.85), `IMG_20260304_001930.jpg` (31px, yaw: 0.0°, score: 0.78), `IMG_20260303_233547.jpg` (35px, yaw: 0.0°, score: 0.71), `IMG_20260304_080950.jpg` (19px, yaw: 1.0°, score: 0.64).
 
 ### A.3 Historical Evidence Sheets (`report_assets_v4/`)
-1. **Merge Pairs Binned by Distance**: [`report_assets_v4/contact_sheet_merge_bins.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v4/contact_sheet_merge_bins.jpg)
+1. **Merge Pairs Binned by Distance**: [`report_assets_v4/contact_sheet_merge_bins.jpg`](<REPO_ROOT>/report_assets_v4/contact_sheet_merge_bins.jpg)
    - 40 sampled pairs across 4 distance bins: `[0.50, 0.52)`, `[0.52, 0.55)`, `[0.55, 0.58)`, `[0.58, 0.60)`.
-2. **Top 10 Clusters Farthest From Centroid**: [`report_assets_v4/contact_sheet_top10_worst_fitting.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v4/contact_sheet_top10_worst_fitting.jpg)
+2. **Top 10 Clusters Farthest From Centroid**: [`report_assets_v4/contact_sheet_top10_worst_fitting.jpg`](<REPO_ROOT>/report_assets_v4/contact_sheet_top10_worst_fitting.jpg)
    - Centroid distance ranges:
      - Rank 1: `[0.0984, 0.3306]`; farthest `IMG_2327.HEIC` (0.3306), `IMG_2177.JPG` (0.3236).
      - Rank 2: `[0.1181, 0.3758]`; farthest `IMG_9167.JPG` (0.3758), `IMG_2266.HEIC` (0.3519).
@@ -4907,7 +4964,7 @@ This appendix records historical contact sheet inspection data from exploratory 
      - Rank 4: `[0.1599, 0.3700]`; farthest `IMG_2217.JPG` (0.3700), `IMG_2184.JPG` (0.3546).
      - Rank 5: `[0.1285, 0.3394]`; farthest `IMG_2309.HEIC` (0.3394).
      - Maximum centroid distance across all evaluated members: 0.3951.
-3. **Enlarged Inspection Pairs**: [`report_assets_v4/contact_sheet_enlarged_pairs_13_24_32_19.jpg`](file:///c:/Users/DELL/face-clubbing/report_assets_v4/contact_sheet_enlarged_pairs_13_24_32_19.jpg)
+3. **Enlarged Inspection Pairs**: [`report_assets_v4/contact_sheet_enlarged_pairs_13_24_32_19.jpg`](<REPO_ROOT>/report_assets_v4/contact_sheet_enlarged_pairs_13_24_32_19.jpg)
    - Pair 13 ($d = 0.5068$): `IMG_2415.HEIC`, `IMG_2207.HEIC`, `IMG_2072.HEIC`, `IMG_2147.JPG` vs `IMG_2169.HEIC`, `IMG_2207.HEIC`, `IMG_2072.HEIC`, `IMG_2182.JPG`.
    - Pair 19 ($d = 0.5106$): `IMG_2311.HEIC`, `IMG_2203.JPG`, `IMG_2202.JPG`, `IMG_2270.HEIC` vs `IMG_2155.JPG`, `IMG_2072.HEIC`, `IMG_2172.JPG`, `IMG_2074.HEIC`.
    - Pair 24 ($d = 0.5123$): `f_23fc030f0bb086b3_004` (`IMG_2415.HEIC`) vs `f_d358e80f8872f6ef_004` (`IMG_2417.HEIC`). Pairwise distance 0.4792, centroid distance 0.3170.

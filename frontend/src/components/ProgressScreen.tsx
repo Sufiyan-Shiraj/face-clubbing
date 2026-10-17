@@ -15,6 +15,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { DetachedLogsWindow } from './DetachedLogsWindow';
+import { MascotSticker } from './MascotSticker';
 
 export interface ProgressScreenProps {
   status: JobStatus;
@@ -294,24 +295,29 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
       {/* Completion Banner */}
       {isCompleted && (
         <div
-          className="mt-6 p-5 rounded border border-[var(--accent)] bg-[var(--card-bg)] flex items-center justify-between gap-4"
-          style={{ boxShadow: '0 2px 12px rgba(250, 113, 117, 0.15)' }}
+          id="scan-completion-banner"
+          data-testid="scan-completion-banner"
+          className="mt-6 p-5 sm:p-6 rounded-lg border-2 border-[var(--accent)] bg-[var(--card-bg)] flex flex-col sm:flex-row items-center justify-between gap-5 shadow-[3px_3px_0px_var(--line)] animate-fadeIn"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[var(--accent)] flex items-center justify-center text-[var(--on-accent)] flex-shrink-0">
-              <Sparkles className="w-5 h-5" />
+          <div className="flex items-center gap-4 w-full sm:w-auto">
+            <div className="w-16 h-16 rounded-xl bg-[var(--input)] border-2 border-[var(--line)] flex items-center justify-center p-1 flex-shrink-0 shadow-[2px_2px_0px_var(--line)]">
+              <MascotSticker pose={4} theme={theme} className="w-full h-full object-contain" />
             </div>
             <div>
-              <div className="font-bold text-base text-[var(--text)]">Face Clustering Completed</div>
+              <div className="font-extrabold text-base sm:text-lg text-[var(--text)] flex items-center gap-2">
+                <span>Face Clustering Completed!</span>
+                <span className="text-xs px-2 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/40">100% READY</span>
+              </div>
               <div className="text-sm text-[var(--muted)] mt-1 font-mono">
                 {photosTotal || photosCurrent} photos analyzed • {totalFacesCount > 0 ? `${totalFacesCount.toLocaleString()} faces detected` : 'Faces grouped'} • Completed in {formatElapsedTime(elapsedSeconds)}
               </div>
             </div>
           </div>
           <button
+            id="goto-review-btn-banner"
             onClick={onGoToReview}
-            className="btn pri sm"
-            style={{ height: '40px', padding: '0 24px', fontSize: '14px', color: 'var(--on-accent)' }}
+            className="btn pri sm w-full sm:w-auto flex-shrink-0"
+            style={{ height: '42px', padding: '0 24px', fontSize: '15px', color: 'var(--on-accent)', fontWeight: 800 }}
           >
             <span style={{ color: 'inherit' }}>Review People</span>
             <ArrowRight className="w-4 h-4 ml-1" style={{ color: 'inherit' }} />
@@ -320,13 +326,24 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
       )}
 
       {/* Big Percent & Subtitle Display */}
-      <div className="flex flex-col sm:flex-row items-baseline gap-4 sm:gap-6 mt-7">
-        <p className="big" style={{ margin: 0 }}>{percentDisplay}%</p>
-        <p className="sub m-0 mb-1.5 text-base md:text-lg" style={{ textAlign: 'left', margin: 0 }}>
-          {photosTotal > 0
-            ? `Photo ${photosCurrent} of ${photosTotal}. This runs on your computer, so a big folder takes a while.`
-            : status.message || 'Processing photos locally on your computer.'}
-        </p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-baseline justify-between gap-4 sm:gap-6 mt-7">
+        <div className="flex items-baseline gap-4 sm:gap-6">
+          <p className="big" style={{ margin: 0 }}>{percentDisplay}%</p>
+          <p className="sub m-0 mb-1.5 text-base md:text-lg" style={{ textAlign: 'left', margin: 0 }}>
+            {photosTotal > 0
+              ? `Photo ${photosCurrent} of ${photosTotal}. This runs on your computer, so a big folder takes a while.`
+              : status.message || 'Processing photos locally on your computer.'}
+          </p>
+        </div>
+        {isRunning && (
+          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-md bg-[var(--input)] border border-[var(--panel-border)] shadow-[2px_2px_0px_var(--line)] flex-shrink-0">
+            <MascotSticker pose={5} theme={theme} className="w-8 h-8 object-contain flex-shrink-0" />
+            <div className="text-xs font-mono font-bold leading-tight">
+              <span className="text-[var(--accent)] block">Local Engine Active</span>
+              <span className="text-[var(--muted)]">{photosTotal ? `${photosCurrent} / ${photosTotal}` : 'Scanning...'}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Progress Bar */}

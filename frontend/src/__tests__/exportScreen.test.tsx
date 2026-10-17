@@ -124,6 +124,25 @@ describe('ExportScreen Component', () => {
       expect(screen.getByTestId('export-stat-photos').textContent).toContain('84');
     });
   });
+
+  it('unlocked behavior: renders destination explorer and shortcuts on cold boot with 0 people and photos', async () => {
+    render(
+      <ExportScreen
+        peopleCount={0}
+        photosCount={0}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('OUTPUT DESTINATION EXPLORER')).toBeTruthy();
+      expect(screen.getByText('Project Export')).toBeTruthy();
+      expect(screen.getByText('Desktop')).toBeTruthy();
+    });
+
+    const exportBtn = screen.getByTestId('export-bundle-btn');
+    expect(exportBtn).toBeTruthy();
+    expect(screen.getByText(/Export Static Web Bundle/i)).toBeTruthy();
+  });
 });
 
 describe('ProgressScreen Time Elapsed Component', () => {

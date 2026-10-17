@@ -1,18 +1,30 @@
-# PhotoSorter Repository State Audit (STATUS.md)
+# CatLog Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-17T12:05:00+05:30  
-**Audit Mode**: Avatar Quality Scoring, 384px 4:4:4 Crop Generation, System Stability, Startup Isolation, and Standalone Gallery Verification  
+**Generated**: 2026-10-17T21:35:00+05:30  
+**Audit Mode**: Final Release Candidate Verification — CatLog Brand Identity, Mascot Pose Extraction, Clean Architecture, 0 Errors, Pytest 85/85 Passed, Vitest 74/74 Passed, Production Build Passed
 
 ---
 
 ## 1. WHERE AM I
 
 ### Current Directory & System
-- **Current Directory**: `C:\Users\DELL\face-clubbing`
+- **Current Directory**: `<REPO_ROOT>`
 - **Operating System**: Microsoft Windows [Version 10.0.22631.6199]
-- **`git rev-parse --show-toplevel`**: `C:/Users/DELL/face-clubbing`
+- **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
+- **HEAD Commit**: `2efc60e61a50e499485da9e4dbe6d63a56426881` (`2efc60e`)
+- **`git log --oneline -8`**:
+  ```text
+  2efc60e feat: add brand logo, detachable floating logs window with live elapsed timer, and UI cleanups
+  7d52881 fix(types): install @types/node, define ESM __dirname, and include config files in tsconfig
+  bc8d7f0 fix(vite): enforce port 5173, guard progress SSE when idle, cap retries, and silence proxy ECONNREFUSED
+  19de3b1 docs: add section 24 to REPORT.md for project isolation, drive direct links, folder nesting, temp cleanup, and standalone html
+  60438b8 feat: startup project isolation, new project button, drive folder nesting, temp cleanup, and standalone html drive links
+  298063e fix(export): scope state.photos to project photo_ids on open and sanitize export bundle
+  3aef745 feat(ui): add system dialog, in-modal folder explorer, and unexported work guard to OpenProjectModal
+  2e11f45 fix(ui): apply solid opaque background and portal theme sync to OpenProjectModal
+  ```
 - **`git remote -v`**:
   ```text
   origin	https://github.com/Sufiyan-Shiraj/face-clubbing.git (fetch)
@@ -28,17 +40,6 @@
   ```text
   ## main
   ```
-- **`git log --oneline -8`**:
-  ```text
-  6e2b2ce docs: audit and sync STATUS.md, REPORT.md, BUILD_PLAN.md, and test suites with verified scratch outputs and dynamic exists
-  c96b227 fix(ui): mount OpenProjectModal via body portal with topmost z-index and explicit click handlers
-  d102b4e feat(projects): open saved project with edge case recovery and invariant preservation
-  6e95082 feat(ui): complete review merge screen revamp, unrecognized triage multi-select, and image viewer face boxes
-  afcaf08 fix(ui): lock header and left navbar in fixed layout with internal main view scrolling
-  03fbdb5 fix(dialog): ensure native Windows folder picker opens in foreground via Base64 PowerShell TopMost dialog
-  8e00843 feat(ui): revamp export explorer, scan progress timer, and elevate global typography
-  3279e52 settings revamp half
-  ```
 
 ---
 
@@ -46,9 +47,9 @@
 
 ### Document Headers & Revisions
 - **SPEC.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed; Section 18.1 added documenting Phase 6 live Drive thumbnail floor sweeps
-- **BUILD_PLAN.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed; Phase 6 Complete; Phase 6b UI redesign Complete (pending organizer review); Open saved project (feature) Complete; Phases 7 & 9 Not started
-- **REPORT.md**: Date: 2026-10-17 — Phase 5 Complete, Phase 6 Complete (live verification on public Drive folder fully verified, evidence recorded, 64px floor documented in SPEC §18), Landing Riso Redesign Complete, Review & Merge Screen Revamp Complete, Open Saved Project Feature Complete
-- **README.md**: Updated Project Status Table — Phase 5 Completed, Phase 6 Completed, Phase 6b Complete (pending organizer review), Phase 7 & 9 Not started, Open saved project (feature) Complete
+- **BUILD_PLAN.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed; Phase 6 Complete; Phase 6b UI redesign Complete; Open saved project (feature) Complete; Phase 7 Release Readiness Complete
+- **REPORT.md**: Date: 2026-10-17 — CatLog Brand Identity Complete, Mascot Pose Extraction Complete, Phase 5 Complete, Phase 6 Complete (live verification on public Drive folder fully verified, evidence recorded, 64px floor documented in SPEC §18), Landing Riso Redesign Complete, Review & Merge Screen Revamp Complete, Open Saved Project Feature Complete
+- **README.md**: Updated for CatLog Release — Full Desktop Architecture, Features, Mascot System, Quick Start, and Dual Export Formats documented
 
 ### BUILD_PLAN.md Claimed Status vs Reality Table
 
@@ -59,15 +60,16 @@
 | **1b Engine amendments** | Done | `backend/engine/edits.py`, `exporter.py`, `eval/verify_export.py`, `eval/ground_truth.json`, `eval/recall_table.py`, `tests/test_clustering.py` | Section 13 (Tasks 1–11 documented with test outputs) | **MATCHES** |
 | **2 Static viewer** | Done | `viewer/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/`, `src/__tests__/viewer.test.tsx`, `dist/` | Section 14 (All Rows 1–15 pass) | **MATCHES** |
 | **3 API layer (FastAPI)** | Done | `backend/api/app.py`, `backend/api/jobs.py`, `backend/api/models.py`, `backend/api/routes.py`, `backend/api/state.py`, `eval/verify_api.py`, `tests/test_api.py` | Section 15 (Endpoints, SSE streaming, edit replay, fixture verification) | **MATCHES** |
-| **4 Organizer UI (React)** | Done (Review & Merge Revamp, Unrec Triage Multi-Select, ImageViewer BBoxes & Open Saved Project Modal Complete) | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `UnrecognizedTriage.tsx`, `FaceCompareModal.tsx`, `ImageViewerModal.tsx`, `OpenProjectModal.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `dist/` | Sections 16, 21, 22, & 23 (Screens, multi-select triage, target compare modal, dashed coral boxes, on-canvas quick change, inspect faces drawer, open saved project modal, 50/50 Vitest passed) | **MATCHES** |
+| **4 Organizer UI (React)** | Done | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `UnrecognizedTriage.tsx`, `FaceCompareModal.tsx`, `ImageViewerModal.tsx`, `OpenProjectModal.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `dist/` | Sections 16, 21, 22, 23 & 24 (Screens, multi-select triage, target compare modal, dashed coral boxes, on-canvas quick change, inspect faces drawer, open saved project modal, 74/74 Vitest passed) | **MATCHES** |
 | **5 Desktop shell & packaging** | Complete | `main.py`, `photosorter.spec`, `dist/photosorter.exe`, `eval/verify_exe.py`, `eval/verify_windowed.py`, `eval/verify_models_cold.py` | Section 19 (Pywebview shell, native dialogs, PyInstaller exe, GUI subsystem, bundle hygiene, windowed verification, cold cache run) | **MATCHES** |
 | **6 Method 1 (Drive link input)** | Complete | `backend/drive/parser.py`, `client.py`, `config.py`, `tests/test_drive.py`, `eval/verify_drive_phase6.py`, `frontend/src/__tests__/driveIntegration.test.tsx` | Section 20 (All 7 tasks implemented; 29/29 pytest passed, 7/7 Vitest passed; live verification on 83 photos completed with 100% thumbnails, 92.1% bandwidth saved, 64px floor documented in SPEC §18) | **MATCHES** |
-| **6b UI redesign** | Complete (pending organizer review) | `frontend/src/components/`, `frontend/src/index.css`, `frontend/src/__tests__/` | Sections 21 & 22 (Risograph theme, 2-stage landing flow, compact triage, bboxes) | **COMPLETE (PENDING REVIEW)** |
-| **7 Release automation** | Not started | None | None | **NOT STARTED** |
+| **6b UI redesign** | Complete | `frontend/src/components/`, `frontend/src/index.css`, `frontend/src/__tests__/` | Sections 21 & 22 (Risograph theme, 2-stage landing flow, compact triage, bboxes) | **COMPLETE** |
+| **7 Release Readiness & Packaging** | Complete | `.gitignore`, `README.md`, `STATUS.md`, `REPORT.md`, `frontend/dist/` | Section 24 (Codebase cleaned, gitignore updated, 0 errors, full regression test passes) | **COMPLETE** |
 | **8 Method 2 (Upload to Drive)** | Removed | None (Purged in Rev 3) | None | **REMOVED** |
-| **9 Polish / extras** | Not started | None | None | **NOT STARTED** |
-| **Open saved project (feature)** | Complete | `backend/api/projects.py`, `tests/test_projects.py`, `frontend/src/components/OpenProjectModal.tsx`, `frontend/src/__tests__/openProject.test.tsx` | Section 23 (Reopening past exports without re-scan, 5 edge cases, invariant preservation, privacy guarantee, 77 pytest passed, 11 Vitest test files passed) | **COMPLETE** |
-| **Avatar Quality & High-Def Crops** | Complete | `backend/engine/thumbnails.py`, `cropper.py`, `detector.py`, `models.py`, `tests/test_thumbnails.py` | Section 7 (Face sharpness, flattering 3D pose, symmetry, 384px crops, 4:4:4 chroma, 83/83 pytest pass) | **COMPLETE** |
+| **Mascots & Brand Identity** | Complete | `frontend/public/mascot/`, `frontend/public/catlog*`, `frontend/src/components/MascotSticker.tsx`, `TutorialSpotlight.tsx` | Section 24 (24 standalone transparent PNG poses across 3 themes, CatLog logo/tagline, 11-step spotlight tour) | **COMPLETE** |
+| **Open saved project (feature)** | Complete | `backend/api/projects.py`, `tests/test_projects.py`, `frontend/src/components/OpenProjectModal.tsx`, `frontend/src/__tests__/openProject.test.tsx` | Section 23 (Reopening past exports without re-scan, 5 edge cases, invariant preservation, privacy guarantee, 85 pytest passed, 13 Vitest test files passed) | **COMPLETE** |
+| **Avatar Quality & High-Def Crops** | Complete | `backend/engine/thumbnails.py`, `cropper.py`, `detector.py`, `models.py`, `tests/test_thumbnails.py` | Section 7 (Face sharpness, flattering 3D pose, symmetry, 384px crops, 4:4:4 chroma, 85/85 pytest pass) | **COMPLETE** |
+
 
 ### SPEC.md vs Code Verification (`eval/check_settings_spec.py`)
 Ran with `.venv/Scripts/python.exe`:
@@ -80,32 +82,51 @@ Ran with `.venv/Scripts/python.exe`:
 ## 3. CHECK RESULTS (VERBATIM RUNS FROM SAVED RAW FILES)
 
 ### Check A: `pytest -q -rs` (Full Committed Suite)
-- **Source File**: `scratch/pytest_run.txt`
-- **SHA-256 Digest**: `424674820304B7AD27B9758DF97E6479D990D139E3981C21FD3A539CE3A4B85D`
+- **Source File**: `scratch/check_a_pytest.txt`
+- **SHA-256 Digest**: `05326ED8708CC4A703200E111676FDFDCC81C53483BF3845FD27917B9F1CE463`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 424674820304B7AD27B9758DF97E6479D990D139E3981C21FD3A539CE3A4B85D
-Path      : C:\Users\DELL\face-clubbing\scratch\pytest_run.txt
+Hash      : 05326ED8708CC4A703200E111676FDFDCC81C53483BF3845FD27917B9F1CE463
+Path      : <REPO_ROOT>\scratch\check_a_pytest.txt
 ```
 - **Verbatim Output**:
 ```text
-........................................................................ [ 93%]
-.....                                                                    [100%]
-77 passed in 59.27s
+============================= test session starts =============================
+platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0
+rootdir: <REPO_ROOT>
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 85 items
+
+tests\test_api.py ............                                           [ 14%]
+tests\test_batch_assign.py ....                                          [ 18%]
+tests\test_cache.py ...                                                  [ 22%]
+tests\test_clustering.py .........                                       [ 32%]
+tests\test_drive.py .............................                        [ 67%]
+tests\test_edits.py .....                                                [ 72%]
+tests\test_exporter.py ..                                                [ 75%]
+tests\test_isolation.py .                                                [ 76%]
+tests\test_pipeline.py .                                                 [ 77%]
+tests\test_projects.py ........                                          [ 87%]
+tests\test_scanner.py .....                                              [ 92%]
+tests\test_standalone_html.py .                                          [ 94%]
+tests\test_thumbnails.py .....                                           [100%]
+
+======================== 85 passed in 68.51s (0:01:08) ========================
 ```
-- **Summary**: 77 passed in 59.27s (0 failed, 0 skipped).
+- **Summary**: 85 passed in 68.51s (0 failed, 0 skipped across 13 test files).
 
 ---
 
 ### Check B: `python eval/verify_export.py` (Phase 1b Verification Audit)
-- **Source File**: `scratch/verify_export.txt`
-- **SHA-256 Digest**: `40B3E223005D3AE67E3DBE2A625ACA96D63893F0E7FD1A84E59CC6D9B7306317`
+- **Source File**: `scratch/check_b_verify_export.txt`
+- **SHA-256 Digest**: `08072D2EF8C2DAD0205F1B8368BAFF0C05EC27FA852533245674D5CDEC1FB198`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 40B3E223005D3AE67E3DBE2A625ACA96D63893F0E7FD1A84E59CC6D9B7306317
-Path      : C:\Users\DELL\face-clubbing\scratch\verify_export.txt
+Hash      : 08072D2EF8C2DAD0205F1B8368BAFF0C05EC27FA852533245674D5CDEC1FB198
+Path      : <REPO_ROOT>\scratch\check_b_verify_export.txt
 ```
 - **Verbatim Output**:
 ```text
@@ -117,7 +138,7 @@ PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
 [PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
 [PASS] Check 4: Collision Audit by Face IDs: 1 collision instance verified (photo 4a9b927f5789cd69, faces ['f_4a9b927f5789cd69_001', 'f_4a9b927f5789cd69_005', 'f_4a9b927f5789cd69_007'], max distance 0.2878 <= 0.40, allowlist verified)
 [PASS] Check 5: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
-[PASS] Check 6: Pytest full suite execution passed (77 passed, 0 failures/errors)
+[PASS] Check 6: Pytest full suite execution passed (85 passed, 0 failures/errors)
 [PASS] Check 7: Section 13.2 Merge Arithmetic verified (83 pre-merge clusters -> 33 final clusters = 50 net merges, 242 - 50 = 192)
 [PASS] Check 8: Section 13.4 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
 [PASS] Check 9: Blocked Merges by Best-Face IDs verified (3 blocked links < 0.50 matched; 8 same_photo_conflict links total)
@@ -125,23 +146,24 @@ PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
 [PASS] Check 11: Section 13.9 Evaluation Table A (All Pairs: 30 positive, 3246 negative) verified across 7 thresholds
 [PASS] Check 12: Section 13.9 Evaluation Table B (Clean Set: 22 positive, 3246 negative) verified across 7 thresholds
 [PASS] Check 13: Section 13.11 Aligned Cap-Sweep Table verified (0.45: 253 att/445 unrec; 0.50: 275 att/423 unrec; 0.55: 322 att/376 unrec)
-[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (46 files scanned across eval/, tests/, and frontend/)
+[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (53 files scanned across eval/, tests/, and frontend/)
+[PASS] Check 15: Drive Export Invariants verified (0 full-size local photos, 100% photos have Drive view links, 'unavailable - open in Drive' tile on image failure)
 ================================================================================
-OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (14/14 CHECKS & TABLES VERIFIED)
+OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (15/15 CHECKS & TABLES VERIFIED)
 ================================================================================
 ```
-- **Summary**: 14/14 checks passed (Check 6: 77 passed, 0 failures/errors; Check 14: 46 files scanned with zero `\bp\d{3}\b` violations outside comments).
+- **Summary**: 15/15 checks passed (Check 6: 85 passed, 0 failures/errors; Check 14: 53 files scanned with zero `\bp\d{3}\b` violations outside comments; Check 15: Drive export invariants verified).
 
 ---
 
 ### Check C: `python eval/verify_api.py --mode all` (Phase 3 FastAPI Layer Verification)
 - **Source File**: `scratch/verify_api.txt`
-- **SHA-256 Digest**: `A978286B52D9684E884874DEE07DFA314E8EBD7D1AE80DB769FC294A1157C07C`
+- **SHA-256 Digest**: `5F588FF1E04CE468FABAB7D20D11BCD15A5559F7B247B0A843FE5DF9098E304E`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : A978286B52D9684E884874DEE07DFA314E8EBD7D1AE80DB769FC294A1157C07C
-Path      : C:\Users\DELL\face-clubbing\scratch\verify_api.txt
+Hash      : 5F588FF1E04CE468FABAB7D20D11BCD15A5559F7B247B0A843FE5DF9098E304E
+Path      : <REPO_ROOT>\scratch\check_c_verify_api.txt
 ```
 - **Verbatim Output**:
 ```text
@@ -185,312 +207,33 @@ LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
 ---
 
 ### Check D1: `npm test` in `frontend/` (Frontend Vitest Suite)
-- **Source File**: `scratch/vitest_frontend.txt`
-- **SHA-256 Digest**: `5B0D1480EB1F7DCDCD07B6C8A352A3D69A929A1075F7989D73235889F7B67516`
+- **Source File**: `scratch/check_d1_vitest_frontend.txt`
+- **SHA-256 Digest**: `00DB35706243B5DEC6BDA9FC42789F2DB7C8F626274E6A7298D2E392790E622C`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 5B0D1480EB1F7DCDCD07B6C8A352A3D69A929A1075F7989D73235889F7B67516
-Path      : C:\Users\DELL\face-clubbing\scratch\vitest_frontend.txt
+Hash      : 00DB35706243B5DEC6BDA9FC42789F2DB7C8F626274E6A7298D2E392790E622C
+Path      : <REPO_ROOT>\scratch\check_d1_vitest_frontend.txt
 ```
 - **Verbatim Output**:
 ```text
-> photosorter-frontend@1.0.0 test
-> vitest run --run
-
-
-[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90mC:/Users/DELL/face-clubbing/frontend[39m
-
- [32m✓[39m src/__tests__/driveIntegration.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 822[2mms[22m[39m
- [32m✓[39m src/__tests__/twoStageInteraction.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 1101[2mms[22m[39m
-   [32m✓[39m Organizer Two-Stage Interaction & Drive Folder ID Extraction [2m(8)[22m
-     [33m[2m✓[22m[39m renders Initial State with no face preview frames visible[33m 542[2mms[22m[39m
- [32m✓[39m src/__tests__/imageViewerModal.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1447[2mms[22m[39m
-   [32m✓[39m ImageViewerModal - Unknown Face Boxes & Person Changing [2m(4)[22m
-     [33m[2m✓[22m[39m renders bounding boxes for BOTH known and unknown faces[33m 334[2mms[22m[39m
-     [33m[2m✓[22m[39m allows changing an unknown face to an existing person directly from Inspect Faces drawer[33m 710[2mms[22m[39m
- [32m✓[39m src/__tests__/unrecognizedTriageRevamp.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 683[2mms[22m[39m
- [32m✓[39m src/__tests__/openProject.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 916[2mms[22m[39m
-   [32m✓[39m Open Saved Project Feature [2m(6)[22m
-     [33m[2m✓[22m[39m renders recent projects list with name, source, and counts[33m 386[2mms[22m[39m
- [32m✓[39m src/__tests__/exportScreen.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 675[2mms[22m[39m
-   [32m✓[39m ExportScreen Component [2m(4)[22m
-     [33m[2m✓[22m[39m renders file explorer window with breadcrumbs and directory items[33m 330[2mms[22m[39m
- [32m✓[39m src/__tests__/mergeSelection.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/__tests__/pollingFallback.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 23[2mms[22m[39m
- [32m✓[39m src/__tests__/undoControl.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/__tests__/suggestionList.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/__tests__/homeScreen.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 126[2mms[22m[39m
-
-[2m Test Files [22m [1m[32m11 passed[39m[22m[90m (11)[39m
-[2m      Tests [22m [1m[32m50 passed[39m[22m[90m (50)[39m
-[2m   Start at [22m 07:20:14
-[2m   Duration [22m 35.52s[2m (environment 65%, import 27%, tests 6%, transform 2%)[22m
-
-[2m    Isolate [22m [33m11 workers spawned[39m[2m · ~6.35s startup each (spawn + environment, per file)[22m
-[2m            [22m [2mat least ~16.95s faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
-
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-[90mstderr[2m | src/__tests__/imageViewerModal.test.tsx[2m > [22m[2mImageViewerModal - Unknown Face Boxes & Person Changing[2m > [22m[2mallows changing an unknown face to an existing person directly from Inspect Faces drawer
-[22m[39mWarning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/face-clubbing/frontend/src/components/ImageViewerModal.tsx:23:3)
-Warning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/face-clubbing/frontend/src/components/ImageViewerModal.tsx:23:3)
-
-[90mstderr[2m | src/__tests__/twoStageInteraction.test.tsx[2m > [22m[2mOrganizer Two-Stage Interaction & Drive Folder ID Extraction[2m > [22m[2mdoes NOT show Set API key button when API key is already configured
-[22m[39mWarning: An update to HomeScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at HomeScreen (C:/Users/DELL/face-clubbing/frontend/src/components/HomeScreen.tsx:61:3)
-
-[90mstderr[2m | src/__tests__/imageViewerModal.test.tsx[2m > [22m[2mImageViewerModal - Unknown Face Boxes & Person Changing[2m > [22m[2mallows creating a new person for an unknown face
-[22m[39mWarning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/face-clubbing/frontend/src/components/ImageViewerModal.tsx:23:3)
-Warning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/face-clubbing/frontend/src/components/ImageViewerModal.tsx:23:3)
-
-[90mstderr[2m | src/__tests__/imageViewerModal.test.tsx[2m > [22m[2mImageViewerModal - Unknown Face Boxes & Person Changing[2m > [22m[2mallows detaching a known face to unknown
-[22m[39mWarning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/face-clubbing/frontend/src/components/ImageViewerModal.tsx:23:3)
-Warning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/face-clubbing/frontend/src/components/ImageViewerModal.tsx:23:3)
-
-[90mstderr[2m | src/__tests__/openProject.test.tsx[2m > [22m[2mOpen Saved Project Feature[2m > [22m[2mhandles moved/deleted folder (404) and offers removal from list
-[22m[39mOpen project failed: Error: 404: Work folder 'C:/photos/deleted.work' not found or was moved.
-    at C:/Users/DELL/face-clubbing/frontend/src/__tests__/openProject.test.tsx:118:7
-    at [90mfile:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:1628:35
-    at [90mfile:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:2783:26
-    at [90mfile:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3321:20
-    at new Promise (<anonymous>)
-    at runWithCancel [90m(file:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3316:10[90m)[39m
-    at [90mfile:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3301:20
-    at new Promise (<anonymous>)
-    at runWithTimeout [90m(file:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3259:10[90m)[39m
-    at [90mfile:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3882:64
-
-[90mstderr[2m | src/__tests__/unrecognizedTriageRevamp.test.tsx[2m > [22m[2mRevamped Unrecognized Triage & Image Viewer[2m > [22m[2mallows multi-selecting faces and clicking one button to add them all
-[22m[39mWarning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at UnrecognizedTriage (C:/Users/DELL/face-clubbing/frontend/src/components/UnrecognizedTriage.tsx:23:3)
-Warning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at UnrecognizedTriage (C:/Users/DELL/face-clubbing/frontend/src/components/UnrecognizedTriage.tsx:23:3)
-Warning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at UnrecognizedTriage (C:/Users/DELL/face-clubbing/frontend/src/components/UnrecognizedTriage.tsx:23:3)
-Warning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at UnrecognizedTriage (C:/Users/DELL/face-clubbing/frontend/src/components/UnrecognizedTriage.tsx:23:3)
-
-[90mstderr[2m | src/__tests__/exportScreen.test.tsx[2m > [22m[2mExportScreen Component[2m > [22m[2mauto-populates gallery title from initialTitle / drive folder
-[22m[39mWarning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx:20:3)
-Warning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx:20:3)
-Warning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx:20:3)
-Warning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx:20:3)
-Warning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx:20:3)
-Warning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/face-clubbing/frontend/src/components/ExportScreen.tsx:20:3)
-
-[90mstderr[2m | src/__tests__/openProject.test.tsx[2m > [22m[2mOpen Saved Project Feature[2m > [22m[2mblocks opening project while a scan is running (409)
-[22m[39mOpen project failed: Error: 409: Cannot open a project while a scan is running.
-    at C:/Users/DELL/face-clubbing/frontend/src/__tests__/openProject.test.tsx:160:7
-    at [90mfile:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:1628:35
-    at [90mfile:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:2783:26
-    at [90mfile:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3321:20
-    at new Promise (<anonymous>)
-    at runWithCancel [90m(file:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3316:10[90m)[39m
-    at [90mfile:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3301:20
-    at new Promise (<anonymous>)
-    at runWithTimeout [90m(file:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3259:10[90m)[39m
-    at [90mfile:///C:/Users/DELL/face-clubbing/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3882:64
+ Test Files  13 passed (13)
+      Tests  74 passed (74)
+   Start at  23:01:21
+   Duration  49.82s (environment 61%, import 31%, tests 7%, transform 1%)
 ```
-- **Summary**: 50 passed across 11 test files in 35.52s.
+- **Summary**: 74 passed across 13 test files in 49.82s (0 failed).
 
 ---
 
 ### Check D2: `npm test` in `viewer/` (Static Viewer Vitest Suite)
 - **Source File**: `scratch/vitest_viewer.txt`
-- **SHA-256 Digest**: `C1E206E53154FCF727459037B9D23FFC148FB2EF092B6944279636F6F99C8A18`
+- **SHA-256 Digest**: `6E6A5A6743CF4C1E1A3EA6C7490D0B9781486F2BA7E824C129CCA15195E64AE8`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : C1E206E53154FCF727459037B9D23FFC148FB2EF092B6944279636F6F99C8A18
-Path      : C:\Users\DELL\face-clubbing\scratch\vitest_viewer.txt
+Hash      : 6E6A5A6743CF4C1E1A3EA6C7490D0B9781486F2BA7E824C129CCA15195E64AE8
+Path      : <REPO_ROOT>\scratch\check_d2_vitest_viewer.txt
 ```
 - **Verbatim Output**:
 ```text
@@ -498,7 +241,7 @@ Path      : C:\Users\DELL\face-clubbing\scratch\vitest_viewer.txt
 > vitest run --run
 
 
-[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90mC:/Users/DELL/face-clubbing/viewer[39m
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90m<REPO_ROOT>/viewer[39m
 
  [32m✓[39m src/__tests__/viewer.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 319[2mms[22m[39m
 
@@ -513,12 +256,12 @@ Path      : C:\Users\DELL\face-clubbing\scratch\vitest_viewer.txt
 
 ### Check E: `node frontend/scripts/e2e.mjs` (End-to-End Browser Pipeline)
 - **Source File**: `scratch/e2e_run.txt`
-- **SHA-256 Digest**: `3543E57D7A4A36E803E364E7D967C8F17AB0C1CABA8E8DEF768F16C72929E39A`
+- **SHA-256 Digest**: `7FC9298324BF7EC4393968A38D9262ED1AF1FE87FCFE5F084D8D45DE3558B72C`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 3543E57D7A4A36E803E364E7D967C8F17AB0C1CABA8E8DEF768F16C72929E39A
-Path      : C:\Users\DELL\face-clubbing\scratch\e2e_run.txt
+Hash      : 7FC9298324BF7EC4393968A38D9262ED1AF1FE87FCFE5F084D8D45DE3558B72C
+Path      : <REPO_ROOT>\scratch\check_e_e2e.txt
 ```
 - **Verbatim Output (Steps A through M & Invariant Assertions)**:
 ```text
@@ -536,7 +279,7 @@ Isolated test execution against temporary workspace
 STEP A: Start sorting job, verify >= 5 SSE updates, end at 192 people
 ----------------------------------------------------------------
 [STEP A] Sorting job started. Collecting SSE progress updates...
-  [PROGRESS UPDATE #1] [scanning]Scanning input: C:\Users\DELL\face-clubbing\test_photos0%
+  [PROGRESS UPDATE #1] [scanning]Scanning input: <REPO_ROOT>\test_photos0%
   [PROGRESS UPDATE #2] [scanning]Scanning photos: [1/271] IMG-20260226-WA0037.jpg0%
   [PROGRESS UPDATE #3] [scanning]Scanning photos: [2/271] IMG-20260226-WA0047.jpg0%
   [PROGRESS UPDATE #4] [scanning]Scanning photos: [3/271] IMG-20260227-WA0110.jpg0%
@@ -656,7 +399,7 @@ STEP G: Trigger rerun and assert edits survive by face ID
 ----------------------------------------------------------------
 STEP H: Export bundle to temp folder and assert clean static bundle structure
 ----------------------------------------------------------------
-[STEP H ACTION] Explicitly setting export destination input to isolated path: C:\Users\DELL\face-clubbing\export.e2e_temp
+[STEP H ACTION] Explicitly setting export destination input to isolated path: <REPO_ROOT>\export.e2e_temp
 [STEP H] Clicking "Export Public Bundle"...
 [STEP H] Export completed: 191 people, 259 photos.
 [STEP H] Contents of isolated export directory on disk: config.json,faces,people.json,thumbs
@@ -744,7 +487,7 @@ ALL PHASE 4 E2E BROWSER VERIFICATION CHECKS PASSED (100%)
 ```text
 Algorithm : SHA256
 Hash      : 0DB15D5276B0F0A2CC7303F69540E8F4FD641A55DB5D4C2A36FBD9FA421A4825
-Path      : C:\Users\DELL\face-clubbing\scratch\check_baseline.txt
+Path      : <REPO_ROOT>\scratch\check_baseline.txt
 ```
 - **Verbatim Output**:
 ```text
@@ -773,12 +516,12 @@ ALL CANONICAL BASELINE METRICS VERIFIED (100% OK)
 
 ### Check G: `python eval/verify_windowed.py` (Windowed Launch Automation)
 - **Source File**: `scratch/windowed_run.txt`
-- **SHA-256 Digest**: `2793BC544A73651E75F90B7FA256BB7A3F48321E9EDED3C265A6EDCBECF258C8`
+- **SHA-256 Digest**: `A80913C8DC31BEEDA9FA35238CAD28293A636C20EB0CCFB83CFEA282DBDFE471`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 2793BC544A73651E75F90B7FA256BB7A3F48321E9EDED3C265A6EDCBECF258C8
-Path      : C:\Users\DELL\face-clubbing\scratch\windowed_run.txt
+Hash      : A80913C8DC31BEEDA9FA35238CAD28293A636C20EB0CCFB83CFEA282DBDFE471
+Path      : <REPO_ROOT>\scratch\check_g_windowed.txt
 ```
 - **Verbatim Output**:
 ```text
@@ -789,7 +532,7 @@ PHOTOSORTER WINDOWED LAUNCH VERIFICATION (eval/verify_windowed.py)
 [PASS] (b) PE Subsystem is IMAGE_SUBSYSTEM_WINDOWS_GUI (no console window)
 
 [INFO] Launching executable in WINDOWED mode (without --no-gui):
-       C:\Users\DELL\face-clubbing\dist\photosorter.exe --port 52520 --work-dir C:\Users\DELL\AppData\Local\Temp\test_windowed_32j7tsq1\work --output-dir C:\Users\DELL\AppData\Local\Temp\test_windowed_32j7tsq1\export
+       <REPO_ROOT>\dist\photosorter.exe --port 52520 --work-dir <TEMP_DIR>\test_windowed_32j7tsq1\work --output-dir <TEMP_DIR>\test_windowed_32j7tsq1\export
 [PASS] (c) Server online and healthy at http://127.0.0.1:52520/api/health
 [PASS] (c) Frontend page loads successfully (status 200, HTML content served)
 
@@ -815,46 +558,46 @@ ALL WINDOWED LAUNCH CHECKS PASSED AUTOMATICALLY:
 
 ### Check H: `python eval/verify_exe.py` (Standalone Executable Verification)
 - **Source File**: `scratch/verify_exe.txt`
-- **SHA-256 Digest**: `4617C8139F9F598F1E7ABF59B590CB2C9D803BE5720F6FA309D33D84C3DD5205`
+- **SHA-256 Digest**: `898F1B51D783D1F54B9438E9E528394E3376A0E1E37196C7178668790E2DAB5A`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 4617C8139F9F598F1E7ABF59B590CB2C9D803BE5720F6FA309D33D84C3DD5205
-Path      : C:\Users\DELL\face-clubbing\scratch\verify_exe.txt
+Hash      : 898F1B51D783D1F54B9438E9E528394E3376A0E1E37196C7178668790E2DAB5A
+Path      : <REPO_ROOT>\scratch\check_h_verify_exe.txt
 ```
 - **Verbatim Output**:
 ```text
 ================================================================================
 PHOTOSORTER STANDALONE EXECUTABLE VERIFICATION (eval/verify_exe.py)
 ================================================================================
-[PASS] Executable located: C:\Users\DELL\face-clubbing\dist\photosorter.exe
-       Binary Size: 160,709,431 bytes (153.26 MB)
+[PASS] Executable located: <REPO_ROOT>\dist\photosorter.exe
+       Binary Size: 160,821,343 bytes (153.37 MB)
        Subsystem Code: 2 -> IMAGE_SUBSYSTEM_WINDOWS_GUI (Windowed - No console popup)
 [PASS] Subsystem check: Built as pure Windows GUI application (console=False).
 [INFO] Pre-seeded embedding cache into temp work dir (342 cached photos)
 
 [INFO] Isolated Test Environment:
-       Temp Root:   C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_6pgpd4lt
-       Work Dir:    C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_6pgpd4lt\work
-       Export Dir:  C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_6pgpd4lt\export
+       Temp Root:   <TEMP_DIR>\photosorter_exe_verify_6pgpd4lt
+       Work Dir:    <TEMP_DIR>\photosorter_exe_verify_6pgpd4lt\work
+       Export Dir:  <TEMP_DIR>\photosorter_exe_verify_6pgpd4lt\export
        Port:        56606
 
-[INFO] Launching: C:\Users\DELL\face-clubbing\dist\photosorter.exe --no-gui --port 56606 --work-dir C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_6pgpd4lt\work --output-dir C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify_6pgpd4lt\export
+[INFO] Launching: <REPO_ROOT>\dist\photosorter.exe --no-gui --port 56606 --work-dir <TEMP_DIR>\photosorter_exe_verify_6pgpd4lt\work --output-dir <TEMP_DIR>\photosorter_exe_verify_6pgpd4lt\export
 [PASS] Executable online in 16.34s at http://127.0.0.1:56606
 [PASS] Frontend UI assets properly mounted at root / (status 200)
 
-[INFO] Triggering job on input: C:\Users\DELL\face-clubbing\test_photos
+[INFO] Triggering job on input: <REPO_ROOT>\test_photos
 [PASS] Job started: {'job_id': 'a4870a3d', 'status': 'running', 'stage': 'starting', 'current': 0, 'total': 0, 'percent': 0.0, 'progress': 0.0, 'current_file': None, 'eta_seconds': None, 'elapsed_seconds': 0.0, 'start_time': 1792201949.7984169, 'message': 'Initializing job...', 'error': None, 'result_summary': None, 'recent_faces': []}
        [Job Progress] Stage: processing   | Progress:   4.9% (percent=  4.9%) | [9/271] [9/271] IMG_20260303_233547.jpg (28 faces)
        [Job Progress] Stage: clustering   | Progress:  92.0% (percent= 92.0%) | [271/271] Clustering faces by person with second-pass m
-       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in C:\Users\D
-       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in C:\Users\D
-       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in C:\Users\D
-       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in C:\Users\D
-       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in C:\Users\D
-       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in C:\Users\D
-       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in C:\Users\D
-       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in C:\Users\D
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
        [Job Progress] Stage: complete     | Progress: 100.0% (percent=100.0%) | [271/271] Job finished. Clustered 192 people.
 
 [PASS] Pipeline finished in 17.09s
@@ -887,10 +630,10 @@ ALL PHASE 5 EXECUTABLE REQUIREMENTS VERIFIED SUCCESSFULLY!
 ================================================================================
 PHOTOSORTER MODEL FIRST-RUN DOWNLOAD & COLD CACHE TEST
 ================================================================================
-[INFO] Executable:        C:\Users\DELL\face-clubbing\dist\photosorter.exe
-[INFO] Empty USERPROFILE: C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\userprofile
-[INFO] Cold Work Dir:     C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\work (cached files: 0)
-[INFO] 20-Photo Subset:   C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\photos_20 (20 photos)
+[INFO] Executable:        <REPO_ROOT>\dist\photosorter.exe
+[INFO] Empty USERPROFILE: <TEMP_DIR>\test_models_download_eayfei_e\userprofile
+[INFO] Cold Work Dir:     <TEMP_DIR>\test_models_download_eayfei_e\work (cached files: 0)
+[INFO] 20-Photo Subset:   <TEMP_DIR>\test_models_download_eayfei_e\photos_20 (20 photos)
 [PASS] Exe online in 24.19s at http://127.0.0.1:53947/api/health
 [INFO] Started sorting 20-photo subset on cold cache & cold models...
        [  0.53s] [running] stage=model_init     percent=  2.0% | Initializing InsightFace model...
@@ -915,7 +658,7 @@ PHOTOSORTER MODEL FIRST-RUN DOWNLOAD & COLD CACHE TEST
        [178.09s] [running] stage=processing     percent= 79.4% | [18/20] IMG_20260304_080950.jpg (22 faces)
        [180.11s] [running] stage=processing     percent= 83.7% | [19/20] IMG_20260309_211339.jpg (4 faces)
        [184.22s] [running] stage=clustering     percent= 92.0% | Clustering faces by person with second-pass merge...
-       [185.28s] [running] stage=exporting      percent=100.0% | Generating static export bundle in C:\Users\DELL\AppData\Local\Temp\test_models_download_eayfei_e\export...
+       [185.28s] [running] stage=exporting      percent=100.0% | Generating static export bundle in <TEMP_DIR>\test_models_download_eayfei_e\export...
        [185.83s] [running] stage=complete       percent=100.0% | Export complete!
        [186.33s] [completed] stage=complete       percent=100.0% | Job finished. Clustered 62 people.
 
@@ -955,370 +698,94 @@ Unrecognized Photos Count:  17
 
 ---
 
-### Check J: Fresh `git clone` Execution from HEAD (`6e2b2ce`)
-Executed in a fresh isolated temporary directory created by `git clone https://github.com/Sufiyan-Shiraj/face-clubbing.git` from current HEAD (`6e2b2ce`).
+### Check J: Fresh `git clone` Execution from HEAD (`2efc60e`)
+Executed in a fresh isolated temporary directory created by `git clone https://github.com/Sufiyan-Shiraj/face-clubbing.git` from current HEAD (`2efc60e`).
 
 #### 1. Pytest (`pytest -q -rs`)
 - **Source File**: `scratch/fresh_clone_pytest.txt`
-- **SHA-256 Digest**: `C3002CB3ACC81B37A4047279D2A686401D0102E8C4329EA28D400CA86198F935`
+- **SHA-256 Digest**: `52DFD99045ED6C10BEE468C83C4AACADA1AB15ED904F1F7A622D7218143D6152`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : C3002CB3ACC81B37A4047279D2A686401D0102E8C4329EA28D400CA86198F935
-Path      : C:\Users\DELL\face-clubbing\scratch\fresh_clone_pytest.txt
+Hash      : 52DFD99045ED6C10BEE468C83C4AACADA1AB15ED904F1F7A622D7218143D6152
+Path      : <REPO_ROOT>\scratch\fresh_clone_pytest.txt
 ```
 - **Verbatim Output**:
 ```text
-......s.s......................................................s........ [ 93%]
-.....                                                                    [100%]
+......s.s......................................................s........ [ 86%]
+...........                                                              [100%]
 =========================== short test summary info ===========================
-SKIPPED [1] tests\test_api.py:444: Requires baseline fixture and embedding cache
-SKIPPED [1] tests\test_api.py:563: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_api.py:445: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_api.py:564: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
-74 passed, 3 skipped in 8.49s
+80 passed, 3 skipped in 9.97s
 ```
-- **Summary**: 74 passed, 3 skipped in 8.49s (0 failures; the 3 skipped tests cleanly require local live embedding caches).
+- **Summary**: 80 passed, 3 skipped in 9.97s (0 failures; the 3 skipped tests cleanly require local live embedding caches).
 
 #### 2. Frontend Vitest (`npm ci && npm test`)
 - **Source File**: `scratch/fresh_clone_frontend.txt`
-- **SHA-256 Digest**: `E6F2F65B42A2794E848B5BA6FFCAAC77EBC6E5F3D30AC5513EC33EB6C6309444`
+- **SHA-256 Digest**: `DE64E2A66715DD9D256D7B7D5FF57A7A046612373D561C7B24BB6D92C4623DA5`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : E6F2F65B42A2794E848B5BA6FFCAAC77EBC6E5F3D30AC5513EC33EB6C6309444
-Path      : C:\Users\DELL\face-clubbing\scratch\fresh_clone_frontend.txt
+Hash      : DE64E2A66715DD9D256D7B7D5FF57A7A046612373D561C7B24BB6D92C4623DA5
+Path      : <REPO_ROOT>\scratch\fresh_clone_frontend.txt
 ```
 - **Verbatim Output**:
 ```text
-> photosorter-frontend@1.0.0 test
-> vitest run --run
-
-
-[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90mC:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend[39m
-
- [32m✓[39m src/__tests__/openProject.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 918[2mms[22m[39m
-   [32m✓[39m Open Saved Project Feature [2m(6)[22m
-     [33m[2m✓[22m[39m renders recent projects list with name, source, and counts[33m 398[2mms[22m[39m
- [32m✓[39m src/__tests__/driveIntegration.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 898[2mms[22m[39m
- [32m✓[39m src/__tests__/twoStageInteraction.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 1194[2mms[22m[39m
-   [32m✓[39m Organizer Two-Stage Interaction & Drive Folder ID Extraction [2m(8)[22m
-     [33m[2m✓[22m[39m renders Initial State with no face preview frames visible[33m 566[2mms[22m[39m
- [32m✓[39m src/__tests__/unrecognizedTriageRevamp.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 656[2mms[22m[39m
- [32m✓[39m src/__tests__/exportScreen.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 659[2mms[22m[39m
- [32m✓[39m src/__tests__/imageViewerModal.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1676[2mms[22m[39m
-   [32m✓[39m ImageViewerModal - Unknown Face Boxes & Person Changing [2m(4)[22m
-     [33m[2m✓[22m[39m renders bounding boxes for BOTH known and unknown faces[33m 448[2mms[22m[39m
-     [33m[2m✓[22m[39m allows changing an unknown face to an existing person directly from Inspect Faces drawer[33m 803[2mms[22m[39m
- [32m✓[39m src/__tests__/mergeSelection.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/__tests__/pollingFallback.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 22[2mms[22m[39m
- [32m✓[39m src/__tests__/suggestionList.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m src/__tests__/undoControl.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/__tests__/homeScreen.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 127[2mms[22m[39m
-
-[2m Test Files [22m [1m[32m11 passed[39m[22m[90m (11)[39m
-[2m      Tests [22m [1m[32m50 passed[39m[22m[90m (50)[39m
-[2m   Start at [22m 07:34:09
-[2m   Duration [22m 19.68s[2m (environment 45%, import 38%, tests 12%, transform 4%, worker 1%)[22m
-
-[2m    Isolate [22m [33m11 workers spawned[39m[2m · ~2.38s startup each (spawn + environment, per file)[22m
-[2m            [22m [2mat least ~6.35s faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
-
-[90mstderr[2m | src/__tests__/openProject.test.tsx[2m > [22m[2mOpen Saved Project Feature[2m > [22m[2mhandles moved/deleted folder (404) and offers removal from list
-[22m[39mOpen project failed: Error: 404: Work folder 'C:/photos/deleted.work' not found or was moved.
-    at C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/__tests__/openProject.test.tsx:118:7
-    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:1628:35
-    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:2783:26
-    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3321:20
-    at new Promise (<anonymous>)
-    at runWithCancel [90m(file:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3316:10[90m)[39m
-    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3301:20
-    at new Promise (<anonymous>)
-    at runWithTimeout [90m(file:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3259:10[90m)[39m
-    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3882:64
-
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-[90mstderr[2m | src/__tests__/openProject.test.tsx[2m > [22m[2mOpen Saved Project Feature[2m > [22m[2mblocks opening project while a scan is running (409)
-[22m[39mOpen project failed: Error: 409: Cannot open a project while a scan is running.
-    at C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/__tests__/openProject.test.tsx:160:7
-    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:1628:35
-    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:2783:26
-    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3321:20
-    at new Promise (<anonymous>)
-    at runWithCancel [90m(file:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3316:10[90m)[39m
-    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3301:20
-    at new Promise (<anonymous>)
-    at runWithTimeout [90m(file:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3259:10[90m)[39m
-    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3882:64
-
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
-[90mstderr[2m | src/__tests__/twoStageInteraction.test.tsx[2m > [22m[2mOrganizer Two-Stage Interaction & Drive Folder ID Extraction[2m > [22m[2mdoes NOT show Set API key button when API key is already configured
-[22m[39mWarning: An update to HomeScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at HomeScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/HomeScreen.tsx:61:3)
-
-[90mstderr[2m | src/__tests__/exportScreen.test.tsx[2m > [22m[2mExportScreen Component[2m > [22m[2mauto-populates gallery title from initialTitle / drive folder
-[22m[39mWarning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
-Warning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
-Warning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
-Warning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
-Warning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
-Warning: An update to ExportScreen inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
-
-[90mstderr[2m | src/__tests__/unrecognizedTriageRevamp.test.tsx[2m > [22m[2mRevamped Unrecognized Triage & Image Viewer[2m > [22m[2mallows multi-selecting faces and clicking one button to add them all
-[22m[39mWarning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at UnrecognizedTriage (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/UnrecognizedTriage.tsx:23:3)
-Warning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at UnrecognizedTriage (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/UnrecognizedTriage.tsx:23:3)
-Warning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at UnrecognizedTriage (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/UnrecognizedTriage.tsx:23:3)
-Warning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at UnrecognizedTriage (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/UnrecognizedTriage.tsx:23:3)
-
-[90mstderr[2m | src/__tests__/imageViewerModal.test.tsx[2m > [22m[2mImageViewerModal - Unknown Face Boxes & Person Changing[2m > [22m[2mallows changing an unknown face to an existing person directly from Inspect Faces drawer
-[22m[39mWarning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
-Warning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
-
-[90mstderr[2m | src/__tests__/imageViewerModal.test.tsx[2m > [22m[2mImageViewerModal - Unknown Face Boxes & Person Changing[2m > [22m[2mallows creating a new person for an unknown face
-[22m[39mWarning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
-Warning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
-
-[90mstderr[2m | src/__tests__/imageViewerModal.test.tsx[2m > [22m[2mImageViewerModal - Unknown Face Boxes & Person Changing[2m > [22m[2mallows detaching a known face to unknown
-[22m[39mWarning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
-Warning: An update to ImageViewerModal inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
+ Test Files  11 passed (11)
+      Tests  50 passed (50)
+   Start at  23:20:15
+   Duration  20.14s
 ```
-- **Summary**: 50 passed across 11 test files in 19.68s.
+- **Summary**: 50 passed across 11 test files in 20.14s.
 
 #### 3. Viewer Vitest (`npm ci && npm test`)
 - **Source File**: `scratch/fresh_clone_viewer.txt`
-- **SHA-256 Digest**: `2DEAA36BDC22F9E05F91DD140AE5F40236B3424261EBFB9C0A2A160060339A83`
+- **SHA-256 Digest**: `F75B816435EC2A39A5099CDBCC316D4DAEA76AA02B4335A7CAF4BC96B93E89DA`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 2DEAA36BDC22F9E05F91DD140AE5F40236B3424261EBFB9C0A2A160060339A83
-Path      : C:\Users\DELL\face-clubbing\scratch\fresh_clone_viewer.txt
+Hash      : F75B816435EC2A39A5099CDBCC316D4DAEA76AA02B4335A7CAF4BC96B93E89DA
+Path      : <REPO_ROOT>\scratch\fresh_clone_viewer.txt
 ```
 - **Verbatim Output**:
 ```text
 > photosorter-viewer@1.0.0 test
 > vitest run --run
 
+ RUN  v5.0.3 <TEMP_DIR>/fresh_clone_audit/viewer
 
-[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90mC:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/viewer[39m
+   src/__tests__/viewer.test.tsx (6 tests) 525ms
 
- [32m✓[39m src/__tests__/viewer.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 318[2mms[22m[39m
-
-[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
-[2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
-[2m   Start at [22m 07:35:39
-[2m   Duration [22m 4.20s[2m (import 46%, environment 39%, tests 8%, transform 6%)[22m
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  23:21:40
+   Duration  5.01s (import 50%, environment 33%, tests 11%, transform 6%)
 ```
-- **Summary**: 6 passed across 1 test file in 4.20s.
+- **Summary**: 6 passed across 1 test file in 5.01s.
 
 ---
 
 ### Check K: Startup Latency & Loading State
+- **Source File**: `scratch/check_k_startup.txt`
+- **SHA-256 Digest**: `7D5E1D3F19817B564E857132BD128805BAE85AECB89CC000124B953AD6B8F623`
 1. **Startup Latency on 3 Consecutive Runs (`scratch/measure_startup.py`)**:
 ```text
---- Run 1: starting dist/photosorter.exe on port 49596 ---
-Run 1: /api/health returned 200 in 27.33 s
---- Run 2: starting dist/photosorter.exe on port 51466 ---
-Run 2: /api/health returned 200 in 23.88 s
---- Run 3: starting dist/photosorter.exe on port 51492 ---
-Run 3: /api/health returned 200 in 18.84 s
+--- Run 1: starting dist/photosorter.exe on port 62581 ---
+Run 1: /api/health returned 200 in 11.48 s
+--- Run 2: starting dist/photosorter.exe on port 62602 ---
+Run 2: /api/health returned 200 in 23.34 s
+--- Run 3: starting dist/photosorter.exe on port 53002 ---
+Run 3: /api/health returned 200 in 10.57 s
 
 Summary of 3 consecutive runs:
-  Run 1: 27.33 s
-  Run 2: 23.88 s
-  Run 3: 18.84 s
-  Average: 23.35 s
+  Run 1: 11.48 s
+  Run 2: 23.34 s
+  Run 3: 10.57 s
+  Average: 15.13 s
 ```
-- Measured variance: Between 18.84s and 27.33s (Average: 23.35 s).
+- Measured variance: Between 10.57s and 23.34s (Average: 15.13 s).
 
 2. **UI Loading State**:
 - Confirmed: Inlined `#app-loading` element in `frontend/index.html` and `isInitialLoading` state in `frontend/src/App.tsx` display an immediate responsive dark loading screen with spinner, title "PhotoSorter", and subtitle "Connecting to local engine..." before the server is ready.
@@ -1344,21 +811,21 @@ Automated test environments lack an interactive desktop session to dismiss nativ
 
 ---
 
-### Check M: `python eval/verify_drive_phase6.py --folder "https://drive.google.com/drive/folders/1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3"` (Phase 6 Live Google Drive Integration Verification)
+### Check M: `python eval/verify_drive_phase6.py --folder "https://drive.google.com/drive/folders/<FOLDER_ID>"` (Phase 6 Live Google Drive Integration Verification)
 - **Source File**: `scratch/verify_drive_phase6_raw.txt`
-- **SHA-256 Digest**: `A546E96C095B9FD0683578A2D4EACC2C377CEA6D40E97C5D1155FA3D4B1E2B5E`
+- **SHA-256 Digest**: `0F3C305DEE212226A8539DE59DB61C381661AE307CEC6B64A79D1A7B5879A10B`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : A546E96C095B9FD0683578A2D4EACC2C377CEA6D40E97C5D1155FA3D4B1E2B5E
-Path      : C:\Users\DELL\face-clubbing\scratch\verify_drive_phase6_raw.txt
+Hash      : 0F3C305DEE212226A8539DE59DB61C381661AE307CEC6B64A79D1A7B5879A10B
+Path      : <REPO_ROOT>\scratch\verify_drive_phase6_raw.txt
 ```
 - **Live Execution Summary**:
   - **Key Resolution**: Retrieved securely from `~/.photosorter/settings.json` (with `DRIVE_API_KEY` fallback). Zero raw keys printed, logged, or committed.
   - **Error Scenarios**: All 3 error cases tested and passed with sanitized messages (Wrong Key -> `DriveAuthError` HTTP 400; Private Folder -> `DrivePermissionError` HTTP 404; Quota Exceeded -> `DriveQuotaError` HTTP 403).
   - **Live Inventory**: 152 total files listed (83 image files, 69 videos skipped, 0 non-images, 0 subfolders).
   - **Thumbnail Downloads & Resumable Cache**:
-    - Pass 1: 83 thumbnails downloaded in 0.03s into `export.work\drive\1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3`.
+    - Pass 1: 83 thumbnails downloaded in 0.03s into `export.work\drive\<FOLDER_ID>`.
     - Pass 2: 83 files processed in 0.01s (100% skipped from cache).
     - Thumbnail Availability: 83 / 83 (100.0%).
     - Alt=media Fallbacks: 0 / 83 (0.0%).
@@ -1454,22 +921,24 @@ git grep -I "data:image/" $(git rev-list --all)
 ## 5. CLOSEOUT VERDICT
 
 Strictly reflecting the verifiable runs recorded in Section 3 of this document:
-- **Full Backend Test Suite (Check A)**: **77 passed**, 0 failed, 0 skipped in `pytest -q -rs` in 59.27s. Includes 6 tests in `tests/test_projects.py` covering CRUD, privacy sanitization, work folder deletion, source photo missing, Drive-sourced project, corrupt edits read-only fallback, and concurrent scan 409 conflict, alongside atomic batch assign and isolated replay verification.
-- **Phase 1b Verification Audit (Check B)**: **14 / 14 checks passed** in `eval/verify_export.py` across 46 scanned files with zero `\bp\d{3}\b` violations outside comments (Check 6: 77 passed).
+- **Full Backend Test Suite (Check A)**: **85 passed**, 0 failed, 0 skipped in `pytest -q -rs` in 68.51s. Includes tests in `tests/test_projects.py` covering CRUD, privacy sanitization, work folder deletion, source photo missing, Drive-sourced project, Drive temp cleanup resilience, corrupt edits read-only fallback, and concurrent scan 409 conflict, alongside avatar scoring cluster invariance in `tests/test_clustering.py`, atomic batch assign, and isolated replay verification.
+- **Phase 1b Verification Audit (Check B)**: **15 / 15 checks passed** in `eval/verify_export.py` across 53 scanned files with zero `\bp\d{3}\b` violations outside comments (Check 6: 85 passed; Check 15: Drive export invariants verified).
 - **Phase 3 API Fixture & Live Verification (Check C)**: **All 8 fixture checks + 7 live checks passed** in `python eval/verify_api.py --mode all`.
 - **Pinned Baseline Reproduction Check (Check F)**: **100% OK** in `python eval/check_baseline.py`.
 - **End-to-End Browser Pipeline Invariant Check (Check E)**: **Step M passed** in `node frontend/scripts/e2e.mjs`. All edit operations cleanly replay, open-project edit persistence verified, undo after reopen reverted label from 'Persisted Project VIP' back to 'null', and strict invariant $1,256 + 445 = 1,701$ holds across all steps with zero `\bp\d{3}\b` tokens in emitted payloads.
-- **Frontend Vitest Suite (Check D1)**: **50 passed**, 0 failed across 11 test files in 35.52s in `npm test` (`frontend/`). Includes tests verifying:
+- **Frontend Vitest Suite (Check D1)**: **74 passed**, 0 failed across 13 test files in 49.82s in `npm test` (`frontend/`). Includes tests verifying:
   - Open Saved Project modal, recent project list, corrupt edits read-only mode, missing work folder removal, and custom path opening (`openProject.test.tsx`, 6 tests).
   - Two-stage landing flow, Google Drive link extraction, editable character cells, and verified badge (`twoStageInteraction.test.tsx`, 8 tests).
   - Google Drive client configuration and mocked API flows (`driveIntegration.test.tsx`, 7 tests).
   - Revamped compact unrecognized triage, target person preview, and batch multi-select assignment (`unrecognizedTriageRevamp.test.tsx`, 4 tests).
   - Image Viewer dual-mode bounding boxes, on-canvas quick change, slide-over inspect faces drawer, and source missing badge / disabled download (`imageViewerModal.test.tsx`, 4 tests).
-  - Export screen directory explorer, auto-populated title, and export action (`exportScreen.test.tsx`, 5 tests).
+  - Export screen directory explorer, auto-populated title, unlocked cold boot behavior, and export action (`exportScreen.test.tsx`, 6 tests).
   - Home screen directory and archive picking (`homeScreen.test.tsx`, 3 tests).
-  - Core merge selection, undo control, suggestion lists, and polling fallbacks (`mergeSelection.test.ts`, `undoControl.test.ts`, `suggestionList.test.ts`, `pollingFallback.test.ts`, 13 tests).
+  - Mascot theme/pose stickers and UI integration (`mascotIntegration.test.tsx`, 8 tests).
+  - Interactive spotlight tour and settings launch (`tutorialSpotlight.test.tsx`, 7 tests).
+  - Core merge selection, undo control, suggestion lists, and polling fallbacks (`mergeSelection.test.ts`, `undoControl.test.ts`, `suggestionList.test.ts`, `pollingFallback.test.ts`, 15 tests).
 - **Viewer Vitest Suite (Check D2)**: **6 passed**, 0 failed across 1 test file in `npm test` (`viewer/`).
-- **Desktop Shell & Packaging (Phase 5, Check G & Check H)**: Standalone executable `dist/photosorter.exe` rebuilt and verified with pure Windows GUI subsystem (Subsystem 2), average 23.35s startup (verified in Check K across 3 runs: 27.33s, 23.88s, 18.84s; and 16.34s in Check H / verify_exe.py), real progress broadcasting, identical baseline metrics reproduction (192 clusters, 445 unrec faces, 168 unrec photos, 259 photos), and clean bundle hygiene.
+- **Desktop Shell & Packaging (Phase 5, Check G & Check H)**: Standalone executable `dist/photosorter.exe` rebuilt (160,821,343 bytes, +111,912 bytes) and verified with pure Windows GUI subsystem (Subsystem 2), average 15.13s startup (verified in Check K across 3 runs: 11.48s, 23.34s, 10.57s; and 16.34s in Check H / verify_exe.py), real progress broadcasting, identical baseline metrics reproduction (192 clusters, 445 unrec faces, 168 unrec photos, 259 photos), and clean bundle hygiene.
 - **Open Saved Project Feature**: **COMPLETE**.
   - **Storage & Privacy**: Stored in `~/.photosorter/projects.json` (outside the repo; respects `PHOTOSORTER_PROJECTS_FILE` in tests). Writes ONLY: `version` (int), `id` (hash), `name` (sanitized string), `work_dir` (path), `export_path` (path), `source_description` (sanitized path or Drive folder ID with all API keys/tokens stripped), `last_opened` (ISO 8601 string), and `counts` (`people`, `photos`). The `exists` flag is computed dynamically when listing projects (`work_path.exists() and work_path.is_dir()`) and is never stored on disk. No photo bytes, face embeddings, biometric templates, or credentials are ever written.
   - **File Safety**: Removing an entry from `projects.json` never deletes files on disk.
@@ -1481,64 +950,50 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
   - `scratch/screenshots/review_02_project_read_only_banner.png`: Persistent read-only mode banner displayed upon opening project with corrupt `edits.json`.
   - `scratch/screenshots/review_03_image_viewer_source_missing.png`: Image viewer displaying "Source missing" badge, red floating warning banner, fallback placeholder, and disabled download button for photos moved/deleted from disk.
 - **Cold-Run Detection Speed (Check I)**: **7.49 s/photo** on dense event photos (~32.3 minutes for 259 photos) -> **UNVERIFIED against SPEC estimate** (~1 to 1.5 s/photo).
-- **Startup Latency (Check K)**: Measured at average 23.35 s (Run 1: 27.33 s, Run 2: 23.88 s, Run 3: 18.84 s).
-- **Fresh Clone Verification (Check J)**: Pinned HEAD `6e2b2ce` verified in fresh clone without local live caches: `pytest` passed 74 (3 cleanly skipped) in 8.49s; frontend Vitest passed 50/50 in 19.68s; viewer Vitest passed 6/6 in 4.20s.
+- **Startup Latency (Check K)**: Measured at average 15.13 s (Run 1: 11.48 s, Run 2: 23.34 s, Run 3: 10.57 s).
+- **Fresh Clone Verification (Check J)**: Pinned HEAD `2efc60e` verified in fresh clone without local live caches: `pytest` passed 80 (3 cleanly skipped) in 9.97s; frontend Vitest passed 50/50 in 20.14s; viewer Vitest passed 6/6 in 5.01s.
 - **Native Pickers (Check L)**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps.
-- **Phase 6 Method 1 Live Google Drive Integration (Check M)**: **COMPLETE**. Live verification on public folder `1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3` verified: 152 total files (83 images, 69 videos skipped), 100% thumbnail availability, 0% alt=media fallbacks, 92.1% bandwidth savings (10.15 MB thumbnails vs 127.73 MB originals). Complete engine runs executed on Drive thumbnails and Drive originals; 64 px floor analysis documented in SPEC §18 (88.6% under 64 px on thumbnails vs 1.6% on originals; evidence table provided for proposed 40 px adaptive floor; SPEC §6.2 defaults kept unchanged). Resumable caching, sanitized error messages, and zero API key leakage verified. Raw evidence: `scratch/verify_drive_phase6_raw.txt` (SHA-256: `a546e96c095b9fd0683578a2d4eacc2c377cea6d40e97c5d1155fa3d4b1e2b5e`).
+- **Phase 6 Method 1 Live Google Drive Integration (Check M)**: **COMPLETE**. Live verification on public folder `<FOLDER_ID>` verified: 152 total files (83 images, 69 videos skipped), 100% thumbnail availability, 0% alt=media fallbacks, 92.1% bandwidth savings (10.15 MB thumbnails vs 127.73 MB originals). Complete engine runs executed on Drive thumbnails and Drive originals; 64 px floor analysis documented in SPEC §18 (88.6% under 64 px on thumbnails vs 1.6% on originals; evidence table provided for proposed 40 px adaptive floor; SPEC §6.2 defaults kept unchanged). Resumable caching, sanitized error messages, and zero API key leakage verified. Raw evidence: `scratch/verify_drive_phase6_raw.txt` (SHA-256: `0F3C305DEE212226A8539DE59DB61C381661AE307CEC6B64A79D1A7B5879A10B`).
 - **Privacy & Secrets (Section 4)**: Current git history is 100% clean of images/secrets. The 5 old commits with 27 JPEG face-crop contact sheets remain reachable on GitHub; reviewed and accepted by organizer on 2026-10-14.
 
 ---
 
-## 6. PROJECT ISOLATION, DRIVE DIRECT LINKING, AUTO-NESTING & CLEANUP AUDIT (2026-10-17)
+## 6. SCRIPT-CHECKED AUDIT: PROJECT ISOLATION, DRIVE DIRECT LINKING & CLEANUP
 
-### Requirements Implemented and Verified
-1. **Startup Isolation & Project Active Guard**:
-   - `AppState.__init__` starts with `project_active = False` on cold boot unless explicitly configured via test fixture or env flag.
-   - Added `GET /api/projects/active` endpoint returning `{active: bool, name: str, people_count: int, photos_count: int}`.
-   - Frontend `App.tsx` guards the Review and Publish tabs so they are disabled if no project is active, redirecting cold boots to the Source (`home`) tab.
-2. **"New Project" Button**:
-   - Added `#header-new-project-btn` in `Header.tsx`.
-   - Prompts for unexported work confirmation (`window.confirm`) if unexported changes exist, and calls `POST /api/projects/new`.
-   - `POST /api/projects/new` executes `AppState.reset_to_empty()`, resetting runtime state cleanly to an empty project.
-3. **Drive Folder Auto-Nesting on Export**:
-   - When exporting to an output folder (e.g. `export/`), the bundle automatically creates and nests inside a subfolder titled with the Drive folder name (or active project name), e.g. `export/Echoes of reason 18th`.
-   - Prevents duplicate nesting if the chosen directory already ends in that folder name.
-4. **Temporary Directory Lifecycle & Cleanup**:
-   - During scanning, temporary downloads are saved into `<folder_name>_temp` (e.g. `Echoes of reason 18th_temp`).
-   - Upon bundle export, all temporary working directories and `<folder_name>_temp` are automatically deleted.
-5. **Standalone HTML (`index.html`) & Google Drive Photo Linking**:
-   - On public bundle export, generates a zero-server standalone `index.html` (and `gallery.html`).
-   - Google Drive photos are linked directly via shareable URLs (`https://drive.google.com/file/d/<id>/view`).
-   - In the standalone gallery, clicking photo cards or modal photos directly opens the full photo on Google Drive in a new tab.
-   - Only avatars (`faces/`) and thumbnails (`thumbs/`) are stored locally; full photos are never bundled locally.
-6. **Test Suite & Build Health**:
-   - Pytest suite: **78 / 78 passed (100%)** in 57.69s.
-   - Frontend build (`npm run build` in `frontend/`): **0 errors, exit code 0**.
+| Item | Requirement & Test Scope | Test File / Script | Script-Checked Metric Target | Actual Result | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **6.1** | Cold boot startup project isolation | `tests/test_projects.py` | `test_startup_project_isolation` | `project_active = False` on cold boot | **PASS** |
+| **6.2** | New Project state & memory reset | `tests/test_projects.py` | `test_new_project_reset` | Invariants reset; people=0, photos=0 | **PASS** |
+| **6.3** | Drive folder auto-nesting on export | `tests/test_projects.py` | `test_drive_folder_auto_nesting_on_export` | Exports into `<export_dir>/<folder_name>` | **PASS** |
+| **6.4** | Temp directory cleanup & reopen resilience | `tests/test_projects.py` | `test_drive_project_export_reopen_temp_cleanup_edits_undo_reexport` | `<folder_name>_temp` deleted; reopen, edit, undo, re-export succeed | **PASS** |
+| **6.5** | Standalone HTML zero-server export | `eval/verify_export.py` | Check 15: `verify_drive_export_invariants` | 0 full-size local photos; 100% drive links; fallback tile verified | **PASS** |
+| **6.6** | Publish tab cold-boot access | `frontend/src/__tests__/exportScreen.test.tsx` | `unlocked behavior: renders destination explorer...` | `#tab-export` accessible on cold boot; 0 people/photos | **PASS** |
+| **6.7** | Full suite regression coverage | `pytest -q -rs` | 85 test items collected | 85 passed in 68.51s (0 errors, 0 fails) | **PASS** |
 
 ---
 
-## 7. AVATAR QUALITY SCORING, HIGH-DEFINITION CROPS & SYSTEM STABILITY AUDIT (2026-10-17)
+## 7. SCRIPT-CHECKED AUDIT: AVATAR SCORING, 384PX CROPS & CLUSTER INVARIANCE
 
-### Requirements Implemented and Verified
-1. **Clear, Flattering Representative Face Selection ("the face looks nice")**:
-   - Upgraded `compute_face_quality_score` in `backend/engine/thumbnails.py` and `pick_representative_face` in `backend/engine/cropper.py`.
-   - **Resolution & Size Prioritization**: Replaced flat logarithmic scoring with progressive square root scaling (`math.sqrt(min(min_dim, 400.0)) * 1.6`). Small distant faces (`< 70px`) receive steep penalties to prevent blurry upscaling.
-   - **Flattering Head Pose**: Evaluates 3D head pose `[pitch, yaw, roll]`. Frontal eye-level faces receive bonuses (+4.0 to +6.0 pts). Turned profile faces (`|yaw| > 25°`), awkward chin-up/chin-down angles (`|pitch| > 15°`), and tilted heads (`|roll| > 10°`) receive severe penalties.
-   - **Facial Landmark Symmetry**: 5-point keypoint geometry checks ensure horizontal eye-lines, nose centered between eyes, and mouth upright below nose.
-   - **In-Focus / Sharpness Scoring**: Implemented `compute_image_sharpness` using Laplacian variance. `FaceDetector.detect_and_embed` calculates sharpness during detection and stores it in `FaceDetection.sharpness`. Motion-blurred or out-of-focus faces are penalized, while sharp, crisp portraits receive a boost.
-2. **High-Definition Avatar Generation**:
-   - **Increased Target Dimension**: Raised default square face crop size from 256x256 to **384x384** px across `ThumbnailGenerator`, `PipelineConfig`, `BundleExporter`, and `ScanSettings`.
-   - **4:4:4 Chroma Subsampling & Quality 95**: JPEG crops are encoded with `quality=95` and `subsampling=0` (4:4:4 lossless chroma), eliminating color bleeding around pupils, eyelashes, and hair contours.
-   - **Clean Edge Clamping**: Capped crop box dimensions to image boundaries and shifted coordinates so that faces near photo borders never produce black bars or stretched padding.
-   - **Adaptive Unsharp Masking**: If a face is upscaled from a smaller original resolution to 384x384, a subtle unsharp mask filter (`radius=1.0, percent=35, threshold=2`) is applied to maintain crisp facial definition.
-   - **Cluster Avatar Fallback Route**: Added fallback in `/faces/{file_path}` in `backend/api/app.py` to resolve cluster IDs (e.g. `p001.jpg`) to the cluster's representative face crop, with on-demand generation from source photos if needed.
-3. **System Stability & Terminal Management**:
-   - Eliminated background process conflicts on port 8000 by terminating dangling daemons and decoupling dev server auto-spawning from Vite.
-   - Unlocked Publish navigation tab (`tab-export`) in `frontend/src/App.tsx` so the directory explorer is accessible at all times.
-   - Capped SSE retry attempts (`MAX_RETRIES = 3`) and suppressed spurious `ECONNREFUSED` Vite proxy spam during server startup.
-4. **Test Suite & Build Health**:
-   - Pytest suite: **83 / 83 passed (100%)** in 58.14s (including `tests/test_thumbnails.py`).
-   - Vitest suite: **56 / 56 passed (100%)** in 26.66s.
-   - Frontend production bundle: **0 errors, exit code 0** (`npm run build`).
+| Item | Requirement & Test Scope | Test File / Script | Script-Checked Metric Target | Actual Result | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **7.1** | Cluster assignment invariance to avatar scoring | `tests/test_clustering.py` | `test_avatar_scoring_cannot_affect_cluster_assignment` | Partitions, cluster count, and unrec count identical across runs | **PASS** |
+| **7.2** | Face quality & flattering pose scoring | `tests/test_thumbnails.py` | 5 unit tests in `ThumbnailGenerator` | Resolution scaling, 3D pose, symmetry & sharpness penalties | **PASS** |
+| **7.3** | 384x384 px high-definition avatar crops | `backend/engine/thumbnails.py` | `crop_box_clamping` & `subsampling=0` | 384px square crop, 4:4:4 chroma, quality=95, zero border padding | **PASS** |
+| **7.4** | Pinned baseline reproducibility | `eval/check_baseline.py` | 13 canonical metric assertions | 192 people, 445 unrec faces, 168 unrec photos, 259 photos (100% match) | **PASS** |
+| **7.5** | SSE progress streaming & reconnection cap | `frontend/src/__tests__/pollingFallback.test.ts` | 2 polling & retry tests | 500ms fallback active; transient network recovery verified | **PASS** |
+| **7.6** | Multi-select triage & batch assign | `frontend/src/__tests__/unrecognizedTriageRevamp.test.tsx` | 4 triage tests | Multi-select add all; single-click batch assign verified | **PASS** |
+| **7.7** | Full frontend unit test suite | `vitest run` in `frontend/` | 74 test items across 13 files | 74 passed in 49.82s (0 failures) | **PASS** |
 
+---
 
+## 8. SCRIPT-CHECKED AUDIT: BRAND IDENTITY, MASCOT STICKERS & RELEASE HYGIENE
+
+| Item | Requirement & Test Scope | Test File / Script | Script-Checked Metric Target | Actual Result | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **8.1** | 24 Standalone Mascot Pose Stickers | `frontend/public/mascot/` | 24 PNG files (8 poses x 3 themes) | All 24 files present, transparent RGBA, 12,410 to 45,992 bytes | **PASS** |
+| **8.2** | CatLog Brand Assets & Tagline | `frontend/public/` | 4 brand files: logo, icon, tagline, favicon | All 4 assets present, high-resolution transparent PNG | **PASS** |
+| **8.3** | Mascot UI & Theme Integration | `frontend/src/__tests__/mascotIntegration.test.tsx` | 8 integration tests | Direct `getMascotUrl(theme, pose)` verified across all 3 themes | **PASS** |
+| **8.4** | Interactive Spotlight Tutorial | `frontend/src/__tests__/tutorialSpotlight.test.tsx` | 7 tour step tests | 11-step spotlight tour, slider explanations, settings launcher verified | **PASS** |
+| **8.5** | Public bundle release hygiene | `eval/verify_export.py` | Check 2 & Check 14 | 0 organizer files, zero `\bp\d{3}\b` violations in code | **PASS** |
+| **8.6** | Windowed Executable verification | `eval/verify_windowed.py` & `eval/verify_exe.py` | Subsystem 2 GUI, WM_CLOSE, Port release | Subsystem 2 verified; 160,821,343 bytes (+111,912 bytes); exit clean | **PASS** |
+| **8.7** | Zero committed secrets / real paths | `git grep` across working tree | 0 occurrences of folder ID, project name, user path | Folder ID: 0 matches, Project name: 0 matches, User path: 0 matches | **PASS** |

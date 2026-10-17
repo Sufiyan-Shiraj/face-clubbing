@@ -498,3 +498,137 @@ def test_open_project_shared_cache_isolation_and_reexport(temp_env):
     assert set(out_people["photos"].keys()) == {"ph_01", "ph_02"}
     assert "ph_foreign" not in out_people["photos"]
 
+
+def test_drive_project_export_reopen_temp_cleanup_edits_undo_reexport(temp_env):
+    """
+    Subtask 5 Test:
+    Export a Drive-sourced project, verify temp folder cleanup deletes the raw downloaded photos,
+    then reopen it from 'Open Saved Project'.
+    Confirm the temp-folder cleanup does NOT break reopening, edits, undo, or re-export.
+    """
+    from backend.api.state import AppState
+
+    work_dir = temp_env["root"] / "Graduation2026.work"
+    export_dir = temp_env["root"] / "export"
+    temp_download_dir = temp_env["root"] / "Graduation2026_temp"
+    work_dir.mkdir(parents=True, exist_ok=True)
+    export_dir.mkdir(parents=True, exist_ok=True)
+    temp_download_dir.mkdir(parents=True, exist_ok=True)
+
+    cache = EmbeddingCache(work_dir)
+    crops_dir = work_dir / "crops"
+    thumbs_dir = work_dir / "thumbs"
+    crops_dir.mkdir(parents=True, exist_ok=True)
+    thumbs_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1. Create simulated Drive photos and raw files in temp_download_dir
+    photos = {}
+    face_objects = []
+    for i, pid in enumerate(["p_drive_01", "p_drive_02"]):
+        raw_path = temp_download_dir / f"{pid}.jpg"
+        img = Image.new("RGB", (200, 200), color=(50 + i * 40, 100, 150))
+        img.save(raw_path)
+
+        thumb_img = Image.new("RGB", (50, 50), color=(80, 80, 80))
+        thumb_img.save(thumbs_dir / f"{pid}.jpg")
+
+        fid = f"f_{pid}_001"
+        crop_img = Image.new("RGB", (40, 40), color=(110, 110, 110))
+        crop_img.save(crops_dir / f"{fid}.jpg")
+
+        emb = np.zeros(512, dtype=np.float32)
+        emb[i] = 1.0
+        f_det = FaceDetection(
+            face_id=fid,
+            photo_id=pid,
+            bbox=[10.0, 10.0, 50.0, 50.0],
+            det_score=0.92,
+            embedding=emb,
+            cluster_id=f"person_test_{i+1:02d}",
+        )
+        face_objects.append(f_det)
+        prec = PhotoRecord(
+            photo_id=pid,
+            original_path=str(raw_path),
+            file_name=f"{pid}.jpg",
+            width=200,
+            height=200,
+            drive_file_id=f"DriveId{i+1}",
+            drive_url=f"https://drive.google.com/file/d/DriveId{i+1}/view",
+            faces=[f_det],
+        )
+        photos[pid] = prec
+        cache.save(prec)
+
+    # Create AppState with Drive project
+    state = AppState(work_dir=work_dir, output_dir=export_dir, cache_dir=work_dir)
+    state.drive_folder_name = "Graduation2026"
+    state.active_project_name = "Graduation2026"
+    state.project_active = True
+    state.photos = photos
+    state.temp_dirs.append(str(temp_download_dir))
+
+    p1 = PersonCluster(
+        id="person_test_01",
+        label=None,
+        face_path="faces/person_test_01.jpg",
+        rep_face=face_objects[0],
+        photo_ids=["p_drive_01"],
+        faces=[face_objects[0]],
+    )
+    p2 = PersonCluster(
+        id="person_test_02",
+        label=None,
+        face_path="faces/person_test_02.jpg",
+        rep_face=face_objects[1],
+        photo_ids=["p_drive_02"],
+        faces=[face_objects[1]],
+    )
+    state.people = [p1, p2]
+    state.unrecognized = UnrecognizedGroup(photo_ids=[], faces=[])
+
+    # 2. Export public bundle -> triggers temp-folder cleanup
+    exported_files = state.export_public_bundle(output_dir=str(export_dir))
+    assert "people.json" in exported_files
+    assert not temp_download_dir.exists()
+
+    # 3. Reopen project via open_saved_project
+    reopen_state = AppState(work_dir=work_dir, output_dir=export_dir, cache_dir=work_dir)
+    reopen_res = reopen_state.open_saved_project(work_dir=work_dir, export_path=export_dir)
+    assert reopen_res["people_count"] == 2
+    assert reopen_res["photos_count"] == 2
+    assert reopen_res["read_only"] is False
+
+    # 4. Perform edits (rename and merge)
+    p0_id = reopen_state.people[0].id
+    p1_id = reopen_state.people[1].id
+    success, msg, _ = reopen_state.apply_edit_operation({"op": "name", "person_id": p0_id, "label": "Graduate Alice"})
+    assert success is True
+    assert reopen_state.people[0].label == "Graduate Alice"
+
+    p0_id = reopen_state.people[0].id
+    p1_id = reopen_state.people[1].id
+    success, msg, _ = reopen_state.apply_edit_operation({"op": "merge", "person_ids": [p0_id, p1_id]})
+    assert success is True
+    assert len(reopen_state.people) == 1
+    assert len(reopen_state.edits_list) == 2
+
+    # 5. Perform undo
+    undo_success, undo_msg, _ = reopen_state.apply_edit_operation({"op": "undo"})
+    assert undo_success is True
+    assert len(reopen_state.people) == 2
+
+    # 6. Re-export project after edits and undo, with temp folder deleted
+    reexport_files = reopen_state.export_public_bundle(output_dir=str(export_dir))
+    assert "people.json" in reexport_files
+    assert "config.json" in reexport_files
+
+    out_people_path = export_dir / "Graduation2026" / "people.json"
+    if not out_people_path.exists():
+        out_people_path = export_dir / "people.json"
+    assert out_people_path.exists()
+    out_pj = json.loads(out_people_path.read_text(encoding="utf-8"))
+    assert len(out_pj["people"]) == 2
+    assert out_pj["people"][0]["label"] == "Graduate Alice"
+
+

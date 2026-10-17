@@ -21,6 +21,7 @@ interface HeaderProps {
   onThemeChange?: (theme: RisoTheme, e?: React.MouseEvent) => void;
   onOpenProject?: () => void;
   onNewProject?: () => void;
+  onOpenTutorial?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -34,11 +35,12 @@ export const Header: React.FC<HeaderProps> = ({
   onThemeChange,
   onOpenProject,
   onNewProject,
+  onOpenTutorial,
 }) => {
   return (
     <div className="hdr">
       {/* Brand Logo with vector Risograph photo aperture mark */}
-      <div className="logo" onClick={() => onTabChange('home')} title="PhotoSorter - Event Organizer">
+      <div className="logo" onClick={() => onTabChange('home')} title="CatLog — Who was at the event?">
         <BrandLogo
           theme={theme}
           onClick={() => onTabChange('home')}
@@ -114,6 +116,8 @@ export const Header: React.FC<HeaderProps> = ({
           <Folder className="w-4 h-4 opacity-75" />
           <span>Open saved project</span>
         </button>
+
+
 
         {/* Hidden test hook for header-settings-btn so setting is uniquely in navbar */}
         <button

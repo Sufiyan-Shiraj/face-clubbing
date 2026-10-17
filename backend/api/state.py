@@ -416,12 +416,19 @@ class AppState:
         people_json_candidates = []
         if export_p:
             people_json_candidates.append(export_p / "people.json")
+            proj_name = work_p.name.removesuffix(".work")
+            people_json_candidates.append(export_p / proj_name / "people.json")
+            if export_p.is_dir():
+                for sub in export_p.glob("*/people.json"):
+                    people_json_candidates.append(sub)
         people_json_candidates.append(work_p / "people.json")
 
         found_people_json = None
         for cand in people_json_candidates:
             if cand.exists() and cand.is_file():
                 found_people_json = cand
+                if export_p and cand.parent != export_p:
+                    self.settings.output_dir = str(cand.parent)
                 break
 
         if found_people_json:
@@ -562,7 +569,9 @@ class AppState:
 
         self.project_active = True
         self.active_project_name = work_p.name.removesuffix(".work")
-        if export_p:
+        if found_people_json and found_people_json.parent.name.lower() != "export" and found_people_json.parent != work_p:
+            self.active_project_name = found_people_json.parent.name
+        elif export_p and export_p.name.lower() != "export":
             self.active_project_name = export_p.name
 
         return {
@@ -598,7 +607,7 @@ class AppState:
         self.active_project_name = None
         self.drive_folder_name = None
         self.temp_dirs = []
-        self.settings.event_title = "Face Clubbing Gallery"
+        self.settings.event_title = "CatLog Gallery"
         self.settings.event_subtitle = "Auto-sorted face albums and photo gallery"
 
     def get_cluster_by_id(self, cluster_id: str) -> Optional[PersonCluster]:
@@ -886,7 +895,7 @@ class AppState:
 
         # If a project name or drive folder name is known, ensure we export into a subfolder titled with that name
         folder_title = self.drive_folder_name or self.active_project_name
-        if not folder_title and self.settings.event_title and self.settings.event_title not in ("Face Clubbing Gallery", "Event Gallery"):
+        if not folder_title and self.settings.event_title and self.settings.event_title not in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery"):
             folder_title = self.settings.event_title
 
         if folder_title and folder_title.lower() != "export":

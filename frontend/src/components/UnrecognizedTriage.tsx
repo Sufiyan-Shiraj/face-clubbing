@@ -18,6 +18,7 @@ import {
   ArrowLeftRight,
 } from 'lucide-react';
 import { FaceCompareModal } from './FaceCompareModal';
+import { MascotSticker } from './MascotSticker';
 
 interface UnrecognizedTriageProps {
   unrecognized: UnrecognizedData;
@@ -28,6 +29,7 @@ interface UnrecognizedTriageProps {
   onAssignMultipleFaces?: (faceIds: string[], targetPersonId?: string | null) => Promise<void>;
   onAssignPhotos?: (photoIds: string[], targetPersonId?: string | null) => Promise<void>;
   onOpenPhotoViewer: (photoId: string) => void;
+  theme?: string;
 }
 
 export const UnrecognizedTriage: React.FC<UnrecognizedTriageProps> = ({
@@ -39,6 +41,7 @@ export const UnrecognizedTriage: React.FC<UnrecognizedTriageProps> = ({
   onAssignMultipleFaces,
   onAssignPhotos,
   onOpenPhotoViewer,
+  theme = 't-dark',
 }) => {
   const [reasonFilter, setReasonFilter] = useState<string>('all');
   const [faceSearch, setFaceSearch] = useState<string>('');
@@ -212,6 +215,7 @@ export const UnrecognizedTriage: React.FC<UnrecognizedTriageProps> = ({
 
       {/* Triage Overview & Filter Header */}
       <div
+        id="unrecognized-triage-container"
         className="p-6 rounded"
         style={{
           background: 'var(--card-bg, var(--panel))',
@@ -574,11 +578,37 @@ export const UnrecognizedTriage: React.FC<UnrecognizedTriageProps> = ({
           </div>
         </div>
 
-        <div
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5"
-          data-testid="unrec-faces-grid"
-        >
-          {filteredFaces.map((f, idx) => {
+        {filteredFaces.length === 0 ? (
+          <div
+            id="unrec-faces-empty-state"
+            data-testid="unrec-faces-empty-state"
+            className="p-12 sm:p-14 rounded-lg text-center space-y-4"
+            style={{
+              background: 'var(--card-bg, var(--panel))',
+              border: '2px dashed var(--line)',
+              color: 'var(--muted)',
+              boxShadow: '2px 3px 0px rgba(0, 0, 0, 0.2)',
+            }}
+          >
+            <div className="w-20 h-20 mx-auto rounded-xl bg-[var(--input)] border-2 border-[var(--line)] flex items-center justify-center p-1.5 shadow-[2px_2px_0px_var(--line)]">
+              <MascotSticker pose={8} theme={theme} className="w-full h-full object-contain" />
+            </div>
+            <h4 className="text-xl font-black font-mono uppercase" style={{ color: 'var(--text)' }}>
+              {unrecognized.faces.length === 0 ? 'Zero Unrecognized Faces!' : 'No Faces Match Query'}
+            </h4>
+            <p className="text-sm max-w-md mx-auto leading-relaxed">
+              {unrecognized.faces.length === 0
+                ? 'Every detected face in this album is recognized and assigned to an attendee cluster!'
+                : 'Try adjusting or clearing the rejection reason filter or search term above.'}
+            </p>
+          </div>
+        ) : (
+          <div
+            id="unrec-faces-grid"
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5"
+            data-testid="unrec-faces-grid"
+          >
+            {filteredFaces.map((f, idx) => {
             const faceId = f.face_id || `face_${idx}`;
             const ambSuggestion = ambiguousMap[faceId];
             const pInfo = photos[f.photo_id];
@@ -926,6 +956,7 @@ export const UnrecognizedTriage: React.FC<UnrecognizedTriageProps> = ({
             );
           })}
         </div>
+      )}
       </div>
 
       {/* Photos With No Detected Face (Reachability guarantee) */}

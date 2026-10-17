@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { AlertCircle, Folder, FolderArchive, Info, Check, Key, X, Loader2, FolderOpen } from 'lucide-react';
+import { AlertCircle, Folder, FolderArchive, Info, Check, Key, X, Loader2, FolderOpen, Compass, ChevronRight } from 'lucide-react';
 import { RisoTheme } from './Header';
 import { api } from '../api/client';
 
@@ -10,6 +10,7 @@ export interface HomeScreenProps {
   onNavigateTab?: (tab: string) => void;
   theme?: RisoTheme;
   onOpenProject?: () => void;
+  onOpenTutorial?: () => void;
 
   // Lifted & Persisted state
   sourceMode?: 'drive' | 'local' | 'zip';
@@ -87,6 +88,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onApiKeySaved,
   isApiKeyConfigured: controlledApiKeyConfigured,
   onOpenProject,
+  onOpenTutorial,
 }) => {
   // Support both controlled (lifted to App.tsx) and internal fallback state
   const [internalSourceMode, setInternalSourceMode] = useState<'drive' | 'local' | 'zip'>('drive');
@@ -432,22 +434,37 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <h1 className="h1 h1-title-container">
             <span className="sr-only">Who was at the event?</span>
             <img
-              src={
-                theme === 't-paper'
-                  ? '/textures/title-paper.png?v=custom-v5'
-                  : theme === 't-navy'
-                    ? '/textures/title-navy.png?v=custom-v5'
-                    : '/textures/title-dark.png?v=custom-v5'
-              }
+              src="/catlog-tagline.png"
               alt="Who was at the event?"
               className="h1-img"
             />
           </h1>
           <p className="sub-headline">Sort your event photos by person using face clustering.</p>
+          {onOpenTutorial && (
+            <div className="flex items-center justify-center mt-2.5 mb-1">
+              <button
+                type="button"
+                id="home-start-tutorial-btn"
+                data-testid="home-start-tutorial-btn"
+                onClick={onOpenTutorial}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold transition-all hover:scale-105"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px dashed var(--line)',
+                  color: 'var(--text)',
+                }}
+                title="Start the 2-minute CatLog walkthrough"
+              >
+                <Compass className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <span>New to CatLog? Take the 2-minute interactive tour</span>
+                <ChevronRight className="w-3.5 h-3.5 opacity-60" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Three Source-Mode Buttons */}
-        <div className="source-mode-nav" aria-label="Source mode selection">
+        <div id="source-mode-nav" className="source-mode-nav" aria-label="Source mode selection">
           <button
             type="button"
             id="btn-source-drive"

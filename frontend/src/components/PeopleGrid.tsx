@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { PersonCluster, PhotoInfo } from '../types';
 import { Search, Users, CheckSquare, Square, X } from 'lucide-react';
+import { MascotSticker } from './MascotSticker';
 
 interface PeopleGridProps {
   people: PersonCluster[];
@@ -12,6 +13,7 @@ interface PeopleGridProps {
   onMergeSelected: () => void;
   onSelectPerson: (person: PersonCluster) => void;
   isMerging?: boolean;
+  theme?: string;
 }
 
 export const PeopleGrid: React.FC<PeopleGridProps> = ({
@@ -24,6 +26,7 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
   onMergeSelected,
   onSelectPerson,
   isMerging = false,
+  theme = 't-dark',
 }) => {
   const [search, setSearch] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'multiple' | 'single'>('all');
@@ -196,17 +199,26 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
       {/* Grid of People Cards */}
       {filteredPeople.length === 0 ? (
         <div
-          className="p-14 rounded text-center space-y-3"
+          id="people-empty-state"
+          data-testid="people-empty-state"
+          className="p-12 sm:p-16 rounded-lg text-center space-y-4"
           style={{
             background: 'var(--card-bg, var(--panel))',
-            border: '1.5px dashed var(--line)',
+            border: '2px dashed var(--line)',
             color: 'var(--muted)',
+            boxShadow: '2px 3px 0px rgba(0, 0, 0, 0.2)',
           }}
         >
-          <Users className="w-10 h-10 mx-auto" style={{ color: 'var(--accent)' }} />
-          <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>No people found</h3>
-          <p className="text-sm max-w-sm mx-auto">
-            Try adjusting your search query or filter settings above.
+          <div className="w-24 h-24 mx-auto rounded-2xl bg-[var(--input)] border-2 border-[var(--line)] flex items-center justify-center p-2 shadow-[2px_2px_0px_var(--line)]">
+            <MascotSticker pose={8} theme={theme} className="w-full h-full object-contain" />
+          </div>
+          <h3 className="text-xl font-black font-mono uppercase" style={{ color: 'var(--text)' }}>
+            {people.length === 0 ? 'No People Clusters Yet' : 'No People Match Filters'}
+          </h3>
+          <p className="text-sm max-w-md mx-auto leading-relaxed">
+            {people.length === 0
+              ? 'Our mascot is snoozing while waiting for photos to organize! Go to the Source tab to scan an event album or open a saved project.'
+              : 'Try clearing the search query or switching the multiple/single photo filters above.'}
           </p>
         </div>
       ) : (

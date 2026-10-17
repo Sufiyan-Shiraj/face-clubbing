@@ -373,3 +373,98 @@ def test_merged_from_and_id_map():
         assert pid in cl.id_map
         assert cl.id_map[pid] in final_ids
 
+
+def test_avatar_scoring_cannot_affect_cluster_assignment():
+    """Proves that changes to avatar quality scores, sharpness, or representative face selection
+    cannot affect FaceClusterer partitioning, cluster counts, or face assignments.
+    """
+    from backend.engine.thumbnails import compute_face_quality_score, select_representative_face
+
+    e0 = _make_unit_vector(0)
+    e1 = _make_unit_vector(1)
+    e2 = _make_unit_vector(2)
+    e3 = _make_unit_vector(3)
+
+    # Cluster 1 seeds and attachments
+    f1 = _make_face("f1", "p1", e0, det_score=0.92, dim=150)
+    f2 = _make_face("f2", "p2", _vector_at_distance(e0, e1, 0.15), det_score=0.88, dim=120)
+    # Face 3 merges in pass 2
+    f3 = _make_face("f3", "p3", _vector_at_distance(e0, e2, 0.46), det_score=0.85, dim=110)
+    # Face 4 attach-only (det_score 0.65)
+    f4 = _make_face("f4", "p4", _vector_at_distance(e0, e1, 0.22), det_score=0.65, dim=80)
+    # Cluster 2
+    f5 = _make_face("f5", "p5", e3, det_score=0.95, dim=160)
+    # Unrecognized face (tiny, low score, distant)
+    f6 = _make_face("f6", "p6", _vector_at_distance(e3, e1, 0.80), det_score=0.55, dim=30)
+
+    photos_base = {
+        "p1": _make_photo("p1", [f1]),
+        "p2": _make_photo("p2", [f2]),
+        "p3": _make_photo("p3", [f3]),
+        "p4": _make_photo("p4", [f4]),
+        "p5": _make_photo("p5", [f5]),
+        "p6": _make_photo("p6", [f6]),
+    }
+
+    cl_base = FaceClusterer(distance_threshold=0.40, second_pass_merge=True, merge_threshold=0.50)
+    people_base, unrec_base = cl_base.cluster(photos_base)
+
+    base_partition = [set(f.face_id for f in p.faces) for p in people_base]
+    base_unrec = set(f["face_id"] for f in unrec_base.faces)
+
+    assert len(people_base) == 3
+    assert len(unrec_base.faces) == 1
+    assert "f6" in base_unrec
+
+    # Now mutate avatar-scoring metrics on identical face detections
+    # e.g., invert sharpness, set is_good_quality False, alter quality flags
+    f1_mod = _make_face("f1", "p1", e0, det_score=0.92, dim=150)
+    f1_mod.sharpness = 5.0  # Extremely blurry
+    f1_mod.is_good_quality = False
+    f1_mod.rejection_reason = "blurry"
+
+    f2_mod = _make_face("f2", "p2", _vector_at_distance(e0, e1, 0.15), det_score=0.88, dim=120)
+    f2_mod.sharpness = 500.0  # Hyper sharp
+    f2_mod.is_good_quality = True
+
+    f3_mod = _make_face("f3", "p3", _vector_at_distance(e0, e2, 0.46), det_score=0.85, dim=110)
+    f3_mod.sharpness = 1.0
+
+    f4_mod = _make_face("f4", "p4", _vector_at_distance(e0, e1, 0.22), det_score=0.65, dim=80)
+    f4_mod.sharpness = 999.0
+
+    f5_mod = _make_face("f5", "p5", e3, det_score=0.95, dim=160)
+    f5_mod.sharpness = 0.0
+    f5_mod.is_good_quality = False
+
+    f6_mod = _make_face("f6", "p6", _vector_at_distance(e3, e1, 0.80), det_score=0.55, dim=30)
+    f6_mod.sharpness = 100.0
+
+    assert compute_face_quality_score(f1_mod) < compute_face_quality_score(f2_mod)
+
+    photos_mod = {
+        "p1": _make_photo("p1", [f1_mod]),
+        "p2": _make_photo("p2", [f2_mod]),
+        "p3": _make_photo("p3", [f3_mod]),
+        "p4": _make_photo("p4", [f4_mod]),
+        "p5": _make_photo("p5", [f5_mod]),
+        "p6": _make_photo("p6", [f6_mod]),
+    }
+
+    cl_mod = FaceClusterer(distance_threshold=0.40, second_pass_merge=True, merge_threshold=0.50)
+    people_mod, unrec_mod = cl_mod.cluster(photos_mod)
+
+    mod_partition = [set(f.face_id for f in p.faces) for p in people_mod]
+    mod_unrec = set(f["face_id"] for f in unrec_mod.faces)
+
+    # Invariant: Cluster partitions must be 100% strictly identical
+    assert len(people_mod) == len(people_base)
+    assert mod_partition == base_partition
+    assert mod_unrec == base_unrec
+
+    # Also assert that rep_face selection via select_representative_face
+    # picks different avatars based on quality score, but person.photo_ids and person.faces remain unchanged
+    rep_mod = select_representative_face([f1_mod, f2_mod, f3_mod, f4_mod])
+    assert rep_mod.face_id == "f2"
+
+

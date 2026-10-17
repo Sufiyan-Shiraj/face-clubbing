@@ -80,3 +80,15 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+.tempmediaStorage/
+
+# Testing & Caches
+.pytest_cache/
+.cache/
+coverage/
+frontend/coverage/
+htmlcov/
+.coverage
+*.tsbuildinfo
+*.log
+

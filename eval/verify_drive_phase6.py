@@ -232,7 +232,7 @@ def run_clustering_pipeline(photos: Dict[str, PhotoRecord], min_face_size: int =
 
 def main():
     parser = argparse.ArgumentParser(description="Phase 6 Google Drive Live Verification")
-    parser.add_argument("--folder", help="Drive folder URL or ID", default="https://drive.google.com/drive/folders/1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3")
+    parser.add_argument("--folder", help="Drive folder URL or ID", default=os.environ.get("DRIVE_TEST_FOLDER_URL"))
     parser.add_argument("--check-export", help="Path to existing export folder to verify download URLs", default=None)
     parser.add_argument("--skip-originals", help="Skip downloading originals", action="store_true")
     args = parser.parse_args()
