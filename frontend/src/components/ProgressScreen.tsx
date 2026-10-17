@@ -331,7 +331,7 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
           <p className="big" style={{ margin: 0 }}>{percentDisplay}%</p>
           <p className="sub m-0 mb-1.5 text-base md:text-lg" style={{ textAlign: 'left', margin: 0 }}>
             {photosTotal > 0
-              ? `Photo ${photosCurrent} of ${photosTotal}. This runs on your computer, so a big folder takes a while.`
+              ? `Photo ${photosCurrent} of ${photosTotal}.`
               : status.message || 'Processing photos locally on your computer.'}
           </p>
         </div>

@@ -856,7 +856,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
           <p className="hint" style={{ marginTop: '14px' }}>
             {discoveredFaceCrops.length > 0
-              ? `${discoveredFaceCrops.length} face${discoveredFaceCrops.length === 1 ? '' : 's'} detected. Faces update as the scan runs.`
+              ? `${discoveredFaceCrops.length} face${discoveredFaceCrops.length === 1 ? '' : 's'} detected.`
               : 'Faces will appear here as the scan runs.'}
           </p>
         </div>

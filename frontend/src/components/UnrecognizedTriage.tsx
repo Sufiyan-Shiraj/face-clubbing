@@ -310,7 +310,7 @@ export const UnrecognizedTriage: React.FC<UnrecognizedTriageProps> = ({
                 </span>
               </h4>
               <p className="text-sm mt-0.5" style={{ color: 'var(--muted)' }}>
-                Step 1: Choose target person. Step 2: Select images below. Step 3: Click Add!
+                Select target person and faces below to batch merge.
               </p>
             </div>
           </div>
