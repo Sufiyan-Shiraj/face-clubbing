@@ -224,7 +224,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
               type="button"
               id="settings-open-project-btn"
               data-testid="settings-open-project-btn"
-              onClick={onOpenProject}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onOpenProject();
+              }}
               className="btn sm"
               style={{ height: '42px', padding: '0 18px', fontSize: '15px', fontWeight: 700 }}
               title="Open past export/work folder"

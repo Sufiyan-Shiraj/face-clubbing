@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { ProjectItem, OpenProjectResponse } from '../types';
 import { apiClient } from '../api/client';
 import {
@@ -161,11 +162,27 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
     }
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn"
-      style={{ background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(8px)' }}
+      className="fixed inset-0 flex items-center justify-center p-4 animate-fadeIn"
+      style={{
+        zIndex: 100000,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(0, 0, 0, 0.85)',
+        backdropFilter: 'blur(8px)',
+      }}
       data-testid="open-project-modal"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
       <div
         className="relative w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] rounded"
@@ -176,6 +193,7 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
           color: 'var(--text)',
           fontFamily: "'JetBrains Mono', monospace",
         }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div
@@ -423,4 +441,9 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined' && document.body) {
+    return ReactDOM.createPortal(modalContent, document.body);
+  }
+  return modalContent;
 };

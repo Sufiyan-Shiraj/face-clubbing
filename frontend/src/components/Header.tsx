@@ -84,7 +84,17 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Open Saved Project Link */}
         <button
           type="button"
-          onClick={onOpenProject || (() => onTabChange('home'))}
+          id="header-open-project-btn"
+          data-testid="header-open-project-btn"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onOpenProject) {
+              onOpenProject();
+            } else {
+              onTabChange('home');
+            }
+          }}
           className="lnk"
           title="Open saved project"
         >
@@ -94,7 +104,8 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Minimal Settings Icon */}
         <button
-          id="tab-settings"
+          id="header-settings-btn"
+          data-testid="header-settings-btn"
           type="button"
           onClick={() => onTabChange('settings')}
           className={`icon-btn ${activeTab === 'settings' ? 'on' : ''}`}

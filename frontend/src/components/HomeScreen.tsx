@@ -490,7 +490,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               type="button"
               id="home-open-project-btn"
               data-testid="home-open-project-btn"
-              onClick={onOpenProject}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onOpenProject();
+              }}
               className="source-mode-btn"
               title="Open saved project"
             >
