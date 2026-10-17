@@ -173,6 +173,40 @@ class BundleExporter:
             },
         }
 
+        # Clean orphaned thumbnails from previous failed/mixed exports
+        thumbs_dir = self.output_dir / "thumbs"
+        if thumbs_dir.exists():
+            valid_thumb_stems = set(photos_json.keys())
+            for t_file in thumbs_dir.glob("*.jpg"):
+                if t_file.stem not in valid_thumb_stems:
+                    try:
+                        t_file.unlink()
+                    except Exception:
+                        pass
+
+        # Clean orphaned face crops
+        faces_dir = self.output_dir / "faces"
+        if faces_dir.exists():
+            valid_face_stems = set()
+            for p in people_json:
+                valid_face_stems.add(p["id"])
+                for f in p["faces"]:
+                    valid_face_stems.add(f["face_id"])
+                    if f.get("face"):
+                        valid_face_stems.add(Path(f["face"]).stem)
+            for f in people_payload["unrecognized"]["faces"]:
+                if isinstance(f, dict):
+                    if f.get("face_id"):
+                        valid_face_stems.add(f["face_id"])
+                    if f.get("face"):
+                        valid_face_stems.add(Path(f["face"]).stem)
+            for f_file in faces_dir.glob("*.jpg"):
+                if f_file.stem not in valid_face_stems:
+                    try:
+                        f_file.unlink()
+                    except Exception:
+                        pass
+
         people_path = self.output_dir / "people.json"
         with open(people_path, "w", encoding="utf-8") as f:
             json.dump(people_payload, f, indent=2)

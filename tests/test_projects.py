@@ -421,3 +421,80 @@ def test_edge_case_5_open_project_while_scan_running(temp_env):
 
     # Reset
     job_mgr.status = "idle"
+
+
+def test_open_project_shared_cache_isolation_and_reexport(temp_env):
+    """
+    Verifies that reopening a project when work_dir cache contains foreign/unrelated photos
+    from other scans does NOT leak those photos into the project or cause export verification failures.
+    """
+    create_synthetic_project(temp_env["work_dir"], temp_env["export_dir"])
+
+    # Simulate foreign photo in the shared cache
+    cache = EmbeddingCache(temp_env["work_dir"])
+    foreign_rec = PhotoRecord(
+        photo_id="ph_foreign",
+        original_path="C:/photos/foreign.jpg",
+        file_name="foreign.jpg",
+        width=300,
+        height=300,
+        faces=[
+            FaceDetection(
+                face_id="f_ph_foreign_001",
+                photo_id="ph_foreign",
+                bbox=[0.0, 0.0, 50.0, 50.0],
+                det_score=0.9,
+                embedding=np.zeros(512, dtype=np.float32),
+            )
+        ],
+    )
+    cache.save(foreign_rec)
+
+    # Work dir now has 3 cached photos: ph_01, ph_02, and ph_foreign
+    all_cached = cache.load_all()
+    assert len(all_cached) == 3
+
+    # Create app and client
+    app = create_app(work_dir=temp_env["work_dir"], output_dir=temp_env["export_dir"])
+    client = TestClient(app)
+
+    # Open project
+    entry = save_recent_project(
+        work_dir=temp_env["work_dir"],
+        export_path=temp_env["export_dir"],
+        counts={"people": 2, "photos": 2},
+    )
+
+    open_resp = client.post("/api/projects/open", json={"project_id": entry["id"]})
+    assert open_resp.status_code == 200
+    data = open_resp.json()
+    # Must ONLY report the 2 project photos, not the foreign one
+    assert data["photos_count"] == 2
+
+    # /api/photos must only have the 2 project photos
+    photos_resp = client.get("/api/photos")
+    assert photos_resp.status_code == 200
+    photos_data = photos_resp.json()
+    assert len(photos_data) == 2
+    assert "ph_foreign" not in photos_data
+
+    # Perform an edit: merge person p001 and p002
+    edit_resp = client.post("/api/edits", json={
+        "op": "merge",
+        "anchors": [["f_ph_01_001"], ["f_ph_02_001"]],
+    })
+    assert edit_resp.status_code == 200
+
+    # Re-export to export directory: MUST SUCCEED and pass verification!
+    export_resp = client.post("/api/export", json={
+        "output_dir": str(temp_env["export_dir"]),
+    })
+    assert export_resp.status_code == 200
+    export_result = export_resp.json()
+    assert export_result["success"] is True
+
+    # Validate output people.json
+    out_people = json.loads((temp_env["export_dir"] / "people.json").read_text(encoding="utf-8"))
+    assert set(out_people["photos"].keys()) == {"ph_01", "ph_02"}
+    assert "ph_foreign" not in out_people["photos"]
+

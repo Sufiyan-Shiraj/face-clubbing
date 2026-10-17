@@ -138,10 +138,19 @@ class AppState:
                     for f in p_rec.faces:
                         face_lookup[f.face_id] = f
 
-                # Reconstruct photos
-                self.photos = cached_photos if cached_photos else {}
-                for pid, pinfo in data.get("photos", {}).items():
-                    if pid not in self.photos:
+                # Reconstruct photos (strictly scoped to this project's photos)
+                project_photo_ids = set(data.get("unrecognized", {}).get("photo_ids", []))
+                for pdict in data.get("people", []):
+                    project_photo_ids.update(pdict.get("photos") or pdict.get("photo_ids", []))
+
+                target_pids = project_photo_ids if project_photo_ids else set(data.get("photos", {}).keys())
+
+                self.photos = {}
+                for pid in target_pids:
+                    if pid in cached_photos:
+                        self.photos[pid] = cached_photos[pid]
+                    elif pid in data.get("photos", {}):
+                        pinfo = data["photos"][pid]
                         self.photos[pid] = PhotoRecord(
                             photo_id=pid,
                             original_path=pinfo.get("thumb", ""),
@@ -400,9 +409,19 @@ class AppState:
             with open(found_people_json, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            self.photos = dict(cached_photos)
-            for pid, pinfo in data.get("photos", {}).items():
-                if pid not in self.photos:
+            # Reconstruct photos (strictly scoped to this project's photos)
+            project_photo_ids = set(data.get("unrecognized", {}).get("photo_ids", []))
+            for pdict in data.get("people", []):
+                project_photo_ids.update(pdict.get("photos") or pdict.get("photo_ids", []))
+
+            target_pids = project_photo_ids if project_photo_ids else set(data.get("photos", {}).keys())
+
+            self.photos = {}
+            for pid in target_pids:
+                if pid in cached_photos:
+                    self.photos[pid] = cached_photos[pid]
+                elif pid in data.get("photos", {}):
+                    pinfo = data["photos"][pid]
                     self.photos[pid] = PhotoRecord(
                         photo_id=pid,
                         original_path=pinfo.get("thumb", ""),
@@ -820,8 +839,21 @@ class AppState:
             face_crop_size=self.settings.face_crop_size,
         )
 
+        # Invariant guarantee: Only export photos that belong to people or unrecognized
+        covered_photos = set(self.unrecognized.photo_ids)
+        for p in self.people:
+            covered_photos.update(p.photo_ids)
+
+        clean_photos = {
+            pid: p_rec
+            for pid, p_rec in self.photos.items()
+            if pid in covered_photos
+        }
+        if not clean_photos:
+            clean_photos = self.photos
+
         result = EngineResult(
-            photos=self.photos,
+            photos=clean_photos,
             people=self.people,
             unrecognized=self.unrecognized,
             distance_threshold=self.settings.distance_threshold,
