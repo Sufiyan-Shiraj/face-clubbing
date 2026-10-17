@@ -148,6 +148,19 @@ chmod +x run.sh
 
 ---
 
+### Standalone Desktop Executable (Windows)
+
+For running CatLog without installing Python, Node.js, or development tools:
+
+- **Download**: Run `photosorter.exe` (or `CatLog.exe`) from `dist/` or project release artifacts.
+- **System Requirements**: 64-bit Windows 10 (version 1809+) or Windows 11.
+- **WebView2 Runtime**: CatLog's native window shell uses Microsoft Edge WebView2:
+  - Windows 10 (recent versions) and Windows 11 come with WebView2 pre-installed by Microsoft out of the box.
+  - If running on a stripped or enterprise LTSC/Server installation without WebView2, download the standard **Evergreen Bootstrapper** from [Microsoft's official WebView2 page](https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download).
+  - CatLog also supports headless batch mode via `--no-gui` if no desktop display is needed.
+
+---
+
 ### Headless Engine (CLI Mode)
 
 To run the clustering engine in headless batch mode without the graphical UI:
