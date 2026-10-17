@@ -7,12 +7,16 @@ import os
 import threading
 import time
 import uuid
-from typing import Dict, Any, Optional, AsyncGenerator
 from pathlib import Path
-
-from backend.engine.pipeline import EngineConfig, run_pipeline
+from typing import Dict, Any, Optional, AsyncGenerator
 from backend.api.models import JobStatusResponse, JobStartRequest
 from backend.api.state import AppState
+
+
+def run_pipeline(*args, **kwargs):
+    """Lazy proxy for backend.engine.pipeline.run_pipeline to avoid early heavy imports."""
+    from backend.engine.pipeline import run_pipeline as _rp
+    return _rp(*args, **kwargs)
 
 
 class JobManager:
@@ -197,6 +201,8 @@ class JobManager:
         if not out_dir or str(out_dir).startswith("http") or "drive.google.com" in str(out_dir):
             out_dir = "export"
             self.state.settings.output_dir = "export"
+
+        from backend.engine.pipeline import EngineConfig
 
         config = EngineConfig(
             input_path=resolved_input,

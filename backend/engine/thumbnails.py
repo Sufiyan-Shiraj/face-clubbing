@@ -6,8 +6,6 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from PIL import Image, ImageOps, ImageFilter
 import numpy as np
-import cv2
-
 from backend.engine.models import FaceDetection, PersonCluster
 
 # Ensure HEIF support if available
@@ -22,6 +20,7 @@ def compute_image_sharpness(img_input: Path | str | Image.Image | np.ndarray) ->
     """Computes the sharpness score of an image or crop using variance of Laplacian.
     Higher values indicate sharp, in-focus images, while lower values (< 30) indicate blurriness."""
     try:
+        import cv2
         if isinstance(img_input, (str, Path)):
             p = Path(img_input)
             if not p.exists():

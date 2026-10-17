@@ -5,7 +5,6 @@ from typing import List, Optional, Tuple
 from pathlib import Path
 import shutil
 import warnings
-import cv2
 import numpy as np
 
 # Suppress upstream scikit-image FutureWarning from insightface face_align
@@ -48,7 +47,12 @@ class FaceDetector:
         if self._app is None:
             from insightface.app import FaceAnalysis
 
-            kwargs = {"name": self.model_name}
+            import onnxruntime as ort
+            sess_options = ort.SessionOptions()
+            sess_options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+            sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+            kwargs = {"name": self.model_name, "sess_options": sess_options}
             if self.model_root:
                 kwargs["root"] = self.model_root
             if self.providers:
@@ -107,6 +111,7 @@ class FaceDetector:
             ArcFace embeddings, and 3D head pose.
         """
         self._init_app()
+        import cv2
 
         orig_h, orig_w = orig_rgb.shape[:2]
         orig_bgr = cv2.cvtColor(orig_rgb, cv2.COLOR_RGB2BGR)
