@@ -4,6 +4,10 @@ import path from 'path';
 import net from 'net';
 import fs from 'fs';
 import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Suppress noisy terminal stack dumps when proxy target is temporarily connecting
 const customLogger = createLogger();
