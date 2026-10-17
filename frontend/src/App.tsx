@@ -122,6 +122,7 @@ export const App: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [rejectedPairs, setRejectedPairs] = useState<Set<string>>(new Set());
   const [appliedEditsCount, setAppliedEditsCount] = useState<number>(0);
+  const [hasExportedCurrentSession, setHasExportedCurrentSession] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [isMerging, setIsMerging] = useState<boolean>(false);
@@ -591,6 +592,8 @@ export const App: React.FC = () => {
   const unrecPhotosCount = unrecognized.total_unrecognized_photos || 0;
   const totalFacesCount = clusteredFacesCount + unrecFacesCount;
 
+  const hasUnexportedWork = (people.length > 0 || Object.keys(photos).length > 0) && !hasExportedCurrentSession;
+
   const [isOpenProjectModalOpen, setIsOpenProjectModalOpen] = useState<boolean>(false);
   const [projectReadOnlyNotice, setProjectReadOnlyNotice] = useState<string | null>(null);
 
@@ -599,6 +602,7 @@ export const App: React.FC = () => {
   };
 
   const handleProjectOpened = async (res: OpenProjectResponse) => {
+    setHasExportedCurrentSession(false);
     await loadAllData();
     handleTabChange('people');
     if (res.read_only) {
@@ -800,6 +804,7 @@ export const App: React.FC = () => {
             peopleCount={people.length}
             photosCount={Object.keys(photos).length}
             onRefreshStats={loadAllData}
+            onExportSuccess={() => setHasExportedCurrentSession(true)}
           />
         )}
 
@@ -817,6 +822,11 @@ export const App: React.FC = () => {
           onClose={() => setIsOpenProjectModalOpen(false)}
           onProjectOpened={handleProjectOpened}
           theme={theme}
+          hasUnexportedWork={hasUnexportedWork}
+          onNavigateToExport={() => {
+            setIsOpenProjectModalOpen(false);
+            handleTabChange('export');
+          }}
         />
       )}
 

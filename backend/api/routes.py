@@ -471,11 +471,24 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                     status_code=404,
                     detail=f"Work folder '{work_p}' not found or was moved.",
                 )
+
+            resolved_work = work_p
+            resolved_export = req.export_path
+            sibling_work = work_p.parent / f"{work_p.name}.work"
+            if (work_p / "people.json").exists() or (work_p / "manifest.json").exists():
+                resolved_export = str(work_p)
+                if sibling_work.exists() and sibling_work.is_dir():
+                    resolved_work = sibling_work
+            elif (work_p / ".cache").exists() and not resolved_export:
+                sibling_export = work_p.parent / work_p.name.removesuffix(".work")
+                if sibling_export.exists() and sibling_export.is_dir():
+                    resolved_export = str(sibling_export)
+
             proj = {
-                "id": hashlib.sha256(str(work_p).encode("utf-8")).hexdigest()[:12],
-                "name": work_p.name,
-                "work_dir": str(work_p),
-                "export_path": req.export_path,
+                "id": hashlib.sha256(str(resolved_work).encode("utf-8")).hexdigest()[:12],
+                "name": work_p.name.removesuffix(".work"),
+                "work_dir": str(resolved_work),
+                "export_path": resolved_export,
                 "source_description": "Local Folder",
                 "last_opened": datetime.datetime.now().astimezone().isoformat(),
                 "counts": {"people": 0, "photos": 0},

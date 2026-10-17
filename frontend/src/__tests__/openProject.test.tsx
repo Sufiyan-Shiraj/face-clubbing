@@ -13,11 +13,15 @@ vi.mock('../api/client', () => {
       getRecentProjects: vi.fn(),
       openProject: vi.fn(),
       removeProject: vi.fn(),
+      openFolderDialog: vi.fn(),
+      browseFolder: vi.fn(),
     },
     api: {
       getRecentProjects: vi.fn(),
       openProject: vi.fn(),
       removeProject: vi.fn(),
+      openFolderDialog: vi.fn(),
+      browseFolder: vi.fn(),
     },
   };
 });
@@ -270,6 +274,177 @@ describe('Open Saved Project Feature', () => {
 
     await waitFor(() => {
       expect(apiClient.removeProject).toHaveBeenCalledWith('proj_02');
+    });
+  });
+
+  it('triggers native system dialog to select folder and updates custom path input', async () => {
+    vi.mocked(apiClient.getRecentProjects).mockResolvedValue(mockProjects);
+    vi.mocked(apiClient.openFolderDialog).mockResolvedValue({
+      selected: 'D:/Photos/Wedding2026/Wedding2026.work',
+      cancelled: false,
+    });
+
+    render(
+      <OpenProjectModal
+        onClose={vi.fn()}
+        onProjectOpened={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('btn-system-dialog')).toBeDefined();
+    });
+
+    const browseBtn = screen.getByTestId('btn-system-dialog');
+    fireEvent.click(browseBtn);
+
+    await waitFor(() => {
+      expect(apiClient.openFolderDialog).toHaveBeenCalled();
+      const input = screen.getByTestId('custom-project-path-input') as HTMLInputElement;
+      expect(input.value).toBe('D:/Photos/Wedding2026/Wedding2026.work');
+    });
+  });
+
+  it('toggles in-modal folder explorer, renders subfolders, and selects a directory', async () => {
+    vi.mocked(apiClient.getRecentProjects).mockResolvedValue(mockProjects);
+    vi.mocked(apiClient.browseFolder).mockResolvedValue({
+      current_path: 'C:/Users/DELL/Pictures',
+      parent_path: 'C:/Users/DELL',
+      name: 'Pictures',
+      exists: true,
+      is_directory: true,
+      directories: [
+        { name: 'Trip2026.work', path: 'C:/Users/DELL/Pictures/Trip2026.work' },
+        { name: 'FamilyPhotos', path: 'C:/Users/DELL/Pictures/FamilyPhotos' },
+      ],
+      shortcuts: [
+        { label: 'Desktop', path: 'C:/Users/DELL/Desktop' },
+      ],
+    });
+
+    render(
+      <OpenProjectModal
+        onClose={vi.fn()}
+        onProjectOpened={vi.fn()}
+      />
+    );
+
+    const toggleBtn = screen.getByTestId('toggle-explorer-btn');
+    fireEvent.click(toggleBtn);
+
+    await waitFor(() => {
+      expect(apiClient.browseFolder).toHaveBeenCalled();
+      expect(screen.getByText('Trip2026.work')).toBeDefined();
+      expect(screen.getByText('Desktop')).toBeDefined();
+    });
+
+    // Clicking a subfolder selects it
+    fireEvent.click(screen.getByText('Trip2026.work'));
+    const input = screen.getByTestId('custom-project-path-input') as HTMLInputElement;
+    expect(input.value).toBe('C:/Users/DELL/Pictures/Trip2026.work');
+  });
+
+  describe('Unexported Work Guard', () => {
+    it('prompts unexported guard modal when opening project with unexported work', async () => {
+      vi.mocked(apiClient.getRecentProjects).mockResolvedValue(mockProjects);
+
+      render(
+        <OpenProjectModal
+          onClose={vi.fn()}
+          onProjectOpened={vi.fn()}
+          hasUnexportedWork={true}
+          onNavigateToExport={vi.fn()}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Event Alpha')).toBeDefined();
+      });
+
+      // Click open on project
+      const openBtn = screen.getByTestId('open-project-btn-proj_01');
+      fireEvent.click(openBtn);
+
+      // Guard modal is shown instead of immediately opening
+      expect(screen.getByTestId('unexported-guard-modal')).toBeDefined();
+      expect(screen.getByText(/Unexported Work in Current Project/i)).toBeDefined();
+      expect(apiClient.openProject).not.toHaveBeenCalled();
+
+      // Cancel button dismisses modal without action
+      const cancelBtn = screen.getByTestId('cancel-guard-btn');
+      fireEvent.click(cancelBtn);
+
+      expect(screen.queryByTestId('unexported-guard-modal')).toBeNull();
+      expect(apiClient.openProject).not.toHaveBeenCalled();
+    });
+
+    it('navigates to Export screen when user clicks Export First', async () => {
+      vi.mocked(apiClient.getRecentProjects).mockResolvedValue(mockProjects);
+      const onNavigateToExport = vi.fn();
+
+      render(
+        <OpenProjectModal
+          onClose={vi.fn()}
+          onProjectOpened={vi.fn()}
+          hasUnexportedWork={true}
+          onNavigateToExport={onNavigateToExport}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Event Alpha')).toBeDefined();
+      });
+
+      fireEvent.click(screen.getByTestId('open-project-btn-proj_01'));
+      expect(screen.getByTestId('unexported-guard-modal')).toBeDefined();
+
+      const exportFirstBtn = screen.getByTestId('export-first-btn');
+      fireEvent.click(exportFirstBtn);
+
+      expect(onNavigateToExport).toHaveBeenCalledTimes(1);
+      expect(screen.queryByTestId('unexported-guard-modal')).toBeNull();
+    });
+
+    it('discards and opens project when user clicks Discard & Open Project', async () => {
+      vi.mocked(apiClient.getRecentProjects).mockResolvedValue(mockProjects);
+      vi.mocked(apiClient.openProject).mockResolvedValue({
+        success: true,
+        message: 'Opened',
+        project: mockProjects[0],
+        people_count: 15,
+        photos_count: 120,
+        unrecognized_faces_count: 5,
+        applied_edits_count: 0,
+        read_only: false,
+      });
+
+      const onProjectOpened = vi.fn();
+      const onClose = vi.fn();
+
+      render(
+        <OpenProjectModal
+          onClose={onClose}
+          onProjectOpened={onProjectOpened}
+          hasUnexportedWork={true}
+          onNavigateToExport={vi.fn()}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Event Alpha')).toBeDefined();
+      });
+
+      fireEvent.click(screen.getByTestId('open-project-btn-proj_01'));
+      expect(screen.getByTestId('unexported-guard-modal')).toBeDefined();
+
+      const discardBtn = screen.getByTestId('discard-and-open-btn');
+      fireEvent.click(discardBtn);
+
+      await waitFor(() => {
+        expect(apiClient.openProject).toHaveBeenCalledWith({ project_id: 'proj_01' });
+        expect(onProjectOpened).toHaveBeenCalled();
+        expect(onClose).toHaveBeenCalled();
+      });
     });
   });
 });

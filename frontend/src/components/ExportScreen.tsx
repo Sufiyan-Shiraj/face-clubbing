@@ -22,6 +22,7 @@ interface ExportScreenProps {
   peopleCount?: number;
   photosCount?: number;
   onRefreshStats?: () => void;
+  onExportSuccess?: () => void;
 }
 
 export const ExportScreen: React.FC<ExportScreenProps> = ({
@@ -30,6 +31,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   peopleCount = 0,
   photosCount = 0,
   onRefreshStats,
+  onExportSuccess,
 }) => {
   // Determine automatic drive folder name
   const autoDriveName = useMemo(() => {
@@ -119,6 +121,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
       });
       setExportResult(res);
       if (onRefreshStats) onRefreshStats();
+      if (onExportSuccess) onExportSuccess();
     } catch (err: any) {
       setError(err.message || 'Export failed');
     } finally {
