@@ -61,9 +61,9 @@ describe('ExportScreen Component', () => {
       expect(screen.getByText('thumbs')).toBeTruthy();
     });
 
-    // Output dir input should be populated
+    // Output dir input should be populated with nested drive folder
     const outputInput = screen.getByTestId('export-output-dir-input') as HTMLInputElement;
-    expect(outputInput.value).toBe('export');
+    expect(outputInput.value).toBe('export/Graduation 2026 Drive');
   });
 
   it('auto-populates gallery title from initialTitle / drive folder', async () => {

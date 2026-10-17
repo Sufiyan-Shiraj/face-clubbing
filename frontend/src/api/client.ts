@@ -115,12 +115,22 @@ export const api = {
     let eventSource: EventSource | null = null;
     let isClosed = false;
     let reconnectTimeout: any = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
 
     const connect = () => {
       if (isClosed) return;
+      if (retryCount >= MAX_RETRIES) {
+        if (onError) onError(new Error("Progress subscription paused after maximum retries."));
+        return;
+      }
       try {
         eventSource = new EventSource(`${BASE_URL}/jobs/progress`);
+        eventSource.onopen = () => {
+          retryCount = 0;
+        };
         eventSource.onmessage = (event) => {
+          retryCount = 0;
           try {
             const data = JSON.parse(event.data);
             onMessage(data);
@@ -135,13 +145,19 @@ export const api = {
             eventSource = null;
           }
           if (!isClosed) {
-            reconnectTimeout = setTimeout(connect, 1500);
+            retryCount++;
+            if (retryCount < MAX_RETRIES) {
+              reconnectTimeout = setTimeout(connect, 2000 * retryCount);
+            }
           }
         };
       } catch (err) {
         if (onError) onError(err);
         if (!isClosed) {
-          reconnectTimeout = setTimeout(connect, 2000);
+          retryCount++;
+          if (retryCount < MAX_RETRIES) {
+            reconnectTimeout = setTimeout(connect, 2000 * retryCount);
+          }
         }
       }
     };

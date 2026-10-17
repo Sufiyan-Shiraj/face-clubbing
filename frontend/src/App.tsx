@@ -294,8 +294,11 @@ export const App: React.FC = () => {
     });
   }, [loadAllData]);
 
-  // Subscribe to SSE updates if job starts or page mounts
+  // Subscribe to SSE updates only when a job is actively running or on the progress tab
   useEffect(() => {
+    if (jobStatus.status !== 'running' && !isCancelling && activeTab !== 'progress') {
+      return;
+    }
     const unsubscribe = api.subscribeProgress((status) => {
       setJobStatus(status);
       if (status.recent_faces && status.recent_faces.length > 0) {
@@ -319,7 +322,7 @@ export const App: React.FC = () => {
     return () => {
       unsubscribe();
     };
-  }, [loadAllData]);
+  }, [jobStatus.status, isCancelling, activeTab, loadAllData]);
 
   // Robust live polling fallback to guarantee real-time updates even if SSE is buffered
   useEffect(() => {
