@@ -280,6 +280,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       border-radius: 1rem;
       overflow: hidden;
       cursor: pointer;
+      position: relative;
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
@@ -287,6 +288,34 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       transform: translateY(-3px);
       box-shadow: 0 8px 20px rgba(0,0,0,0.6);
       border-color: var(--color-accent);
+    }
+
+    .drive-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      color: #38bdf8;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      z-index: 5;
+      transition: all 0.2s ease;
+    }
+
+    .drive-badge:hover {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #38bdf8;
+      transform: scale(1.05);
     }
 
     .photo-card img {
@@ -435,6 +464,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       overflow: hidden;
       background: #18181b;
       cursor: pointer;
+      position: relative;
       border: 1px solid var(--border-color);
       transition: transform 0.2s;
     }
@@ -612,6 +642,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <button class="lightbox-btn" id="lightbox-prev">Previous</button>
       <span id="lightbox-counter" style="color: #aaa; font-size: 0.85rem;">1 / 1</span>
       <button class="lightbox-btn" id="lightbox-next">Next</button>
+      <a class="lightbox-btn" id="lightbox-drive-btn" target="_blank" rel="noopener noreferrer" style="display:none; text-decoration:none; background: #0284c7;">Open in Drive ↗</a>
     </div>
   </div>
 
@@ -724,17 +755,33 @@ __CONFIG_JSON__
         filtered.forEach(([pid, photo], idx) => {
           const card = document.createElement('div');
           card.className = 'photo-card';
+          const driveLink = photo.drive_url || photo.share_url || (photo.download && photo.download.startsWith('http') ? photo.download : (photo.drive_file_id ? 'https://drive.google.com/file/d/' + photo.drive_file_id + '/view' : null));
           card.innerHTML = `
-            <img src="${photo.thumb}" alt="${photo.name}" loading="lazy" />
+            <div style="position: relative; width: 100%;">
+              <img src="${photo.thumb}" alt="${photo.name}" loading="lazy" />
+              ${driveLink ? `
+                <a href="${driveLink}" target="_blank" rel="noopener noreferrer" class="drive-badge" title="Open photo in Google Drive" onclick="event.stopPropagation();">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                  Drive ↗
+                </a>` : ''}
+            </div>
             <div class="photo-card-info">
-              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">${photo.name}</span>
-              <span>${photo.width}x${photo.height}</span>
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;">${photo.name}</span>
+              ${driveLink ? `
+                <a href="${driveLink}" target="_blank" rel="noopener noreferrer" style="color: #38bdf8; font-size: 0.75rem; text-decoration: none; font-weight: 500;" onclick="event.stopPropagation();">
+                  View full ↗
+                </a>
+              ` : `<span>${photo.width}x${photo.height}</span>`}
             </div>
           `;
           card.addEventListener('click', () => {
-            activeLightboxList = filtered.map(([_, p]) => p.thumb);
-            activeLightboxIndex = idx;
-            openLightbox();
+            if (driveLink) {
+              window.open(driveLink, '_blank');
+            } else {
+              activeLightboxList = filtered.map(([_, p]) => ({ thumb: p.thumb, driveLink: p.drive_url || p.share_url || p.download }));
+              activeLightboxIndex = idx;
+              openLightbox();
+            }
           });
           photosGrid.appendChild(card);
         });
@@ -770,18 +817,29 @@ __CONFIG_JSON__
         modalCount.textContent = `${photoIds.length} photo${photoIds.length === 1 ? '' : 's'}`;
         modalGallery.innerHTML = '';
 
-        const personPhotoThumbs = [];
+        const personPhotoItems = [];
         photoIds.forEach((pid, idx) => {
           const pObj = data.photos[pid];
           if (pObj && pObj.thumb) {
-            personPhotoThumbs.push(pObj.thumb);
+            const driveLink = pObj.drive_url || pObj.share_url || (pObj.download && pObj.download.startsWith('http') ? pObj.download : (pObj.drive_file_id ? 'https://drive.google.com/file/d/' + pObj.drive_file_id + '/view' : null));
+            personPhotoItems.push({ thumb: pObj.thumb, driveLink });
             const item = document.createElement('div');
             item.className = 'modal-photo-item';
-            item.innerHTML = `<img src="${pObj.thumb}" alt="${pObj.name}" loading="lazy" />`;
+            item.innerHTML = `
+              <img src="${pObj.thumb}" alt="${pObj.name}" loading="lazy" />
+              ${driveLink ? `
+                <a href="${driveLink}" target="_blank" rel="noopener noreferrer" class="drive-badge" title="Open photo in Google Drive" onclick="event.stopPropagation();">
+                  Drive ↗
+                </a>` : ''}
+            `;
             item.addEventListener('click', () => {
-              activeLightboxList = personPhotoThumbs;
-              activeLightboxIndex = idx;
-              openLightbox();
+              if (driveLink) {
+                window.open(driveLink, '_blank');
+              } else {
+                activeLightboxList = personPhotoItems;
+                activeLightboxIndex = idx;
+                openLightbox();
+              }
             });
             modalGallery.appendChild(item);
           }
@@ -791,6 +849,7 @@ __CONFIG_JSON__
       }
 
       // Lightbox Functions
+      const lightboxDriveBtn = document.getElementById('lightbox-drive-btn');
       function openLightbox() {
         if (!activeLightboxList.length) return;
         updateLightbox();
@@ -798,8 +857,19 @@ __CONFIG_JSON__
       }
 
       function updateLightbox() {
-        lightboxImg.src = activeLightboxList[activeLightboxIndex];
+        const item = activeLightboxList[activeLightboxIndex];
+        const src = typeof item === 'string' ? item : item.thumb;
+        const driveLink = typeof item === 'object' ? item.driveLink : null;
+        lightboxImg.src = src;
         lightboxCounter.textContent = `${activeLightboxIndex + 1} / ${activeLightboxList.length}`;
+        if (lightboxDriveBtn) {
+          if (driveLink) {
+            lightboxDriveBtn.href = driveLink;
+            lightboxDriveBtn.style.display = 'inline-block';
+          } else {
+            lightboxDriveBtn.style.display = 'none';
+          }
+        }
       }
 
       document.getElementById('lightbox-prev').addEventListener('click', () => {

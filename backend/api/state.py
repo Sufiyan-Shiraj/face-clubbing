@@ -83,8 +83,17 @@ class AppState:
         self.edits_list: List[Dict[str, Any]] = []
         self._load_edits_from_disk()
 
-        # Try to load existing dataset from export if available
-        self._try_load_existing_dataset()
+        # Active project tracking
+        self.project_active: bool = False
+        self.active_project_id: Optional[str] = None
+        self.active_project_name: Optional[str] = None
+        self.drive_folder_name: Optional[str] = None
+        self.temp_dirs: List[str] = []
+
+        # Only load existing dataset if explicitly specified (e.g. tests or explicit work_dir/output_dir or env var)
+        should_auto_load = bool(work_dir or output_dir or os.environ.get("PHOTOSORTER_LOAD_SAVED"))
+        if should_auto_load:
+            self._try_load_existing_dataset()
 
     def _try_load_existing_dataset(self):
         """Attempts to load existing Phase 1/1b export data if present."""
@@ -242,6 +251,8 @@ class AppState:
                     self.ambiguous_faces_raw = sug_data.get("ambiguous_faces", [])
                 self.initial_maybe_groups = copy.deepcopy(self.maybe_groups)
                 self.initial_ambiguous_faces_raw = copy.deepcopy(self.ambiguous_faces_raw)
+                self.project_active = True
+                self.active_project_name = Path(raw_out).name
             except RuntimeError:
                 raise
             except Exception as e:
@@ -305,6 +316,14 @@ class AppState:
         self.people = result.people
         self.unrecognized = result.unrecognized
         self.id_map = result.id_map
+        self.project_active = True
+
+        if getattr(result, "drive_folder_name", None):
+            self.drive_folder_name = result.drive_folder_name
+            self.active_project_name = result.drive_folder_name
+
+        if getattr(result, "temp_dir", None):
+            self.temp_dirs.append(result.temp_dir)
 
         # Snapshot base unedited state
         self.base_people = copy.deepcopy(result.people)
@@ -541,6 +560,11 @@ class AppState:
             self.people = people_replayed
             self.unrecognized = unrec_replayed
 
+        self.project_active = True
+        self.active_project_name = work_p.name.removesuffix(".work")
+        if export_p:
+            self.active_project_name = export_p.name
+
         return {
             "work_dir": str(work_p),
             "export_path": str(export_p) if export_p else None,
@@ -551,6 +575,31 @@ class AppState:
             "read_only": self.read_only,
             "edits_error": self.edits_error,
         }
+
+    def reset_to_empty(self):
+        """Resets active state to clean empty slate for a new project."""
+        self.photos = {}
+        self.people = []
+        self.unrecognized = UnrecognizedGroup(photo_ids=[], faces=[])
+        self.id_map = {}
+        self.maybe_groups = []
+        self.ambiguous_faces_raw = []
+        self.base_people = []
+        self.base_unrecognized = UnrecognizedGroup(photo_ids=[], faces=[])
+        self.initial_people = []
+        self.initial_unrecognized = UnrecognizedGroup(photo_ids=[], faces=[])
+        self.initial_maybe_groups = []
+        self.initial_ambiguous_faces_raw = []
+        self.edits_list = []
+        self.read_only = False
+        self.edits_error = None
+        self.project_active = False
+        self.active_project_id = None
+        self.active_project_name = None
+        self.drive_folder_name = None
+        self.temp_dirs = []
+        self.settings.event_title = "Face Clubbing Gallery"
+        self.settings.event_subtitle = "Auto-sorted face albums and photo gallery"
 
     def get_cluster_by_id(self, cluster_id: str) -> Optional[PersonCluster]:
         for p in self.people:
@@ -822,14 +871,30 @@ class AppState:
     def export_public_bundle(self, output_dir: Optional[str] = None) -> List[str]:
         """
         Exports the public bundle ONLY:
-        config.json, people.json, faces/, thumbs/.
+        config.json, people.json, faces/, thumbs/, index.html, gallery.html.
         Guarantees suggestions.json, edits.json, id_map.json, and .cache/ are never exported.
+        Automatically nests destination directory under drive/project folder name if not already ending in it.
+        Deletes all temporary downloaded files upon export completion.
         """
+        import shutil
+
         target = output_dir or self.settings.output_dir or "export"
         if str(target).startswith("http") or "drive.google.com" in str(target):
             target = "export"
             self.settings.output_dir = "export"
         out_p = Path(target).resolve()
+
+        # If a project name or drive folder name is known, ensure we export into a subfolder titled with that name
+        folder_title = self.drive_folder_name or self.active_project_name
+        if not folder_title and self.settings.event_title and self.settings.event_title not in ("Face Clubbing Gallery", "Event Gallery"):
+            folder_title = self.settings.event_title
+
+        if folder_title and folder_title.lower() != "export":
+            safe_folder = re.sub(r'[\\/*?:"<>|]', "", folder_title).strip()
+            if safe_folder and out_p.name.lower() != safe_folder.lower():
+                out_p = out_p / safe_folder
+                out_p.mkdir(parents=True, exist_ok=True)
+
         cache_p = Path(self.settings.cache_dir).resolve() if self.settings.cache_dir else self.work_dir
 
         exporter = BundleExporter(
@@ -869,7 +934,30 @@ class AppState:
                 "hide_single_photo_default": False,
             },
             include_maybe=self.settings.include_maybe,
+            generate_html=True,
         )
+
+        # Clean up temporary working dirs
+        for t_dir in list(self.temp_dirs):
+            try:
+                t_p = Path(t_dir)
+                if t_p.exists() and t_p.is_dir():
+                    shutil.rmtree(t_p, ignore_errors=True)
+            except Exception:
+                pass
+        self.temp_dirs.clear()
+
+        # Also search for any <folder_name>_temp directory around cache, work dir, or repo root
+        if folder_title:
+            safe_folder = re.sub(r'[\\/*?:"<>|]', "", folder_title).strip()
+            if safe_folder:
+                for base in [self.work_dir.parent, self.work_dir, self.repo_root, out_p.parent]:
+                    temp_cand = base / f"{safe_folder}_temp"
+                    if temp_cand.exists() and temp_cand.is_dir():
+                        try:
+                            shutil.rmtree(temp_cand, ignore_errors=True)
+                        except Exception:
+                            pass
 
         # STRICT PUBLIC BUNDLE HYGIENE VERIFICATION
         forbidden_files = ["suggestions.json", "edits.json", "id_map.json", ".cache"]

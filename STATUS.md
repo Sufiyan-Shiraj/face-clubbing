@@ -1485,3 +1485,32 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 - **Native Pickers (Check L)**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps.
 - **Phase 6 Method 1 Live Google Drive Integration (Check M)**: **COMPLETE**. Live verification on public folder `1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3` verified: 152 total files (83 images, 69 videos skipped), 100% thumbnail availability, 0% alt=media fallbacks, 92.1% bandwidth savings (10.15 MB thumbnails vs 127.73 MB originals). Complete engine runs executed on Drive thumbnails and Drive originals; 64 px floor analysis documented in SPEC §18 (88.6% under 64 px on thumbnails vs 1.6% on originals; evidence table provided for proposed 40 px adaptive floor; SPEC §6.2 defaults kept unchanged). Resumable caching, sanitized error messages, and zero API key leakage verified. Raw evidence: `scratch/verify_drive_phase6_raw.txt` (SHA-256: `a546e96c095b9fd0683578a2d4eacc2c377cea6d40e97c5d1155fa3d4b1e2b5e`).
 - **Privacy & Secrets (Section 4)**: Current git history is 100% clean of images/secrets. The 5 old commits with 27 JPEG face-crop contact sheets remain reachable on GitHub; reviewed and accepted by organizer on 2026-10-14.
+
+---
+
+## 6. PROJECT ISOLATION, DRIVE DIRECT LINKING, AUTO-NESTING & CLEANUP AUDIT (2026-10-17)
+
+### Requirements Implemented and Verified
+1. **Startup Isolation & Project Active Guard**:
+   - `AppState.__init__` starts with `project_active = False` on cold boot unless explicitly configured via test fixture or env flag.
+   - Added `GET /api/projects/active` endpoint returning `{active: bool, name: str, people_count: int, photos_count: int}`.
+   - Frontend `App.tsx` guards the Review and Publish tabs so they are disabled if no project is active, redirecting cold boots to the Source (`home`) tab.
+2. **"New Project" Button**:
+   - Added `#header-new-project-btn` in `Header.tsx`.
+   - Prompts for unexported work confirmation (`window.confirm`) if unexported changes exist, and calls `POST /api/projects/new`.
+   - `POST /api/projects/new` executes `AppState.reset_to_empty()`, resetting runtime state cleanly to an empty project.
+3. **Drive Folder Auto-Nesting on Export**:
+   - When exporting to an output folder (e.g. `export/`), the bundle automatically creates and nests inside a subfolder titled with the Drive folder name (or active project name), e.g. `export/Echoes of reason 18th`.
+   - Prevents duplicate nesting if the chosen directory already ends in that folder name.
+4. **Temporary Directory Lifecycle & Cleanup**:
+   - During scanning, temporary downloads are saved into `<folder_name>_temp` (e.g. `Echoes of reason 18th_temp`).
+   - Upon bundle export, all temporary working directories and `<folder_name>_temp` are automatically deleted.
+5. **Standalone HTML (`index.html`) & Google Drive Photo Linking**:
+   - On public bundle export, generates a zero-server standalone `index.html` (and `gallery.html`).
+   - Google Drive photos are linked directly via shareable URLs (`https://drive.google.com/file/d/<id>/view`).
+   - In the standalone gallery, clicking photo cards or modal photos directly opens the full photo on Google Drive in a new tab.
+   - Only avatars (`faces/`) and thumbnails (`thumbs/`) are stored locally; full photos are never bundled locally.
+6. **Test Suite & Build Health**:
+   - Pytest suite: **78 / 78 passed (100%)** in 57.69s.
+   - Frontend build (`npm run build` in `frontend/`): **0 errors, exit code 0**.
+

@@ -61,17 +61,31 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   const [browseError, setBrowseError] = useState<string | null>(null);
   const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
 
+  const getNestedPath = (basePath: string) => {
+    const folderTitle =
+      autoDriveName ||
+      (title && title !== 'Face Clubbing Gallery' && title !== 'Event Gallery' ? title : null);
+    if (!folderTitle) return basePath;
+    const safeName = folderTitle.replace(/[\\/*?:"<>|]/g, '').trim();
+    if (!safeName) return basePath;
+
+    const normalized = basePath.replace(/[\\/]+$/, '');
+    const lastPart = normalized.split(/[\\/]/).pop();
+    if (lastPart && lastPart.toLowerCase() === safeName.toLowerCase()) {
+      return normalized;
+    }
+    return `${normalized}/${safeName}`;
+  };
+
   // Fetch initial settings & folder list
   useEffect(() => {
     api
       .getSettings()
       .then((s) => {
-        if (s.output_dir) {
-          setOutputDir(s.output_dir);
-          loadFolder(s.output_dir);
-        } else {
-          loadFolder('export');
-        }
+        const baseOut = s.output_dir || 'export';
+        const nestedOut = getNestedPath(baseOut);
+        setOutputDir(nestedOut);
+        loadFolder(baseOut);
         if (s.event_title && !autoDriveName && s.event_title !== 'Event Gallery') {
           setTitle(s.event_title);
         }
@@ -83,6 +97,8 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
         }
       })
       .catch(() => {
+        const nestedOut = getNestedPath('export');
+        setOutputDir(nestedOut);
         loadFolder('export');
       });
   }, [autoDriveName]);
@@ -113,8 +129,9 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
     setIsExporting(true);
     setError(null);
     try {
+      const targetDir = getNestedPath(outputDir.trim() || 'export');
       const res = await api.exportBundle({
-        output_dir: outputDir.trim() || 'export',
+        output_dir: targetDir,
         title: title.trim(),
         subtitle: subtitle.trim(),
         include_maybe: includeMaybe,
@@ -130,7 +147,8 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   };
 
   const handleSelectFolder = (path: string) => {
-    setOutputDir(path);
+    const target = getNestedPath(path);
+    setOutputDir(target);
     loadFolder(path);
   };
 
@@ -142,7 +160,8 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
       if ((window as any).pywebview?.api?.select_folder) {
         const selected = await (window as any).pywebview.api.select_folder('Select Public Export Directory');
         if (selected && selected.trim()) {
-          setOutputDir(selected.trim());
+          const target = getNestedPath(selected.trim());
+          setOutputDir(target);
           loadFolder(selected.trim());
         }
         return;
@@ -152,7 +171,8 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
       const targetDir = outputDir.trim() || browseData?.current_path || undefined;
       const res = await api.openFolderDialog(targetDir);
       if (res && res.selected && !res.cancelled) {
-        setOutputDir(res.selected);
+        const target = getNestedPath(res.selected);
+        setOutputDir(target);
         loadFolder(res.selected);
       }
     } catch (err: any) {

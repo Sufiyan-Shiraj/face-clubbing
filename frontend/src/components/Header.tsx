@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActiveTab } from '../types';
-import { Folder, Settings as SettingsIcon, RotateCcw, RefreshCw } from 'lucide-react';
+import { Folder, Settings as SettingsIcon, RotateCcw, RefreshCw, Plus } from 'lucide-react';
 
 export type RisoTheme = 't-dark' | 't-paper' | 't-navy';
 
@@ -19,6 +19,7 @@ interface HeaderProps {
   theme?: RisoTheme;
   onThemeChange?: (theme: RisoTheme, e?: React.MouseEvent) => void;
   onOpenProject?: () => void;
+  onNewProject?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   theme = 't-dark',
   onThemeChange,
   onOpenProject,
+  onNewProject,
 }) => {
   return (
     <div className="hdr">
@@ -80,6 +82,27 @@ export const Header: React.FC<HeaderProps> = ({
             />
           </div>
         )}
+
+        {/* New Project Link */}
+        <button
+          type="button"
+          id="header-new-project-btn"
+          data-testid="header-new-project-btn"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onNewProject) {
+              onNewProject();
+            } else {
+              onTabChange('home');
+            }
+          }}
+          className="lnk"
+          title="Start a new project"
+        >
+          <Plus className="w-4 h-4 opacity-75" />
+          <span>New Project</span>
+        </button>
 
         {/* Open Saved Project Link */}
         <button

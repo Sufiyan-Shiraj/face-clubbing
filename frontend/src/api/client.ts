@@ -342,6 +342,16 @@ export const api = {
       method: 'DELETE',
     });
   },
+
+  async newProject(): Promise<{ success: boolean; message: string }> {
+    return fetchJson(`${BASE_URL}/projects/new`, {
+      method: 'POST',
+    });
+  },
+
+  async getActiveProject(): Promise<{ active: boolean; name?: string; people_count: number; photos_count: number }> {
+    return fetchJson(`${BASE_URL}/projects/active`);
+  },
 };
 
 export const apiClient = api;

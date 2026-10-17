@@ -37,6 +37,7 @@ class BundleExporter:
         subtitle: str = "Grouped by Person",
         config_override: Optional[Dict[str, Any]] = None,
         include_maybe: Optional[bool] = None,
+        generate_html: bool = False,
     ) -> Path:
         """
         Creates the complete export bundle.
@@ -68,10 +69,20 @@ class BundleExporter:
                         output_path=thumb_dest,
                     )
 
+            drive_url = getattr(record, "drive_url", None)
+            if not drive_url and getattr(record, "drive_file_id", None):
+                drive_url = f"https://drive.google.com/file/d/{record.drive_file_id}/view"
+            share_url = getattr(record, "share_url", None)
+            if not share_url and getattr(record, "drive_file_id", None):
+                share_url = f"https://drive.google.com/file/d/{record.drive_file_id}/view?usp=sharing"
+
             photos_json[photo_id] = {
                 "name": record.file_name,
                 "thumb": thumb_rel,
                 "download": record.download_url,
+                "drive_url": drive_url,
+                "share_url": share_url,
+                "drive_file_id": getattr(record, "drive_file_id", None),
                 "width": record.width,
                 "height": record.height,
             }
@@ -231,7 +242,36 @@ class BundleExporter:
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(default_config, f, indent=2)
 
-        # 6. Verify Bundle Integrity
+        # 6. Generate Standalone HTML Gallery (index.html & gallery.html) if requested
+        if generate_html:
+            try:
+                from backend.engine.standalone_html import generate_standalone_gallery_html
+                cfg_dict = {}
+                if config_path.exists():
+                    try:
+                        with open(config_path, "r", encoding="utf-8") as f:
+                            cfg_dict = json.load(f)
+                    except Exception:
+                        cfg_dict = {}
+                if not cfg_dict and "default_config" in locals():
+                    cfg_dict = default_config
+                standalone_html = generate_standalone_gallery_html(people_payload, cfg_dict)
+                (self.output_dir / "index.html").write_text(standalone_html, encoding="utf-8")
+                (self.output_dir / "gallery.html").write_text(standalone_html, encoding="utf-8")
+            except Exception as e:
+                print(f"[exporter] Warning: Failed to generate standalone HTML: {e}")
+
+        # 7. Clean up temporary working directory if specified
+        temp_dir = getattr(result, "temp_dir", None)
+        if temp_dir:
+            temp_p = Path(temp_dir)
+            if temp_p.exists() and temp_p.is_dir():
+                try:
+                    shutil.rmtree(temp_p, ignore_errors=True)
+                except Exception:
+                    pass
+
+        # 8. Verify Bundle Integrity
         self._verify_bundle(people_payload)
         return self.output_dir
 

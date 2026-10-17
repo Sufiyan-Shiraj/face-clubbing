@@ -549,4 +549,22 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found in recent projects.")
         return {"success": True, "removed": project_id, "message": "Project removed from recent list. Files on disk remain intact."}
 
+    @router.post("/projects/new")
+    def create_new_project():
+        state.reset_to_empty()
+        return {
+            "success": True,
+            "message": "New project created. Active state reset.",
+            "active": False,
+        }
+
+    @router.get("/projects/active")
+    def get_active_project():
+        return {
+            "active": getattr(state, "project_active", False) or bool(state.people or state.photos),
+            "name": getattr(state, "active_project_name", None),
+            "people_count": len(state.people),
+            "photos_count": len(state.photos),
+        }
+
     return router

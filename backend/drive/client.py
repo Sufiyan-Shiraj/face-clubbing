@@ -48,10 +48,14 @@ class DriveFile:
     size: int = 0
     thumbnail_link: Optional[str] = None
     download_url: str = field(init=False)
+    drive_url: str = field(init=False)
+    share_url: str = field(init=False)
 
     def __post_init__(self):
         # Format required by SPEC 8.2 and Phase 6: https://drive.google.com/uc?id=<ID>&export=download
         self.download_url = f"https://drive.google.com/uc?id={self.id}&export=download"
+        self.drive_url = f"https://drive.google.com/file/d/{self.id}/view"
+        self.share_url = f"https://drive.google.com/file/d/{self.id}/view?usp=sharing"
 
 
 @dataclass
@@ -125,6 +129,27 @@ class DriveClient:
             )
         self.api_key = api_key.strip()
         self.session = session or requests.Session()
+
+    def get_folder_name(self, folder_id: str) -> Optional[str]:
+        """Fetch the folder's display name from Google Drive API."""
+        try:
+            url = f"{DRIVE_API_BASE}/files/{folder_id}"
+            resp = self._request_with_retry(
+                "GET",
+                url,
+                params={
+                    "fields": "id,name,mimeType",
+                    "key": self.api_key,
+                    "supportsAllDrives": "true",
+                },
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return data.get("name")
+        except Exception:
+            pass
+        return None
 
     def _handle_api_error_response(self, resp: requests.Response) -> None:
         """Parse Google Drive error JSON and raise appropriate domain exception."""

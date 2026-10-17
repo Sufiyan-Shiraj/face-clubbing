@@ -24,6 +24,8 @@ class ScannedPhoto:
     relative_path: str
     download_url: Optional[str] = None
     drive_file_id: Optional[str] = None
+    drive_url: Optional[str] = None
+    share_url: Optional[str] = None
 
 
 def compute_file_hash(path: Path | str, chunk_size: int = 65536) -> str:

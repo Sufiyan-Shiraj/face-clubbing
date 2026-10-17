@@ -81,21 +81,26 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     try {
       const saved = localStorage.getItem('photosorter-active-tab');
-      if (saved && ['home', 'progress', 'people', 'export', 'settings'].includes(saved)) {
+      if (saved && ['home', 'progress', 'settings'].includes(saved)) {
         return saved as ActiveTab;
       }
     } catch (e) { }
     return 'home';
   });
 
+  const [people, setPeople] = useState<PersonCluster[]>([]);
+  const [photos, setPhotos] = useState<Record<string, PhotoInfo>>({});
+  const isProjectActive = people.length > 0 || Object.keys(photos).length > 0;
+
   const handleTabChange = (t: ActiveTab) => {
+    if ((t === 'people' || t === 'export') && !isProjectActive) {
+      return;
+    }
     setActiveTab(t);
     try {
       localStorage.setItem('photosorter-active-tab', t);
     } catch (e) { }
   };
-  const [people, setPeople] = useState<PersonCluster[]>([]);
-  const [photos, setPhotos] = useState<Record<string, PhotoInfo>>({});
   const [unrecognized, setUnrecognized] = useState<UnrecognizedData>({
     total_unrecognized_photos: 0,
     no_face_photos: [],
@@ -260,7 +265,15 @@ export const App: React.FC = () => {
   // Initial load
   useEffect(() => {
     Promise.all([
-      loadAllData(),
+      loadAllData().then(() => {
+        api.getActiveProject()
+          .then((proj) => {
+            if (!proj.active) {
+              setActiveTab((prev) => (prev === 'people' || prev === 'export' ? 'home' : prev));
+            }
+          })
+          .catch(() => {});
+      }),
       api.getJobStatus()
         .then((status) => {
           setJobStatus(status);
@@ -601,6 +614,49 @@ export const App: React.FC = () => {
     setIsOpenProjectModalOpen(true);
   };
 
+  const handleNewProject = async () => {
+    if (hasUnexportedWork) {
+      const confirmMsg =
+        'You have an active project with unexported work.\n\nAre you sure you want to start a new project? Any unsaved edits will be discarded.';
+      if (!window.confirm(confirmMsg)) {
+        return;
+      }
+    }
+    try {
+      await api.newProject();
+    } catch (e) {
+      console.error('Failed to reset project on backend:', e);
+    }
+    setPeople([]);
+    setPhotos({});
+    setUnrecognized({ total_unrecognized_photos: 0, no_face_photos: [], faces: [] });
+    setSuggestions({
+      maybe_groups_count: 0,
+      maybe_groups: [],
+      possibly_the_same_count: 0,
+      possibly_the_same: [],
+      ambiguous_faces_count: 0,
+      ambiguous_faces: [],
+    });
+    setSelectedIds(new Set());
+    setRejectedPairs(new Set());
+    setAppliedEditsCount(0);
+    setHasExportedCurrentSession(false);
+    setDriveVerified(false);
+    setVerifiedFolderId(null);
+    setVerifiedFolderName(null);
+    setVerifiedImageCount(0);
+    setProjectReadOnlyNotice(null);
+    try {
+      localStorage.removeItem('photosorter-active-tab');
+      localStorage.removeItem('photosorter-drive-verified');
+      localStorage.removeItem('photosorter-verified-folder-id');
+      localStorage.removeItem('photosorter-verified-folder-name');
+      localStorage.removeItem('photosorter-verified-img-count');
+    } catch (e) { }
+    setActiveTab('home');
+  };
+
   const handleProjectOpened = async (res: OpenProjectResponse) => {
     setHasExportedCurrentSession(false);
     await loadAllData();
@@ -643,6 +699,7 @@ export const App: React.FC = () => {
         theme={theme}
         onThemeChange={handleThemeChange}
         onOpenProject={handleOpenProject}
+        onNewProject={handleNewProject}
       />
 
       {/* Left Vertical Step Rail matching screenshot */}
@@ -669,8 +726,10 @@ export const App: React.FC = () => {
           <button
             type="button"
             id="tab-people"
-            onClick={() => handleTabChange('people')}
-            className={`step ${activeTab === 'people' ? 'on' : ''}`}
+            onClick={() => isProjectActive && handleTabChange('people')}
+            className={`step ${activeTab === 'people' ? 'on' : ''} ${!isProjectActive ? 'opacity-40 cursor-not-allowed' : ''}`}
+            disabled={!isProjectActive}
+            title={!isProjectActive ? 'Start a scan or open a project first' : 'Review people and edits'}
           >
             <b>03</b>
             <span>Review</span>
@@ -678,8 +737,10 @@ export const App: React.FC = () => {
           <button
             type="button"
             id="tab-export"
-            onClick={() => handleTabChange('export')}
-            className={`step ${activeTab === 'export' ? 'on' : ''}`}
+            onClick={() => isProjectActive && handleTabChange('export')}
+            className={`step ${activeTab === 'export' ? 'on' : ''} ${!isProjectActive ? 'opacity-40 cursor-not-allowed' : ''}`}
+            disabled={!isProjectActive}
+            title={!isProjectActive ? 'Start a scan or open a project first' : 'Publish standalone gallery'}
           >
             <b>04</b>
             <span>Publish</span>

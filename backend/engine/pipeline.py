@@ -6,6 +6,8 @@ import json
 import datetime
 import sys
 import time
+import re
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional, Dict, Any, List
@@ -93,7 +95,14 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                 "Google Drive API key is required. Please set it in Settings or set the DRIVE_API_KEY environment variable."
             )
 
-        drive_cache_p = cache_p / "drive" / folder_id
+        client = DriveClient(api_key=api_key)
+        folder_name = client.get_folder_name(folder_id)
+        if not folder_name:
+            folder_name = config.event_title if config.event_title and config.event_title != "Event Gallery" else "drive"
+        safe_folder_name = re.sub(r'[\\/*?:"<>|]', "", folder_name).strip() or "drive"
+
+        # Temporary folder named <folder_name>_temp (deleted when bundle is exported)
+        drive_cache_p = cache_p.parent / f"{safe_folder_name}_temp"
         drive_cache_p.mkdir(parents=True, exist_ok=True)
 
         notify({
@@ -101,10 +110,9 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             "current": 0,
             "total": 0,
             "percent": 0.5,
-            "message": "Listing images from Google Drive folder...",
+            "message": f"Listing images from Google Drive folder '{folder_name}'...",
         })
 
-        client = DriveClient(api_key=api_key)
         list_res = client.list_folder_images(
             folder_id=folder_id,
             cancel_check=config.cancel_check,
@@ -153,6 +161,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                     relative_path=local_p.name,
                     download_url=df.download_url,
                     drive_file_id=df.id,
+                    drive_url=getattr(df, "drive_url", f"https://drive.google.com/file/d/{df.id}/view"),
+                    share_url=getattr(df, "share_url", f"https://drive.google.com/file/d/{df.id}/view?usp=sharing"),
                 )
             )
 
@@ -218,6 +228,10 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                     record.download_url = item.download_url
                 if getattr(item, "drive_file_id", None):
                     record.drive_file_id = item.drive_file_id
+                if getattr(item, "drive_url", None):
+                    record.drive_url = item.drive_url
+                if getattr(item, "share_url", None):
+                    record.share_url = item.share_url
                 photos[photo_id] = record
 
                 # Ensure thumbnail and crops are cached for fast exports
@@ -284,6 +298,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                 height=orig_h,
                 download_url=getattr(item, "download_url", None),
                 drive_file_id=getattr(item, "drive_file_id", None),
+                drive_url=getattr(item, "drive_url", None),
+                share_url=getattr(item, "share_url", None),
                 faces=faces,
             )
             cache.save(record)
@@ -379,6 +395,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         unrecognized=unrecognized,
         distance_threshold=config.distance_threshold,
         id_map=clusterer.id_map,
+        temp_dir=str(drive_cache_p) if is_drive else None,
+        drive_folder_name=folder_name if is_drive else None,
     )
 
     notify({

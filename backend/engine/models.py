@@ -69,6 +69,8 @@ class PhotoRecord:
     height: int
     download_url: Optional[str] = None
     drive_file_id: Optional[str] = None
+    drive_url: Optional[str] = None
+    share_url: Optional[str] = None
     faces: List[FaceDetection] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -80,6 +82,8 @@ class PhotoRecord:
             "height": self.height,
             "download_url": self.download_url,
             "drive_file_id": self.drive_file_id,
+            "drive_url": self.drive_url,
+            "share_url": self.share_url,
             "faces": [f.to_dict() for f in self.faces],
         }
 
@@ -94,6 +98,8 @@ class PhotoRecord:
             height=data["height"],
             download_url=data.get("download_url"),
             drive_file_id=data.get("drive_file_id"),
+            drive_url=data.get("drive_url"),
+            share_url=data.get("share_url"),
             faces=faces,
         )
 
@@ -131,4 +137,6 @@ class EngineResult:
     unrecognized: UnrecognizedGroup
     distance_threshold: float
     id_map: Dict[str, Any] = field(default_factory=dict)
+    temp_dir: Optional[str] = None
+    drive_folder_name: Optional[str] = None
 

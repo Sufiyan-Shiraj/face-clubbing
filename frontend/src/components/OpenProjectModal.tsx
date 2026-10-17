@@ -778,7 +778,7 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
           <button
             type="button"
             data-testid="open-custom-path-btn"
-            onClick={handleRequestOpenCustomPath}
+            onClick={() => handleRequestOpenCustomPath()}
             disabled={!customPath.trim() || isOpeningCustom}
             className="riso-btn-sec text-xs w-full sm:w-auto"
             style={{ height: '34px', padding: '0 14px' }}
