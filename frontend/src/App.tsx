@@ -31,6 +31,15 @@ export const App: React.FC = () => {
 
   const [isThemeTransitioning, setIsThemeTransitioning] = useState(false);
 
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.classList.remove('t-dark', 't-paper', 't-navy');
+      document.body.classList.add(theme);
+      document.documentElement.classList.remove('t-dark', 't-paper', 't-navy');
+      document.documentElement.classList.add(theme);
+    }
+  }, [theme]);
+
   const handleThemeChange = (newTheme: RisoTheme, e?: React.MouseEvent) => {
     if (newTheme === theme || isThemeTransitioning) return;
 
@@ -807,6 +816,7 @@ export const App: React.FC = () => {
         <OpenProjectModal
           onClose={() => setIsOpenProjectModalOpen(false)}
           onProjectOpened={handleProjectOpened}
+          theme={theme}
         />
       )}
 

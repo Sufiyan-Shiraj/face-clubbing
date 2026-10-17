@@ -244,4 +244,32 @@ describe('Open Saved Project Feature', () => {
 
     expect(onOpenProject).toHaveBeenCalledTimes(1);
   });
+
+  it('allows cleaning all missing projects with one click', async () => {
+    vi.mocked(apiClient.getRecentProjects)
+      .mockResolvedValueOnce(mockProjects)
+      .mockResolvedValueOnce([mockProjects[0]]);
+    vi.mocked(apiClient.removeProject).mockResolvedValue({
+      success: true,
+      message: 'Project removed from recent list',
+    });
+
+    render(
+      <OpenProjectModal
+        onClose={vi.fn()}
+        onProjectOpened={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Clean Missing (1)')).toBeDefined();
+    });
+
+    const cleanBtn = screen.getByTestId('clean-all-missing-btn');
+    fireEvent.click(cleanBtn);
+
+    await waitFor(() => {
+      expect(apiClient.removeProject).toHaveBeenCalledWith('proj_02');
+    });
+  });
 });

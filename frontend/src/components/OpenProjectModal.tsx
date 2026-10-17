@@ -20,11 +20,13 @@ import {
 interface OpenProjectModalProps {
   onClose: () => void;
   onProjectOpened: (response: OpenProjectResponse) => void;
+  theme?: string;
 }
 
 export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
   onClose,
   onProjectOpened,
+  theme = 't-dark',
 }) => {
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -35,6 +37,7 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
   const [missingProjectId, setMissingProjectId] = useState<string | null>(null);
   const [customPath, setCustomPath] = useState<string>('');
   const [isOpeningCustom, setIsOpeningCustom] = useState<boolean>(false);
+  const [isCleaningMissing, setIsCleaningMissing] = useState<boolean>(false);
 
   const loadProjects = useCallback(async () => {
     setIsLoading(true);
@@ -115,6 +118,24 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
     }
   };
 
+  const handleClearAllMissing = async () => {
+    const missing = projects.filter((p) => !p.exists);
+    if (missing.length === 0) return;
+    setIsCleaningMissing(true);
+    let removedCount = 0;
+    for (const p of missing) {
+      try {
+        await apiClient.removeProject(p.id);
+        removedCount++;
+      } catch (err) {
+        console.error('Failed to remove missing project:', p.id, err);
+      }
+    }
+    setIsCleaningMissing(false);
+    setNoticeMsg(`Cleaned up ${removedCount} missing project ${removedCount === 1 ? 'entry' : 'entries'}.`);
+    loadProjects();
+  };
+
   const handleOpenCustomPath = async () => {
     if (!customPath.trim()) return;
     setIsOpeningCustom(true);
@@ -162,9 +183,11 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
     }
   };
 
+  const missingCount = projects.filter((p) => !p.exists).length;
+
   const modalContent = (
     <div
-      className="fixed inset-0 flex items-center justify-center p-4 animate-fadeIn"
+      className={`fixed inset-0 flex items-center justify-center p-4 animate-fadeIn ${theme || 't-dark'}`}
       style={{
         zIndex: 100000,
         position: 'fixed',
@@ -187,9 +210,9 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
       <div
         className="relative w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] rounded"
         style={{
-          background: 'var(--panel)',
+          background: 'var(--bg)',
           border: '2px solid var(--line)',
-          boxShadow: '4px 6px 0px rgba(0, 0, 0, 0.35)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--line)',
           color: 'var(--text)',
           fontFamily: "'JetBrains Mono', monospace",
         }}
@@ -198,13 +221,13 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
         {/* Header */}
         <div
           className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b"
-          style={{ borderColor: 'var(--line)', background: 'var(--input)' }}
+          style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}
         >
           <div className="flex items-center gap-2.5">
             <div
               className="w-8 h-8 rounded flex items-center justify-center"
               style={{
-                background: 'var(--panel)',
+                background: 'var(--bg)',
                 border: '1.5px solid var(--accent)',
                 color: 'var(--accent)',
               }}
@@ -220,14 +243,39 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="riso-btn-sec"
-            style={{ width: '36px', height: '36px', padding: 0 }}
-            title="Close (Esc)"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {missingCount > 0 && (
+              <button
+                type="button"
+                data-testid="clean-all-missing-btn"
+                onClick={handleClearAllMissing}
+                disabled={isCleaningMissing}
+                className="riso-btn-sec text-xs flex items-center gap-1.5"
+                style={{
+                  height: '32px',
+                  padding: '0 10px',
+                  borderColor: '#ef4444',
+                  color: '#f87171',
+                }}
+                title="Remove missing test or deleted folders from list (never touches files on disk)"
+              >
+                {isCleaningMissing ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                <span>Clean Missing ({missingCount})</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="riso-btn-sec"
+              style={{ width: '36px', height: '36px', padding: 0 }}
+              title="Close (Esc)"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Status / Alerts */}
@@ -310,7 +358,7 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
                   data-testid={`project-item-${proj.id}`}
                   className="rounded p-3.5 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 border"
                   style={{
-                    background: 'var(--input)',
+                    background: 'var(--card-bg, var(--panel))',
                     borderColor: 'var(--line)',
                   }}
                 >
@@ -399,7 +447,7 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
         {/* Footer: Open folder directly */}
         <div
           className="flex-shrink-0 px-5 py-3 border-t flex flex-col sm:flex-row items-center gap-2"
-          style={{ borderColor: 'var(--line)', background: 'var(--input)' }}
+          style={{ borderColor: 'var(--line)', background: 'var(--panel)' }}
         >
           <div className="flex items-center gap-2 w-full sm:flex-1">
             <input
@@ -410,7 +458,7 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
               placeholder="Or enter path to work/export folder..."
               className="w-full text-xs px-3 py-2 rounded font-mono"
               style={{
-                background: 'var(--panel)',
+                background: 'var(--input)',
                 border: '1.5px solid var(--line)',
                 color: 'var(--text)',
               }}
