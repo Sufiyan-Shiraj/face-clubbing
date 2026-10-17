@@ -49,6 +49,8 @@ deliverables/
 scratch/
 archives/
 dist_release/
+downloaded_artifacts/
+RELEASE_NOTES.md
 eval/synthetic_bundle/
 report_assets*/
 *.zip
