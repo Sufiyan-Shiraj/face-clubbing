@@ -234,7 +234,7 @@ class ThumbnailGenerator:
         bbox: List[float],
         output_path: Path | str,
         margin_factor: float = 1.45,
-        quality: int = 95,
+        quality: int = 85,
     ) -> None:
         """
         Generates a centered, square crop of the face with margin directly from a PIL Image.
@@ -309,7 +309,7 @@ class ThumbnailGenerator:
                 ImageFilter.UnsharpMask(radius=1.0, percent=35, threshold=2)
             )
 
-        # Save with quality=95 and subsampling=0 (4:4:4 lossless chroma, zero color bleeding)
+        # Save with quality=85 and subsampling=0 (4:4:4 lossless chroma, zero color bleeding)
         cropped_resized.save(
             out_p,
             format="JPEG",
@@ -324,7 +324,7 @@ class ThumbnailGenerator:
         bbox: List[float],
         output_path: Path | str,
         margin_factor: float = 1.45,
-        quality: int = 95,
+        quality: int = 85,
     ) -> None:
         """
         Generates a centered, square crop of the face with margin from file path.

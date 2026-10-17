@@ -202,3 +202,81 @@ def test_public_bundle_hygiene(tmp_path: Path):
         assert not bad_entries.issubset(allowed_public_entries)
         assert bool(bad_entries & organizer_only)
 
+
+def test_export_bundle_zero_unreferenced_files_and_cleans_orphans(tmp_path: Path):
+    """Verifies that an export bundle contains zero unreferenced files and cleans orphans."""
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    export_dir = tmp_path / "export"
+    export_dir.mkdir()
+
+    img_path = src_dir / "valid_photo.jpg"
+    _create_dummy_image(img_path)
+
+    f1 = FaceDetection(
+        face_id="f_valid_face_001",
+        photo_id="photo_valid",
+        bbox=[15.0, 15.0, 60.0, 60.0],
+        det_score=0.96,
+        embedding=np.zeros(512, dtype=np.float32),
+        is_good_quality=True,
+    )
+    photo1 = PhotoRecord(
+        photo_id="photo_valid",
+        original_path=str(img_path),
+        file_name="valid_photo.jpg",
+        width=200,
+        height=200,
+        faces=[f1],
+    )
+    person1 = PersonCluster(
+        id="c_valid_01",
+        face_path="faces/c_valid_01.jpg",
+        rep_face=f1,
+        photo_ids=["photo_valid"],
+        faces=[f1],
+        merged_from=["pre_01"],
+        merged_from_numbering="pre-merge 1",
+    )
+    result = EngineResult(
+        photos={"photo_valid": photo1},
+        people=[person1],
+        unrecognized=UnrecognizedGroup(),
+        distance_threshold=0.5,
+    )
+
+    # Pre-populate export directory with orphaned thumb and face crop
+    (export_dir / "thumbs").mkdir(parents=True, exist_ok=True)
+    (export_dir / "faces").mkdir(parents=True, exist_ok=True)
+    orphan_thumb = export_dir / "thumbs" / "orphan_photo.jpg"
+    orphan_face = export_dir / "faces" / "orphan_face.jpg"
+    _create_dummy_image(orphan_thumb)
+    _create_dummy_image(orphan_face)
+
+    assert orphan_thumb.exists()
+    assert orphan_face.exists()
+
+    # Run export
+    exporter = BundleExporter(output_dir=export_dir)
+    exporter.export(result)
+
+    # 1. Assert orphans were removed
+    assert not orphan_thumb.exists(), "Orphaned thumbnail was not cleaned!"
+    assert not orphan_face.exists(), "Orphaned face crop was not cleaned!"
+
+    # 2. Assert zero unreferenced files exist
+    with open(export_dir / "people.json", "r", encoding="utf-8") as f:
+        pj = json.load(f)
+
+    referenced_thumbs = {Path(pdata["thumb"]).name for pdata in pj["photos"].values()}
+    actual_thumbs = {f.name for f in (export_dir / "thumbs").glob("*.jpg")}
+    assert actual_thumbs == referenced_thumbs, f"Unreferenced thumbnails: {actual_thumbs - referenced_thumbs}"
+
+    referenced_faces = {Path(p["face"]).name for p in pj["people"]}
+    for uf in pj["unrecognized"]["faces"]:
+        if isinstance(uf, dict) and uf.get("face"):
+            referenced_faces.add(Path(uf["face"]).name)
+    actual_faces = {f.name for f in (export_dir / "faces").glob("*.jpg")}
+    assert actual_faces == referenced_faces, f"Unreferenced faces: {actual_faces - referenced_faces}"
+
+
