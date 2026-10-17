@@ -1,6 +1,6 @@
 # PhotoSorter Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-17T07:30:00+05:30  
+**Generated**: 2026-10-17T07:37:00+05:30  
 **Audit Mode**: "Open Saved Project" Feature, Edge Case Recovery, Invariant Preservation, and Privacy Closeout  
 
 ---
@@ -27,16 +27,10 @@
 - **`git status -sb`**:
   ```text
   ## main
-   M BUILD_PLAN.md
-   M README.md
-   M REPORT.md
-   M STATUS.md
-   M backend/api/projects.py
-   M frontend/scripts/e2e.mjs
-   M tests/test_projects.py
   ```
 - **`git log --oneline -8`**:
   ```text
+  6e2b2ce docs: audit and sync STATUS.md, REPORT.md, BUILD_PLAN.md, and test suites with verified scratch outputs and dynamic exists
   c96b227 fix(ui): mount OpenProjectModal via body portal with topmost z-index and explicit click handlers
   d102b4e feat(projects): open saved project with edge case recovery and invariant preservation
   6e95082 feat(ui): complete review merge screen revamp, unrecognized triage multi-select, and image viewer face boxes
@@ -44,7 +38,6 @@
   03fbdb5 fix(dialog): ensure native Windows folder picker opens in foreground via Base64 PowerShell TopMost dialog
   8e00843 feat(ui): revamp export explorer, scan progress timer, and elevate global typography
   3279e52 settings revamp half
-  508ff07 feat(ui): complete landing and home screen risograph redesign with two-stage interaction
   ```
 
 ---
@@ -961,39 +954,350 @@ Unrecognized Photos Count:  17
 
 ---
 
-### Check J: Fresh `git clone` Execution (No Live Data)
-Executed in a fresh temporary directory created by `git clone https://github.com/Sufiyan-Shiraj/face-clubbing.git` from current HEAD (`bc7a7a3`). Raw output saved to `scratch/check_j_run.txt` (SHA-256: `50687FFF6227A7ED85F97A3AC3AF0A750E27C5EB59180BDF4306AD3FF2A6E43A`):
-1. **Pytest (`pytest -q -rs`)**:
-```text
-......s.s..................................................s.......      [100%]
-=========================== short test summary info ===========================
-SKIPPED [1] tests\test_api.py:440: Requires baseline fixture and embedding cache
-SKIPPED [1] tests\test_api.py:559: Requires baseline fixture and embedding cache
-SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
-64 passed, 3 skipped in 20.30s
-```
-- **Passed**: 64 passed, 0 failures, 3 skipped (cleanly skipped requiring local live embedding caches).
+### Check J: Fresh `git clone` Execution from HEAD (`6e2b2ce`)
+Executed in a fresh isolated temporary directory created by `git clone https://github.com/Sufiyan-Shiraj/face-clubbing.git` from current HEAD (`6e2b2ce`).
 
-2. **Frontend Vitest (`npm ci && npm test`)**:
+#### 1. Pytest (`pytest -q -rs`)
+- **Source File**: `scratch/fresh_clone_pytest.txt`
+- **SHA-256 Digest**: `C3002CB3ACC81B37A4047279D2A686401D0102E8C4329EA28D400CA86198F935`
+- **PowerShell `Get-FileHash` Verification**:
+```text
+Algorithm : SHA256
+Hash      : C3002CB3ACC81B37A4047279D2A686401D0102E8C4329EA28D400CA86198F935
+Path      : C:\Users\DELL\face-clubbing\scratch\fresh_clone_pytest.txt
+```
+- **Verbatim Output**:
+```text
+......s.s......................................................s........ [ 93%]
+.....                                                                    [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_api.py:444: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_api.py:563: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
+74 passed, 3 skipped in 8.49s
+```
+- **Summary**: 74 passed, 3 skipped in 8.49s (0 failures; the 3 skipped tests cleanly require local live embedding caches).
+
+#### 2. Frontend Vitest (`npm ci && npm test`)
+- **Source File**: `scratch/fresh_clone_frontend.txt`
+- **SHA-256 Digest**: `E6F2F65B42A2794E848B5BA6FFCAAC77EBC6E5F3D30AC5513EC33EB6C6309444`
+- **PowerShell `Get-FileHash` Verification**:
+```text
+Algorithm : SHA256
+Hash      : E6F2F65B42A2794E848B5BA6FFCAAC77EBC6E5F3D30AC5513EC33EB6C6309444
+Path      : C:\Users\DELL\face-clubbing\scratch\fresh_clone_frontend.txt
+```
+- **Verbatim Output**:
 ```text
 > photosorter-frontend@1.0.0 test
-> vitest run
+> vitest run --run
 
 
- RUN  v5.0.3 C:/Users/DELL/AppData/Local/Temp/clone_test_8dz_fnp3/frontend
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90mC:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend[39m
 
- ✓ src/__tests__/mergeSelection.test.ts (4 tests) 10ms
- ✓ src/__tests__/pollingFallback.test.ts (2 tests) 20ms
- ✓ src/__tests__/suggestionList.test.ts (4 tests) 9ms
- ✓ src/__tests__/driveIntegration.test.tsx (7 tests) 539ms
- ✓ src/__tests__/undoControl.test.ts (3 tests) 7ms
- ✓ src/__tests__/homeScreen.test.tsx (3 tests) 94ms
+ [32m✓[39m src/__tests__/openProject.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 918[2mms[22m[39m
+   [32m✓[39m Open Saved Project Feature [2m(6)[22m
+     [33m[2m✓[22m[39m renders recent projects list with name, source, and counts[33m 398[2mms[22m[39m
+ [32m✓[39m src/__tests__/driveIntegration.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 898[2mms[22m[39m
+ [32m✓[39m src/__tests__/twoStageInteraction.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 1194[2mms[22m[39m
+   [32m✓[39m Organizer Two-Stage Interaction & Drive Folder ID Extraction [2m(8)[22m
+     [33m[2m✓[22m[39m renders Initial State with no face preview frames visible[33m 566[2mms[22m[39m
+ [32m✓[39m src/__tests__/unrecognizedTriageRevamp.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 656[2mms[22m[39m
+ [32m✓[39m src/__tests__/exportScreen.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 659[2mms[22m[39m
+ [32m✓[39m src/__tests__/imageViewerModal.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1676[2mms[22m[39m
+   [32m✓[39m ImageViewerModal - Unknown Face Boxes & Person Changing [2m(4)[22m
+     [33m[2m✓[22m[39m renders bounding boxes for BOTH known and unknown faces[33m 448[2mms[22m[39m
+     [33m[2m✓[22m[39m allows changing an unknown face to an existing person directly from Inspect Faces drawer[33m 803[2mms[22m[39m
+ [32m✓[39m src/__tests__/mergeSelection.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/__tests__/pollingFallback.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m src/__tests__/suggestionList.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/__tests__/undoControl.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/__tests__/homeScreen.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 127[2mms[22m[39m
 
- Test Files  6 passed (6)
-      Tests  23 passed (23)
-   Duration  7.88s
+[2m Test Files [22m [1m[32m11 passed[39m[22m[90m (11)[39m
+[2m      Tests [22m [1m[32m50 passed[39m[22m[90m (50)[39m
+[2m   Start at [22m 07:34:09
+[2m   Duration [22m 19.68s[2m (environment 45%, import 38%, tests 12%, transform 4%, worker 1%)[22m
+
+[2m    Isolate [22m [33m11 workers spawned[39m[2m · ~2.38s startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~6.35s faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+
+[90mstderr[2m | src/__tests__/openProject.test.tsx[2m > [22m[2mOpen Saved Project Feature[2m > [22m[2mhandles moved/deleted folder (404) and offers removal from list
+[22m[39mOpen project failed: Error: 404: Work folder 'C:/photos/deleted.work' not found or was moved.
+    at C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/__tests__/openProject.test.tsx:118:7
+    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:1628:35
+    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:2783:26
+    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3321:20
+    at new Promise (<anonymous>)
+    at runWithCancel [90m(file:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3316:10[90m)[39m
+    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3301:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3259:10[90m)[39m
+    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3882:64
+
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+[90mstderr[2m | src/__tests__/openProject.test.tsx[2m > [22m[2mOpen Saved Project Feature[2m > [22m[2mblocks opening project while a scan is running (409)
+[22m[39mOpen project failed: Error: 409: Cannot open a project while a scan is running.
+    at C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/__tests__/openProject.test.tsx:160:7
+    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:1628:35
+    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:2783:26
+    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3321:20
+    at new Promise (<anonymous>)
+    at runWithCancel [90m(file:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3316:10[90m)[39m
+    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3301:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3259:10[90m)[39m
+    at [90mfile:///C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/run.BTlFXlnv.js:3882:64
+
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+[90mstderr[2m | src/__tests__/twoStageInteraction.test.tsx[2m > [22m[2mOrganizer Two-Stage Interaction & Drive Folder ID Extraction[2m > [22m[2mdoes NOT show Set API key button when API key is already configured
+[22m[39mWarning: An update to HomeScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at HomeScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/HomeScreen.tsx:61:3)
+
+[90mstderr[2m | src/__tests__/exportScreen.test.tsx[2m > [22m[2mExportScreen Component[2m > [22m[2mauto-populates gallery title from initialTitle / drive folder
+[22m[39mWarning: An update to ExportScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
+Warning: An update to ExportScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
+Warning: An update to ExportScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
+Warning: An update to ExportScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
+Warning: An update to ExportScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
+Warning: An update to ExportScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ExportScreen (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ExportScreen.tsx:20:3)
+
+[90mstderr[2m | src/__tests__/unrecognizedTriageRevamp.test.tsx[2m > [22m[2mRevamped Unrecognized Triage & Image Viewer[2m > [22m[2mallows multi-selecting faces and clicking one button to add them all
+[22m[39mWarning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at UnrecognizedTriage (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/UnrecognizedTriage.tsx:23:3)
+Warning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at UnrecognizedTriage (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/UnrecognizedTriage.tsx:23:3)
+Warning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at UnrecognizedTriage (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/UnrecognizedTriage.tsx:23:3)
+Warning: An update to UnrecognizedTriage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at UnrecognizedTriage (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/UnrecognizedTriage.tsx:23:3)
+
+[90mstderr[2m | src/__tests__/imageViewerModal.test.tsx[2m > [22m[2mImageViewerModal - Unknown Face Boxes & Person Changing[2m > [22m[2mallows changing an unknown face to an existing person directly from Inspect Faces drawer
+[22m[39mWarning: An update to ImageViewerModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
+Warning: An update to ImageViewerModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
+
+[90mstderr[2m | src/__tests__/imageViewerModal.test.tsx[2m > [22m[2mImageViewerModal - Unknown Face Boxes & Person Changing[2m > [22m[2mallows creating a new person for an unknown face
+[22m[39mWarning: An update to ImageViewerModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
+Warning: An update to ImageViewerModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
+
+[90mstderr[2m | src/__tests__/imageViewerModal.test.tsx[2m > [22m[2mImageViewerModal - Unknown Face Boxes & Person Changing[2m > [22m[2mallows detaching a known face to unknown
+[22m[39mWarning: An update to ImageViewerModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
+Warning: An update to ImageViewerModal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ImageViewerModal (C:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/frontend/src/components/ImageViewerModal.tsx:23:3)
 ```
-- **Test Files**: 6 passed (6); **Tests**: 23 passed (23).
+- **Summary**: 50 passed across 11 test files in 19.68s.
+
+#### 3. Viewer Vitest (`npm ci && npm test`)
+- **Source File**: `scratch/fresh_clone_viewer.txt`
+- **SHA-256 Digest**: `2DEAA36BDC22F9E05F91DD140AE5F40236B3424261EBFB9C0A2A160060339A83`
+- **PowerShell `Get-FileHash` Verification**:
+```text
+Algorithm : SHA256
+Hash      : 2DEAA36BDC22F9E05F91DD140AE5F40236B3424261EBFB9C0A2A160060339A83
+Path      : C:\Users\DELL\face-clubbing\scratch\fresh_clone_viewer.txt
+```
+- **Verbatim Output**:
+```text
+> photosorter-viewer@1.0.0 test
+> vitest run --run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90mC:/Users/DELL/AppData/Local/Temp/fresh_clone_audit/viewer[39m
+
+ [32m✓[39m src/__tests__/viewer.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 318[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 07:35:39
+[2m   Duration [22m 4.20s[2m (import 46%, environment 39%, tests 8%, transform 6%)[22m
+```
+- **Summary**: 6 passed across 1 test file in 4.20s.
 
 ---
 
@@ -1050,7 +1354,7 @@ Automated test environments lack an interactive desktop session to dismiss nativ
   - `cb03ac0` -> `0b9ecba`
   - `4ff2795` -> `a4ee760`
 - **Why**: During the hygiene and isolation round on 13 Oct 2026 (Tasks 0 through 7, ending at commit `d546e53`), git history was cleansed to remove tracked deliverables (`export/`, `gallery.html`), scratch scripts, cache files, and non-canonical metadata, and to establish clean isolation between test suites, baselines, and live data. This cascaded new parent SHAs forward, requiring a force-push to `origin/main`.
-- All subsequent commits since `d546e53` (`8493b39`, `3cc5e1a`, `3d56ba3`, `48cfcd6`, `cd77084`, `78f49e8`, `95de186`, `a985b87`, `b5d9a42`, `6f4c510`, `9373f77`) are standard linear, fast-forward commits.
+- All subsequent commits since `d546e53` (`8493b39`, `3cc5e1a`, `3d56ba3`, `48cfcd6`, `cd77084`, `78f49e8`, `95de186`, `a985b87`, `b5d9a42`, `6f4c510`, `9373f77`, `c96b227`, `6e2b2ce`) are standard linear, fast-forward commits.
 
 ### Old Rewritten Commits Reachability & Data Audit
 - **GitHub HTTP Reachability Check (`curl -s -o NUL -w "%{http_code}" https://github.com/Sufiyan-Shiraj/face-clubbing/commit/<hash>`)**:
@@ -1141,5 +1445,6 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
   - `scratch/screenshots/review_03_image_viewer_source_missing.png`: Image viewer displaying "Source missing" badge, red floating warning banner, fallback placeholder, and disabled download button for photos moved/deleted from disk.
 - **Cold-Run Detection Speed (Check I)**: **7.49 s/photo** on dense event photos (~32.3 minutes for 259 photos) -> **UNVERIFIED against SPEC estimate** (~1 to 1.5 s/photo).
 - **Startup Latency (Check K)**: Measured at average 23.35 s (Run 1: 27.33 s, Run 2: 23.88 s, Run 3: 18.84 s).
+- **Fresh Clone Verification (Check J)**: Pinned HEAD `6e2b2ce` verified in fresh clone without local live caches: `pytest` passed 74 (3 cleanly skipped) in 8.49s; frontend Vitest passed 50/50 in 19.68s; viewer Vitest passed 6/6 in 4.20s.
 - **Native Pickers (Check L)**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps.
 - **Privacy & Secrets (Section 4)**: Current git history is 100% clean of images/secrets. The 5 old commits with 27 JPEG face-crop contact sheets remain reachable on GitHub; reviewed and accepted by organizer on 2026-10-14.
