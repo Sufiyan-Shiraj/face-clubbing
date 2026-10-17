@@ -425,3 +425,24 @@ Quality changes are judged against data, not impressions.
 - **Base-rate warning:** a 0.59% false rate at 0.70 over roughly 18,000 possible cluster pairs is on the order of 100 spurious suggestions. Distances above the maybe band are for ranked review only, never for automatic action.
 - **Cross-photo negatives** (organizer-labelled different people in different photos) are still missing and are needed before loosening any auto-merge or attach threshold.
 - Gate to enable `flip_average` by default: 15+ labelled sets, recall gain confirmed, no increase in false pairs at or below 0.65.
+
+### 18.1 Phase 6 Live Evaluation: Face-Size Floor on Drive Thumbnails (=s1000) vs Originals
+
+During Phase 6 live verification on a real Google Drive folder (83 photos, 127.7 MB originals), the engine was evaluated on both Drive thumbnails (=s1000) and camera originals (downscaled to max 1600 px per SPEC 6.1).
+
+**Empirical Finding**:
+- **On Originals (5712x3213)**: Face sizes range from 37.2 px to 733.4 px (median 180.9 px). Only **8 of 489 faces (1.6%)** fall below the 64 px floor. 325 faces qualify as seeds, yielding 51 people clusters (29 multi-photo, 22 singletons).
+- **On Thumbnails (=s1000)**: Face sizes range from 9.3 px to 128.2 px (median 34.8 px). **434 of 490 faces (88.6%)** fall below the 64 px floor. Only 36 faces qualify as seeds, yielding 15 people clusters. 255 faces are rejected into Unrecognized solely due to `unattached_small`.
+
+**Evidence Table (Thumbnails =s1000 Face-Size Floor Sweep)**:
+
+| Floor (px) | Seeds | Attached | Clustered | People | Unrec Small | Unrec Total | Unrec Photos | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **64 [SPEC 6.2 Default]** | **36** | **182** | **218** | **15** | **255** | **272** | **5** | **Active Default (Kept unchanged per SPEC)** |
+| 48 | 88 | 186 | 274 | 20 | 191 | 216 | 3 | Intermediate floor |
+| 40 [Proportional] | 137 | 160 | 297 | 24 | 161 | 193 | 2 | Proportional scaling: 64 * (1000 / 1600) = 40 px |
+| 32 | 195 | 114 | 309 | 26 | 135 | 181 | 2 | Recovers 91 additional faces into people |
+| 24 | 266 | 73 | 339 | 36 | 91 | 151 | 2 | Lower floor |
+
+**Proposal for Organizer Decision**:
+SPEC 6.2 defaults remain strictly **unchanged** (`min_face_size = 64`, `seed_min_face_size = 64`). If the organizer desires to align Drive thumbnail face yields with camera originals, an adaptive floor of **40 px** (or **32 px**) for Google Drive inputs is proposed based on the proportional coordinate space (1000 px vs 1600 px). This decision is pending organizer review.

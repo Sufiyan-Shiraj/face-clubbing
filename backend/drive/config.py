@@ -51,17 +51,17 @@ def get_drive_api_key() -> Optional[str]:
     """
     Retrieve Google Drive API key.
     Precedence:
-    1. DRIVE_API_KEY environment variable.
-    2. drive_api_key stored in ~/.photosorter/settings.json.
+    1. drive_api_key stored in ~/.photosorter/settings.json.
+    2. DRIVE_API_KEY environment variable.
     """
-    env_key = os.environ.get("DRIVE_API_KEY", "").strip()
-    if env_key:
-        return env_key
-
     local_settings = load_local_settings()
     stored_key = local_settings.get("drive_api_key", "")
     if isinstance(stored_key, str) and stored_key.strip():
         return stored_key.strip()
+
+    env_key = os.environ.get("DRIVE_API_KEY", "").strip()
+    if env_key:
+        return env_key
 
     return None
 

@@ -105,10 +105,20 @@ class TestDriveConfig:
         assert mask_api_key("") == ""
         assert mask_api_key("short") == "***"
 
-    def test_env_var_precedence(self, monkeypatch):
+    def test_settings_precedence_and_env_fallback(self, monkeypatch, tmp_path):
+        fake_profile = tmp_path / "fake_profile"
+        monkeypatch.setenv("USERPROFILE", str(fake_profile))
+        monkeypatch.setenv("HOME", str(fake_profile))
+
+        # Fallback to env var when settings not set
         monkeypatch.setenv("DRIVE_API_KEY", "AIzaSyEnvVarKey1234567890")
         assert get_drive_api_key() == "AIzaSyEnvVarKey1234567890"
         assert get_masked_drive_api_key() == "AIzaSy...7890"
+
+        # Settings takes precedence over env var
+        set_drive_api_key("AIzaSySettingsPrecedenceKey123")
+        assert get_drive_api_key() == "AIzaSySettingsPrecedenceKey123"
+        assert get_masked_drive_api_key() == "AIzaSy...y123"
 
     def test_local_settings_file_storage(self, monkeypatch, tmp_path):
         monkeypatch.delenv("DRIVE_API_KEY", raising=False)

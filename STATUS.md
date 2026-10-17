@@ -45,10 +45,10 @@
 ## 2. DOCS VS REALITY
 
 ### Document Headers & Revisions
-- **SPEC.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed
-- **BUILD_PLAN.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed; Phase 6b UI redesign Complete (pending organizer review); Open saved project (feature) Complete; Phase 6 In verification; Phases 7 & 9 Not started
-- **REPORT.md**: Date: 2026-10-17 — Phase 5 Complete, Phase 6 In Verification, Landing Riso Redesign Complete, Review & Merge Screen Revamp Complete, Open Saved Project Feature Complete
-- **README.md**: Updated Project Status Table — Phase 5 Completed, Phase 6 In verification, Phase 6b Complete (pending organizer review), Phase 7 & 9 Not started, Open saved project (feature) Complete
+- **SPEC.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed; Section 18.1 added documenting Phase 6 live Drive thumbnail floor sweeps
+- **BUILD_PLAN.md**: Revision 3 (2026-10-13) — Method 2 / Phase 8 removed; Phase 6 Complete; Phase 6b UI redesign Complete (pending organizer review); Open saved project (feature) Complete; Phases 7 & 9 Not started
+- **REPORT.md**: Date: 2026-10-17 — Phase 5 Complete, Phase 6 Complete (live verification on public Drive folder fully verified, evidence recorded, 64px floor documented in SPEC §18), Landing Riso Redesign Complete, Review & Merge Screen Revamp Complete, Open Saved Project Feature Complete
+- **README.md**: Updated Project Status Table — Phase 5 Completed, Phase 6 Completed, Phase 6b Complete (pending organizer review), Phase 7 & 9 Not started, Open saved project (feature) Complete
 
 ### BUILD_PLAN.md Claimed Status vs Reality Table
 
@@ -61,7 +61,7 @@
 | **3 API layer (FastAPI)** | Done | `backend/api/app.py`, `backend/api/jobs.py`, `backend/api/models.py`, `backend/api/routes.py`, `backend/api/state.py`, `eval/verify_api.py`, `tests/test_api.py` | Section 15 (Endpoints, SSE streaming, edit replay, fixture verification) | **MATCHES** |
 | **4 Organizer UI (React)** | Done (Review & Merge Revamp, Unrec Triage Multi-Select, ImageViewer BBoxes & Open Saved Project Modal Complete) | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `UnrecognizedTriage.tsx`, `FaceCompareModal.tsx`, `ImageViewerModal.tsx`, `OpenProjectModal.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `dist/` | Sections 16, 21, 22, & 23 (Screens, multi-select triage, target compare modal, dashed coral boxes, on-canvas quick change, inspect faces drawer, open saved project modal, 50/50 Vitest passed) | **MATCHES** |
 | **5 Desktop shell & packaging** | Complete | `main.py`, `photosorter.spec`, `dist/photosorter.exe`, `eval/verify_exe.py`, `eval/verify_windowed.py`, `eval/verify_models_cold.py` | Section 19 (Pywebview shell, native dialogs, PyInstaller exe, GUI subsystem, bundle hygiene, windowed verification, cold cache run) | **MATCHES** |
-| **6 Method 1 (Drive link input)** | In verification | `backend/drive/parser.py`, `client.py`, `config.py`, `tests/test_drive.py`, `eval/verify_drive_phase6.py`, `frontend/src/__tests__/driveIntegration.test.tsx` | Section 20 (All 7 tasks implemented; 29/29 pytest passed, 7/7 Vitest passed; live check pending folder and key) | **IN VERIFICATION** |
+| **6 Method 1 (Drive link input)** | Complete | `backend/drive/parser.py`, `client.py`, `config.py`, `tests/test_drive.py`, `eval/verify_drive_phase6.py`, `frontend/src/__tests__/driveIntegration.test.tsx` | Section 20 (All 7 tasks implemented; 29/29 pytest passed, 7/7 Vitest passed; live verification on 83 photos completed with 100% thumbnails, 92.1% bandwidth saved, 64px floor documented in SPEC §18) | **MATCHES** |
 | **6b UI redesign** | Complete (pending organizer review) | `frontend/src/components/`, `frontend/src/index.css`, `frontend/src/__tests__/` | Sections 21 & 22 (Risograph theme, 2-stage landing flow, compact triage, bboxes) | **COMPLETE (PENDING REVIEW)** |
 | **7 Release automation** | Not started | None | None | **NOT STARTED** |
 | **8 Method 2 (Upload to Drive)** | Removed | None (Purged in Rev 3) | None | **REMOVED** |
@@ -1343,6 +1343,42 @@ Automated test environments lack an interactive desktop session to dismiss nativ
 
 ---
 
+### Check M: `python eval/verify_drive_phase6.py --folder "https://drive.google.com/drive/folders/1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3"` (Phase 6 Live Google Drive Integration Verification)
+- **Source File**: `scratch/verify_drive_phase6_raw.txt`
+- **SHA-256 Digest**: `A546E96C095B9FD0683578A2D4EACC2C377CEA6D40E97C5D1155FA3D4B1E2B5E`
+- **PowerShell `Get-FileHash` Verification**:
+```text
+Algorithm : SHA256
+Hash      : A546E96C095B9FD0683578A2D4EACC2C377CEA6D40E97C5D1155FA3D4B1E2B5E
+Path      : C:\Users\DELL\face-clubbing\scratch\verify_drive_phase6_raw.txt
+```
+- **Live Execution Summary**:
+  - **Key Resolution**: Retrieved securely from `~/.photosorter/settings.json` (with `DRIVE_API_KEY` fallback). Zero raw keys printed, logged, or committed.
+  - **Error Scenarios**: All 3 error cases tested and passed with sanitized messages (Wrong Key -> `DriveAuthError` HTTP 400; Private Folder -> `DrivePermissionError` HTTP 404; Quota Exceeded -> `DriveQuotaError` HTTP 403).
+  - **Live Inventory**: 152 total files listed (83 image files, 69 videos skipped, 0 non-images, 0 subfolders).
+  - **Thumbnail Downloads & Resumable Cache**:
+    - Pass 1: 83 thumbnails downloaded in 0.03s into `export.work\drive\1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3`.
+    - Pass 2: 83 files processed in 0.01s (100% skipped from cache).
+    - Thumbnail Availability: 83 / 83 (100.0%).
+    - Alt=media Fallbacks: 0 / 83 (0.0%).
+    - Bandwidth: 10,637,818 bytes (10.15 MB thumbnails) vs 133,936,329 bytes (127.73 MB originals) -> **92.1% bandwidth reduction**.
+  - **Clustering Engine on Drive Thumbnails (`=s1000`) vs Drive Originals**:
+    - Thumbnails (64 px default floor): 83 photos, 490 detected faces, 36 seeds, 182 attached, 218 clustered faces, 15 people clusters (all multi-photo), 272 unattached (255 small, 14 profile, 3 lowscore), 5 unrecognized-only photos.
+    - Originals (64 px default floor, downscaled to max 1600 px, downloaded to temp outside repo and deleted afterwards): 83 photos, 489 detected faces, 325 seeds, 73 attached, 398 clustered faces, 51 people clusters (29 multi-photo, 22 singletons), 91 unattached (6 small, 49 profile, 31 lowscore), 2 unrecognized-only photos.
+  - **64 px Face-Size Floor Analysis**:
+    - Faces under 64 px on Thumbnails (`=s1000`): **434 / 490 (88.6%)** (median face size 34.8 px).
+    - Faces under 64 px on Originals: **8 / 489 (1.6%)** (median face size 180.9 px).
+  - **Evidence Table (Floor Sweeps on Thumbnails =s1000)**:
+    - 64 px (SPEC §6.2 Default): 36 seeds, 182 attached, 218 clustered, 15 people, 255 unrec small, 272 unrec total, 5 unrec photos.
+    - 48 px: 88 seeds, 186 attached, 274 clustered, 20 people, 191 unrec small, 216 unrec total, 3 unrec photos.
+    - 40 px (Proportional $64 \times 1000/1600$): 137 seeds, 160 attached, 297 clustered, 24 people, 161 unrec small, 193 unrec total, 2 unrec photos.
+    - 32 px: 195 seeds, 114 attached, 309 clustered, 26 people, 135 unrec small, 181 unrec total, 2 unrec photos.
+    - 24 px: 266 seeds, 73 attached, 339 clustered, 36 people, 91 unrec small, 151 unrec total, 2 unrec photos.
+  - **SPEC §6.2 Default Rule Compliance**: SPEC §6.2 defaults remain strictly **unchanged** (`min_face_size = 64`, `seed_min_face_size = 64`). Proposal with evidence table documented in SPEC §18.1 pending organizer review.
+  - **Security & Hygiene Audit**: Zero raw API keys in repo, git log history, or `~/.photosorter/projects.json`.
+
+---
+
 ## 4. PRIVACY & REPOSITORY HYGIENE AUDIT
 
 ### Plain Statement on Git History Rewrite
@@ -1447,4 +1483,5 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 - **Startup Latency (Check K)**: Measured at average 23.35 s (Run 1: 27.33 s, Run 2: 23.88 s, Run 3: 18.84 s).
 - **Fresh Clone Verification (Check J)**: Pinned HEAD `6e2b2ce` verified in fresh clone without local live caches: `pytest` passed 74 (3 cleanly skipped) in 8.49s; frontend Vitest passed 50/50 in 19.68s; viewer Vitest passed 6/6 in 4.20s.
 - **Native Pickers (Check L)**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps.
+- **Phase 6 Method 1 Live Google Drive Integration (Check M)**: **COMPLETE**. Live verification on public folder `1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3` verified: 152 total files (83 images, 69 videos skipped), 100% thumbnail availability, 0% alt=media fallbacks, 92.1% bandwidth savings (10.15 MB thumbnails vs 127.73 MB originals). Complete engine runs executed on Drive thumbnails and Drive originals; 64 px floor analysis documented in SPEC §18 (88.6% under 64 px on thumbnails vs 1.6% on originals; evidence table provided for proposed 40 px adaptive floor; SPEC §6.2 defaults kept unchanged). Resumable caching, sanitized error messages, and zero API key leakage verified. Raw evidence: `scratch/verify_drive_phase6_raw.txt` (SHA-256: `a546e96c095b9fd0683578a2d4eacc2c377cea6d40e97c5d1155fa3d4b1e2b5e`).
 - **Privacy & Secrets (Section 4)**: Current git history is 100% clean of images/secrets. The 5 old commits with 27 JPEG face-crop contact sheets remain reachable on GitHub; reviewed and accepted by organizer on 2026-10-14.

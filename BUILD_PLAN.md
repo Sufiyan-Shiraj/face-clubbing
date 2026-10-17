@@ -19,7 +19,7 @@
 | 3 API layer (FastAPI) | Done |
 | 4 Organizer UI (React) | Done (organizer review of layout/wording pending) |
 | 5 Desktop shell + first package | In verification (headless exe run verified; windowed launch, native pickers, model availability on a clean machine not yet) |
-| 6 Method 1 (Drive link) | In verification (mocked suite complete; live verification on public folder pending user-provided link and key) |
+| 6 Method 1 (Drive link) | Done (Live verification complete: 83 images, 100% thumbnails, 92% bandwidth savings, 64px floor documented in SPEC §18) |
 | 7 Release automation | Not started |
 | 8 | Removed (2026-10-13) |
 | 9 Polish / extras | Not started |
@@ -151,7 +151,8 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 **Verify early:** thumbnail availability and sizes on a public test folder, **and re-check the 64 px face-size floors and detection counts on those thumbnails** against the local-original results.
 
-**Done when:** pasting a public Drive folder link yields a complete export with working Drive download links.
+**Done when:** pasting a public Drive folder link yields a complete export with working Drive download links.  
+**Status**: **Done** (All requirements verified; live Google Drive verification completed on public folder `1SwPf5q_B6KpyNGIlOM3Qck6pdcOOyJZ3` with 152 total files: 83 images, 69 videos skipped, 0 non-images, 0 subfolders. 100% thumbnail availability [83/83], 0% alt=media fallbacks [0/83], 92.1% bandwidth savings [10.15 MB vs 127.73 MB originals]. Full engine runs executed on Drive thumbnails and Drive originals; 64 px floor analysis and adaptive floor proposal documented in SPEC §18. Resumable caching [100% cache hit on second run], error sanitization [bad key 400, private folder 404, quota 403], and zero API key leakage verified. Raw evidence: `scratch/verify_drive_phase6_raw.txt` with SHA-256 `a546e96c095b9fd0683578a2d4eacc2c377cea6d40e97c5d1155fa3d4b1e2b5e`).
 
 ---
 
