@@ -11,6 +11,9 @@ from backend.api.jobs import JobManager
 from backend.api.routes import create_router
 
 
+from backend.version import __version__
+
+
 def create_app(
     work_dir: Optional[Path] = None,
     static_dir: Optional[Path] = None,
@@ -18,9 +21,9 @@ def create_app(
     cache_dir: Optional[Path] = None,
 ) -> FastAPI:
     app = FastAPI(
-        title="PhotoSorter API",
+        title="CatLog API",
         description="Local organizer API for face clustering, review, edits, and static viewer export.",
-        version="1.0.0",
+        version=__version__,
     )
 
     # Enable CORS for local organizer UI development
@@ -51,7 +54,7 @@ def create_app(
     @app.get("/api/health")
     @app.get("/health")
     def health():
-        return {"status": "ok", "version": "1.0.0"}
+        return {"status": "ok", "version": __version__}
 
     # Serve face crops and thumbnails dynamically from output_dir, work_dir, cache_dir, or export/
     @app.get("/faces/{file_path:path}")

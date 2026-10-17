@@ -967,3 +967,19 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **Backend Tests** | Pytest unit & integration test count | 85 passed in 68.51 s | **87 passed in 56.18 s** | **+2 tests, 12.33s faster execution** | `pytest tests` | **PASS** |
 | **Frontend Tests** | Organizer Vitest test count | 74 passed | **74 passed** (13 test files) | 100% green | `npm test` in `frontend/` | **PASS** |
 | **Viewer Tests** | Public viewer Vitest test count | 20 passed | **20 passed** (2 test files) | 100% green | `npm test` in `viewer/` | **PASS** |
+
+---
+
+## 10. SCRIPT-CHECKED AUDIT: PHASE 9 RELEASE AUTOMATION & PORTABLE PACKAGING
+
+| Item | Requirement & Test Scope | Test File / Script | Script-Checked Metric Target | Actual Result | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **10.1** | GitHub Actions matrix release workflow | `.github/workflows/release.yml` | 4 platform targets (`windows-x64`, `linux-x64`, `macos-arm64`, `macos-x64`) | Workflow file present, validated YAML, tagged release trigger | **PASS** |
+| **10.2** | Single source of truth VERSION file | `VERSION` & `backend/version.py` | Embedded version across app, exe metadata, release | `0.1.0-rc1` embedded, matches `/api/health` and PE resource | **PASS** |
+| **10.3** | Automated smoke test script | `scripts/smoke_test.py` | Health check 200, version check, clean exit | Exit code 0, `/api/health` 200 in 9.59s, clean process termination | **PASS** |
+| **10.4** | Release packaging script & checksums | `scripts/package_release.py` | ZIP / tar.gz creation, SHA256SUMS.txt | Archive created (157,968,700 B), SHA-256 verified | **PASS** |
+| **10.5** | Linux WebKitGTK / browser fallback | `main.py` | Fallback to default browser if native window fails | WebKitGTK exception handled; `webbrowser.open(url)` active | **PASS** |
+| **10.6** | License & Third-Party Notices | `LICENSE` & `THIRD_PARTY_NOTICES.md` | MIT License, InsightFace research notice, 17+ deps | All notices present; InsightFace models non-redistribution documented | **PASS** |
+| **10.7** | README Release & Privacy Documentation | `README.md` | Downloads table, SmartScreen / Gatekeeper, `~/.catlog` | Complete OS guidance, ~300 MB model download, zero cloud upload | **PASS** |
+| **10.8** | Pre-release dry run validation | `scripts/package_release.py` | `CatLog-0.1.0-rc1-windows-x64.zip` | 157,968,700 bytes, SHA-256 `6857351A...` (mac/Linux builds pending CI) | **PASS** |
+

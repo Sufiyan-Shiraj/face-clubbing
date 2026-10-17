@@ -48,9 +48,12 @@ export.e2e_temp*/
 deliverables/
 scratch/
 archives/
+dist_release/
 eval/synthetic_bundle/
 report_assets*/
 *.zip
+*.tar.gz
+*.sha256
 
 # Auth & Secrets
 client_secret*.json

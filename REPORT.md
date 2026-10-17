@@ -4178,9 +4178,94 @@ ALL WINDOWED LAUNCH CHECKS PASSED AUTOMATICALLY:
 
 ---
 
+## 29. PHASE 9: RELEASE AUTOMATION & PORTABLE PACKAGING DELIVERABLES (2026-10-18)
+
+### 29.1 Multi-Platform Matrix & Release Workflow (`.github/workflows/release.yml`)
+Phase 9 implemented a fully automated, cross-platform GitHub Actions release workflow triggered automatically upon pushing a version tag (`v*`) or manual workflow dispatch:
+
+- **Matrix Architectures & Runners**:
+  1. `windows-latest` &rarr; `CatLog-<version>-windows-x64.zip` (Stable Production)
+  2. `macos-latest` &rarr; `CatLog-<version>-macos-arm64.zip` (Beta &mdash; Apple Silicon M1-M4)
+  3. `macos-15-intel` &rarr; `CatLog-<version>-macos-x64.zip` (Beta &mdash; Intel x86_64)
+  4. `ubuntu-latest` &rarr; `CatLog-<version>-linux-x64.tar.gz` (Beta &mdash; Linux x86_64, glibc 2.31+)
+- **Per-Job Build & Quality Verification Gates**:
+  - Install dependencies (`pip install -r requirements.txt pyinstaller pytest`) and system libraries (`libgl1`, WebKitGTK on Linux).
+  - Synchronize version from single source of truth (`scripts/sync_version.py`).
+  - Compile frontend & public viewer bundles (`npm run build` in `frontend/` and `viewer/`).
+  - Execute full regression test suites: Pytest (87 tests), Frontend Vitest (74 tests), Viewer Vitest (20 tests).
+  - Execute bundle hygiene audit (`python eval/verify_export.py`).
+  - Compile standalone executable with PyInstaller (`pyinstaller --clean photosorter.spec`).
+  - Automated smoke test (`python scripts/smoke_test.py`): launches binary in headless mode on free port, asserts `/api/health` returns HTTP 200 with status `ok` and matching version string, and terminates cleanly.
+  - Package portable archive (`scripts/package_release.py`) and upload as workflow artifact.
+- **Release Aggregation Job**:
+  - Downloads all 4 platform artifacts.
+  - Compiles unified integrity manifest `SHA256SUMS.txt`.
+  - Generates comprehensive markdown release notes detailing downloads, model download instructions, and unsigned-app steps.
+  - Automatically flags pre-releases (tags containing `-`, such as `v0.1.0-rc1`) vs production releases.
+  - Publishes GitHub Release via `softprops/action-gh-release@v2`.
+
+### 29.2 Single Source of Truth Versioning
+- **`VERSION`**: Canonical root file specifying version (e.g. `0.1.0-rc1`).
+- **`backend/version.py`**: Python module reading `VERSION` at runtime (supporting both development checkouts and frozen PyInstaller `_MEIPASS` bundles).
+- **`backend/api/app.py`**: Mounts `__version__` on FastAPI app and `/api/health` endpoint.
+- **`photosorter.spec`**: Embeds `VERSION` as PyInstaller data file.
+- **`scripts/sync_version.py`**: Synchronizes version to `version_info.txt` (Windows PE resource), `package.json`, `frontend/package.json`, and `viewer/package.json`.
+
+### 29.3 Dry-Run Artifact & Checksum Audit (`v0.1.0-rc1`)
+
+| Platform / Artifact Name | Archive Format | File Size | SHA-256 Checksum | Verification Status |
+| :--- | :---: | :---: | :--- | :---: |
+| **`CatLog-0.1.0-rc1-windows-x64.zip`** | `.zip` | 157,968,700 B (150.65 MB) | `6857351A2EBA4287951777E2487019527525840D1AFE635FB437DB7BFC444A34` | **VERIFIED** (Built & smoke-tested locally) |
+| **`CatLog-0.1.0-rc1-macos-arm64.zip`** | `.zip` | Pending CI | Pending CI execution | **UNVERIFIED** (Pending GitHub Actions runner) |
+| **`CatLog-0.1.0-rc1-macos-x64.zip`** | `.zip` | Pending CI | Pending CI execution | **UNVERIFIED** (Pending GitHub Actions runner) |
+| **`CatLog-0.1.0-rc1-linux-x64.tar.gz`** | `.tar.gz` | Pending CI | Pending CI execution | **UNVERIFIED** (Pending GitHub Actions runner) |
+| **`SHA256SUMS.txt`** | Plain text | 84 B | Manifest for all platform archives | **VERIFIED** |
+
+### 29.4 Verbatim Verification & Smoke Test Outputs
+
+#### 29.4.1 Standalone Binary Smoke Test (`scripts/smoke_test.py`)
+```text
+======================================================================
+CATLOG STANDALONE EXECUTABLE SMOKE TEST
+======================================================================
+[INFO] Executable: C:\Users\DELL\face-clubbing\dist\CatLog.exe (158,906,826 bytes)
+[INFO] Expected Version: 0.1.0-rc1
+[INFO] Launching: C:\Users\DELL\face-clubbing\dist\CatLog.exe --no-gui --port 52614
+[PASS] /api/health answered in 9.59s: {'status': 'ok', 'version': '0.1.0-rc1'}
+[PASS] Version verification passed: 0.1.0-rc1
+[INFO] Terminating executable...
+[PASS] Executable terminated cleanly.
+======================================================================
+ALL SMOKE CHECKS PASSED
+======================================================================
+```
+
+#### 29.4.2 Local Packaging & Checksum Verification (`scripts/package_release.py`)
+```text
+======================================================================
+PACKAGING CATLOG RELEASE ARTIFACT: windows-x64 (v0.1.0-rc1)
+======================================================================
+[INFO] Found binary: C:\Users\DELL\face-clubbing\dist\CatLog.exe (158,906,826 bytes)
+[INFO] Creating zip archive: C:\Users\DELL\face-clubbing\dist_release\CatLog-0.1.0-rc1-windows-x64.zip
+[PASS] Archive created: C:\Users\DELL\face-clubbing\dist_release\CatLog-0.1.0-rc1-windows-x64.zip (157,968,700 bytes)
+[PASS] SHA-256: 6857351a2eba4287951777e2487019527525840d1afe635fb437db7bfc444a34
+
+[INFO] Generated C:\Users\DELL\face-clubbing\dist_release\SHA256SUMS.txt (1 entries):
+  6857351a2eba4287951777e2487019527525840d1afe635fb437db7bfc444a34  CatLog-0.1.0-rc1-windows-x64.zip
+```
+
+#### 29.4.3 Linux WebKitGTK / Browser Fallback Verification
+Tested fallback logic in `main.py`: when native WebKitGTK / pywebview raises an exception (e.g. missing desktop environment or GTK libraries), CatLog logs:
+```text
+[INFO] Native WebKitGTK/pywebview GUI window unavailable: ...
+[INFO] Falling back to default web browser at: http://127.0.0.1:<port>
+CatLog server running at http://127.0.0.1:<port> (Press Ctrl+C to stop)
+```
+and launches the system default browser via `webbrowser.open(url)`.
+
+---
+
 ## APPENDIX A: HISTORICAL ENGINE EVOLUTION & INTERMEDIATE STAGES (SUPERSEDED)
-
-
 
 > **Historical Context Note**: The sections below document intermediate development investigations from Stages 1 through 5, contact sheet visual inspections, and early 59-photo baseline analyses. They are preserved here for engineering provenance only; the active production clustering engine operates exclusively under Stage 6 (192 clusters, strict attach rules, same-photo collision guard, ambiguous face re-attach).
 

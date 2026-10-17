@@ -20,16 +20,16 @@ import webview
 # Guard against None stdout/stderr in windowed (noconsole) GUI mode
 if sys.stdout is None:
     try:
-        log_dir = Path.home() / ".photosorter"
+        log_dir = Path.home() / ".catlog"
         log_dir.mkdir(parents=True, exist_ok=True)
-        sys.stdout = open(log_dir / "photosorter.log", "a", encoding="utf-8")
+        sys.stdout = open(log_dir / "catlog.log", "a", encoding="utf-8")
     except Exception:
         sys.stdout = open(os.devnull, "w")
 if sys.stderr is None:
     try:
-        log_dir = Path.home() / ".photosorter"
+        log_dir = Path.home() / ".catlog"
         log_dir.mkdir(parents=True, exist_ok=True)
-        sys.stderr = open(log_dir / "photosorter.log", "a", encoding="utf-8")
+        sys.stderr = open(log_dir / "catlog.log", "a", encoding="utf-8")
     except Exception:
         sys.stderr = open(os.devnull, "w")
 
@@ -42,6 +42,7 @@ else:
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from backend.version import __version__
 from backend.api.app import create_app
 
 
@@ -129,6 +130,7 @@ def wait_for_server(host: str, port: int, timeout: float = 10.0) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="CatLog Desktop Shell")
+    parser.add_argument("--version", action="version", version=f"CatLog {__version__}")
     parser.add_argument("--port", type=int, default=0, help="Port to run on (0 for random free port)")
     parser.add_argument("--host", default="127.0.0.1", help="Host to bind to")
     parser.add_argument("--no-gui", action="store_true", help="Run server only without opening GUI window")
@@ -168,29 +170,44 @@ def main():
             server_thread.stop()
         return
 
-    # Start native pywebview GUI
-    api = WebviewApi()
-    window = webview.create_window(
-        title="CatLog",
-        url=url,
-        js_api=api,
-        width=1320,
-        height=880,
-        min_size=(960, 640),
-        background_color="#0a0a0a",
-    )
-    api.set_window(window)
-
-    def on_window_shown():
-        dt_shown = time.time() - t0_startup
-        print(f"[STARTUP] Native window visible at {dt_shown:.2f}s (backend healthy at {dt_health:.2f}s)")
-
-    window.events.shown += on_window_shown
-
+    # Attempt native pywebview GUI; fallback to default browser if WebKitGTK/pywebview unavailable
     try:
+        api = WebviewApi()
+        window = webview.create_window(
+            title="CatLog",
+            url=url,
+            js_api=api,
+            width=1320,
+            height=880,
+            min_size=(960, 640),
+            background_color="#0a0a0a",
+        )
+        api.set_window(window)
+
+        def on_window_shown():
+            dt_shown = time.time() - t0_startup
+            print(f"[STARTUP] Native window visible at {dt_shown:.2f}s (backend healthy at {dt_health:.2f}s)")
+
+        window.events.shown += on_window_shown
         webview.start(debug=False)
+    except Exception as e:
+        print(f"\n[INFO] Native WebKitGTK/pywebview GUI window unavailable: {e}")
+        print(f"[INFO] Falling back to default web browser at: {url}")
+        import webbrowser
+        try:
+            webbrowser.open(url)
+        except Exception as browser_err:
+            print(f"[WARNING] Could not automatically open web browser: {browser_err}")
+            print(f"Please open your browser manually and navigate to: {url}")
+
+        print(f"CatLog server running at {url} (Press Ctrl+C to stop)")
+        try:
+            while server_thread.is_alive():
+                time.sleep(0.5)
+        except KeyboardInterrupt:
+            pass
     finally:
-        # Clean shutdown when window is closed
+        # Clean shutdown when window is closed or interrupted
         server_thread.stop()
         server_thread.join(timeout=3.0)
         sys.exit(0)

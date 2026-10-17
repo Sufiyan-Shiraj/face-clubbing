@@ -183,16 +183,69 @@ chmod +x run.sh
 
 ---
 
-### Standalone Desktop Executable (Windows)
+---
 
-For running CatLog without installing Python, Node.js, or development tools:
+## Standalone Desktop Releases (No Python or Node.js Required)
 
-- **Download**: Run `photosorter.exe` (or `CatLog.exe`) from `dist/` or project release artifacts.
-- **System Requirements**: 64-bit Windows 10 (version 1809+) or Windows 11.
-- **WebView2 Runtime**: CatLog's native window shell uses Microsoft Edge WebView2:
-  - Windows 10 (recent versions) and Windows 11 come with WebView2 pre-installed by Microsoft out of the box.
-  - If running on a stripped or enterprise LTSC/Server installation without WebView2, download the standard **Evergreen Bootstrapper** from [Microsoft's official WebView2 page](https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download).
-  - CatLog also supports headless batch mode via `--no-gui` if no desktop display is needed.
+Portable standalone packages are published for Windows, macOS, and Linux on [GitHub Releases](https://github.com/Sufiyan-Shiraj/face-clubbing/releases).
+
+### Download Table
+
+| Operating System | Architecture | Package Archive | Status | System Requirements |
+| :--- | :--- | :--- | :---: | :--- |
+| **Windows** | x64 (64-bit) | `CatLog-<version>-windows-x64.zip` | **Stable** | Windows 10 (1809+) or Windows 11; Microsoft Edge WebView2 (pre-installed) |
+| **macOS** | Apple Silicon (`arm64`) | `CatLog-<version>-macos-arm64.zip` | **Beta** | macOS 12 Monterey or later; M1/M2/M3/M4 chip; native WebKit |
+| **macOS** | Intel (`x64`) | `CatLog-<version>-macos-x64.zip` | **Beta** | macOS 12 Monterey or later; 64-bit Intel processor; native WebKit |
+| **Linux** | x64 (64-bit) | `CatLog-<version>-linux-x64.tar.gz` | **Beta** | glibc 2.31+ (Ubuntu 20.04+, Debian 11+, Fedora 36+); WebKitGTK or default browser |
+| **All Platforms** | Checksums | `SHA256SUMS.txt` | &mdash; | SHA-256 integrity manifest for all archives |
+
+### Unsigned Application First-Run Guidance
+
+Because CatLog is distributed as an independent open-source release without commercial code-signing certificates, your operating system will display a security warning on first launch:
+
+- **Windows (Defender SmartScreen)**:
+  1. Launching `CatLog.exe` may trigger a blue "Windows protected your PC" dialog.
+  2. Click **More info**.
+  3. Click **Run anyway**.
+- **macOS (Apple Gatekeeper)**:
+  1. Double-clicking `CatLog` may show an alert stating it *"cannot be opened because the developer cannot be verified"*.
+  2. Right-click (or Control-click) the `CatLog` executable in Finder.
+  3. Select **Open** from the context menu, then click **Open** in the confirmation dialog.
+  4. Alternatively, navigate to **System Settings** &rarr; **Privacy & Security** &rarr; scroll to Security, and click **Open Anyway**.
+- **Linux (Portable Archive)**:
+  1. Extract the tarball: `tar -xzf CatLog-<version>-linux-x64.tar.gz`
+  2. Ensure execution permissions: `chmod +x CatLog/CatLog`
+  3. Launch: `./CatLog/CatLog`
+  4. *Browser Fallback*: If WebKitGTK (`gir1.2-webkit2-4.1` or `gir1.2-webkit2-4.0`) is not installed, CatLog will automatically display an informative notice in the terminal and launch the organizer UI directly in your default web browser.
+
+---
+
+### First-Run Model Download (~300 MB)
+
+- **Models are NOT bundled**: To keep download archives portable (~150 MB) and strictly respect upstream non-commercial licensing terms, deep learning model weights are not pre-packaged inside the binaries.
+- **Automatic Download**: On the very first event scan, CatLog automatically downloads the official InsightFace `buffalo_l` model pack (~300 MB total) directly from upstream repository mirrors to your local user cache (`~/.insightface/models/buffalo_l/`):
+  - `det_10g.onnx` (SCRFD 10G face detector, ~16.8 MB)
+  - `w600k_r50.onnx` (ArcFace ResNet50 recognizer, ~170 MB)
+  - Ancillary alignment models (~110 MB)
+- Subsequent runs reuse the cached weights offline without any internet connection.
+
+---
+
+### Where Projects and Settings Are Stored
+
+- **User Data Directory**: CatLog stores project catalog entries, custom user settings, and application logs in:
+  - **`~/.catlog/`** (located in the user's home directory: `%USERPROFILE%\.catlog\` on Windows, `~/.catlog/` on macOS/Linux).
+  - `~/.catlog/projects.json`: Metadata catalog of saved projects (names, paths, counts; zero biometric data or photos stored).
+  - `~/.catlog/catlog.log`: Diagnostic application log when running in windowed GUI mode.
+- **Legacy Migration**: If you previously ran PhotoSorter, CatLog automatically migrates existing settings and project records from `~/.photosorter/` to `~/.catlog/` on first launch.
+
+---
+
+### Privacy Statement & Local Processing Guarantee
+
+- **100% On-Device Processing**: All face detection, feature extraction, 512-dimensional embedding generation, and agglomerative clustering algorithms run entirely locally on your machine's CPU.
+- **Zero Cloud Transmission**: No attendee photos, facial crops, biometric templates, or mathematical vectors are ever uploaded to cloud AI providers, external servers, or analytics trackers.
+- **Google Drive Integration**: When importing from Google Drive, CatLog uses read-only direct API calls to fetch photo thumbnails and originals directly between your computer and Google's servers. No intermediate proxy servers are involved, and Drive API keys are never written to exported web galleries.
 
 ---
 
@@ -200,7 +253,7 @@ For running CatLog without installing Python, Node.js, or development tools:
 
 To run the clustering engine in headless batch mode without the graphical UI:
 
-```powershell
+```bash
 python -m backend.engine --input path/to/event_photos --out export --threshold 0.50
 ```
 
@@ -252,24 +305,32 @@ All poses are pre-rendered as transparent PNGs under `frontend/public/mascot/` f
 
 ## Verification & Test Suites
 
-The codebase is backed by full backend and frontend regression suites:
+The codebase is backed by 181 automated regression tests and strict metric reproduction checks:
 
 - **Backend Pytest**:
   ```bash
-  .\.venv\Scripts\python -m pytest tests
-  # 83 passed in ~84s
+  pytest tests
+  # 87 passed in ~56s (100% green)
   ```
 - **Frontend Vitest**:
   ```bash
-  cd frontend
-  npx vitest run
-  # 13 test files passed, 73 tests passed in ~25s
+  npm --prefix frontend test
+  # 13 test files passed, 74 tests passed in ~49s
   ```
-- **Type Checking & Production Build**:
+- **Viewer Vitest**:
   ```bash
-  cd frontend
-  npm run build
-  # 0 errors, built in ~13s
+  npm --prefix viewer test
+  # 2 test files passed, 20 tests passed in ~5s
+  ```
+- **Export Verification & Invariant Audit**:
+  ```bash
+  python eval/verify_export.py
+  # 15 / 15 checks and evaluation tables verified
+  ```
+- **Standalone Binary Smoke Test**:
+  ```bash
+  python scripts/smoke_test.py
+  # Health check and version verification passed
   ```
 
 ---
@@ -278,10 +339,11 @@ The codebase is backed by full backend and frontend regression suites:
 
 - **Biometric Vector Safety**: Mathematical embeddings (512D unit vectors) are used solely for local distance calculations. No biometric identifiers or templates are shared with third parties.
 - **Attendee Consent**: We encourage event organizers to ensure attendee consent prior to publishing galleries online and to use unguessable subdomains or private hosting.
-- **InsightFace Pretrained Models**: The pretrained face analysis models (e.g. `buffalo_l`) are provided by the InsightFace project and are intended for non-commercial research and educational use. For commercial deployments, consult InsightFace's license or substitute a commercially licensed recognition model.
+- **InsightFace Pretrained Models**: The pretrained face analysis models (e.g. `buffalo_l`) are provided by the InsightFace project and are intended strictly for non-commercial research and educational use. For commercial deployments, consult InsightFace's licensing or substitute a commercially licensed recognition model. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full notices.
 
 ---
 
 ## License
 
 CatLog's application code is licensed under the [MIT License](LICENSE).
+Third-party libraries and component licenses are detailed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

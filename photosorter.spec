@@ -53,6 +53,10 @@ hiddenimports = [
 # Add submodules
 hiddenimports += collect_submodules('uvicorn')
 hiddenimports += collect_submodules('insightface')
+hiddenimports += collect_submodules('webview')
+
+if os.path.exists('VERSION'):
+    datas.append(('VERSION', '.'))
 
 a = Analysis(
     ['main.py'],
@@ -83,6 +87,11 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
+import sys
+is_windows = sys.platform.startswith('win')
+icon_file = 'catlog.ico' if os.path.exists('catlog.ico') else None
+version_file = 'version_info.txt' if is_windows and os.path.exists('version_info.txt') else None
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -103,6 +112,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='catlog.ico',
-    version='version_info.txt',
+    icon=icon_file,
+    version=version_file,
 )

@@ -188,7 +188,7 @@ def main():
                     print(f"[FAIL] Found unexpected console window! (class={class_name}, hwnd={hwnd})")
                     sys.exit(1)
 
-                if title.strip() in ("CatLog", "PhotoSorter"):
+                if title.strip().startswith("CatLog") or title.strip().startswith("PhotoSorter"):
                     window_found = True
                     photosorter_hwnd = hwnd
                     window_title = title

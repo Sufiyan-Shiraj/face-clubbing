@@ -1,0 +1,240 @@
+name: Release CatLog
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag name (e.g. v0.1.0-rc1)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows-x64
+            archive_ext: zip
+            is_beta: false
+          - os: ubuntu-latest
+            platform: linux-x64
+            archive_ext: tar.gz
+            is_beta: true
+          - os: macos-latest
+            platform: macos-arm64
+            archive_ext: zip
+            is_beta: true
+          - os: macos-15-intel
+            platform: macos-x64
+            archive_ext: zip
+            is_beta: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: get_version
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG_VER="${{ github.event.inputs.tag_name }}"
+            TAG_VER="${TAG_VER#v}"
+            echo "$TAG_VER" > VERSION
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG_VER="${GITHUB_REF#refs/tags/v}"
+            echo "$TAG_VER" > VERSION
+          fi
+          VER=$(cat VERSION | tr -d ' \r\n')
+          echo "VERSION=$VER" >> $GITHUB_ENV
+          echo "Building CatLog version $VER on ${{ matrix.platform }}"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libglib2.0-0 libgirepository1.0-dev libcairo2-dev gir1.2-webkit2-4.1 || true
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller pytest
+
+      - name: Synchronize version across project files
+        run: |
+          python scripts/sync_version.py
+
+      - name: Build Frontend & Viewer
+        run: |
+          npm --prefix frontend ci || npm --prefix frontend install
+          npm --prefix frontend run build
+          npm --prefix viewer ci || npm --prefix viewer install
+          npm --prefix viewer run build
+
+      - name: Run Backend Pytest Suite
+        run: |
+          pytest tests
+
+      - name: Run Frontend & Viewer Vitest Suites
+        run: |
+          npm --prefix frontend test
+          npm --prefix viewer test
+
+      - name: Run Bundle Hygiene Check
+        run: |
+          python eval/verify_export.py
+
+      - name: Build Standalone Executable (PyInstaller)
+        run: |
+          pyinstaller --clean photosorter.spec
+
+      - name: Smoke Test Executable Artifact
+        run: |
+          python scripts/smoke_test.py
+
+      - name: Package Portable Archive
+        run: |
+          python scripts/package_release.py --version ${{ env.VERSION }} --platform ${{ matrix.platform }}
+
+      - name: Upload Platform Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: catlog-${{ matrix.platform }}
+          path: dist_release/CatLog-*
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine release version & prerelease flag
+        id: meta
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="v$(cat VERSION | tr -d ' \r\n')"
+          fi
+          VER="${TAG#v}"
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "VERSION=$VER" >> $GITHUB_ENV
+
+          # Detect prerelease (contains '-' like -rc1, -beta, -alpha)
+          if [[ "$TAG" == *-* ]]; then
+            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
+            echo "Release type: Pre-release"
+          else
+            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
+            echo "Release type: Production"
+          fi
+
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded_artifacts/
+
+      - name: Organize release archives & compute SHA-256 checksums
+        shell: bash
+        run: |
+          mkdir -p dist_release
+          find downloaded_artifacts/ -type f \( -name "*.zip" -o -name "*.tar.gz" \) -exec cp {} dist_release/ \;
+          python scripts/package_release.py --generate-sums --out-dir dist_release/
+          ls -la dist_release/
+
+      - name: Generate Release Notes
+        shell: bash
+        run: |
+          python - << 'EOF'
+          import os
+          from pathlib import Path
+
+          tag = os.environ.get("TAG", "v0.1.0-rc1")
+          version = os.environ.get("VERSION", "0.1.0-rc1")
+          sums_file = Path("dist_release/SHA256SUMS.txt")
+          checksums_table = ""
+
+          if sums_file.exists():
+              lines = sums_file.read_text(encoding="utf-8").strip().splitlines()
+              checksums_table = "| Filename | SHA-256 Checksum |\n| :--- | :--- |\n"
+              for line in lines:
+                  parts = line.split(maxsplit=1)
+                  if len(parts) == 2:
+                      checksums_table += f"| `{parts[1]}` | `{parts[0]}` |\n"
+
+          notes = f"""# CatLog {tag}
+
+  **Who was at the event?**
+  *The privacy-first event photo organizer, face clustering engine, and static gallery generator.*
+
+  ---
+
+  ### Downloads & Checksums
+
+  {checksums_table}
+
+  *Verification*: Compare your downloaded file checksum against `SHA256SUMS.txt` using `sha256sum <file>` (Linux/macOS) or `Get-FileHash <file>` (Windows PowerShell).
+
+  ---
+
+  ### Important Notices
+
+  #### 1. Pre-Trained Face Models (Downloaded on First Run)
+  - Face detection (**SCRFD**) and recognition (**ArcFace ResNet50**) deep learning model weights (`buffalo_l` pack, ~300 MB) are **NOT bundled** in the release archives to keep downloads fast and comply with upstream licensing.
+  - On first launch, CatLog automatically downloads the official model pack directly from InsightFace upstream to `~/.insightface/models/`.
+  - **Notice**: Pre-trained InsightFace model weights are provided strictly for **non-commercial research and evaluation purposes**.
+
+  #### 2. Platform Status & Unsigned Binary Guidance
+  - **Windows (x64)**: Stable production build. When first running on Windows, Defender SmartScreen may display an alert. Click **More info** &rarr; **Run anyway**.
+  - **macOS (Apple Silicon & Intel)**: Portable **Beta** release. When launching on macOS, Gatekeeper may indicate the developer cannot be verified. Right-click (or Control-click) `CatLog` &rarr; select **Open** &rarr; click **Open**. Alternatively, allow via *System Settings > Privacy & Security*.
+  - **Linux (x64)**: Portable **Beta** release. Extract the `.tar.gz` and run `./CatLog`. If WebKitGTK is not installed on your system, CatLog will automatically fall back to opening in your default web browser.
+
+  #### 3. Privacy Guarantee
+  - **100% Local Processing**: All face detection, embedding vectors, and clustering run on your CPU.
+  - Zero photo bytes, faces, or identity templates are ever transmitted to any third party or cloud AI service.
+  - User projects and application settings are stored locally in `~/.catlog/`.
+
+  See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [LICENSE](LICENSE) for third-party software and copyright details.
+  """
+          Path("RELEASE_NOTES.md").write_text(notes, encoding="utf-8")
+          print("Generated RELEASE_NOTES.md")
+          EOF
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: CatLog ${{ env.TAG }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: ${{ env.IS_PRERELEASE == 'true' }}
+          files: |
+            dist_release/CatLog-*
+            dist_release/SHA256SUMS.txt
