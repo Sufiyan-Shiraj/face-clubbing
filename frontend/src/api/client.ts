@@ -295,6 +295,7 @@ export const api = {
     title?: string;
     subtitle?: string;
     include_maybe?: boolean;
+    theme?: string;
   }): Promise<{
     success: boolean;
     output_dir: string;

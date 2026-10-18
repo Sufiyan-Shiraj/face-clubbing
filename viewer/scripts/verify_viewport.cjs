@@ -50,10 +50,12 @@ async function runViewportVerification() {
   const url = `http://127.0.0.1:${port}/`;
   console.log(`Local test server running at: ${url}`);
 
-  const chromePath = 'C:\\Users\\DELL\\AppData\\Local\\ms-playwright\\chromium-1200\\chrome-win64\\chrome.exe';
+  const chromePath = process.env.LOCALAPPDATA
+    ? path.join(process.env.LOCALAPPDATA, 'ms-playwright', 'chromium-1200', 'chrome-win64', 'chrome.exe')
+    : undefined;
   const browser = await chromium.launch({
     headless: true,
-    executablePath: fs.existsSync(chromePath) ? chromePath : undefined,
+    executablePath: chromePath && fs.existsSync(chromePath) ? chromePath : undefined,
   });
   const context = await browser.newContext();
   const page = await context.newPage();

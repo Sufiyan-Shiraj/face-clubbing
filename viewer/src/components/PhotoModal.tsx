@@ -71,11 +71,12 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               download={cleanFileName}
-              className="touch-target inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[var(--color-accent)] text-[var(--color-accent-text)] text-xs sm:text-sm font-bold shadow-md hover:brightness-105 transition-all focus:outline-none focus-visible:ring-2"
+              className="btn-tactile btn-accent btn-sm"
+              style={{ padding: '8px 14px', fontSize: '13px' }}
               title="Download photo"
             >
               <Download className="w-4 h-4" />
-              <span>Download</span>
+              <span className="font-mono font-bold">Download</span>
             </a>
           )}
 
@@ -84,21 +85,23 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
               href={driveViewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="touch-target inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-white/20 bg-white/10 text-white text-xs font-semibold hover:bg-white/20 transition-colors focus:outline-none focus-visible:ring-2"
+              className="btn-tactile btn-sm"
+              style={{ padding: '8px 14px', fontSize: '13px' }}
               title="Open in Google Drive"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Drive</span>
+              <ExternalLink className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <span className="font-mono font-bold">Drive</span>
             </a>
           )}
 
           <button
             onClick={onClose}
-            className="touch-target p-2 rounded-xl bg-neutral-900/80 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors focus:outline-none focus-visible:ring-2"
+            className="btn-tactile btn-sm"
+            style={{ padding: '8px', minWidth: '36px' }}
             title="Close (Esc)"
             aria-label="Close modal"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -106,21 +109,24 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
       {/* Main Image Container */}
       <div className="relative max-w-5xl max-h-[85vh] w-full px-4 flex items-center justify-center">
         {imageError ? (
-          <div className="p-8 rounded-2xl bg-neutral-900 border border-neutral-800 text-center max-w-sm space-y-3">
-            <ImageOff className="w-10 h-10 mx-auto text-neutral-500" />
-            <p className="text-sm font-semibold text-white">Image Preview Unavailable</p>
+          <div
+            className="p-8 rounded-xl border-2 border-[var(--line)] text-center max-w-sm space-y-3 shadow-[4px_4px_0px_var(--line)]"
+            style={{ background: 'var(--panel)' }}
+          >
+            <ImageOff className="w-10 h-10 mx-auto text-[var(--muted)]" />
+            <p className="text-sm font-bold font-mono text-[var(--text)]">Image Preview Unavailable</p>
             {isDrive && driveViewUrl ? (
               <a
                 href={driveViewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="touch-target inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-md transition-colors"
+                className="btn-tactile btn-accent btn-sm inline-flex items-center gap-1.5"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span>unavailable - open in Drive ↗</span>
+                <span className="font-mono">Open in Drive ↗</span>
               </a>
             ) : (
-              <p className="text-xs text-neutral-400">Could not load image file from disk.</p>
+              <p className="text-xs font-mono text-[var(--muted)]">Could not load image file from disk.</p>
             )}
           </div>
         ) : (
@@ -128,7 +134,7 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
             src={photo.thumb}
             alt={photo.name}
             onError={() => setImageError(true)}
-            className="max-h-[80vh] max-w-full object-contain rounded-xl shadow-2xl"
+            className="max-h-[80vh] max-w-full object-contain rounded-xl border-2 border-[var(--line)] shadow-[6px_6px_0px_var(--line)]"
           />
         )}
 
@@ -139,7 +145,8 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
               e.stopPropagation();
               onPrev();
             }}
-            className="touch-target absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-neutral-900/80 hover:bg-neutral-800 text-white transition-all backdrop-blur-md focus:outline-none focus-visible:ring-2"
+            className="btn-tactile absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 rounded-full"
+            style={{ padding: '12px' }}
             title="Previous (Left Arrow)"
             aria-label="Previous photo"
           >
@@ -154,7 +161,8 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
               e.stopPropagation();
               onNext();
             }}
-            className="touch-target absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-neutral-900/80 hover:bg-neutral-800 text-white transition-all backdrop-blur-md focus:outline-none focus-visible:ring-2"
+            className="btn-tactile absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 rounded-full"
+            style={{ padding: '12px' }}
             title="Next (Right Arrow)"
             aria-label="Next photo"
           >

@@ -225,46 +225,66 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   return (
     <div className="space-y-6 pb-24 animate-fadeIn">
       {/* Top Profile Banner */}
-      <div className="p-4 sm:p-5 rounded-2xl glass-card flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
+      <div
+        className="p-4 sm:p-6 rounded-xl glass-card flex flex-col md:flex-row items-start md:items-center justify-between gap-5"
+        style={{
+          background: 'var(--panel)',
+          border: '2px solid var(--line)',
+          boxShadow: '4px 4px 0px var(--line)',
+        }}
+      >
+        <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="touch-target p-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] transition-colors focus:outline-none focus-visible:ring-2"
+            className="btn-tactile btn-sm"
             title="Back to all people"
             aria-label="Back to all people"
+            style={{ padding: '10px 14px' }}
           >
             <ArrowLeft className="w-5 h-5" />
+            <span className="font-mono font-bold hidden sm:inline">Back</span>
           </button>
 
           <img
             src={person.face}
             alt={displayName}
             loading="lazy"
-            className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover border border-[var(--border-color)] shadow-sm bg-[var(--bg-main)] flex-shrink-0"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border-2 border-[var(--line)] shadow-[2px_2px_0px_var(--line)] bg-[var(--bg)] flex-shrink-0"
           />
 
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-main)] tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-[var(--text)]">
               {displayName}
             </h2>
-            <p className="text-xs sm:text-sm font-medium text-[var(--text-muted)] mt-0.5">
-              {photoIds.length} {photoIds.length === 1 ? 'photo' : 'photos'}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="badge-chip">
+                {photoIds.length} {photoIds.length === 1 ? 'photo' : 'photos'}
+              </span>
+              {maybePhotos.length > 0 && includeMaybe && (
+                <span className="badge-chip" style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}>
+                  +{maybePhotos.length} possible
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Action Buttons: Download all N photos, Select Mode, Drive Fallback */}
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           {/* Primary: Download all N photos (shows person's photo count) */}
           {photoIds.length > 0 && (
             <button
               onClick={() => handleDownloadClick(photoIds)}
               disabled={isDownloading}
-              className="touch-target inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-accent)] text-[var(--color-accent-text)] font-semibold text-xs sm:text-sm shadow-sm hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2"
+              className="btn-tactile btn-accent"
+              style={{
+                padding: '10px 20px',
+                fontSize: '14px',
+              }}
               title={`Download all ${photoIds.length} photos for ${displayName}`}
             >
               <Download className="w-4 h-4" />
-              <span>
+              <span className="font-mono font-bold">
                 {photoIds.length === 1
                   ? 'Download 1 photo'
                   : `Download all ${photoIds.length} photos`}
@@ -279,21 +299,23 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                 setIsSelectMode(!isSelectMode);
                 setSelectedPhotoIds(new Set());
               }}
-              className={`touch-target inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs sm:text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 ${
-                isSelectMode
-                  ? 'bg-[var(--text-main)] text-[var(--bg-main)] border-transparent'
-                  : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)]'
-              }`}
+              className="btn-tactile"
+              style={{
+                padding: '10px 16px',
+                fontSize: '14px',
+                backgroundColor: isSelectMode ? 'var(--text)' : 'var(--panel)',
+                color: isSelectMode ? 'var(--bg)' : 'var(--text)',
+              }}
             >
               {isSelectMode ? (
                 <>
                   <X className="w-4 h-4" />
-                  <span>Exit select</span>
+                  <span className="font-mono font-bold">Exit select</span>
                 </>
               ) : (
                 <>
                   <CheckSquare className="w-4 h-4" />
-                  <span>Select</span>
+                  <span className="font-mono font-bold">Select</span>
                 </>
               )}
             </button>
@@ -305,11 +327,12 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
               href={firstDriveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2"
+              className="btn-tactile"
+              style={{ padding: '10px 16px', fontSize: '14px' }}
               title="Open folder in Google Drive"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Drive</span>
+              <ExternalLink className="w-4 h-4 text-[var(--accent)]" />
+              <span className="font-mono font-bold">Drive</span>
             </a>
           )}
         </div>

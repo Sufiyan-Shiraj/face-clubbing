@@ -8,6 +8,7 @@ export interface ViewerConfig {
   show_labels?: boolean;
   include_maybe?: boolean;
   hide_single_photo_default?: boolean;
+  theme?: string;
 }
 
 export interface PhotoInfo {

@@ -302,12 +302,13 @@ class BundleExporter:
                 "title": title,
                 "subtitle": subtitle,
                 "logo": None,
-                "accent": "#2563eb",
-                "font": "Inter",
+                "accent": "#fa7175",
+                "font": "JetBrains Mono",
                 "footer": "Published with CatLog — Who was at the event?",
                 "show_labels": True,
                 "include_maybe": False,
                 "hide_single_photo_default": False,
+                "theme": "t-dark",
             }
             if config_override:
                 default_config.update(config_override)

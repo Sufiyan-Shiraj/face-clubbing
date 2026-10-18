@@ -29,18 +29,18 @@ describe('ExportScreen Component', () => {
     });
 
     (api.browseFolder as any).mockResolvedValue({
-      current_path: 'C:\\Users\\DELL\\face-clubbing\\export',
-      parent_path: 'C:\\Users\\DELL\\face-clubbing',
+      current_path: 'C:\\Users\\mockuser\\face-clubbing\\export',
+      parent_path: 'C:\\Users\\mockuser\\face-clubbing',
       name: 'export',
       exists: true,
       is_directory: true,
       directories: [
-        { name: 'faces', path: 'C:\\Users\\DELL\\face-clubbing\\export\\faces', modified_time: '2026-10-15 12:00' },
-        { name: 'thumbs', path: 'C:\\Users\\DELL\\face-clubbing\\export\\thumbs', modified_time: '2026-10-15 12:01' },
+        { name: 'faces', path: 'C:\\Users\\mockuser\\face-clubbing\\export\\faces', modified_time: '2026-10-15 12:00' },
+        { name: 'thumbs', path: 'C:\\Users\\mockuser\\face-clubbing\\export\\thumbs', modified_time: '2026-10-15 12:01' },
       ],
       shortcuts: [
-        { label: 'Project Export', path: 'C:\\Users\\DELL\\face-clubbing\\export' },
-        { label: 'Desktop', path: 'C:\\Users\\DELL\\Desktop' },
+        { label: 'Project Export', path: 'C:\\Users\\mockuser\\face-clubbing\\export' },
+        { label: 'Desktop', path: 'C:\\Users\\mockuser\\Desktop' },
       ],
     });
   });
@@ -100,7 +100,7 @@ describe('ExportScreen Component', () => {
   it('triggers exportBundle on button click and renders summary stats', async () => {
     (api.exportBundle as any).mockResolvedValue({
       success: true,
-      output_dir: 'C:\\Users\\DELL\\face-clubbing\\export',
+      output_dir: 'C:\\Users\\mockuser\\face-clubbing\\export',
       files_exported: ['index.html', 'manifest.json'],
       people_count: 12,
       photos_count: 84,

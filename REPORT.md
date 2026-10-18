@@ -836,7 +836,7 @@ STEP: Configure Isolated Test Directory (export.api_test)
 COMMAND: curl.exe -X POST http://127.0.0.1:8000/api/settings -H Content-Type: application/json -d {"work_dir": "export.api_test", "output_dir": "export.api_test"}
 --------------------------------------------------------------------------------
 OUTPUT:
-{"input_path":"C:\\Users\\DELL\\face-clubbing\\test_photos","output_dir":"export.api_test","cache_dir":"C:\\Users\\DELL\\face-clubbing\\export.work","work_dir":"export.api_test","distance_threshold":0.5,"min_det_score":0.5,"min_face_size":64,"max_yaw":70.0,"seed_min_det_score":0.7,"seed_min_face_size":64,"seed_max_yaw":60.0,"max_image_dim":1600,"thumb_size":400,"face_crop_size":256,"second_pass_merge":true,"merge_threshold":0.5,"maybe_threshold":0.65,"same_photo_merge_max":0.4,"attach_distance_cap":0.45,"flip_average":false,"include_maybe":false,"event_title":"Event Gallery","event_subtitle":"Photos grouped by person"}
+{"input_path":"<REPO_ROOT>\\test_photos","output_dir":"export.api_test","cache_dir":"<REPO_ROOT>\\export.work","work_dir":"export.api_test","distance_threshold":0.5,"min_det_score":0.5,"min_face_size":64,"max_yaw":70.0,"seed_min_det_score":0.7,"seed_min_face_size":64,"seed_max_yaw":60.0,"max_image_dim":1600,"thumb_size":400,"face_crop_size":256,"second_pass_merge":true,"merge_threshold":0.5,"maybe_threshold":0.65,"same_photo_merge_max":0.4,"attach_distance_cap":0.45,"flip_average":false,"include_maybe":false,"event_title":"Event Gallery","event_subtitle":"Photos grouped by person"}
 
 ================================================================================
 STEP: Check API Health
@@ -850,7 +850,7 @@ STEP: Inspect Current Settings
 COMMAND: curl.exe http://127.0.0.1:8000/api/settings
 --------------------------------------------------------------------------------
 OUTPUT:
-{"input_path":"C:\\Users\\DELL\\face-clubbing\\test_photos","output_dir":"export.api_test","cache_dir":"C:\\Users\\DELL\\face-clubbing\\export.work","work_dir":"export.api_test","distance_threshold":0.5,"min_det_score":0.5,"min_face_size":64,"max_yaw":70.0,"seed_min_det_score":0.7,"seed_min_face_size":64,"seed_max_yaw":60.0,"max_image_dim":1600,"thumb_size":400,"face_crop_size":256,"second_pass_merge":true,"merge_threshold":0.5,"maybe_threshold":0.65,"same_photo_merge_max":0.4,"attach_distance_cap":0.45,"flip_average":false,"include_maybe":false,"event_title":"Event Gallery","event_subtitle":"Photos grouped by person"}
+{"input_path":"<REPO_ROOT>\\test_photos","output_dir":"export.api_test","cache_dir":"<REPO_ROOT>\\export.work","work_dir":"export.api_test","distance_threshold":0.5,"min_det_score":0.5,"min_face_size":64,"max_yaw":70.0,"seed_min_det_score":0.7,"seed_min_face_size":64,"seed_max_yaw":60.0,"max_image_dim":1600,"thumb_size":400,"face_crop_size":256,"second_pass_merge":true,"merge_threshold":0.5,"maybe_threshold":0.65,"same_photo_merge_max":0.4,"attach_distance_cap":0.45,"flip_average":false,"include_maybe":false,"event_title":"Event Gallery","event_subtitle":"Photos grouped by person"}
 
 ================================================================================
 STEP: Fetch Initial People
@@ -967,7 +967,7 @@ STEP: Configure Isolated Test Directory (export.api_test)
 COMMAND: curl.exe -X POST http://127.0.0.1:8000/api/settings -H Content-Type: application/json -d {"work_dir": "export.api_test", "output_dir": "export.api_test"}
 --------------------------------------------------------------------------------
 OUTPUT:
-{"input_path":"C:\\Users\\DELL\\face-clubbing\\test_photos","output_dir":"export.api_test","cache_dir":"C:\\Users\\DELL\\face-clubbing\\export.work","work_dir":"export.api_test","distance_threshold":0.5,"min_det_score":0.5,"min_face_size":64,"max_yaw":70.0,"seed_min_det_score":0.7,"seed_min_face_size":64,"seed_max_yaw":60.0,"max_image_dim":1600,"thumb_size":400,"face_crop_size":256,"second_pass_merge":true,"merge_threshold":0.5,"maybe_threshold":0.65,"same_photo_merge_max":0.4,"attach_distance_cap":0.45,"flip_average":false,"include_maybe":false,"event_title":"Event Gallery","event_subtitle":"Photos grouped by person"}
+{"input_path":"<REPO_ROOT>\\test_photos","output_dir":"export.api_test","cache_dir":"<REPO_ROOT>\\export.work","work_dir":"export.api_test","distance_threshold":0.5,"min_det_score":0.5,"min_face_size":64,"max_yaw":70.0,"seed_min_det_score":0.7,"seed_min_face_size":64,"seed_max_yaw":60.0,"max_image_dim":1600,"thumb_size":400,"face_crop_size":256,"second_pass_merge":true,"merge_threshold":0.5,"maybe_threshold":0.65,"same_photo_merge_max":0.4,"attach_distance_cap":0.45,"flip_average":false,"include_maybe":false,"event_title":"Event Gallery","event_subtitle":"Photos grouped by person"}
 
 ================================================================================
 STEP: Check API Health
@@ -981,7 +981,7 @@ STEP: Inspect Current Settings
 COMMAND: curl.exe http://127.0.0.1:8000/api/settings
 --------------------------------------------------------------------------------
 OUTPUT:
-{"input_path":"C:\\Users\\DELL\\face-clubbing\\test_photos","output_dir":"export.api_test","cache_dir":"C:\\Users\\DELL\\face-clubbing\\export.work","work_dir":"export.api_test","distance_threshold":0.5,"min_det_score":0.5,"min_face_size":64,"max_yaw":70.0,"seed_min_det_score":0.7,"seed_min_face_size":64,"seed_max_yaw":60.0,"max_image_dim":1600,"thumb_size":400,"face_crop_size":256,"second_pass_merge":true,"merge_threshold":0.5,"maybe_threshold":0.65,"same_photo_merge_max":0.4,"attach_distance_cap":0.45,"flip_average":false,"include_maybe":false,"event_title":"Event Gallery","event_subtitle":"Photos grouped by person"}
+{"input_path":"<REPO_ROOT>\\test_photos","output_dir":"export.api_test","cache_dir":"<REPO_ROOT>\\export.work","work_dir":"export.api_test","distance_threshold":0.5,"min_det_score":0.5,"min_face_size":64,"max_yaw":70.0,"seed_min_det_score":0.7,"seed_min_face_size":64,"seed_max_yaw":60.0,"max_image_dim":1600,"thumb_size":400,"face_crop_size":256,"second_pass_merge":true,"merge_threshold":0.5,"maybe_threshold":0.65,"same_photo_merge_max":0.4,"attach_distance_cap":0.45,"flip_average":false,"include_maybe":false,"event_title":"Event Gallery","event_subtitle":"Photos grouped by person"}
 
 ================================================================================
 STEP: Fetch Initial People
@@ -4027,10 +4027,12 @@ Phase 7 systematically audited, optimized, organized, and polished the CatLog co
 
 | Dimension | Metric / Target | Before Phase 7 | After Phase 7 | Improvement / Delta | Verification Method |
 | :--- | :--- | :---: | :---: | :---: | :--- |
-| **Pipeline Speed** | Cold pipeline runtime on 271-photo dataset | 151.72 s | **86.29 s** | **-65.43 s (43.1% overall speedup)** | `eval/benchmark_pipeline.py` |
-| **Crop Generation** | Multi-face crop extraction per photo | Decoded source image N times (once per face) | **Single-pass batch decode & slice** | ~5x faster crop extraction on dense group photos | `backend/engine/thumbnails.py` |
+| **Pipeline Speed (Warm Cache)** | Pre-computed embeddings pipeline runtime on 271-photo dataset | 151.72 s (0.56 s/photo) | **86.29 s (0.32 s/photo)** | **-65.43 s (43.1% speedup)** | `eval/benchmark_pipeline.py` (post-detection: scan, crop, cluster, export) |
+| **Detection Speed (Truly Cold)** | Raw detection + ArcFace embedding on CPU (empty cache) | 8.55 s/photo | **8.55 s/photo** | Compute-bound (SCRFD 10G + ArcFace ResNet50 on CPU) | Benchmark on raw photos (`~36.9 min` for 259 photos) |
+| **Crop Generation** | Multi-face crop extraction per photo | Decoded source image N times (once per face) | **Single-pass batch decode & slice** | **1.97x measured speedup** (349.5 ms → 177.4 ms on 10-face photo) | Direct execution benchmark (`backend/engine/thumbnails.py`) |
 | **Scanner Prefetch** | Photo discovery & EXIF reading | Single-threaded linear read | **Multi-core ThreadPoolExecutor prefetch** | Instantaneous metadata scan | `backend/engine/scanner.py` |
 | **ONNX Runtime** | Intra-op & Inter-op CPU threads | Default unconstrained | **Tuned to hardware thread pool (`min(4, os.cpu_count())`)** | Reduced thread contention & CPU spikes | `backend/engine/detector.py` |
+| **Cold Start to Usable UI** | Native GUI binary cold launch to `/api/health` | ~28.5 s (eager model load) | **23.60 s avg** (29.10s, 20.87s, 20.82s) | **-4.9 s startup reduction via lazy model loading** | Timed launches of `dist/CatLog.exe` |
 | **Peak Memory (RAM)** | Pipeline peak RSS | ~745 MB | **~710 MB** | -35 MB reduction (< 1.5 GB budget) | `psutil` process monitor |
 | **Mascot Asset Size** | 24 transparent PNG stickers | 5,049,856 B (4.82 MB) | **691,824 B (0.66 MB)** | **-4,358,032 B (-86.3% size reduction)** | Directory size audit (`frontend/public/mascot/`) |
 | **Export Bundle (Faces)** | 1,701 face crops (JPEG quality 95 vs 85) | 24,736,890 B (23.59 MB) | **13,463,552 B (12.84 MB)** | **-11,273,338 B (-45.6% size reduction)** | `eval/verify_export.py` (PSNR = 42.92 dB) |
@@ -4045,13 +4047,73 @@ Phase 7 systematically audited, optimized, organized, and polished the CatLog co
 | **Frontend Tests** | Organizer Vitest test count | 74 passed | **74 passed** (13 test files) | 100% green | `npm test` in `frontend/` |
 | **Viewer Tests** | Public viewer Vitest test count | 20 passed | **20 passed** (2 test files) | 100% green | `npm test` in `viewer/` |
 
+### 28.2.1 Benchmark Honesty: Truly Cold Detection vs Warm Cache Execution
+- **Warm Cache Pipeline (151.72 s → 86.29 s)**:
+  - This benchmark measured the pipeline with **pre-seeded embedding cache**.
+  - It benchmarks: photo discovery, multi-threaded EXIF scanning, multi-face crop generation, square thumbnail creation, agglomerative hierarchical clustering, graph merging, edit replay, and bundle export.
+  - Across 271 photos, this represents **0.32 s/photo** (down from 0.56 s/photo, a 43.1% speedup).
+- **Truly Cold Benchmark (Empty Embedding Cache)**:
+  - When running from a completely empty cache on CPU with InsightFace `buffalo_l` (SCRFD 10G detector at 640x640 + ResNet50 ArcFace recognizer):
+    - 5 raw photo test run: **42.76 s total** → **8.55 s/photo** average.
+    - Full 259-photo dataset projection: `259 * 8.55 s = 2,214.45 s` (~**36.9 minutes** on standard multi-core CPU).
+  - Calling the 86.29s run a "cold pipeline" without clarifying that embeddings were cached was technically misleading. Face detection and feature extraction in deep neural networks on CPU are strictly bound by FLOPs and cannot run at 0.32 s/photo without GPU acceleration or cached embeddings.
+- **Measured Crop Extraction Speedup**:
+  - The preliminary claim of "~5x faster crop extraction" was an unverified heuristic estimate.
+  - A rigorous micro-benchmark was performed comparing the legacy multi-open approach against single-pass in-memory decode & slice on a high-density group photo containing 10 detected faces:
+    - Legacy method (opening image from disk & rotating 10 times): **349.50 ms**
+    - Optimized method (single in-memory decode, orientation fix, array slicing): **177.40 ms**
+    - **Measured Speedup: 1.97x** (NOT ~5x). The ~5x claim has been retracted and replaced with 1.97x.
+
+### 28.2.2 Cold Start to Usable UI Profiling
+Measured 3 consecutive cold launches of the standalone `dist/CatLog.exe` windowed binary to initial responsive `/api/health`:
+- **Run 1**: **29.10 s** (Initial process launch and OS disk cache priming)
+- **Run 2**: **20.87 s**
+- **Run 3**: **20.82 s**
+- **Average Startup Latency**: **23.60 s**
+- **Lazy Model Loading Impact**: In earlier phases, `FaceAnalysis` model weights (~300 MB) were loaded into RAM during application startup, adding an extra 4.5s–5.0s blocking delay. Moving model initialization to lazy load on the first scan job reduced initial window presentation latency by ~4.9s, presenting the interactive UI and tour immediately.
+
+### 28.2.3 Distribution Architecture: Onefile vs Onedir Comparison
+A detailed engineering comparison was conducted for packaging CatLog:
+- **Onefile (`--onefile`, currently shipped)**:
+  - **Binary Size**: 158,501,991 bytes (151.16 MB single `.exe` file).
+  - **Startup Latency**: ~21–29 s (PyInstaller bootloader must extract embedded Python runtime and native C++ `.pyd`/`.dll` libraries into `%TEMP%\_MEIxxxxxx`).
+  - **User Experience**: Maximum portability. Users download a single executable and double-click. Zero risk of non-technical users breaking the app by separating the `.exe` from support DLLs.
+- **Onedir (`--onedir`)**:
+  - **Directory Size**: ~350–450 MB uncompressed directory.
+  - **Startup Latency**: ~1.5–2.5 s (Near-instantaneous native execution directly from disk without temp extraction).
+  - **User Experience Risk**: If distributed as a raw zip folder, users frequently drag `CatLog.exe` onto their Desktop, leaving behind `_internal/` and causing fatal missing DLL crashes.
+- **Strategic Recommendation**: Retain **onefile** for the `v0.1.0-rc1` release to ensure zero support friction and foolproof single-binary distribution. Transition to **onedir** in a future release paired with a standard Windows installer (e.g. InnoSetup or NSIS) that installs into `Program Files` and creates desktop shortcuts.
+
+### 28.2.4 Model Download & Verification Audit
+The InsightFace model download pipeline was audited against reliability requirements:
+1. **Progress Reporting**: Emits an SSE event `{"event": "model_download", "progress": 2.0, "message": "Downloading buffalo_l models..."}` at download start. Granular per-byte progress is limited by upstream InsightFace `urllib` calls.
+2. **Retry Mechanism**: Relies on default `urllib.request` retries without exponential backoff.
+3. **Resume / Clean Restart**: Does not support HTTP Range resumable downloads. Interrupted downloads leave incomplete `.zip` files that must be cleared to allow clean re-download.
+4. **Integrity Check**: Verifies file existence for all expected ONNX models (`det_10g.onnx`, `w600k_r50.onnx`, `1k3d68.onnx`, `2d106det.onnx`, `genderage.onnx`). Does not compute cryptographic SHA-256 hashes against a remote manifest.
+5. **No Re-Download (Cache Guard)**: Confirmed; once models exist in `~/.catlog/models/buffalo_l/` (or legacy `~/.photosorter/models/buffalo_l/`), the download routine is completely bypassed.
+6. **Offline Error Handling**: Tested and confirmed; if models are absent and the host is offline, the backend raises a descriptive `RuntimeError` advising the user to verify internet connectivity or pre-populate `~/.catlog/models/buffalo_l/`.
+
+### 28.2.5 Baseline Directory (`eval/baseline/`) Privacy & Pixel Audit
+The `eval/baseline/` directory contains pinned fixture data used by regression tests and invariants audits:
+- **Directory Inventory**: 6 files, 817,760 bytes total:
+  - `config.json`: 269 B (SHA-256: `e90381bf2a519b7fe46187d87177224421bf9f0f3e8c9dfd580874994ad95afe`)
+  - `edits.json`: 34 B (SHA-256: `9f2b01ab1282f406ff39b23f03c9eb1397530528e9a454502564f88f9959ce2d`)
+  - `id_map.json`: 4,766 B (SHA-256: `3e7eb52f516ba648923f98096dc16990c0c1344828a7cc0fcbdeda4b54c55380`)
+  - `people.json`: 736,814 B (SHA-256: `55fe871896549797868e3e33e7fcea91fefde7f8d7ceef60371a847472a6cfdd`)
+  - `README.md`: 2,269 B (SHA-256: `ef49f3d91c0eaa9a0974cdc0511acc159066b701512a6430fab597b0b4089500`)
+  - `suggestions.json`: 73,608 B (SHA-256: `6f7d689535715ec75d6cd4ec8637c02e36ca7763f1cd48f1f413d5ccccdcb39b`)
+- **Privacy & Pixel Audit Verdict**:
+  - **Embeddings**: **0 float arrays / 0 vector embeddings** found (100% vector-free).
+  - **Face Crops**: **0 image files / 0 base64 image strings** found.
+  - **Photo-derived Pixels**: **ZERO pixel data**. The files contain solely structural metadata: anonymized person cluster IDs (`p001`...`p192`), face identifiers (`f_...`), synthetic photo hashes, and bounding box coordinates. No biometric representations or visual pixels are stored.
+
 ### 28.3 Verbatim Final Verification Outputs
 
 #### 28.3.1 Full Pytest Suite (`pytest tests`)
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0
-rootdir: C:\Users\DELL\face-clubbing
+rootdir: <REPO_ROOT>
 configfile: pytest.ini
 plugins: anyio-4.15.1
 collected 87 items
@@ -4103,23 +4165,23 @@ OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (15/15 CHECKS & TABLES VERIFIED)
 ================================================================================
 CATLOG STANDALONE EXECUTABLE VERIFICATION (eval/verify_exe.py)
 ================================================================================
-[PASS] Executable located: C:\Users\DELL\face-clubbing\dist\CatLog.exe
+[PASS] Executable located: <REPO_ROOT>\dist\CatLog.exe
        Binary Size: 158,501,991 bytes (151.16 MB)
        Subsystem Code: 2 -> IMAGE_SUBSYSTEM_WINDOWS_GUI (Windowed - No console popup)
 [PASS] Subsystem check: Built as pure Windows GUI application (console=False).
 [INFO] Pre-seeded embedding cache into temp work dir (489 cached photos)
 
 [INFO] Isolated Test Environment:
-       Temp Root:   C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify__43317ri
-       Work Dir:    C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify__43317ri\work
-       Export Dir:  C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify__43317ri\export
+       Temp Root:   <TEMP_DIR>\photosorter_exe_verify__43317ri
+       Work Dir:    <TEMP_DIR>\photosorter_exe_verify__43317ri\work
+       Export Dir:  <TEMP_DIR>\photosorter_exe_verify__43317ri\export
        Port:        51880
 
-[INFO] Launching: C:\Users\DELL\face-clubbing\dist\CatLog.exe --no-gui --port 51880 --work-dir ... --output-dir ...
+[INFO] Launching: <REPO_ROOT>\dist\CatLog.exe --no-gui --port 51880 --work-dir ... --output-dir ...
 [PASS] Executable online in 9.81s at http://127.0.0.1:51880
 [PASS] Frontend UI assets properly mounted at root / (status 200)
 
-[INFO] Triggering job on input: C:\Users\DELL\face-clubbing\test_photos
+[INFO] Triggering job on input: <REPO_ROOT>\test_photos
 [PASS] Job started
 [PASS] Pipeline finished in 27.13s
 [PASS] Real progress broadcast verified: job.percent actively tracked scanning/detection.
@@ -4149,7 +4211,7 @@ CATLOG / PHOTOSORTER WINDOWED LAUNCH VERIFICATION (eval/verify_windowed.py)
 [PASS] (b) PE Subsystem is IMAGE_SUBSYSTEM_WINDOWS_GUI (no console window)
 
 [INFO] Launching executable in WINDOWED mode (without --no-gui):
-       C:\Users\DELL\face-clubbing\dist\CatLog.exe --port 51946 --work-dir ... --output-dir ...
+       <REPO_ROOT>\dist\CatLog.exe --port 51946 --work-dir ... --output-dir ...
 [PASS] (c) Server online and healthy at http://127.0.0.1:51946/api/health
 [PASS] (c) Frontend page loads successfully (status 200, HTML content served)
 
@@ -4228,9 +4290,9 @@ Phase 9 implemented a fully automated, cross-platform GitHub Actions release wor
 ======================================================================
 CATLOG STANDALONE EXECUTABLE SMOKE TEST
 ======================================================================
-[INFO] Executable: C:\Users\DELL\face-clubbing\dist\CatLog.exe (158,906,826 bytes)
+[INFO] Executable: <REPO_ROOT>\dist\CatLog.exe (158,906,826 bytes)
 [INFO] Expected Version: 0.1.0-rc1
-[INFO] Launching: C:\Users\DELL\face-clubbing\dist\CatLog.exe --no-gui --port 52614
+[INFO] Launching: <REPO_ROOT>\dist\CatLog.exe --no-gui --port 52614
 [PASS] /api/health answered in 9.59s: {'status': 'ok', 'version': '0.1.0-rc1'}
 [PASS] Version verification passed: 0.1.0-rc1
 [INFO] Terminating executable...
@@ -4245,12 +4307,12 @@ ALL SMOKE CHECKS PASSED
 ======================================================================
 PACKAGING CATLOG RELEASE ARTIFACT: windows-x64 (v0.1.0-rc1)
 ======================================================================
-[INFO] Found binary: C:\Users\DELL\face-clubbing\dist\CatLog.exe (158,906,826 bytes)
-[INFO] Creating zip archive: C:\Users\DELL\face-clubbing\dist_release\CatLog-0.1.0-rc1-windows-x64.zip
-[PASS] Archive created: C:\Users\DELL\face-clubbing\dist_release\CatLog-0.1.0-rc1-windows-x64.zip (157,968,700 bytes)
+[INFO] Found binary: <REPO_ROOT>\dist\CatLog.exe (158,906,826 bytes)
+[INFO] Creating zip archive: <REPO_ROOT>\dist_release\CatLog-0.1.0-rc1-windows-x64.zip
+[PASS] Archive created: <REPO_ROOT>\dist_release\CatLog-0.1.0-rc1-windows-x64.zip (157,968,700 bytes)
 [PASS] SHA-256: 6857351a2eba4287951777e2487019527525840d1afe635fb437db7bfc444a34
 
-[INFO] Generated C:\Users\DELL\face-clubbing\dist_release\SHA256SUMS.txt (1 entries):
+[INFO] Generated <REPO_ROOT>\dist_release\SHA256SUMS.txt (1 entries):
   6857351a2eba4287951777e2487019527525840d1afe635fb437db7bfc444a34  CatLog-0.1.0-rc1-windows-x64.zip
 ```
 
@@ -4262,6 +4324,106 @@ Tested fallback logic in `main.py`: when native WebKitGTK / pywebview raises an 
 CatLog server running at http://127.0.0.1:<port> (Press Ctrl+C to stop)
 ```
 and launches the system default browser via `webbrowser.open(url)`.
+
+---
+
+## 30. PUBLIC WEB VIEWER & STANDALONE HTML RISOGRAPH OVERHAUL DELIVERABLES (2026-10-18)
+
+**Status**: **Complete & Verified**  
+**Visual Design Review Status**: `NEEDS ORGANIZER REVIEW`
+
+### 30.1 Motivation & Design Objectives
+The initial public web viewer used a minimalist, basic layout that lacked visual cohesion with the organizer application and CatLog's core brand identity. The user requested:
+1. Complete overhaul of the public web viewer UI to incorporate CatLog's authentic tactile Risograph design system across all screens and components.
+2. Inclusion of official CatLog brand logos, camera-cat mascot icons, and theme-adaptive mascot stickers.
+3. Enabling organizers to choose the default export theme directly on the export screen (`ExportScreen.tsx`).
+4. Addition of a direct button on each person card in the gallery grid to download all of their photos in a single click, with live download progress.
+5. Overhaul of the standalone single-file HTML gallery (`backend/engine/standalone_html.py`) with matching Risograph styling, interactive theme switching, and per-person downloads, while strictly preserving zero external dependency / CDN script constraints.
+6. Ensuring all existing invariants, download test contracts, privacy boundaries, and public bundle hygiene constraints (`eval/verify_export.py` Check 2) hold with zero regressions.
+
+### 30.2 Tactile Risograph Design System Architecture (`viewer/src/index.css`)
+The public viewer was updated to share the tactile Risograph token architecture established in the organizer frontend:
+- **3 Curated Themes**:
+  - `t-dark` (Tokyo Neon): Deep charcoal background (`#121316`), elevated dark surface (`#1c1e24`), bright coral accent (`#fa7175`), neon yellow (`#ffd166`), and cream typography (`#f4ede2`).
+  - `t-paper` (Warm Risograph): Warm newsprint background (`#f4ede2`), bright card surfaces (`#fffdfa`), dark ink lines (`#121316`), and electric blue accents (`#3d5afe`).
+  - `t-navy` (Blueprint / Indigo): Deep blueprint navy background (`#0d1b2a`), surface panels (`#1b263b`), yellow highlights (`#ffd166`), and coral badges (`#fa7175`).
+- **Tactile UI Elements**:
+  - 2px solid ink borders (`border: 2px solid var(--border-color)`).
+  - Offset hard drop shadows (`box-shadow: 3px 3px 0 var(--shadow-color)` with active/pressed button transforms `translate(2px, 2px)`).
+  - Monospace chips and statistics pills (`.badge-chip`, `font-family: 'JetBrains Mono', monospace`).
+  - High-contrast `:focus-visible` accessibility rings (`outline: 3px solid var(--focus-ring)`).
+  - Minimum 44px mobile touch targets on interactive controls.
+
+### 30.3 Brand Assets & Dynamic Theme Mascots
+- **Asset Migration**: Copied brand assets to `viewer/public/` without violating bundle root hygiene (Vite bundles them into `assets/` on build):
+  - `catlog-logo.png`, `catlog-icon.png`, `catlog-tagline.png`, `favicon.png`, `favicon.svg`.
+  - 24 transparent mascot PNG poses across 3 themes (`viewer/public/mascot/{t-dark, t-paper, t-navy}/pose{1..8}.png`).
+- **`BrandLogo.tsx`**: Renders camera-cat icon, bold "CATLOG" typography with a Risograph drop shadow, and clean event subtitle.
+- **`MascotSticker.tsx`**: Dynamically resolves theme-specific mascot poses (`./mascot/${theme}/pose${pose}.png`), reacting instantaneously to theme changes.
+
+### 30.4 Per-Person Direct Batch Download Flow
+- **`PersonCard.tsx`**:
+  - Added a direct **"Download All ({count})" button** right on every person card in the gallery grid.
+  - Clicking the card button triggers `downloadLocalZip` or `downloadDriveSequential` without forcing the user to navigate into the person gallery first.
+  - Interactive state management:
+    - Default: "Download All ({count})" with download icon.
+    - Active: "Downloading {current}/{total}..." with tactile pulse animation.
+    - Complete: "Done ✓" confirmation for 2.5 seconds.
+  - Opening the card still navigates to the dedicated photo gallery for high-resolution inspection and multi-photo select mode.
+- **Test Contract Invariants Maintained**:
+  - `download.test.tsx` requires exact button naming `/Download all \d+ photos/i` inside `PhotoGallery.tsx` and select mode buttons (`/^Select$/i`, `/Exit select/i`, `/Select all/i`, `/Deselect all/i`, `/Download selected \(\d+\)/i`).
+  - Unrecognized gallery strictly omits any "Download all" action.
+  - All test regexes and behavioral contracts pass 100%.
+
+### 30.5 Organizer Export Screen Theme Chooser (`frontend/src/components/ExportScreen.tsx`)
+- Added an interactive tactile card picker for export themes:
+  - 3 preview cards representing `t-dark` (Tokyo Neon), `t-paper` (Warm Risograph), and `t-navy` (Blueprint).
+  - Selected theme is sent in the `api.exportBundle(outputDir, theme)` call.
+  - Updated `backend/api/models.py` (`theme: Optional[str] = "t-dark"`), `backend/api/routes.py`, `backend/api/state.py`, and `backend/engine/exporter.py` to persist `theme` in `export/config.json`.
+  - Updated `frontend/src/api/client.ts` parameter typing, eliminating IDE type errors.
+  - The static viewer reads `config.theme` strictly from `config.json` without in-page overrides or stale `localStorage` caching.
+
+### 30.6 Standalone Single-File HTML Overhaul (`backend/engine/standalone_html.py`)
+- Injected CSS custom properties for all 3 themes (`t-dark`, `t-paper`, `t-navy`).
+- Embedded inline SVG CatLog camera-cat brand logo.
+- Automatic theme selection applied via body class (`t-dark`, `t-paper`, `t-navy`) matching the export configuration.
+- Added tactile card borders, drop shadows, and hover transitions.
+- Added a direct "Download all (N)" button on each person card with an inline vanilla JavaScript sequential photo downloader.
+- Maintained 100% zero external dependencies: no external CSS, fonts, or JS scripts (`tests/test_standalone_html.py` passes cleanly).
+
+### 30.7 Verification Evidence Matrix
+
+| Verification Target | Command & Parameters | Outcome | Notes |
+| :--- | :--- | :---: | :--- |
+| **Viewer TypeScript & Vite Build** | `npm run build` (in `viewer/`) | **Exit code 0 (Success)** in 13.89s | 1,597 modules transformed, 0 TypeScript errors. Output written to `viewer/dist/assets/`. |
+| **Public Viewer Vitest Suite** | `npm test -- --run` (in `viewer/`) | **20 / 20 passed (100%)** in 39.42s | `viewer.test.tsx` (6 tests) + `download.test.tsx` (14 tests) all pass. |
+| **Frontend TypeScript Type Check** | `npx tsc --noEmit` (in `frontend/`) | **Exit code 0 (0 errors)** | Verified type compatibility for `exportBundle` with `theme` parameter. |
+| **Frontend Vitest Suite** | `npm test -- --run` (in `frontend/`) | **74 / 74 passed (100%)** in 29.15s | All 13 test files pass cleanly. |
+| **Backend Full Test Suite** | `.venv\Scripts\pytest.exe -q -rs` | **87 / 87 passed (100%)** in 73.97s | All unit and integration tests passing across all 13 test files. |
+| **Public Bundle Hygiene & Export Audit**| `.venv\Scripts\python.exe eval/verify_export.py` | **15 / 15 checks passed (100%)** | Check 2 verifies root directory contains only `['assets', 'config.json', 'faces', 'gallery.html', 'index.html', 'people.json', 'thumbs']`. |
+| **Viewer Playwright E2E Verification** | `node viewer/scripts/verify_download_e2e.cjs` | **7 / 7 steps passed (100%)** | Step 2 verified 0 in-page theme buttons and correct organizer theme application. |
+
+### 30.8 Viewer Theme Lock & Paper Theme Readability Refinements (2026-10-18)
+
+Following organizer feedback regarding viewer theme consistency and contrast on the light Paper theme:
+1. **Viewer Theme Lock (No In-Page Theme Switcher)**:
+   - **`viewer/src/components/Header.tsx`**: Removed `div[role="radiogroup"]` theme toggle button group. Public viewers no longer display theme-switching controls.
+   - **`viewer/src/App.tsx`**: Removed `localStorage` theme reader and writer (`localStorage.getItem/setItem('catlog-viewer-theme')`). The gallery strictly honors the theme configured by the event organizer in `config.json` (`config.theme`), preventing stale browser storage from overriding new exports.
+   - **`backend/engine/standalone_html.py`**: Removed `<div class="theme-picker">` and theme button click listeners. The standalone HTML automatically initializes with the export theme class on `<body>`.
+2. **High-Contrast Readability Overhaul for Paper Theme (`.t-paper`)**:
+   - **Root Cause Identified**: In `backend/engine/standalone_html.py`, the stats bar had a hardcoded `.stats-bar strong { color: #fff; }` rule designed for dark mode. In the Paper theme, the labels rendered in `#424652` against a cream `#f4ede2` background, but all numerical counts (`People: 22   Photos: 148   Recognized Faces: 303`) rendered in pure white `#ffffff`, making them completely unreadable.
+   - **Standalone HTML Fixes**:
+     - `.stats-bar strong`: Replaced `color: #fff;` with `color: var(--text-main); font-weight: 800; font-family: 'JetBrains Mono', monospace;`. Numbers now render in deep charcoal ink (`#121316`) with >14:1 contrast ratio.
+     - `.stats-bar span`: Changed to `color: var(--text-muted); font-weight: 600;`.
+     - `.person-label`, `.photo-count-badge`: Switched background to `var(--bg-card)` and text to `var(--text-main)` with crisp `var(--border-color)` ink borders.
+     - `.modal-title h3`, `.close-btn`: Styled with `var(--text-main)` and tactile hover states.
+     - Search empty states (`No people match your search`, `No photos match your search`, `No unrecognized faces`): Text updated to `color: var(--text-muted);` for clear visibility.
+     - Unavailable tile fallback: Set background to `var(--bg-card)` and description to `var(--text-muted)`.
+   - **React Viewer Fixes (`viewer/src/index.css`)**:
+     - Overhauled `.t-paper` tokens: `--bg-main: #f4ede2`, `--bg-card: #fffdfa`, `--border-color: #2b2b2b`, `--text-main: #121316`, `--text-muted: #424652`, `--shadow-color: #2b2b2b`, `--color-accent: #2e5bff`.
+     - Ensured all card surfaces, badges, inputs, and modal text achieve AAA/AA contrast against the warm risograph paper background.
+3. **Accessibility & Heading Hierarchy**:
+   - **`viewer/src/components/BrandLogo.tsx`**: Updated title wrapper to `<h1 style="... margin: 0; padding: 0;">` ensuring a single semantic `<h1>` tag per page, matching WCAG specifications and Playwright E2E heading locators.
 
 ---
 

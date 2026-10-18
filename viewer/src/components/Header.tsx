@@ -1,6 +1,7 @@
 import React from 'react';
 import { ViewerConfig } from '../types';
-import { Users, Image as ImageIcon, Search, ArrowLeft, Sun, Moon, Compass } from 'lucide-react';
+import { Users, Image as ImageIcon, Search, ArrowLeft, X } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 
 export type ViewerTheme = 't-dark' | 't-paper' | 't-navy';
 
@@ -37,93 +38,34 @@ export const Header: React.FC<HeaderProps> = ({
             {activeView !== 'grid' && (
               <button
                 onClick={onBackToGrid}
-                className="touch-target p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] transition-colors focus:outline-none focus-visible:ring-2"
+                className="btn-tactile btn-sm"
                 title="Back to all people"
                 aria-label="Back to all people"
+                style={{ padding: '8px 12px' }}
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Back</span>
               </button>
             )}
 
-            {/* CatLog Brand Logo & Title */}
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[var(--color-accent)] text-[var(--color-accent-text)] flex items-center justify-center font-bold text-base shadow-sm select-none">
-                🐱
-              </div>
-              <div>
-                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[var(--text-main)] flex items-center gap-2">
-                  {config.title || 'CatLog Gallery'}
-                </h1>
-                {config.subtitle && (
-                  <p className="text-xs text-[var(--text-muted)] line-clamp-1">
-                    {config.subtitle}
-                  </p>
-                )}
-              </div>
-            </div>
+            {/* Official CatLog Brand Logo & Title */}
+            <BrandLogo
+              title={config.title || 'CatLog'}
+              subtitle={config.subtitle || 'Public Photo Gallery'}
+              onClick={activeView !== 'grid' ? onBackToGrid : undefined}
+            />
           </div>
 
-          {/* Right: Theme Switcher, Stats Badges & Search */}
+          {/* Right: Stats Badges & Search */}
           <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5 w-full md:w-auto">
-            {/* Theme Selector (3 Themes: Dark, Paper, Navy) */}
-            <div className="inline-flex items-center p-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] gap-1" role="radiogroup" aria-label="Select theme">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={theme === 't-dark'}
-                onClick={() => onThemeChange('t-dark')}
-                className={`touch-target px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
-                  theme === 't-dark'
-                    ? 'bg-[var(--color-accent)] text-[var(--color-accent-text)] shadow-sm'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                }`}
-                title="Dark theme"
-              >
-                <Moon className="w-3.5 h-3.5 mr-1 inline" />
-                <span>Dark</span>
-              </button>
-
-              <button
-                type="button"
-                role="radio"
-                aria-checked={theme === 't-paper'}
-                onClick={() => onThemeChange('t-paper')}
-                className={`touch-target px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
-                  theme === 't-paper'
-                    ? 'bg-[var(--color-accent)] text-[var(--color-accent-text)] shadow-sm'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                }`}
-                title="Paper theme"
-              >
-                <Sun className="w-3.5 h-3.5 mr-1 inline" />
-                <span>Paper</span>
-              </button>
-
-              <button
-                type="button"
-                role="radio"
-                aria-checked={theme === 't-navy'}
-                onClick={() => onThemeChange('t-navy')}
-                className={`touch-target px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
-                  theme === 't-navy'
-                    ? 'bg-[var(--color-accent)] text-[var(--color-accent-text)] shadow-sm'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                }`}
-                title="Navy theme"
-              >
-                <Compass className="w-3.5 h-3.5 mr-1 inline" />
-                <span>Navy</span>
-              </button>
-            </div>
-
             {/* Stats Badges */}
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)]">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)]">
-                <Users className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text)]">
+              <span className="badge-chip">
+                <Users className="w-3.5 h-3.5 text-[var(--accent)]" />
                 <span>{totalPeople} People</span>
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)]">
-                <ImageIcon className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+              <span className="badge-chip">
+                <ImageIcon className="w-3.5 h-3.5 text-[var(--accent)]" />
                 <span>{totalPhotos} Photos</span>
               </span>
             </div>
@@ -131,14 +73,23 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Search Input on Grid View */}
             {activeView === 'grid' && (
               <div className="relative w-full sm:w-56">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-dim)] pointer-events-none" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search people..."
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
-                  className="w-full h-11 pl-9 pr-3 text-sm bg-[var(--bg-card)] text-[var(--text-main)] placeholder-[var(--text-dim)] rounded-xl border border-[var(--border-color)] focus:outline-none focus:border-[var(--color-accent)] transition-all"
+                  className="w-full h-10 pl-9 pr-8 text-sm font-mono bg-[var(--input)] text-[var(--text)] placeholder-[var(--muted)] rounded-lg border-2 border-[var(--line)] focus:outline-none focus:border-[var(--accent)] shadow-[2px_2px_0px_var(--line)] transition-all"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => onSearchChange('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)] p-0.5"
+                    title="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             )}
           </div>

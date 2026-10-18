@@ -14,6 +14,10 @@ import {
   ChevronRight,
   FileCode,
   HardDrive,
+  Moon,
+  Sun,
+  Compass,
+  Palette,
 } from 'lucide-react';
 import { MascotSticker } from './MascotSticker';
 
@@ -52,6 +56,9 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   const [title, setTitle] = useState(autoDriveName || initialTitle || 'CatLog Gallery');
   const [subtitle, setSubtitle] = useState(initialSubtitle);
   const [includeMaybe, setIncludeMaybe] = useState(false);
+  const [viewerTheme, setViewerTheme] = useState<'t-dark' | 't-paper' | 't-navy'>(
+    theme === 't-paper' || theme === 't-navy' ? theme : 't-dark'
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -138,6 +145,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
         title: title.trim(),
         subtitle: subtitle.trim(),
         include_maybe: includeMaybe,
+        theme: viewerTheme,
       });
       setExportResult(res);
       if (onRefreshStats) onRefreshStats();
@@ -605,6 +613,48 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
                   placeholder="Auto-sorted face albums and photo gallery"
                   className="w-full px-4 py-3.5 bg-[var(--input)] border-2 border-[var(--panel-border)] rounded-md text-base md:text-lg text-[var(--text)] font-sans focus:outline-none focus:border-[var(--accent)] shadow-[3px_3px_0px_var(--line)]"
                 />
+              </div>
+
+              {/* Theme Picker for Exported Gallery */}
+              <div className="pt-2">
+                <label className="block text-base md:text-lg font-bold uppercase text-[var(--text)] font-mono mb-2 flex items-center gap-2">
+                  <Palette className="w-5 h-5 text-[var(--accent)]" />
+                  <span>Default Viewer Theme</span>
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { id: 't-dark', name: 'Dark', subtitle: 'Tactile Charcoal', icon: Moon, dot: '#141211', border: '#fa7175' },
+                    { id: 't-paper', name: 'Paper', subtitle: 'Risograph Cream', icon: Sun, dot: '#efe8db', border: '#e5781a' },
+                    { id: 't-navy', name: 'Navy', subtitle: 'Midnight Deep', icon: Compass, dot: '#1a3350', border: '#f28f24' },
+                  ].map((t) => {
+                    const isSelected = viewerTheme === t.id;
+                    const IconComp = t.icon;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setViewerTheme(t.id as any)}
+                        className={`p-3.5 rounded-lg border-2 text-left transition-all relative ${
+                          isSelected
+                            ? 'border-[var(--accent)] bg-[var(--input)] shadow-[3px_3px_0px_var(--line)]'
+                            : 'border-[var(--panel-border)] bg-[var(--panel)] hover:border-[var(--line)]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <IconComp className={`w-4 h-4 ${isSelected ? 'text-[var(--accent)]' : 'text-[var(--muted)]'}`} />
+                            <span className="font-bold text-base font-mono text-[var(--text)]">{t.name}</span>
+                          </div>
+                          <span
+                            className="w-3.5 h-3.5 rounded-full border border-black/30 flex-shrink-0"
+                            style={{ backgroundColor: t.dot }}
+                          />
+                        </div>
+                        <span className="text-xs text-[var(--muted)] font-mono block truncate">{t.subtitle}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="pt-2">

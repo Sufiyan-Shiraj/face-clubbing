@@ -9,15 +9,7 @@ const PhotoGallery = React.lazy(() => import('./components/PhotoGallery').then(m
 const UnrecognizedGallery = React.lazy(() => import('./components/UnrecognizedGallery').then(m => ({ default: m.UnrecognizedGallery })));
 
 export const App: React.FC = () => {
-  const [theme, setTheme] = useState<ViewerTheme>(() => {
-    try {
-      const saved = localStorage.getItem('catlog-viewer-theme');
-      if (saved === 't-dark' || saved === 't-paper' || saved === 't-navy') {
-        return saved;
-      }
-    } catch {}
-    return 't-dark';
-  });
+  const [theme, setTheme] = useState<ViewerTheme>('t-dark');
 
   const [config, setConfig] = useState<ViewerConfig>({
     title: 'CatLog Gallery',
@@ -35,15 +27,12 @@ export const App: React.FC = () => {
   const [activeView, setActiveView] = useState<'grid' | 'person' | 'unrecognized'>('grid');
   const [selectedPerson, setSelectedPerson] = useState<PersonCluster | null>(null);
 
-  // Sync theme with DOM and localStorage
+  // Sync theme with DOM
   useEffect(() => {
     document.documentElement.classList.remove('t-dark', 't-paper', 't-navy');
     document.body.classList.remove('t-dark', 't-paper', 't-navy');
     document.documentElement.classList.add(theme);
     document.body.classList.add(theme);
-    try {
-      localStorage.setItem('catlog-viewer-theme', theme);
-    } catch {}
   }, [theme]);
 
   const handleThemeChange = (newTheme: ViewerTheme) => {
@@ -61,6 +50,10 @@ export const App: React.FC = () => {
         if (configRes.ok) {
           const configJson = await configRes.json();
           setConfig((prev) => ({ ...prev, ...configJson }));
+
+          if (configJson.theme && (configJson.theme === 't-dark' || configJson.theme === 't-paper' || configJson.theme === 't-navy')) {
+            setTheme(configJson.theme);
+          }
 
           if (configJson.accent) {
             document.documentElement.style.setProperty('--color-accent', configJson.accent);
@@ -177,7 +170,7 @@ export const App: React.FC = () => {
               <AlertCircle className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Gallery Data Missing</h3>
+              <h3 className="text-base font-bold text-[var(--text)]">Gallery Data Missing</h3>
               <p className="text-xs text-[var(--text-muted)] mt-1">
                 Could not find <code className="text-[var(--text-main)]">people.json</code>.
                 Ensure export bundle files are located in the gallery folder.
@@ -199,11 +192,13 @@ export const App: React.FC = () => {
               <PeopleGrid
                 people={data.people}
                 unrecognized={data.unrecognized}
+                photos={data.photos}
                 searchQuery={searchQuery}
                 showLabels={config.show_labels !== false}
                 hideSinglePhotoDefault={config.hide_single_photo_default}
                 onSelectPerson={handleSelectPerson}
                 onSelectUnrecognized={handleSelectUnrecognized}
+                theme={theme}
               />
             )}
 
@@ -229,7 +224,7 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      <Footer config={config} generatedAt={data?.generated_at} />
+      <Footer config={config} generatedAt={data?.generated_at} theme={theme} />
     </div>
   );
 };

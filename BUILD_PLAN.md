@@ -83,24 +83,27 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
-## Phase 2b: Public Viewer Rework & Per-Person Download [DONE - NEEDS ORGANIZER REVIEW]
+## Phase 2b: Public Viewer & Standalone HTML Risograph Overhaul [DONE - NEEDS ORGANIZER REVIEW]
 
-**Build** (in `viewer/`)
+**Build** (in `viewer/`, `backend/engine/standalone_html.py`, and `frontend/src/components/ExportScreen.tsx`)
 1. **Design & Theming**:
-   - 3 cohesive themes: `t-dark` (Dark Slate), `t-paper` (Riso Paper), `t-navy` (Deep Navy) with CatLog branding.
-   - Removed filler subtitles and helper text; every line of UI text earns its place.
-   - Mobile-first, fast, accessible (contrast, visible focus rings, minimum 44px touch targets).
+   - 3 cohesive Risograph themes: `t-dark` (Tokyo Neon), `t-paper` (Warm Risograph), `t-navy` (Blueprint) with CatLog tactile borders, offset box shadows, and responsive touch targets.
+   - Brand logos and camera-cat icon (`BrandLogo.tsx`), noise textures, and 24 dynamic transparent mascot poses (`MascotSticker.tsx`).
+   - Organizer export theme selection in `ExportScreen.tsx` with live preview swatches, persisted to `export/config.json`.
+   - Standalone single-file HTML export (`standalone_html.py`) overhauled with all 3 themes, embedded SVG logo, interactive theme switcher buttons, and direct per-person sequential downloads (zero external dependencies).
 2. **Per-Person Downloads**:
-   - Primary "Download all N photos" button showing the exact photo count.
+   - Direct "Download All ({count})" button on every person card in the gallery grid with live progress counter and checkmark confirmation.
+   - Primary "Download all N photos" button inside person gallery showing the exact photo count.
    - Per-photo download links with sanitized `personname_001.jpg` filenames.
    - Select mode with checkbox selection on photos, "Select all" / "Deselect all", and sticky bottom action bar ("Download selected (K)").
    - **Local Export**: Client-side streaming zip built with `client-zip`, progress counter, cancel via `AbortSignal`, without buffering all photos in memory.
    - **Drive Export**: Sequential single-photo download loop reusing existing `download_url` (`https://drive.google.com/uc?id=<ID>&export=download`) with progress counter, one-time browser permission guidance note, and "Open in Drive" fallback. No server.
-   - Unrecognized and maybe-match groups have NO "Download all" button.
+   - Unrecognized and maybe-match groups strictly have NO "Download all" button.
    - Fallback tiles for unavailable images and lazy loading (`loading="lazy"`).
 3. **Verification & Testing**:
    - 20 Vitest unit/integration tests (`viewer.test.tsx` and `download.test.tsx`) covering filename sanitization, zero cross-person data leakage, select mode, zip streaming, Drive downloads, and config swap.
    - Headless Playwright E2E verification (`verify_download_e2e.cjs`) testing themes, selection, local zip streaming download, and Unrecognized guard.
+   - Public bundle hygiene (`eval/verify_export.py` Check 2) strictly verified (zero stray root files).
    - Screenshots captured with zero real human faces saved in `scratch/screenshots/`:
      - `viewer_01_grid.png`
      - `viewer_02_person_download.png`

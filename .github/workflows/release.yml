@@ -10,6 +10,11 @@ on:
         description: 'Release tag name (e.g. v0.1.0-rc1)'
         required: false
         default: ''
+      dry_run:
+        description: 'Dry run (build, test, and upload artifacts without publishing GitHub release)'
+        type: boolean
+        required: false
+        default: true
 
 permissions:
   contents: write
@@ -128,6 +133,7 @@ jobs:
     name: Publish GitHub Release
     needs: build
     runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || (github.event.inputs.dry_run != true && github.event.inputs.dry_run != 'true')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

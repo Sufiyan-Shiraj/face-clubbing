@@ -274,8 +274,10 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             out_dir = req.output_dir or state.settings.output_dir or "export"
             if str(out_dir).startswith("http") or "drive.google.com" in str(out_dir):
                 out_dir = "export"
-                state.settings.output_dir = "export"
-            exported_files = state.export_public_bundle(output_dir=out_dir)
+            exported_files = state.export_public_bundle(
+                output_dir=out_dir,
+                theme=req.theme or "t-dark",
+            )
 
             # Auto-save recent project entry
             try:

@@ -195,6 +195,7 @@ class ExportRequest(BaseModel):
     title: Optional[str] = None
     subtitle: Optional[str] = None
     include_maybe: Optional[bool] = None
+    theme: Optional[str] = "t-dark"
 
 
 class ExportResponse(BaseModel):

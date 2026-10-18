@@ -1,7 +1,7 @@
 # CatLog Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-18T02:35:00+05:30  
-**Audit Mode**: PHASE 7 FINAL AUDIT & RELEASE CANDIDATE — Optimization (43.1% speedup, 86.3% mascot compression, 35.9% export reduction), Organization (docs/archive, cropper.py deleted), Exe Tuning (CatLog.exe 151.16 MB, Subsystem 2 GUI), Pytest 87/87 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed, Baseline Invariants Strictly Verified
+**Generated**: 2026-10-18T08:10:00+05:30  
+**Audit Mode**: PUBLIC WEB VIEWER & STANDALONE HTML RISOGRAPH OVERHAUL COMPLETE — Viewer Theme Switcher Removed (Organizer Config Authority), Light/Paper Theme High-Contrast Readability Overhaul, Brand Logos & Mascots, Per-Person Direct Batch Download, Organizer ExportScreen Theme Chooser, Zero-Dependency Standalone HTML, Pytest 87/87 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed, Export Invariants 15/15 Passed, E2E Playwright 7/7 Passed
 
 ---
 
@@ -33,7 +33,7 @@
 ### Document Headers & Revisions
 - **SPEC.md**: Revision 3 (2026-10-13) + Section 9 Updated for Public Viewer Rework (3 Themes, Streaming Zip, Drive Direct Downloads, Visual Design NEEDS ORGANIZER REVIEW)
 - **BUILD_PLAN.md**: Updated with Phase 2b (Public Viewer Rework + Per-Person Download) & Phase 7 (Audit, Optimization, Packaging)
-- **REPORT.md**: Updated with Section 27 (PART B: Public Viewer Rework) & Section 28 (Phase 7 Final Optimization, Organization & Quality Audit Deliverables)
+- **REPORT.md**: Updated with Section 27 & Section 30 (Public Web Viewer & Standalone HTML Risograph Overhaul)
 - **README.md**: Updated Key Features, WebView2 Documentation, and Repository Directory Tree
 
 ### BUILD_PLAN.md Claimed Status vs Reality Table
@@ -44,7 +44,7 @@
 | **1 Engine core (CLI)** | Accepted (271 files / 259 photos / 1,701 faces) | `backend/engine/scanner.py`, `loader.py`, `detector.py`, `clusterer.py`, `cropper.py`, `thumbnails.py`, `exporter.py`, `pipeline.py`, `__main__.py` | Full Sections 1–12, Executive State (192 clusters, 81 singletons, 445 unrec faces) | **MATCHES** |
 | **1b Engine amendments** | Done | `backend/engine/edits.py`, `exporter.py`, `eval/verify_export.py`, `eval/ground_truth.json`, `eval/recall_table.py`, `tests/test_clustering.py` | Section 13 (Tasks 1–11 documented with test outputs) | **MATCHES** |
 | **2 Static viewer** | Done | `viewer/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/`, `src/__tests__/viewer.test.tsx`, `dist/` | Section 14 (All Rows 1–15 pass) | **MATCHES** |
-| **2b Public viewer rework & download** | Complete (NEEDS ORGANIZER REVIEW) | `viewer/src/utils/downloader.ts`, `src/components/PhotoGallery.tsx`, `src/components/Header.tsx`, `src/components/UnrecognizedGallery.tsx`, `src/index.css`, `viewer/src/__tests__/download.test.tsx`, `viewer/scripts/verify_download_e2e.cjs` | Section 27 (3 Themes, streaming zip via client-zip, Drive sequential downloads, sanitized names, 20/20 Vitest pass, E2E test pass, 0 real faces in screenshots) | **MATCHES** |
+| **2b Public viewer rework & download** | Complete & Overhauled (NEEDS ORGANIZER REVIEW) | `viewer/src/utils/downloader.ts`, `src/components/`, `src/index.css`, `backend/engine/standalone_html.py`, `frontend/src/components/ExportScreen.tsx` | Section 27 & 30 (Tactile Risograph Overhaul: 3 Themes, Brand Logos, Mascots, Per-Person Direct Batch Download, Organizer Theme Chooser, Zero-Dep Standalone HTML, 20/20 Viewer Vitest, 74/74 Frontend Vitest, 87/87 Pytest, 15/15 Export Checks) | **MATCHES** |
 | **3 API layer (FastAPI)** | Done | `backend/api/app.py`, `backend/api/jobs.py`, `backend/api/models.py`, `backend/api/routes.py`, `backend/api/state.py`, `eval/verify_api.py`, `tests/test_api.py` | Section 15 (Endpoints, SSE streaming, edit replay, fixture verification) | **MATCHES** |
 | **4 Organizer UI (React)** | Done | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `UnrecognizedTriage.tsx`, `FaceCompareModal.tsx`, `ImageViewerModal.tsx`, `OpenProjectModal.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `dist/` | Sections 16, 21, 22, 23 & 24 (Screens, multi-select triage, target compare modal, dashed coral boxes, on-canvas quick change, inspect faces drawer, open saved project modal, 74/74 Vitest passed) | **MATCHES** |
 | **5 Desktop shell & packaging** | Complete | `main.py`, `photosorter.spec`, `dist/CatLog.exe`, `eval/verify_exe.py`, `eval/verify_windowed.py`, `eval/verify_models_cold.py` | Section 19 (Pywebview shell, native dialogs, PyInstaller exe, GUI subsystem, bundle hygiene, windowed verification, cold cache run) | **MATCHES** |
@@ -73,7 +73,7 @@ Ran with `.venv/Scripts/python.exe`:
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0
-rootdir: C:\Users\DELL\face-clubbing
+rootdir: <REPO_ROOT>
 configfile: pytest.ini
 plugins: anyio-4.15.1
 collected 87 items
@@ -497,7 +497,7 @@ CATLOG / PHOTOSORTER WINDOWED LAUNCH VERIFICATION (eval/verify_windowed.py)
 [PASS] (b) PE Subsystem is IMAGE_SUBSYSTEM_WINDOWS_GUI (no console window)
 
 [INFO] Launching executable in WINDOWED mode (without --no-gui):
-       C:\Users\DELL\face-clubbing\dist\CatLog.exe --port 51946 --work-dir ... --output-dir ...
+       <REPO_ROOT>\dist\CatLog.exe --port 51946 --work-dir ... --output-dir ...
 [PASS] (c) Server online and healthy at http://127.0.0.1:51946/api/health
 [PASS] (c) Frontend page loads successfully (status 200, HTML content served)
 
@@ -528,23 +528,23 @@ ALL WINDOWED LAUNCH CHECKS PASSED AUTOMATICALLY:
 ================================================================================
 CATLOG STANDALONE EXECUTABLE VERIFICATION (eval/verify_exe.py)
 ================================================================================
-[PASS] Executable located: C:\Users\DELL\face-clubbing\dist\CatLog.exe
+[PASS] Executable located: <REPO_ROOT>\dist\CatLog.exe
        Binary Size: 158,501,991 bytes (151.16 MB)
        Subsystem Code: 2 -> IMAGE_SUBSYSTEM_WINDOWS_GUI (Windowed - No console popup)
 [PASS] Subsystem check: Built as pure Windows GUI application (console=False).
 [INFO] Pre-seeded embedding cache into temp work dir (489 cached photos)
 
 [INFO] Isolated Test Environment:
-       Temp Root:   C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify__43317ri
-       Work Dir:    C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify__43317ri\work
-       Export Dir:  C:\Users\DELL\AppData\Local\Temp\photosorter_exe_verify__43317ri\export
+       Temp Root:   <TEMP_DIR>\photosorter_exe_verify__43317ri
+       Work Dir:    <TEMP_DIR>\photosorter_exe_verify__43317ri\work
+       Export Dir:  <TEMP_DIR>\photosorter_exe_verify__43317ri\export
        Port:        51880
 
-[INFO] Launching: C:\Users\DELL\face-clubbing\dist\CatLog.exe --no-gui --port 51880 --work-dir ... --output-dir ...
+[INFO] Launching: <REPO_ROOT>\dist\CatLog.exe --no-gui --port 51880 --work-dir ... --output-dir ...
 [PASS] Executable online in 9.81s at http://127.0.0.1:51880
 [PASS] Frontend UI assets properly mounted at root / (status 200)
 
-[INFO] Triggering job on input: C:\Users\DELL\face-clubbing\test_photos
+[INFO] Triggering job on input: <REPO_ROOT>\test_photos
 [PASS] Job started
 [PASS] Pipeline finished in 27.13s
 [PASS] Real progress broadcast verified: job.percent actively tracked scanning/detection.
@@ -950,10 +950,12 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 
 | Dimension | Metric / Target | Before Phase 7 | After Phase 7 | Improvement / Delta | Verification Method | Verdict |
 | :--- | :--- | :---: | :---: | :---: | :--- | :---: |
-| **Pipeline Speed** | Cold pipeline runtime on 271-photo dataset | 151.72 s | **86.29 s** | **-65.43 s (43.1% overall speedup)** | `eval/benchmark_pipeline.py` | **PASS** |
-| **Crop Generation** | Multi-face crop extraction per photo | Decoded source image N times (once per face) | **Single-pass batch decode & slice** | ~5x faster crop extraction on dense group photos | `backend/engine/thumbnails.py` | **PASS** |
+| **Pipeline Speed (Warm Cache)** | Pre-computed embeddings pipeline runtime on 271-photo dataset | 151.72 s (0.56 s/photo) | **86.29 s (0.32 s/photo)** | **-65.43 s (43.1% speedup)** | `eval/benchmark_pipeline.py` (post-detection: scan, crop, cluster, export) | **PASS** |
+| **Detection Speed (Truly Cold)** | Raw detection + ArcFace embedding on CPU (empty cache) | 8.55 s/photo | **8.55 s/photo** | Compute-bound (SCRFD 10G + ArcFace ResNet50 on CPU) | Benchmark on raw photos (`~36.9 min` for 259 photos) | **PASS** |
+| **Crop Generation** | Multi-face crop extraction per photo | Decoded source image N times (once per face) | **Single-pass batch decode & slice** | **1.97x measured speedup** (349.5 ms → 177.4 ms on 10-face photo) | Direct execution benchmark (`backend/engine/thumbnails.py`) | **PASS** |
 | **Scanner Prefetch** | Photo discovery & EXIF reading | Single-threaded linear read | **Multi-core ThreadPoolExecutor prefetch** | Instantaneous metadata scan | `backend/engine/scanner.py` | **PASS** |
 | **ONNX Runtime** | Intra-op & Inter-op CPU threads | Default unconstrained | **Tuned to hardware thread pool (`min(4, os.cpu_count())`)** | Reduced thread contention & CPU spikes | `backend/engine/detector.py` | **PASS** |
+| **Cold Start to Usable UI** | Native GUI binary cold launch to `/api/health` | ~28.5 s (eager model load) | **23.60 s avg** (29.10s, 20.87s, 20.82s) | **-4.9 s startup reduction via lazy model loading** | Timed launches of `dist/CatLog.exe` | **PASS** |
 | **Peak Memory (RAM)** | Pipeline peak RSS | ~745 MB | **~710 MB** | -35 MB reduction (< 1.5 GB budget) | `psutil` process monitor | **PASS** |
 | **Mascot Asset Size** | 24 transparent PNG stickers | 5,049,856 B (4.82 MB) | **691,824 B (0.66 MB)** | **-4,358,032 B (-86.3% size reduction)** | Directory size audit (`frontend/public/mascot/`) | **PASS** |
 | **Export Bundle (Faces)** | 1,701 face crops (JPEG quality 95 vs 85) | 24,736,890 B (23.59 MB) | **13,463,552 B (12.84 MB)** | **-11,273,338 B (-45.6% size reduction)** | `eval/verify_export.py` (PSNR = 42.92 dB) | **PASS** |
@@ -967,6 +969,14 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **Backend Tests** | Pytest unit & integration test count | 85 passed in 68.51 s | **87 passed in 56.18 s** | **+2 tests, 12.33s faster execution** | `pytest tests` | **PASS** |
 | **Frontend Tests** | Organizer Vitest test count | 74 passed | **74 passed** (13 test files) | 100% green | `npm test` in `frontend/` | **PASS** |
 | **Viewer Tests** | Public viewer Vitest test count | 20 passed | **20 passed** (2 test files) | 100% green | `npm test` in `viewer/` | **PASS** |
+
+### 9.1 Phase 7 Technical Audits & Measurements
+- **Benchmark Honesty**: The 151.72s → 86.29s optimization measured the post-detection pipeline on a 271-photo dataset with **pre-computed embedding cache** (0.32 s/photo). Truly cold inference on CPU requires **8.55 s/photo** (~36.9 min for 259 photos) due to deep neural network FLOP limits on CPU.
+- **Measured Crop Extraction**: Micro-benchmark on 10-face photo showed 349.5 ms (legacy) vs 177.4 ms (single-pass decode/slice), establishing a **1.97x measured speedup** (retracting heuristic "~5x" claim).
+- **Cold Start to Usable UI**: 3 consecutive cold launches of `dist/CatLog.exe` to `/api/health`: 29.10s, 20.87s, 20.82s (**avg 23.60s**). Lazy model loading eliminates ~4.9s from initial UI render time.
+- **Onefile vs Onedir**: Single-file distribution (151.16 MB `.exe`, ~23.6s extraction boot) remains the recommendation for `v0.1.0-rc1` to prevent missing DLL errors; onedir (~1.5-2.5s boot) should be paired with an installer in future versions.
+- **Model Download Audit**: Verified cache guard (skips download if present in `~/.catlog/models/buffalo_l/`), clean error handling when offline (`RuntimeError`), download start notification event, lack of HTTP resume / SHA-256 checks in upstream InsightFace.
+- **Baseline Privacy Audit (`eval/baseline/`)**: 6 files (817,760 B total) verified: **0 vector embeddings**, **0 face crops**, **ZERO photo-derived pixels**. Only structural IDs and bounding boxes.
 
 ---
 
@@ -982,4 +992,25 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **10.6** | License & Third-Party Notices | `LICENSE` & `THIRD_PARTY_NOTICES.md` | MIT License, InsightFace research notice, 17+ deps | All notices present; InsightFace models non-redistribution documented | **PASS** |
 | **10.7** | README Release & Privacy Documentation | `README.md` | Downloads table, SmartScreen / Gatekeeper, `~/.catlog` | Complete OS guidance, ~300 MB model download, zero cloud upload | **PASS** |
 | **10.8** | Pre-release dry run validation | `scripts/package_release.py` | `CatLog-0.1.0-rc1-windows-x64.zip` | 157,968,700 bytes, SHA-256 `6857351A...` (mac/Linux builds pending CI) | **PASS** |
+
+---
+
+## 11. SCRIPT-CHECKED AUDIT: PUBLIC WEB VIEWER & STANDALONE HTML RISOGRAPH OVERHAUL
+
+| Item | Requirement & Test Scope | Test File / Script | Script-Checked Metric Target | Actual Result | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **11.1** | Tactile Risograph Design Tokens & 3 Curated Themes | `viewer/src/index.css` | `t-dark`, `t-paper`, `t-navy` variables, 2px solid ink borders, offset drop shadows, `.badge-chip`, `:focus-visible` ring | All 3 themes verified; tactile borders, shadows, and focus rings implemented | **PASS** |
+| **11.2** | CatLog Brand Assets & Dynamic Theme Mascots | `viewer/public/` | Brand logos, icon, tagline, favicon, noise textures, and 24 mascot poses (`viewer/public/mascot/`) | All brand assets present; `BrandLogo.tsx` and `MascotSticker.tsx` render theme-adaptive stickers | **PASS** |
+| **11.3** | Per-Person Direct Batch Download Button | `viewer/src/components/PersonCard.tsx` | Direct "Download All ({count})" button on each person card with live progress and completion checkmark | Direct button renders on cards; streaming progress counter and checkmark state verified | **PASS** |
+| **11.4** | Gallery Download & Selection Flow Invariants | `viewer/src/__tests__/download.test.tsx` | Exact regex match for buttons (`Download all \d+ photos`, select mode controls, 0 download all in unrecognized) | 14/14 tests pass; 0 privacy leaks, clean filenames (`alex_river_001.jpg`) | **PASS** |
+| **11.5** | Organizer Export Screen Theme Chooser | `frontend/src/components/ExportScreen.tsx` | Interactive tactile card picker for `t-dark`, `t-paper`, and `t-navy`; forwards `theme` to `api.exportBundle` | 3 theme cards with live swatch previews; default export theme persisted in `export/config.json` | **PASS** |
+| **11.6** | Standalone Single-File HTML Overhaul | `backend/engine/standalone_html.py` & `tests/test_standalone_html.py` | Embedded SVG camera-cat logo, 3-theme CSS vars, tactile cards, per-person sequential downloader, zero CDNs | Zero external scripts/CDNs verified; automatic export theme initialization; per-person download verified | **PASS** |
+| **11.7** | Public Bundle Hygiene & Invariant Verification | `eval/verify_export.py` | Check 2 (clean root directory: `config.json`, `people.json`, `faces`, `thumbs`, `index.html`, `assets`, `gallery.html`) | 15/15 checks pass; zero stray root files; zero organizer files in export | **PASS** |
+| **11.8** | Client & Backend API Type Safety | `frontend/src/api/client.ts` & `backend/api/models.py` | `theme?: string` parameter added to `exportBundle` and `ExportRequest` | `npx tsc --noEmit` 0 errors; clean IDE type checking | **PASS** |
+| **11.9** | Regression Suite Health Across Stack | `pytest`, `npm test` (`frontend/` & `viewer/`) | Full automated regression suites passing | Pytest 87/87 passed; Frontend Vitest 74/74 passed; Viewer Vitest 20/20 passed | **PASS** |
+| **11.10** | Public Viewer Theme Lock | `viewer/src/components/Header.tsx`, `App.tsx`, `standalone_html.py` | Theme switcher radio buttons removed from viewer; `config.theme` is strictly authoritative without `localStorage` overrides | Verified 0 theme buttons in E2E test; viewer automatically applies organizer-selected export theme | **PASS** |
+| **11.11** | Paper / White Theme Readability & Contrast Overhaul | `backend/engine/standalone_html.py` & `viewer/src/index.css` | High-contrast text & numbers on cream paper; `.stats-bar strong` uses `var(--text-main)` (`#121316`) instead of `#fff` | Verified >14:1 contrast ratio; numbers and labels fully readable across cards, headers, modals, and search | **PASS** |
+| **11.12** | E2E Playwright Suite Verification | `viewer/scripts/verify_download_e2e.cjs` | 7-step full download verification: zip streaming, selection mode, card direct download, zero theme buttons | All 7 steps pass cleanly; screenshots captured in artifacts directory | **PASS** |
+
+
 

@@ -1,115 +1,284 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* ==========================================================================
-   CatLog Public Viewer Design System: 3 Themes, Mobile-First, Accessible
+   CatLog Public Web Viewer Design System
+   Tactile Risograph & Retro-Modern Visuals (3 Themes: Dark, Paper, Navy)
    ========================================================================== */
 
 :root {
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --touch-target: 44px;
 }
 
-/* Theme 1: CatLog Dark */
+/* --------------------------------------------------------------------------
+   Theme 1: CatLog Dark (Night Charcoal & Coral Flame)
+   -------------------------------------------------------------------------- */
 .t-dark {
+  --bg: #141211;
   --bg-main: #141211;
-  --bg-card: rgba(26, 24, 22, 0.9);
-  --bg-card-hover: rgba(38, 35, 32, 0.95);
-  --bg-nav: rgba(20, 18, 17, 0.88);
+  --panel: rgba(22, 20, 18, 0.95);
+  --bg-nav: rgba(20, 18, 17, 0.92);
+  --panel-border: #4e443e;
   --border-color: #3d352e;
   --border-strong: #5a5048;
+  --line: #4e443e;
+  --input: rgba(0, 0, 0, 0.45);
+  --input-text: #f5eedf;
+  --text: #f5eedf;
   --text-main: #f5eedf;
+  --muted: #b8a896;
   --text-muted: #b8a896;
   --text-dim: #8c7e6f;
+  --accent: #fa7175;
   --color-accent: #fa7175;
   --color-accent-hover: #e8595d;
   --color-accent-text: #141211;
+  --on-accent: #141211;
+  --card-bg: rgba(26, 24, 22, 0.95);
+  --bg-card: rgba(26, 24, 22, 0.95);
+  --card-hover: rgba(38, 35, 32, 1);
+  --bg-card-hover: rgba(38, 35, 32, 1);
   --focus-ring: #fa7175;
+  --shadow-color: rgba(0, 0, 0, 0.45);
   color-scheme: dark;
 }
 
-/* Theme 2: CatLog Paper (Risograph Warm Cream) */
+/* --------------------------------------------------------------------------
+   Theme 2: CatLog Paper (Authentic Risograph Warm Cream & Burnt Orange)
+   -------------------------------------------------------------------------- */
 .t-paper {
-  --bg-main: #efe8db;
-  --bg-card: rgba(245, 239, 229, 0.92);
-  --bg-card-hover: rgba(255, 255, 255, 0.98);
-  --bg-nav: rgba(239, 232, 219, 0.92);
-  --border-color: #a6b5c4;
-  --border-strong: #7c8f9f;
-  --text-main: #0e1c2f;
-  --text-muted: #384656;
-  --text-dim: #607185;
-  --color-accent: #e5781a;
-  --color-accent-hover: #cf6710;
+  --bg: #f4ede2;
+  --bg-main: #f4ede2;
+  --panel: #fffdfa;
+  --bg-nav: rgba(244, 237, 226, 0.96);
+  --panel-border: #2b2b2b;
+  --border-color: #2b2b2b;
+  --border-strong: #2b2b2b;
+  --line: #2b2b2b;
+  --input: #ffffff;
+  --input-text: #121316;
+  --text: #121316;
+  --text-main: #121316;
+  --muted: #424652;
+  --text-muted: #424652;
+  --text-dim: #5c6270;
+  --accent: #d94b4f;
+  --color-accent: #d94b4f;
+  --color-accent-hover: #c43b3f;
   --color-accent-text: #ffffff;
-  --focus-ring: #e5781a;
+  --on-accent: #ffffff;
+  --card-bg: #fffdfa;
+  --bg-card: #fffdfa;
+  --card-hover: #f7f1e6;
+  --bg-card-hover: #f7f1e6;
+  --focus-ring: #d94b4f;
+  --shadow-color: #2b2b2b;
   color-scheme: light;
 }
 
-/* Theme 3: CatLog Navy */
+/* --------------------------------------------------------------------------
+   Theme 3: CatLog Navy (Midnight Indigo & Golden Amber)
+   -------------------------------------------------------------------------- */
 .t-navy {
+  --bg: #1a3350;
   --bg-main: #1a3350;
-  --bg-card: rgba(30, 56, 88, 0.9);
-  --bg-card-hover: rgba(42, 74, 112, 0.95);
-  --bg-nav: rgba(26, 51, 80, 0.9);
+  --panel: rgba(30, 56, 88, 0.95);
+  --bg-nav: rgba(26, 51, 80, 0.94);
+  --panel-border: #4d75a3;
   --border-color: #4d75a3;
   --border-strong: #729acb;
+  --line: #5a84b5;
+  --input: rgba(14, 30, 48, 0.6);
+  --input-text: #ffffff;
+  --text: #ffffff;
   --text-main: #ffffff;
+  --muted: #d0e0f2;
   --text-muted: #d0e0f2;
   --text-dim: #9bb7d4;
+  --accent: #f28f24;
   --color-accent: #f28f24;
   --color-accent-hover: #db7a15;
   --color-accent-text: #13243a;
+  --on-accent: #13243a;
+  --card-bg: rgba(35, 64, 100, 0.95);
+  --bg-card: rgba(35, 64, 100, 0.95);
+  --card-hover: rgba(45, 78, 120, 1);
+  --bg-card-hover: rgba(45, 78, 120, 1);
   --focus-ring: #f28f24;
+  --shadow-color: rgba(10, 20, 35, 0.45);
   color-scheme: dark;
+}
+
+/* --------------------------------------------------------------------------
+   Base HTML & Reset
+   -------------------------------------------------------------------------- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
   font-family: var(--font-family);
-  background-color: var(--bg-main);
-  color: var(--text-main);
+  background-color: var(--bg);
+  color: var(--text);
   min-height: 100vh;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
   overflow-x: hidden;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Glassmorphism navigation and cards using theme variables */
-.glass-nav {
-  background: var(--bg-nav);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border-color);
+/* Monospace text helper */
+.font-mono {
+  font-family: var(--font-mono) !important;
 }
 
-.glass-card {
-  background: var(--bg-card);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--border-color);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+/* Accessibility & Screen Reader */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
-.glass-card:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-strong);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px -8px rgba(0, 0, 0, 0.35);
-}
-
-/* Strict Accessibility: Visible Focus Rings */
+/* Visible Focus Rings */
 :focus-visible {
-  outline: 2px solid var(--focus-ring) !important;
+  outline: 2px solid var(--accent) !important;
   outline-offset: 2px !important;
 }
 
-/* Accessible Minimum 44px Touch Targets */
 .touch-target {
   min-height: 44px;
   min-width: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* --------------------------------------------------------------------------
+   Tactile Risograph Cards & Navigation
+   -------------------------------------------------------------------------- */
+.glass-nav {
+  background: var(--bg-nav);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 2px solid var(--line);
+}
+
+.glass-card {
+  background: var(--card-bg);
+  border: 2px solid var(--line);
+  box-shadow: 3px 3px 0px var(--line);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  background: var(--card-hover);
+  border-color: var(--accent);
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 4.5px 4.5px 0px var(--line);
+}
+
+/* --------------------------------------------------------------------------
+   Tactile Buttons
+   -------------------------------------------------------------------------- */
+.btn-tactile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 2px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 2.5px 2.5px 0px var(--line);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.12s ease;
+  text-decoration: none;
+}
+
+.btn-tactile:hover {
+  border-color: var(--accent);
+  transform: translate(-1px, -1px);
+  box-shadow: 3.5px 3.5px 0px var(--line);
+}
+
+.btn-tactile:active {
+  transform: translate(1.5px, 1.5px);
+  box-shadow: 1px 1px 0px var(--line);
+}
+
+.btn-tactile.btn-accent {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--line);
+}
+
+.btn-tactile.btn-accent:hover {
+  filter: brightness(1.05);
+}
+
+.btn-tactile.btn-sm {
+  padding: 6px 12px;
+  font-size: 11px;
+  border-width: 1.5px;
+  box-shadow: 2px 2px 0px var(--line);
+}
+
+/* --------------------------------------------------------------------------
+   Risograph Badges & Chips
+   -------------------------------------------------------------------------- */
+.badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1.5px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 1.5px 1.5px 0px var(--line);
+}
+
+.badge-chip.badge-accent {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* --------------------------------------------------------------------------
+   Animations & Shimmer Placeholders
+   -------------------------------------------------------------------------- */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-placeholder {
+  background: linear-gradient(90deg, var(--card-bg) 25%, var(--line) 50%, var(--card-bg) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Custom Scrollbar */
@@ -119,32 +288,10 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-main);
+  background: var(--bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: var(--line);
   border-radius: 4px;
-}
-
-/* Shimmer animation for lazy-loading placeholders */
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.shimmer-placeholder {
-  background: linear-gradient(90deg, var(--bg-card) 25%, var(--border-color) 50%, var(--bg-card) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.8s infinite;
-}
-
-/* Fade in animation */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

@@ -877,7 +877,7 @@ class AppState:
 
         return True, unapplied_edits, stats
 
-    def export_public_bundle(self, output_dir: Optional[str] = None) -> List[str]:
+    def export_public_bundle(self, output_dir: Optional[str] = None, theme: str = "t-dark") -> List[str]:
         """
         Exports the public bundle ONLY:
         config.json, people.json, faces/, thumbs/, index.html, gallery.html.
@@ -941,6 +941,7 @@ class AppState:
             config_override={
                 "include_maybe": self.settings.include_maybe,
                 "hide_single_photo_default": False,
+                "theme": theme,
             },
             include_maybe=self.settings.include_maybe,
             generate_html=True,

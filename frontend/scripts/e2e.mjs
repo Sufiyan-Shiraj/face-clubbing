@@ -16,8 +16,9 @@ const UI_PORT = isDevMode ? 5174 : 8765;
 const BASE_URL = `http://127.0.0.1:${UI_PORT}`;
 const API_BASE_URL = `http://127.0.0.1:${API_PORT}`;
 
-const PYTHON_PATH = path.resolve(REPO_ROOT, '.venv', 'Scripts', 'python.exe');
-const CHROME_PATH = 'C:\\Users\\DELL\\AppData\\Local\\ms-playwright\\chromium-1200\\chrome-win64\\chrome.exe';
+const CHROME_PATH = process.env.LOCALAPPDATA 
+  ? path.join(process.env.LOCALAPPDATA, 'ms-playwright', 'chromium-1200', 'chrome-win64', 'chrome.exe')
+  : undefined;
 
 // ISOLATION PATHS
 const TEMP_WORK_DIR = path.resolve(REPO_ROOT, 'export.e2e_temp.work');
