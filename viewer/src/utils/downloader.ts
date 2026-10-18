@@ -38,14 +38,41 @@ export function isDrivePhoto(photo: PhotoInfo): boolean {
   return dl.includes('drive.google.com') || dl.includes('uc?id=');
 }
 
+/**
+ * Extracts Google Drive file ID from photo metadata or URL.
+ */
+export function getDriveFileId(photo: PhotoInfo): string | null {
+  if (photo.drive_file_id) return photo.drive_file_id;
+  const dUrl = photo.drive_url || photo.download_url || photo.download || '';
+  const m1 = dUrl.match(/\/d\/([a-zA-Z0-9_-]{15,})/);
+  if (m1) return m1[1];
+  const m2 = dUrl.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);
+  if (m2) return m2[1];
+  return null;
+}
+
+/**
+ * Resolves the original full quality photo URL for both Drive and local storage.
+ * Google Drive photos use the Google UserContent CDN (=s0) which provides full native
+ * resolution without downscaling and includes Access-Control-Allow-Origin: * headers.
+ */
+export function getOriginalPhotoUrl(photo: PhotoInfo): string {
+  const driveId = getDriveFileId(photo);
+  if (driveId) {
+    return `https://lh3.googleusercontent.com/d/${driveId}=s0`;
+  }
+  return photo.download || photo.download_url || photo.thumb || '';
+}
+
 export interface PhotoDownloadItem {
   id: string;
   photo: PhotoInfo;
 }
 
 /**
- * Streamingly builds and downloads a zip archive for local photos using client-zip.
+ * Streamingly builds and downloads a zip archive for photos using client-zip.
  * Does not buffer all files in memory at once; streams file entries sequentially.
+ * Works seamlessly for both Google Drive and local photos in original full quality.
  */
 export async function downloadLocalZip(
   personLabelOrId: string,
@@ -66,12 +93,27 @@ export async function downloadLocalZip(
       const item = items[i];
       const filename = getCleanDownloadName(personLabelOrId, i, item.photo.name);
       
-      // Resolve download URL (prefer full photo download, fallback to thumbnail)
-      const url = item.photo.download || item.photo.download_url || item.photo.thumb;
+      // Resolve download URL (prefer full original photo download, fallback to thumbnail)
+      const primaryUrl = getOriginalPhotoUrl(item.photo);
       
-      const response = await fetch(url, { signal });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch photo "${item.photo.name}" (${response.status})`);
+      let response: Response;
+      try {
+        response = await fetch(primaryUrl, { signal });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch photo "${item.photo.name}" (${response.status})`);
+        }
+      } catch (err: any) {
+        if (signal.aborted) throw err;
+        // Fallback: try photo.download or photo.thumb if primaryUrl failed
+        const fallback = item.photo.download || item.photo.download_url || item.photo.thumb;
+        if (fallback && fallback !== primaryUrl) {
+          response = await fetch(fallback, { signal });
+          if (!response.ok) {
+            throw new Error(`Failed to fetch photo "${item.photo.name}" (${response.status})`);
+          }
+        } else {
+          throw err;
+        }
       }
 
       yield {
@@ -102,6 +144,8 @@ export async function downloadLocalZip(
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 }
+
+export const downloadPersonZip = downloadLocalZip;
 
 /**
  * Downloads Google Drive photos sequentially one-by-one reusing existing download_url.

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PersonCluster, PhotoInfo } from '../types';
-import { Search, Users, CheckSquare, Square, X } from 'lucide-react';
+import { Search, Users, CheckSquare, Square, X, Download } from 'lucide-react';
 import { MascotSticker } from './MascotSticker';
 
 interface PeopleGridProps {
@@ -312,9 +312,22 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
                       </p>
                     )}
                   </div>
-                  <p className="text-xs font-medium mt-1.5" style={{ color: 'var(--muted)' }}>
-                    {person.faces?.length || photoCount} detected face{person.faces?.length === 1 ? '' : 's'}
-                  </p>
+                  <div className="flex items-center justify-between mt-2 pt-1 border-t border-[var(--line)]">
+                    <p className="text-xs font-medium" style={{ color: 'var(--muted)' }}>
+                      {person.faces?.length || photoCount} detected face{person.faces?.length === 1 ? '' : 's'}
+                    </p>
+                    <a
+                      href={`/api/people/${person.id}/download-zip`}
+                      download={`${(person.label || person.id).replace(/[^a-zA-Z0-9_-]/g, '_')}_photos.zip`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1 rounded text-xs flex items-center gap-1 font-mono hover:text-[var(--accent)] transition-colors"
+                      style={{ color: 'var(--muted)' }}
+                      title={`Download all ${photoCount} photos for ${displayName}`}
+                    >
+                      <Download className="w-3.5 h-3.5 text-[var(--accent)]" />
+                      <span className="text-[11px]">ZIP</span>
+                    </a>
+                  </div>
                 </div>
               </div>
             );

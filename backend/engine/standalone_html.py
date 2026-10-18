@@ -1094,7 +1094,7 @@ __CONFIG_JSON__
         personModal.classList.add('open');
       }
 
-      // Per-person photo download handler with ZIP packaging
+      // Per-person photo download handler with ZIP packaging (Local & Google Drive)
       window.downloadPerson = async function(personId) {
         const person = (data.people || []).find(p => p.id === personId);
         if (!person) return;
@@ -1116,13 +1116,69 @@ __CONFIG_JSON__
           }
         };
 
+        function getOriginalPhotoUrl(photo) {
+          if (!photo) return null;
+          let driveId = photo.drive_file_id;
+          if (!driveId) {
+            const raw = (photo.download_url || photo.download || photo.drive_url || photo.share_url || '');
+            const m = raw.match(/[/]d[/]([a-zA-Z0-9_-]{15,})/) || raw.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);
+            if (m) driveId = m[1];
+          }
+          if (driveId) {
+            return 'https://lh3.googleusercontent.com/d/' + driveId + '=s0';
+          }
+          return photo.download || photo.download_url || photo.thumb;
+        }
+
+        // 1. If backend server is active, prefer direct server zip streaming
+        const serverZipUrl = '/api/people/' + encodeURIComponent(person.id) + '/download-zip';
+        let serverHandled = false;
+        try {
+          const testResp = await fetch(serverZipUrl, { method: 'HEAD' });
+          if (testResp.ok) {
+            setBtnText('Downloading...');
+            const a = document.createElement('a');
+            a.href = serverZipUrl;
+            a.download = `${cleanBase}_photos.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            serverHandled = true;
+          }
+        } catch (_) {
+          serverHandled = false;
+        }
+
+        if (serverHandled) {
+          if (btn) {
+            btn.innerHTML = `
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Downloaded!</span>
+            `;
+            setTimeout(() => {
+              if (btn && origContent) {
+                btn.innerHTML = origContent;
+                btn.disabled = false;
+              }
+            }, 2500);
+          }
+          return;
+        }
+
+        // 2. Client-side ZIP generation with JSZip
         const getJSZip = async () => {
           if (typeof window.JSZip !== 'undefined') return window.JSZip;
           return new Promise((resolve) => {
             const s = document.createElement('script');
             s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
             s.onload = () => resolve(window.JSZip || null);
-            s.onerror = () => resolve(null);
+            s.onerror = () => {
+              const s2 = document.createElement('script');
+              s2.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+              s2.onload = () => resolve(window.JSZip || null);
+              s2.onerror = () => resolve(null);
+              document.head.appendChild(s2);
+            };
             document.head.appendChild(s);
           });
         };
@@ -1141,18 +1197,37 @@ __CONFIG_JSON__
               const pad = String(i + 1).padStart(3, '0');
               const ext = photo.name ? (photo.name.split('.').pop() || 'jpg') : 'jpg';
               const filename = `${cleanBase}_${pad}.${ext}`;
-              const url = photo.download_url || photo.download || (photo.drive_file_id ? 'https://drive.google.com/uc?id=' + photo.drive_file_id + '&export=download' : photo.thumb);
 
-              try {
-                const resp = await fetch(url);
-                if (resp.ok) {
-                  const blob = await resp.blob();
-                  zip.file(filename, blob);
-                  packed++;
-                  setBtnText(`Packing (${packed}/${photoIds.length})...`);
+              const primaryUrl = getOriginalPhotoUrl(photo);
+              let blob = null;
+
+              if (primaryUrl) {
+                try {
+                  const resp = await fetch(primaryUrl);
+                  if (resp.ok) {
+                    blob = await resp.blob();
+                  }
+                } catch (e) {
+                  console.warn('Original fetch failed for', primaryUrl, e);
                 }
-              } catch (e) {
-                console.warn('Could not fetch image blob for zip:', url, e);
+              }
+
+              // Fallback to thumbnail if primary URL failed
+              if (!blob && photo.thumb && photo.thumb !== primaryUrl) {
+                try {
+                  const tResp = await fetch(photo.thumb);
+                  if (tResp.ok) {
+                    blob = await tResp.blob();
+                  }
+                } catch (te) {
+                  console.warn('Thumbnail fallback failed for', photo.thumb, te);
+                }
+              }
+
+              if (blob) {
+                zip.file(filename, blob);
+                packed++;
+                setBtnText(`Packing (${packed}/${photoIds.length})...`);
               }
             }
 
@@ -1165,7 +1240,7 @@ __CONFIG_JSON__
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
-              setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+              setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 
               if (btn) {
                 btn.innerHTML = `
@@ -1186,7 +1261,7 @@ __CONFIG_JSON__
           console.warn('JSZip packing failed, using sequential fallback:', zipErr);
         }
 
-        // Fallback: sequential download
+        // 3. Fallback: sequential download
         let count = 0;
         photoIds.forEach((pid, i) => {
           const photo = data.photos[pid];
@@ -1195,7 +1270,7 @@ __CONFIG_JSON__
           const pad = String(count).padStart(3, '0');
           const ext = photo.name ? (photo.name.split('.').pop() || 'jpg') : 'jpg';
           const filename = `${cleanBase}_${pad}.${ext}`;
-          const url = photo.download_url || photo.download || (photo.drive_file_id ? 'https://drive.google.com/uc?id=' + photo.drive_file_id + '&export=download' : photo.thumb);
+          const url = getOriginalPhotoUrl(photo) || photo.thumb;
           if (url) {
             setTimeout(() => {
               const a = document.createElement('a');
@@ -1206,7 +1281,7 @@ __CONFIG_JSON__
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
-            }, i * 250);
+            }, i * 300);
           }
         });
 

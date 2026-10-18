@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PersonCluster, PhotoInfo } from '../types';
-import { X, EyeOff, Edit2, Check, Trash2, Image, UserX } from 'lucide-react';
+import { X, EyeOff, Edit2, Check, Trash2, Image, UserX, Download } from 'lucide-react';
 
 interface PersonModalProps {
   person: PersonCluster;
@@ -145,6 +145,26 @@ export const PersonModal: React.FC<PersonModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5">
+            <a
+              href={`/api/people/${person.id}/download-zip`}
+              download={`${(person.label || person.id).replace(/[^a-zA-Z0-9_-]/g, '_')}_photos.zip`}
+              className="btn pri flex items-center gap-1.5"
+              style={{
+                height: '40px',
+                padding: '0 14px',
+                borderRadius: '4px',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+              }}
+              title="Download all photos for this person in original quality as a ZIP archive"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download ZIP</span>
+            </a>
             <button
               onClick={() => onHide(person.id)}
               className="riso-btn-sec"

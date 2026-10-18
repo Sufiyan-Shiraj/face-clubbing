@@ -16,6 +16,7 @@ import {
 import { PhotoModal } from './PhotoModal';
 import {
   getCleanDownloadName,
+  getOriginalPhotoUrl,
   isDrivePhoto,
   downloadLocalZip,
   downloadDriveSequential,
@@ -134,20 +135,12 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     setDownloadError(null);
 
     try {
-      if (hasDrivePhotos) {
-        await downloadDriveSequential(
-          validItems,
-          (cur, tot) => setDownloadProgress({ current: cur, total: tot }),
-          controller.signal
-        );
-      } else {
-        await downloadLocalZip(
-          displayName,
-          validItems,
-          (cur, tot) => setDownloadProgress({ current: cur, total: tot }),
-          controller.signal
-        );
-      }
+      await downloadLocalZip(
+        displayName,
+        validItems,
+        (cur, tot) => setDownloadProgress({ current: cur, total: tot }),
+        controller.signal
+      );
     } catch (err: any) {
       if (err?.name !== 'AbortError' && !controller.signal.aborted) {
         console.error('Download error:', err);
@@ -161,13 +154,6 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   };
 
   const handleDownloadClick = (targetIds: string[]) => {
-    if (hasDrivePhotos) {
-      const acknowledged = sessionStorage.getItem('catlog-drive-dl-note-shown');
-      if (!acknowledged) {
-        setShowDriveNoteModal(true);
-        return;
-      }
-    }
     executeDownload(targetIds);
   };
 
@@ -345,9 +331,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
             <div className="w-5 h-5 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
             <div>
               <p className="text-xs sm:text-sm font-semibold text-[var(--text-main)]">
-                {hasDrivePhotos
-                  ? `Downloading photo ${downloadProgress.current} of ${downloadProgress.total}...`
-                  : `Creating zip: ${downloadProgress.current} of ${downloadProgress.total} photos...`}
+                Packaging zip: {downloadProgress.current} of {downloadProgress.total} photos...
               </p>
             </div>
           </div>
@@ -479,9 +463,9 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                       </span>
 
                       {/* Per-Photo Download */}
-                      {(photo.download || photo.download_url) && (
+                      {(photo.download || photo.download_url || photo.drive_file_id) && (
                         <a
-                          href={photo.download || photo.download_url || undefined}
+                          href={getOriginalPhotoUrl(photo) || photo.download || photo.download_url || undefined}
                           download={getCleanDownloadName(displayName, idx, photo.name)}
                           target={isDrivePhoto(photo) ? '_blank' : undefined}
                           rel={isDrivePhoto(photo) ? 'noopener noreferrer' : undefined}
@@ -597,9 +581,9 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                       </span>
 
                       {/* Per-Photo Download */}
-                      {(photo.download || photo.download_url) && (
+                      {(photo.download || photo.download_url || photo.drive_file_id) && (
                         <a
-                          href={photo.download || photo.download_url || undefined}
+                          href={getOriginalPhotoUrl(photo) || photo.download || photo.download_url || undefined}
                           download={getCleanDownloadName(displayName, idx, photo.name)}
                           target={isDrivePhoto(photo) ? '_blank' : undefined}
                           rel={isDrivePhoto(photo) ? 'noopener noreferrer' : undefined}

@@ -449,17 +449,162 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             traceback.print_exc()
             return SelectDialogResponse(selected=None, cancelled=True)
 
-    # 8b. Download Original Source Photo (Edge Case: source missing / moved check)
+    # 8b. Download Original Source Photo (with local and Google Drive support)
     @router.get("/photos/{photo_id}/download")
     def download_original_photo(photo_id: str):
         p_rec = state.photos.get(photo_id)
-        if not p_rec or not p_rec.original_path:
+        if not p_rec:
             raise HTTPException(status_code=404, detail="Photo record not found")
-        orig_p = Path(p_rec.original_path)
-        if not orig_p.exists() or not orig_p.is_file():
-            raise HTTPException(status_code=404, detail=f"Source photo missing or moved: {p_rec.original_path}")
-        from fastapi.responses import FileResponse
-        return FileResponse(str(orig_p), filename=p_rec.file_name)
+
+        # 1. Local photo file on disk
+        if p_rec.original_path:
+            orig_p = Path(p_rec.original_path)
+            if orig_p.exists() and orig_p.is_file():
+                from fastapi.responses import FileResponse
+                return FileResponse(str(orig_p), filename=p_rec.file_name)
+
+        # 2. Drive photo: check cache or fetch from Google CDN
+        if getattr(p_rec, "drive_file_id", None):
+            candidates = []
+            if state.work_dir:
+                candidates.append(state.work_dir / "drive")
+            candidates.append(state.repo_root / "export.work" / "drive")
+            if state.settings.cache_dir:
+                candidates.append(Path(state.settings.cache_dir).resolve() / "drive")
+                candidates.append(Path(state.settings.cache_dir).resolve())
+
+            for c_dir in candidates:
+                if c_dir.exists():
+                    for f in c_dir.glob(f"**/*{p_rec.drive_file_id}*"):
+                        if f.is_file() and f.stat().st_size > 0:
+                            from fastapi.responses import FileResponse
+                            return FileResponse(str(f), filename=p_rec.file_name)
+
+            # Fetch high-res original from Google CDN (CORS-enabled)
+            import requests
+            from fastapi.responses import Response
+            try:
+                cdn_url = f"https://lh3.googleusercontent.com/d/{p_rec.drive_file_id}=s0"
+                resp = requests.get(cdn_url, timeout=20)
+                if resp.status_code == 200 and len(resp.content) > 100:
+                    return Response(
+                        content=resp.content,
+                        media_type="image/jpeg",
+                        headers={"Content-Disposition": f'attachment; filename="{p_rec.file_name}"'},
+                    )
+            except Exception:
+                pass
+
+        raise HTTPException(status_code=404, detail=f"Source photo missing or moved: {p_rec.original_path or p_rec.file_name}")
+
+    # 8c. Download All Photos for a Person as a ZIP (Local & Google Drive original quality)
+    @router.get("/people/{person_id}/download-zip")
+    @router.get("/people/{person_id}/download")
+    def download_person_zip(person_id: str):
+        cluster = state.get_cluster_by_id(person_id)
+        if not cluster:
+            raise HTTPException(status_code=404, detail=f"Person '{person_id}' not found")
+
+        photo_ids = cluster.photo_ids or getattr(cluster, "photos", []) or [f.photo_id for f in cluster.faces]
+        if not photo_ids:
+            raise HTTPException(status_code=404, detail="No photos found for this person")
+
+        import io
+        import zipfile
+        import requests
+        from fastapi.responses import Response
+
+        buf = io.BytesIO()
+        raw_name = (cluster.label or person_id).strip()
+        clean_name = re.sub(r'[^a-zA-Z0-9_-]', '_', raw_name).strip('_').lower() or 'person'
+
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for idx, pid in enumerate(photo_ids):
+                p_rec = state.photos.get(pid)
+                if not p_rec:
+                    continue
+
+                orig_name = p_rec.file_name or f"{pid}.jpg"
+                ext = Path(orig_name).suffix.lstrip(".").lower() or "jpg"
+                zip_entry_name = f"{clean_name}_{idx + 1:03d}.{ext}"
+
+                content: Optional[bytes] = None
+
+                # 1. Local photo file on disk
+                if p_rec.original_path:
+                    orig_p = Path(p_rec.original_path)
+                    if orig_p.exists() and orig_p.is_file():
+                        try:
+                            content = orig_p.read_bytes()
+                        except Exception:
+                            content = None
+
+                # 2. Drive photo: check cache or fetch from Google CDN
+                if content is None and getattr(p_rec, "drive_file_id", None):
+                    candidates = []
+                    if state.work_dir:
+                        candidates.append(state.work_dir / "drive")
+                    candidates.append(state.repo_root / "export.work" / "drive")
+                    if state.settings.cache_dir:
+                        candidates.append(Path(state.settings.cache_dir).resolve() / "drive")
+                        candidates.append(Path(state.settings.cache_dir).resolve())
+
+                    for c_dir in candidates:
+                        if c_dir.exists():
+                            for f in c_dir.glob(f"**/*{p_rec.drive_file_id}*"):
+                                if f.is_file() and f.stat().st_size > 0:
+                                    try:
+                                        content = f.read_bytes()
+                                        break
+                                    except Exception:
+                                        pass
+                        if content is not None:
+                            break
+
+                    # High-res Google CDN fallback
+                    if content is None:
+                        try:
+                            cdn_url = f"https://lh3.googleusercontent.com/d/{p_rec.drive_file_id}=s0"
+                            resp = requests.get(cdn_url, timeout=20)
+                            if resp.status_code == 200 and len(resp.content) > 100:
+                                content = resp.content
+                        except Exception:
+                            content = None
+
+                # 3. Fallback to thumbnail if original not reachable
+                if content is None:
+                    thumb_candidates = []
+                    if state.settings.output_dir:
+                        thumb_candidates.append(Path(state.settings.output_dir).resolve() / "thumbs" / f"{pid}.jpg")
+                    thumb_candidates.append(state.repo_root / "export" / "thumbs" / f"{pid}.jpg")
+                    if state.work_dir:
+                        thumb_candidates.append(state.work_dir / "thumbs" / f"{pid}.jpg")
+                    if state.settings.cache_dir:
+                        thumb_candidates.append(Path(state.settings.cache_dir).resolve() / "thumbs" / f"{pid}.jpg")
+
+                    for tp in thumb_candidates:
+                        if tp.exists() and tp.is_file():
+                            try:
+                                content = tp.read_bytes()
+                                break
+                            except Exception:
+                                pass
+
+                if content is not None:
+                    zf.writestr(zip_entry_name, content)
+
+        data_bytes = buf.getvalue()
+        if not data_bytes:
+            raise HTTPException(status_code=500, detail="Failed to create zip file")
+
+        return Response(
+            content=data_bytes,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": f'attachment; filename="{clean_name}_photos.zip"',
+                "Content-Length": str(len(data_bytes)),
+            },
+        )
 
     # 9. Recent Projects Endpoints (SPEC Open saved project)
     @router.get("/projects", response_model=List[ProjectItem])

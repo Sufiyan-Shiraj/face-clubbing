@@ -63,22 +63,12 @@ export const PersonCard: React.FC<PersonCardProps> = ({
           return { id: pid, photo };
         });
 
-      const hasDrive = items.some((it) => isDrivePhoto(it.photo));
-
-      if (hasDrive) {
-        await downloadDriveSequential(
-          items,
-          (curr, tot) => setDownloadProgress({ current: curr, total: tot }),
-          abortController.signal
-        );
-      } else {
-        await downloadLocalZip(
-          person.label || person.id,
-          items,
-          (curr, tot) => setDownloadProgress({ current: curr, total: tot }),
-          abortController.signal
-        );
-      }
+      await downloadLocalZip(
+        person.label || person.id,
+        items,
+        (curr, tot) => setDownloadProgress({ current: curr, total: tot }),
+        abortController.signal
+      );
 
       setIsDownloaded(true);
       setTimeout(() => setIsDownloaded(false), 3000);

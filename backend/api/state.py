@@ -1099,6 +1099,8 @@ class AppState:
                     source_exists = Path(p.original_path).exists() and Path(p.original_path).is_file()
                 except Exception:
                     source_exists = False
+            elif getattr(p, "drive_file_id", None):
+                source_exists = True
 
             result[pid] = {
                 "photo_id": pid,
@@ -1106,6 +1108,11 @@ class AppState:
                 "width": p.width,
                 "height": p.height,
                 "thumb": f"thumbs/{pid}.jpg",
+                "download": f"/api/photos/{pid}/download",
+                "download_url": getattr(p, "download_url", None),
+                "drive_file_id": getattr(p, "drive_file_id", None),
+                "drive_url": getattr(p, "drive_url", None),
+                "share_url": getattr(p, "share_url", None),
                 "source_exists": source_exists,
                 "original_path": p.original_path,
                 "faces": [
