@@ -656,72 +656,100 @@ Unrecognized Photos Count:  17
 
 ---
 
-### Check J: Fresh `git clone` Execution from HEAD (`2efc60e`)
-Executed in a fresh isolated temporary directory created by `git clone https://github.com/Sufiyan-Shiraj/face-clubbing.git` from current HEAD (`2efc60e`).
+### Check J: Fresh `git clone` Execution from HEAD (`61bfa04`)
+Executed in a fresh isolated temporary directory created by `git clone https://github.com/Sufiyan-Shiraj/face-clubbing.git` from current HEAD (`61bfa04`).
 
 #### 1. Pytest (`pytest -q -rs`)
 - **Source File**: `scratch/fresh_clone_pytest.txt`
-- **SHA-256 Digest**: `52DFD99045ED6C10BEE468C83C4AACADA1AB15ED904F1F7A622D7218143D6152`
+- **SHA-256 Digest**: `1EA04ADBA658F336D41BE1EEE5DACA9FF9DF62014078CD7537A96413FA95B84D`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 52DFD99045ED6C10BEE468C83C4AACADA1AB15ED904F1F7A622D7218143D6152
+Hash      : 1EA04ADBA658F336D41BE1EEE5DACA9FF9DF62014078CD7537A96413FA95B84D
 Path      : <REPO_ROOT>\scratch\fresh_clone_pytest.txt
 ```
 - **Verbatim Output**:
 ```text
-......s.s......................................................s........ [ 86%]
-...........                                                              [100%]
+......s.s.........................................................s..... [ 82%]
+...............                                                          [100%]
 =========================== short test summary info ===========================
-SKIPPED [1] tests\test_api.py:445: Requires baseline fixture and embedding cache
-SKIPPED [1] tests\test_api.py:564: Requires baseline fixture and embedding cache
-SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
-80 passed, 3 skipped in 9.97s
+SKIPPED [1] ..\AppData\Local\Temp\fresh_clone_audit\tests\test_api.py:445: Requires baseline fixture and embedding cache
+SKIPPED [1] ..\AppData\Local\Temp\fresh_clone_audit\tests\test_api.py:564: Requires baseline fixture and embedding cache
+SKIPPED [1] ..\AppData\Local\Temp\fresh_clone_audit\tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
+84 passed, 3 skipped in 13.27s
 ```
-- **Summary**: 80 passed, 3 skipped in 9.97s (0 failures; the 3 skipped tests cleanly require local live embedding caches).
+- **Summary**: 84 passed, 3 skipped in 13.27s (0 failures; the 3 skipped tests cleanly require local live embedding caches).
 
-#### 2. Frontend Vitest (`npm ci && npm test`)
+#### 2. Frontend Vitest (`npm test -- --run`)
 - **Source File**: `scratch/fresh_clone_frontend.txt`
-- **SHA-256 Digest**: `DE64E2A66715DD9D256D7B7D5FF57A7A046612373D561C7B24BB6D92C4623DA5`
+- **SHA-256 Digest**: `5AAC3D3296F10E236BAD777945A27D72B861F7D7E9368CE9B54915CB33143DA8`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : DE64E2A66715DD9D256D7B7D5FF57A7A046612373D561C7B24BB6D92C4623DA5
+Hash      : 5AAC3D3296F10E236BAD777945A27D72B861F7D7E9368CE9B54915CB33143DA8
 Path      : <REPO_ROOT>\scratch\fresh_clone_frontend.txt
 ```
 - **Verbatim Output**:
 ```text
- Test Files  11 passed (11)
-      Tests  50 passed (50)
-   Start at  23:20:15
-   Duration  20.14s
-```
-- **Summary**: 50 passed across 11 test files in 20.14s.
+ Test Files  13 passed (13)
+      Tests  74 passed (74)
+   Start at  09:01:35
+   Duration  45.55s (import 44%, environment 42%, tests 11%, transform 2%)
 
-#### 3. Viewer Vitest (`npm ci && npm test`)
+    Isolate  13 workers spawned · ~4.53s startup each (spawn + environment, per file)
+             at least ~15.10s faster with isolate: false — reuses workers across files instead of one per file
+```
+- **Summary**: 74 passed across 13 test files in 45.55s (0 failures).
+
+#### 3. Viewer Vitest (`npm test -- --run`)
 - **Source File**: `scratch/fresh_clone_viewer.txt`
-- **SHA-256 Digest**: `F75B816435EC2A39A5099CDBCC316D4DAEA76AA02B4335A7CAF4BC96B93E89DA`
+- **SHA-256 Digest**: `DC9A9F948C89A54F07B9961DF7173B1ACC13C3D698E9D88734F8B7AAA4738361`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : F75B816435EC2A39A5099CDBCC316D4DAEA76AA02B4335A7CAF4BC96B93E89DA
+Hash      : DC9A9F948C89A54F07B9961DF7173B1ACC13C3D698E9D88734F8B7AAA4738361
 Path      : <REPO_ROOT>\scratch\fresh_clone_viewer.txt
 ```
 - **Verbatim Output**:
 ```text
-> photosorter-viewer@1.0.0 test
-> vitest run --run
-
- RUN  v5.0.3 <TEMP_DIR>/fresh_clone_audit/viewer
-
-   src/__tests__/viewer.test.tsx (6 tests) 525ms
-
- Test Files  1 passed (1)
-      Tests  6 passed (6)
-   Start at  23:21:40
-   Duration  5.01s (import 50%, environment 33%, tests 11%, transform 6%)
+ Test Files  2 passed (2)
+      Tests  20 passed (20)
+   Start at  09:02:34
+   Duration  10.44s (import 50%, environment 37%, tests 9%, transform 3%)
 ```
-- **Summary**: 6 passed across 1 test file in 5.01s.
+- **Summary**: 20 passed across 2 test files in 10.44s (0 failures).
+
+#### 4. Pinned Baseline Fixture (`python eval/check_baseline.py`)
+- **Source File**: `scratch/fresh_clone_baseline.txt`
+- **SHA-256 Digest**: `0DB15D5276B0F0A2CC7303F69540E8F4FD641A55DB5D4C2A36FBD9FA421A4825`
+- **PowerShell `Get-FileHash` Verification**:
+```text
+Algorithm : SHA256
+Hash      : 0DB15D5276B0F0A2CC7303F69540E8F4FD641A55DB5D4C2A36FBD9FA421A4825
+Path      : <REPO_ROOT>\scratch\fresh_clone_baseline.txt
+```
+- **Verbatim Output**:
+```text
+================================================================================
+VERIFYING PINNED BASELINE FIXTURE (eval\baseline)
+================================================================================
+[PASS] People clusters: 192 == 192
+[PASS] Clustered faces: 1256 == 1256
+[PASS] Unrecognized faces: 445 == 445
+[PASS] Total detected faces: 1701 == 1701
+[PASS] Unrecognized photos: 168 == 168
+[PASS] Total unique photos: 259 == 259
+[PASS] No-face photos: 4 == 4 (['3a6ecb102a1bcf95', 'ac41dd5a9fde7b36', 'cbc787ccd8664c53', 'fd6bc6fe47a406ab'])
+[PASS] Singletons: 81 == 81
+[PASS] Collision clusters: exactly 1 collage cluster verified (4a9b927f5789cd69)
+[PASS] Pre-merge cluster count: 242 == 242
+[PASS] Final clusters mapped in id_map: 192 == 192
+[PASS] Connected maybe groups: 28 == 28
+[PASS] Baseline edits.json is empty: 0 == 0
+================================================================================
+ALL CANONICAL BASELINE METRICS VERIFIED (100% OK)
+```
+- **Summary**: 100% OK (All canonical baseline metrics verified).
 
 ---
 
