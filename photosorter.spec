@@ -7,6 +7,8 @@ block_cipher = None
 datas = [
     ('frontend/dist', 'frontend/dist'),
 ]
+if os.path.exists('viewer/dist'):
+    datas.append(('viewer/dist', 'viewer/dist'))
 
 # Collect any package data files for insightface and onnxruntime
 datas += collect_data_files('insightface')
@@ -95,11 +97,42 @@ version_file = 'version_info.txt' if is_windows and os.path.exists('version_info
 exe = EXE(
     pyz,
     a.scripts,
+    [],
+    exclude_binaries=True,
+    name='CatLog',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon=icon_file,
+    version=version_file,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='CatLog',
+)
+
+exe_onefile = EXE(
+    pyz,
+    a.scripts,
     a.binaries,
     a.zipfiles,
     a.datas,
     [],
-    name='CatLog',
+    name='CatLog-onefile',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -115,3 +148,4 @@ exe = EXE(
     icon=icon_file,
     version=version_file,
 )
+

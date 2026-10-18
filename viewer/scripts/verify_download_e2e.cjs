@@ -129,10 +129,10 @@ async function runE2E() {
   const url = `http://127.0.0.1:${port}/`;
   console.log(`[E2E] Test server active at: ${url}`);
 
-  const chromePath = 'C:\\Users\\DELL\\AppData\\Local\\ms-playwright\\chromium-1200\\chrome-win64\\chrome.exe';
+  const chromePath = process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'ms-playwright', 'chromium-1200', 'chrome-win64', 'chrome.exe') : undefined;
   const browser = await chromium.launch({
     headless: true,
-    executablePath: fs.existsSync(chromePath) ? chromePath : undefined,
+    executablePath: chromePath && fs.existsSync(chromePath) ? chromePath : undefined,
   });
 
   const context = await browser.newContext({

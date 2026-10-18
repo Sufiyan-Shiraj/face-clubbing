@@ -109,18 +109,24 @@ def package_release(
         archive_name = f"CatLog-{version}-linux-x64.tar.gz"
         is_tar = True
 
+    # Check for onedir vs single file
+    onedir_dir = REPO_ROOT / "dist" / "CatLog"
+    is_onedir = onedir_dir.is_dir() and (onedir_dir / ("CatLog.exe" if "windows" in target_platform else "CatLog")).exists()
+
     binary_path = None
-    for cand in exe_candidates:
-        if cand.exists() and cand.is_file():
-            binary_path = cand
-            break
+    if not is_onedir:
+        for cand in exe_candidates:
+            if cand.exists() and cand.is_file():
+                binary_path = cand
+                break
 
-    if not binary_path:
-        raise FileNotFoundError(
-            f"Could not find compiled CatLog binary in dist/. Checked: {exe_candidates}"
-        )
-
-    print(f"[INFO] Found binary: {binary_path} ({binary_path.stat().st_size:,} bytes)")
+        if not binary_path:
+            raise FileNotFoundError(
+                f"Could not find compiled CatLog binary in dist/. Checked: {exe_candidates} and {onedir_dir}"
+            )
+        print(f"[INFO] Found binary: {binary_path} ({binary_path.stat().st_size:,} bytes)")
+    else:
+        print(f"[INFO] Found onedir release directory: {onedir_dir}")
 
     # Additional documentation files to bundle
     doc_files = [
@@ -131,16 +137,26 @@ def package_release(
     ]
 
     archive_path = out_dir / archive_name
-    binary_name = binary_path.name
 
     if is_tar:
         print(f"[INFO] Creating tar.gz archive: {archive_path}")
         with tarfile.open(archive_path, "w:gz") as tar:
-            # Set executable permissions on binary
-            tarinfo = tar.gettarinfo(str(binary_path), arcname=f"CatLog/{binary_name}")
-            tarinfo.mode = 0o755
-            with open(binary_path, "rb") as f:
-                tar.addfile(tarinfo, f)
+            if is_onedir:
+                for root, dirs, files in os.walk(onedir_dir):
+                    rel_root = Path(root).relative_to(onedir_dir)
+                    for f in files:
+                        fp = Path(root) / f
+                        arcname = f"CatLog/{rel_root / f}".replace("\\", "/")
+                        tarinfo = tar.gettarinfo(str(fp), arcname=arcname)
+                        if f == "CatLog":
+                            tarinfo.mode = 0o755
+                        tar.addfile(tarinfo, open(fp, "rb"))
+            else:
+                binary_name = binary_path.name
+                tarinfo = tar.gettarinfo(str(binary_path), arcname=f"CatLog/{binary_name}")
+                tarinfo.mode = 0o755
+                with open(binary_path, "rb") as f:
+                    tar.addfile(tarinfo, f)
 
             for arcname, doc_path in doc_files:
                 if doc_path.exists():
@@ -149,16 +165,24 @@ def package_release(
                     with open(doc_path, "rb") as f:
                         tar.addfile(doc_tarinfo, f)
     else:
-        print(f"[INFO] Creating zip archive: {archive_path}")
+        print(f"[INFO] Creating zip archive (onedir release): {archive_path}")
         with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-            # On Unix systems preserve executable bits in zip
-            if not sys.platform.startswith("win"):
-                zinfo = zipfile.ZipInfo(f"CatLog/{binary_name}")
-                zinfo.external_attr = 0o755 << 16  # rwxr-xr-x
-                with open(binary_path, "rb") as f:
-                    zf.writestr(zinfo, f.read())
+            if is_onedir:
+                for root, dirs, files in os.walk(onedir_dir):
+                    rel_root = Path(root).relative_to(onedir_dir)
+                    for f in files:
+                        fp = Path(root) / f
+                        arc = f"CatLog/{rel_root / f}".replace("\\", "/")
+                        zf.write(fp, arcname=arc)
             else:
-                zf.write(binary_path, arcname=f"CatLog/{binary_name}")
+                binary_name = binary_path.name
+                if not sys.platform.startswith("win"):
+                    zinfo = zipfile.ZipInfo(f"CatLog/{binary_name}")
+                    zinfo.external_attr = 0o755 << 16  # rwxr-xr-x
+                    with open(binary_path, "rb") as f:
+                        zf.writestr(zinfo, f.read())
+                else:
+                    zf.write(binary_path, arcname=f"CatLog/{binary_name}")
 
             for arcname, doc_path in doc_files:
                 if doc_path.exists():
@@ -172,6 +196,26 @@ def package_release(
     # Write single checksum sidecar file
     sidecar = out_dir / f"{archive_name}.sha256"
     sidecar.write_text(f"{checksum}  {archive_name}\n", encoding="utf-8")
+
+    # If onedir was built and a onefile executable is also available for comparison, package it as well
+    onefile_exe = (
+        REPO_ROOT / "dist" / "CatLog-onefile.exe"
+        if "windows" in target_platform
+        else REPO_ROOT / "dist" / "CatLog-onefile"
+    )
+    if is_onedir and onefile_exe.exists():
+        comp_name = f"CatLog-{version}-{target_platform}-onefile.zip"
+        comp_path = out_dir / comp_name
+        print(f"[INFO] Packaging onefile comparison archive: {comp_path}")
+        with zipfile.ZipFile(comp_path, "w", compression=zipfile.ZIP_DEFLATED) as czf:
+            czf.write(onefile_exe, arcname=f"CatLog/{onefile_exe.name}")
+            for arcname, doc_path in doc_files:
+                if doc_path.exists():
+                    czf.write(doc_path, arcname=f"CatLog/{arcname}")
+        comp_sum = compute_sha256(comp_path)
+        (out_dir / f"{comp_name}.sha256").write_text(f"{comp_sum}  {comp_name}\n", encoding="utf-8")
+        print(f"[PASS] Onefile comparison archive created: {comp_path} ({comp_path.stat().st_size:,} bytes)")
+        print(f"[PASS] SHA-256: {comp_sum}")
 
     return archive_path
 

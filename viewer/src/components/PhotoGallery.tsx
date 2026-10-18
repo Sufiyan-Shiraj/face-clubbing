@@ -17,10 +17,14 @@ import { PhotoModal } from './PhotoModal';
 import {
   getCleanDownloadName,
   getOriginalPhotoUrl,
+  getFullResolutionPhotoUrl,
   isDrivePhoto,
   downloadLocalZip,
   downloadDriveSequential,
   PhotoDownloadItem,
+  checkDownloadSize,
+  partitionDownloadItems,
+  DownloadNotice,
 } from '../utils/downloader';
 
 interface PhotoGalleryProps {
@@ -49,6 +53,13 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number } | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadNotice, setDownloadNotice] = useState<DownloadNotice | null>(null);
+  const [sizeGuardModal, setSizeGuardModal] = useState<{
+    isOpen: boolean;
+    items: PhotoDownloadItem[];
+    estimatedBytes: number;
+    proposedParts: number;
+  } | null>(null);
   const [showDriveNoteModal, setShowDriveNoteModal] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -121,11 +132,12 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   };
 
   // Perform bulk download (either all confirmed or selected)
-  const executeDownload = async (targetIds: string[]) => {
-    const validItems: PhotoDownloadItem[] = targetIds
-      .map((pid) => ({ id: pid, photo: photos[pid] }))
-      .filter((item): item is PhotoDownloadItem => Boolean(item.photo));
-
+  const executeDownload = async (
+    validItems: PhotoDownloadItem[],
+    customLabel?: string,
+    partIndex?: number,
+    totalParts?: number
+  ) => {
     if (validItems.length === 0) return;
 
     const controller = new AbortController();
@@ -133,13 +145,19 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     setIsDownloading(true);
     setDownloadProgress({ current: 0, total: validItems.length });
     setDownloadError(null);
+    setDownloadNotice(null);
 
     try {
       await downloadLocalZip(
-        displayName,
+        customLabel || displayName,
         validItems,
         (cur, tot) => setDownloadProgress({ current: cur, total: tot }),
-        controller.signal
+        controller.signal,
+        {
+          partIndex,
+          totalParts,
+          onNotice: (notice) => setDownloadNotice(notice),
+        }
       );
     } catch (err: any) {
       if (err?.name !== 'AbortError' && !controller.signal.aborted) {
@@ -154,7 +172,41 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   };
 
   const handleDownloadClick = (targetIds: string[]) => {
-    executeDownload(targetIds);
+    const validItems: PhotoDownloadItem[] = targetIds
+      .map((pid) => ({ id: pid, photo: photos[pid] }))
+      .filter((item): item is PhotoDownloadItem => Boolean(item.photo));
+
+    if (validItems.length === 0) return;
+
+    const check = checkDownloadSize(validItems);
+    if (check.isOverThreshold) {
+      setSizeGuardModal({
+        isOpen: true,
+        items: validItems,
+        estimatedBytes: check.estimatedBytes,
+        proposedParts: check.proposedParts,
+      });
+      return;
+    }
+
+    executeDownload(validItems);
+  };
+
+  const handleSplitDownload = async () => {
+    if (!sizeGuardModal) return;
+    const { items, proposedParts } = sizeGuardModal;
+    setSizeGuardModal(null);
+    const parts = partitionDownloadItems(items, proposedParts);
+    for (let i = 0; i < parts.length; i++) {
+      await executeDownload(parts[i], displayName, i + 1, parts.length);
+    }
+  };
+
+  const handleProceedSingleDownload = () => {
+    if (!sizeGuardModal) return;
+    const { items } = sizeGuardModal;
+    setSizeGuardModal(null);
+    executeDownload(items);
   };
 
   const handleConfirmDriveDownload = () => {
@@ -163,7 +215,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     const targetIds = isSelectMode && selectedPhotoIds.size > 0
       ? Array.from(selectedPhotoIds)
       : photoIds;
-    executeDownload(targetIds);
+    handleDownloadClick(targetIds);
   };
 
   // Single photo download
@@ -355,6 +407,31 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
           <button
             onClick={() => setDownloadError(null)}
             className="touch-target p-1 text-red-400 hover:text-red-300"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Download Honesty Quality / Fallback Notice Banner */}
+      {downloadNotice && (
+        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-400" />
+            <span>
+              {downloadNotice.type === 'warning' && downloadNotice.count > 0 ? (
+                <>
+                  <strong>Quality notice:</strong> {downloadNotice.message}. A <code>DOWNLOAD_NOTES.txt</code> file was added to your ZIP archive.
+                </>
+              ) : (
+                downloadNotice.message
+              )}
+            </span>
+          </div>
+          <button
+            onClick={() => setDownloadNotice(null)}
+            className="touch-target p-1 text-amber-300 hover:text-amber-100"
+            aria-label="Dismiss notice"
           >
             <X className="w-4 h-4" />
           </button>
@@ -600,6 +677,54 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Download Size Guard Warning & Split Offer Modal (>500MB) */}
+      {sizeGuardModal && sizeGuardModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+          <div className="max-w-md w-full p-5 sm:p-6 rounded-2xl glass-card border border-[var(--border-strong)] bg-[var(--bg-main)] shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-[var(--text-main)]">
+                  Large Archive Size Warning
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] font-mono">
+                  ~{(sizeGuardModal.estimatedBytes / (1024 * 1024)).toFixed(0)} MB expected (&gt; 500 MB threshold)
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+              Packaging very large archives directly in your browser can consume substantial memory. We recommend splitting this download into <strong>{sizeGuardModal.proposedParts} parts</strong> to ensure stable streaming.
+            </p>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                onClick={handleSplitDownload}
+                className="btn-tactile btn-accent w-full py-2.5 px-4 text-xs font-bold font-mono"
+              >
+                Split into {sizeGuardModal.proposedParts} parts (Recommended)
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleProceedSingleDownload}
+                  className="touch-target flex-1 py-2 px-3 rounded-xl border border-[var(--border-color)] text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+                >
+                  Download single ZIP
+                </button>
+                <button
+                  onClick={() => setSizeGuardModal(null)}
+                  className="touch-target py-2 px-4 rounded-xl border border-[var(--border-color)] text-xs font-semibold text-neutral-400 hover:text-neutral-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

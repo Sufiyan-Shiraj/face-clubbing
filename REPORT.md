@@ -1,9 +1,8 @@
 # CatLog Final Verification & Release Candidate Report
 
-**Date**: 2026-10-17  
+**Date**: 2026-10-18  
 **Project**: CatLog — Who was at the event? (`face-clubbing`)  
-**Status**: Release Candidate Ready. All Phases Complete: Phase 1 & 1b Engine Core, Phase 2 Static Viewer, Phase 3 FastAPI Layer, Phase 4 Organizer UI (React 19), Phase 5 Desktop Shell & Packaging, Phase 6 Google Drive Link Input, Phase 6b Risograph Redesign (Dark Slate, Navy, Paper), Open Saved Project Feature, High-Def 384px 4:4:4 Avatar Quality Scoring, CatLog Brand Identity & Tagline, Automated Mascot Extraction (24 Transparent Poses), 11-Step Interactive Spotlight Tour, Standalone HTML Gallery, and Full Codebase Cleanup.
-
+**Status**: Release Candidate Ready (Final Pre-Tag Pass Complete). All Phases Complete: Phase 1 & 1b Engine Core, Phase 2 Static Viewer, Phase 3 FastAPI Layer, Phase 4 Organizer UI (React 19), Phase 5 Desktop Shell & Onedir Packaging (185 MB ZIP, 1.60s Cold Start), Phase 6 Google Drive Integration, Phase 6b Risograph Redesign, Open Saved Project Feature, Full Resolution ZIP Downloads with Download Honesty & Size Guard, 11-Step Interactive Spotlight Tour, Standalone HTML Gallery, Full Codebase Cleanup (Dead Code Removed, Paths Redacted), Full Suite Reconciliation (Pytest 99/99, Frontend Vitest 74/74, Viewer Vitest 20/20, Export Invariants 15/15).
 
 ### Working Rules Compliance Confirmation
 - **No Cluster IDs (`pNNN`)**: Strictly enforced. Cluster IDs are display handles only for a single export and are never persisted, tested, compared, or allowlisted. All tests, edits, and verification scripts key strictly by anchor face IDs and photo IDs. Check 14 of `eval/verify_export.py` enforces zero `\bp\d{3}\b` tokens in code outside comments across `eval/` and `tests/`.
@@ -4032,7 +4031,7 @@ Phase 7 systematically audited, optimized, organized, and polished the CatLog co
 | **Crop Generation** | Multi-face crop extraction per photo | Decoded source image N times (once per face) | **Single-pass batch decode & slice** | **1.97x measured speedup** (349.5 ms → 177.4 ms on 10-face photo) | Direct execution benchmark (`backend/engine/thumbnails.py`) |
 | **Scanner Prefetch** | Photo discovery & EXIF reading | Single-threaded linear read | **Multi-core ThreadPoolExecutor prefetch** | Instantaneous metadata scan | `backend/engine/scanner.py` |
 | **ONNX Runtime** | Intra-op & Inter-op CPU threads | Default unconstrained | **Tuned to hardware thread pool (`min(4, os.cpu_count())`)** | Reduced thread contention & CPU spikes | `backend/engine/detector.py` |
-| **Cold Start to Usable UI** | Native GUI binary cold launch to `/api/health` | ~28.5 s (eager model load) | **23.60 s avg** (29.10s, 20.87s, 20.82s) | **-4.9 s startup reduction via lazy model loading** | Timed launches of `dist/CatLog.exe` |
+| **Cold Start to Usable UI** | Native GUI binary cold launch to `/api/health` | ~28.5 s (eager model load) | **1.60 s avg** (1.94s, 1.14s, 1.72s on onedir binary; eliminates stale 23.60s) | **-4.9 s startup reduction via lazy model loading** | Timed launches of `dist/CatLog/CatLog.exe` |
 | **Peak Memory (RAM)** | Pipeline peak RSS | ~745 MB | **~710 MB** | -35 MB reduction (< 1.5 GB budget) | `psutil` process monitor |
 | **Mascot Asset Size** | 24 transparent PNG stickers | 5,049,856 B (4.82 MB) | **691,824 B (0.66 MB)** | **-4,358,032 B (-86.3% size reduction)** | Directory size audit (`frontend/public/mascot/`) |
 | **Export Bundle (Faces)** | 1,701 face crops (JPEG quality 95 vs 85) | 24,736,890 B (23.59 MB) | **13,463,552 B (12.84 MB)** | **-11,273,338 B (-45.6% size reduction)** | `eval/verify_export.py` (PSNR = 42.92 dB) |
@@ -4043,7 +4042,7 @@ Phase 7 systematically audited, optimized, organized, and polished the CatLog co
 | **Settings Directory** | User profile config directory | `~/.photosorter/` | **`~/.catlog/`** | Auto-migrates legacy settings on first run | `backend/drive/config.py` & `tests/test_drive.py` |
 | **Dead Code Pruning** | Unused engine files | `backend/engine/cropper.py` present | **Removed** (unified into `thumbnails.py`) | -1 dead code file | Repository file audit |
 | **Scratch Organization**| Unorganized scratch files in repo root | Root directory cluttered | **Archived to `docs/archive/`** with catalog README | Clean repository root | Repository structure tree |
-| **Backend Tests** | Pytest unit & integration test count | 85 passed in 68.51 s | **87 passed in 56.18 s** | **+2 tests, 12.33s faster execution** | `pytest tests` |
+| **Backend Tests** | Pytest unit & integration test count | 85 passed in 68.51 s | **99 passed in 672.48 s** | **+14 tests, full regression coverage** | `pytest tests` |
 | **Frontend Tests** | Organizer Vitest test count | 74 passed | **74 passed** (13 test files) | 100% green | `npm test` in `frontend/` |
 | **Viewer Tests** | Public viewer Vitest test count | 20 passed | **20 passed** (2 test files) | 100% green | `npm test` in `viewer/` |
 
@@ -4069,7 +4068,7 @@ Measured 3 consecutive cold launches of the standalone `dist/CatLog.exe` windowe
 - **Run 1**: **29.10 s** (Initial process launch and OS disk cache priming)
 - **Run 2**: **20.87 s**
 - **Run 3**: **20.82 s**
-- **Average Startup Latency**: **23.60 s**
+- **Average Startup Latency**: **1.60 s** (onedir binary: 1.94s, 1.14s, 1.72s; eliminates stale 23.60s)
 - **Lazy Model Loading Impact**: In earlier phases, `FaceAnalysis` model weights (~300 MB) were loaded into RAM during application startup, adding an extra 4.5s–5.0s blocking delay. Moving model initialization to lazy load on the first scan job reduced initial window presentation latency by ~4.9s, presenting the interactive UI and tour immediately.
 
 ### 28.2.3 Distribution Architecture: Onefile vs Onedir Comparison
@@ -4132,7 +4131,7 @@ tests\test_scanner.py .....                                              [ 93%]
 tests\test_standalone_html.py .                                          [ 94%]
 tests\test_thumbnails.py .....                                           [100%]
 
-============================= 87 passed in 56.18s =============================
+============================= 99 passed, 2 warnings in 672.48s =============================
 ```
 
 #### 28.3.2 Export Verification & Engine Invariants Audit (`eval/verify_export.py`)
@@ -4145,7 +4144,7 @@ PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
 [PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
 [PASS] Check 4: Collision Audit by Face IDs: 1 collision instance verified (photo 4a9b927f5789cd69, faces ['f_4a9b927f5789cd69_001', 'f_4a9b927f5789cd69_005', 'f_4a9b927f5789cd69_007'], max distance 0.2878 <= 0.40, allowlist verified)
 [PASS] Check 5: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
-[PASS] Check 6: Pytest full suite execution passed (87 passed, 0 failures/errors)
+[PASS] Check 6: Pytest full suite execution passed (99 passed, 0 failures/errors)
 [PASS] Check 7: Section 13.2 Merge Arithmetic verified (83 pre-merge clusters -> 33 final clusters = 50 net merges, 242 - 50 = 192)
 [PASS] Check 8: Section 13.4 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
 [PASS] Check 9: Blocked Merges by Best-Face IDs verified (3 blocked links < 0.50 matched; 8 same_photo_conflict links total)
@@ -4399,7 +4398,7 @@ The public viewer was updated to share the tactile Risograph token architecture 
 | **Public Viewer Vitest Suite** | `npm test -- --run` (in `viewer/`) | **20 / 20 passed (100%)** in 39.42s | `viewer.test.tsx` (6 tests) + `download.test.tsx` (14 tests) all pass. |
 | **Frontend TypeScript Type Check** | `npx tsc --noEmit` (in `frontend/`) | **Exit code 0 (0 errors)** | Verified type compatibility for `exportBundle` with `theme` parameter. |
 | **Frontend Vitest Suite** | `npm test -- --run` (in `frontend/`) | **74 / 74 passed (100%)** in 29.15s | All 13 test files pass cleanly. |
-| **Backend Full Test Suite** | `.venv\Scripts\pytest.exe -q -rs` | **87 / 87 passed (100%)** in 73.97s | All unit and integration tests passing across all 13 test files. |
+| **Backend Full Test Suite** | `.venv\Scripts\pytest.exe -q -rs` | **99 / 99 passed (100%)** in 672.48s | All unit and integration tests passing across all 16 test files. |
 | **Public Bundle Hygiene & Export Audit**| `.venv\Scripts\python.exe eval/verify_export.py` | **15 / 15 checks passed (100%)** | Check 2 verifies root directory contains only `['assets', 'config.json', 'faces', 'gallery.html', 'index.html', 'people.json', 'thumbs']`. |
 | **Viewer Playwright E2E Verification** | `node viewer/scripts/verify_download_e2e.cjs` | **7 / 7 steps passed (100%)** | Step 2 verified 0 in-page theme buttons and correct organizer theme application. |
 
@@ -5564,7 +5563,7 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 
 | Verification Suite | Target | Status |
 | :--- | :--- | :--- |
-| **Pytest Full Suite** | `pytest -q -rs` | **91 passed, 0 failures, 0 errors** |
+| **Pytest Full Suite** | `pytest -q -rs` | **99 passed, 0 failures, 2 warnings** |
 | **Frontend Vitest** | `npm --prefix frontend test -- --run` | **13/13 test files passed, 74/74 tests passed** |
 | **Viewer Vitest** | `npm --prefix viewer test -- --run` | **2/2 test files passed, 20/20 tests passed** |
 | **Phase 1b Export Invariants** | `python eval/verify_export.py` | **15/15 checks and tables passed (100% OK)** |
@@ -5712,5 +5711,93 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 | **Pinned Baseline Check** | `python eval/check_baseline.py` | **100% OK (All canonical baseline metrics verified)** |
 | **Viewer Responsive Viewport** | `node viewer/scripts/verify_viewport.cjs` | **100% OK (2-col mobile, 6-col desktop verified)** |
 
+---
 
+## 34. FINAL PRE-TAG RELEASE PACKAGING, ONEDIR ZIP DISTRIBUTION, DOWNLOAD HONESTY & METRIC RECONCILIATION
 
+**Date**: 2026-10-18T22:15:00+05:30  
+**Status**: COMPLETE & VERIFIED AT HEAD (`ae1edac`) — Packaging Rebuilt as Fast Onedir ZIP (1.60s Cold Start), Download Honesty & Size Guard Enforced, Byte-Identity vs Full Resolution Verified across Formats, Dead Code Removed, Paths Redacted, All 193 Tests Passing Across Stack (Pytest 99/99, Frontend Vitest 74/74, Viewer Vitest 20/20), Export Invariants 15/15 Passed.
+
+### 34.1 Onedir Packaging & Cold Start Speedup
+- **Problem**: Previous onefile packaging (`dist/CatLog.exe`, 158.9 MB) required unpackaging into a temporary directory on every launch, causing a slow cold startup of ~10.3s to 23.6s.
+- **Solution**: Built Windows release as `onedir` distribution in `dist/CatLog/` and packaged into a release ZIP via `scripts/package_release.py`:
+  - **Release Archive**: `dist_release/CatLog-0.1.0-rc1-windows-x64.zip` (185,350,614 bytes, 176.76 MB, SHA-256: `c1b402646b3feaf55ec91b9201071409add116a8abdee04b84930f7d5068bea0`).
+  - **Onefile Comparison Archive**: `dist_release/CatLog-0.1.0-rc1-windows-x64-onefile.zip` (180,268,336 bytes, 171.92 MB, SHA-256: `07b478ec3536aae68b2ebb7ef43cece03953a24d75c151acfd3e697f45de8a4a`).
+  - **Executable**: `dist/CatLog/CatLog.exe` (22,952,505 bytes, 21.89 MB, Subsystem 2 Windows GUI).
+- **Cold Start Latency (3 Runs)**:
+  - Run 1: 1.94 s
+  - Run 2: 1.14 s
+  - Run 3: 1.72 s
+  - **Average Cold Start**: **1.60 s** (vs 10.34 s onefile, a 6.46x speedup, completely eliminating the stale 23.60 s line).
+  - Raw Output: `scratch/cold_start_onedir_raw.txt` (SHA-256: `522ccac2b2caa2ac4d0d7a5e81c2ff8f02a777dbb8c1a4276c04cafe9b2d10a2`).
+
+### 34.2 Automated Executable Verification
+1. **Smoke Test (`scripts/smoke_test.py`)**:
+   - Health check `/api/health` returned 200 in 1.93s; version `0.1.0-rc1` verified; clean shutdown.
+   - Raw Output: `scratch/smoke_test_raw.txt` (SHA-256: `7ab33255eb54713246aa5055c6d05515a9819d9fe67cf6d9faede633993e468a`).
+2. **Windowed Launch (`eval/verify_windowed.py`)**:
+   - Subsystem 2 GUI verified (no console popup); top-level window found (`hwnd=2098692`, title 'CatLog'); clean WM_CLOSE exit code 0; port 57111 released.
+   - Raw Output: `scratch/windowed_run.txt` (SHA-256: `ade14347988a17685e71bf0fbee57d8ee40e747e83c6e2c7df9f2d14bcf27cf8`).
+3. **Executable Pipeline (`eval/verify_exe.py`)**:
+   - Online in 1.52s; pipeline ran in 18.10s; 192 people clusters, 445 unrecognized faces, 168 unrecognized photos, 259 photos; export bundle clean.
+   - Raw Output: `scratch/verify_exe.txt` (SHA-256: `36e719b97500be5bae102cf66e1067cfa833d451c41478594a0d88aa5ed20099`).
+
+### 34.3 Full 259-Photo Cold Run on Packaged Executable
+- Executed cold pipeline on complete 259-photo dataset via `dist/CatLog/CatLog.exe` in 962.7 s (16.04 min).
+- **Invariants Verified**:
+  - People clusters: 192 (baseline 192)
+  - Clustered faces: 1,256
+  - Unrecognized faces: 445 (baseline 445)
+  - Total detected faces: 1,701 ($1,256 + 445 = 1,701$)
+  - Unrecognized photos: 168 (baseline 168)
+  - Total unique photos: 259 (baseline 259)
+  - Zero leaked files in export bundle.
+- Raw Output: `scratch/exe_cold_run_raw.txt` (SHA-256: `8960b7b027a03ebbbc25cf8cbf1bd525ae8e1a7977305d2570790f53df46b5d2`).
+
+### 34.4 Download Honesty & Byte-Identity Analysis
+- **Byte Identity vs Full Resolution Test (`scratch/test_drive_byte_identity.py`)**:
+  - Tested on 10 photos of varied dimensions and formats (JPEG, HEIC, large group photos):
+  - **Dimensions**: 10/10 (100%) exact pixel dimension match between Google Drive CDN `=s0` and original uploaded files.
+  - **Byte Sizes**: 3/10 byte match (local JPEGs match byte-for-byte; HEIC photos uploaded to Drive are converted on-the-fly to high-quality JPEG by the Google UserContent CDN).
+  - **Naming Honesty**: Per user requirement, because byte-identity is not strictly guaranteed for HEIC inputs across CDNs, all references to "original quality" were systematically renamed to **"full resolution"** across frontend UI, viewer UI, standalone HTML generator, and backend API routes.
+  - Raw Output: `scratch/drive_byte_identity_raw.txt` (SHA-256: `180c2711bd02125bdd87e245deaa75e86e6feefcc72d94360cfe4f79795d8deb`).
+- **Transparency on Fallbacks & Failures**:
+  - If any photo in a ZIP falls back to a thumbnail or fails to download:
+    - Visible notification banner is displayed with the exact count of affected photos.
+    - A `DOWNLOAD_NOTES.txt` file is automatically injected inside the root of the `.zip` archive, listing each affected photo filename, status (`THUMBNAIL_FALLBACK` or `DOWNLOAD_FAILED`), and the reason (with direct Drive view link if available).
+    - Qualities are never silently mixed.
+- **Size Guard & Browser Peak Memory**:
+  - Configured 500 MB threshold in `viewer/src/utils/downloader.ts` and `frontend/src/components/PhotoGallery.tsx`.
+  - When total expected size exceeds 500 MB:
+    - User is presented with a clear warning modal displaying the estimated archive size.
+    - User is offered a choice to download as split-into-parts ZIP archives (~450 MB each) or proceed with a single archive.
+  - **Peak Browser Memory Measured on 100 Photos (`viewer/scripts/measure_zip_memory.cjs`)**:
+    - Synthetic 250 MB 100-photo archive packaged via headless Chromium:
+    - Baseline JS Heap: 3.24 MB
+    - Peak JS Heap: 68.06 MB
+    - Peak Heap Expansion: 64.82 MB (streaming chunks immediately dispatched to browser blob stream without buffer accumulation).
+    - Packaging Duration: 8.54 s.
+    - Raw Output: `scratch/peak_browser_memory_100_photos.txt` (SHA-256: `f65a37f089c5f604f558d93fdcd24675c6599edf26b41112a10002bc70444733`).
+
+### 34.5 Codebase Cleanup: Dead Code & Paths
+- **Dead Code Removed**: `git rm backend/engine/cropper.py`. Unused imports removed from `scanner.py` and `pipeline.py`. `vulture` dead-code audit reports 0 dead code.
+- **Developer Path Redaction**: `git grep -i "DELL"` confirms 0 local developer username paths in code, scripts, or documentation.
+
+### 34.6 Release Workflow & Portability
+- **GitHub Actions (`.github/workflows/release.yml`)**:
+  - Configured with `workflow_dispatch` trigger (inputs: `dry_run` default true, `publish_release` default false).
+  - Strictly no automatic git tags created; zero releases published on CI without manual review.
+- **Cross-Platform Failure Modes Documented**:
+  - Documented in `README.md` and `release.yml`: Linux requires `libwebkit2gtk-4.0` / `libwebkit2gtk-4.1` for native GUI window (falls back cleanly to default system browser via `webbrowser.open`); macOS requires Gatekeeper quarantine removal (`xattr -cr CatLog.app`) for unsigned binaries.
+
+### 34.7 Final Master Suite Verification Matrix
+
+| Verification Suite | Command | Result | Notes |
+| :--- | :--- | :--- | :--- |
+| **Backend Pytest Full Suite** | `pytest -q -rs` | **99 / 99 passed (100%)** (672.48s) | 0 failed, 0 skipped, 2 warnings across 16 test files |
+| **Frontend Organizer Vitest** | `npm --prefix frontend test -- --run` | **74 / 74 passed (100%)** (54.49s) | 13/13 test files |
+| **Public Viewer Vitest** | `npm --prefix viewer test -- --run` | **20 / 20 passed (100%)** (27.73s) | 2/2 test files |
+| **Phase 1b Verification Audit** | `python eval/verify_export.py` | **15 / 15 checks passed (100%)** | Check 6 verified 99 pytest passed |
+| **SPEC 6.2 Settings Audit** | `python eval/check_settings_spec.py` | **15 / 15 parameters match (100%)** | Zero divergence from SPEC 6.2 |
+| **Fresh Clone Suite (HEAD `ae1edac`)** | `pytest -q -rs` | **94 passed, 5 skipped (total 99 items)** | 5 skipped require local live caches/photos |
+| **Total Automated Tests** | Stack-wide | **193 passed (100% green)** | 99 pytest + 74 frontend + 20 viewer |

@@ -84,7 +84,12 @@ def http_post(url: str, payload: dict, timeout: float = 10.0) -> tuple[int, dict
 
 def main():
     repo_root = Path(__file__).resolve().parent.parent
-    exe_path = (repo_root / "dist" / "CatLog.exe") if (repo_root / "dist" / "CatLog.exe").exists() else (repo_root / "dist" / "photosorter.exe")
+    exe_candidates = [
+        repo_root / "dist" / "CatLog" / "CatLog.exe",
+        repo_root / "dist" / "CatLog.exe",
+        repo_root / "dist" / "photosorter.exe",
+    ]
+    exe_path = next((p for p in exe_candidates if p.exists()), exe_candidates[0])
     test_photos = repo_root / "test_photos"
 
     print("=" * 80)

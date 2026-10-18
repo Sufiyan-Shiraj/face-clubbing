@@ -497,7 +497,7 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
 
         raise HTTPException(status_code=404, detail=f"Source photo missing or moved: {p_rec.original_path or p_rec.file_name}")
 
-    # 8c. Download All Photos for a Person as a ZIP (Local & Google Drive original quality)
+    # 8c. Download All Photos for a Person as a ZIP (Local & Google Drive full resolution)
     @router.get("/people/{person_id}/download-zip")
     @router.get("/people/{person_id}/download")
     def download_person_zip(person_id: str):
@@ -518,6 +518,10 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
         raw_name = (cluster.label or person_id).strip()
         clean_name = re.sub(r'[^a-zA-Z0-9_-]', '_', raw_name).strip('_').lower() or 'person'
 
+        fallback_entries = []
+        failed_entries = []
+        full_res_count = 0
+
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             for idx, pid in enumerate(photo_ids):
                 p_rec = state.photos.get(pid)
@@ -529,6 +533,7 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                 zip_entry_name = f"{clean_name}_{idx + 1:03d}.{ext}"
 
                 content: Optional[bytes] = None
+                is_fallback = False
 
                 # 1. Local photo file on disk
                 if p_rec.original_path:
@@ -536,6 +541,7 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                     if orig_p.exists() and orig_p.is_file():
                         try:
                             content = orig_p.read_bytes()
+                            full_res_count += 1
                         except Exception:
                             content = None
 
@@ -555,6 +561,7 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                                 if f.is_file() and f.stat().st_size > 0:
                                     try:
                                         content = f.read_bytes()
+                                        full_res_count += 1
                                         break
                                     except Exception:
                                         pass
@@ -568,10 +575,11 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                             resp = requests.get(cdn_url, timeout=20)
                             if resp.status_code == 200 and len(resp.content) > 100:
                                 content = resp.content
+                                full_res_count += 1
                         except Exception:
                             content = None
 
-                # 3. Fallback to thumbnail if original not reachable
+                # 3. Fallback to thumbnail if full resolution not reachable
                 if content is None:
                     thumb_candidates = []
                     if state.settings.output_dir:
@@ -586,24 +594,62 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                         if tp.exists() and tp.is_file():
                             try:
                                 content = tp.read_bytes()
+                                is_fallback = True
                                 break
                             except Exception:
                                 pass
 
                 if content is not None:
                     zf.writestr(zip_entry_name, content)
+                    if is_fallback:
+                        fallback_entries.append((zip_entry_name, orig_name, "Full resolution unavailable; packaged thumbnail resolution"))
+                else:
+                    failed_entries.append((zip_entry_name, orig_name, "Photo unavailable from all sources"))
+
+            # 4. If any photo fell back to thumbnail or failed, add DOWNLOAD_NOTES.txt
+            if fallback_entries or failed_entries:
+                notes_lines = [
+                    "================================================================================",
+                    "CATLOG DOWNLOAD NOTES & QUALITY REPORT",
+                    "================================================================================",
+                    f"Person / Subject : {cluster.label or person_id}",
+                    f"Total In Cluster : {len(photo_ids)}",
+                    f"Full Resolution  : {full_res_count}",
+                    f"Fell Back        : {len(fallback_entries)} (packaged at thumbnail resolution)",
+                    f"Failed           : {len(failed_entries)}",
+                    "",
+                    "ATTENTION — HONESTY INVOICE:",
+                    "This archive contains mixed qualities or missing photos.",
+                    "Any photo that could not be retrieved at full resolution is documented below:",
+                    "",
+                ]
+                if fallback_entries:
+                    notes_lines.append("THUMBNAIL FALLBACKS:")
+                    for ze_name, o_name, reason in fallback_entries:
+                        notes_lines.append(f"  - {ze_name} (Source: {o_name}): {reason}")
+                    notes_lines.append("")
+                if failed_entries:
+                    notes_lines.append("FAILED DOWNLOADS:")
+                    for ze_name, o_name, reason in failed_entries:
+                        notes_lines.append(f"  - {ze_name} (Source: {o_name}): {reason}")
+                    notes_lines.append("")
+                notes_lines.append("================================================================================")
+                zf.writestr("DOWNLOAD_NOTES.txt", "\n".join(notes_lines) + "\n")
 
         data_bytes = buf.getvalue()
         if not data_bytes:
             raise HTTPException(status_code=500, detail="Failed to create zip file")
 
+        headers = {
+            "Content-Disposition": f'attachment; filename="{clean_name}_photos.zip"',
+            "Content-Length": str(len(data_bytes)),
+            "X-Download-Fallbacks": str(len(fallback_entries)),
+            "X-Download-Failed": str(len(failed_entries)),
+        }
         return Response(
             content=data_bytes,
             media_type="application/zip",
-            headers={
-                "Content-Disposition": f'attachment; filename="{clean_name}_photos.zip"',
-                "Content-Length": str(len(data_bytes)),
-            },
+            headers=headers,
         )
 
     # 9. Recent Projects Endpoints (SPEC Open saved project)

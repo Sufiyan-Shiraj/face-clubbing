@@ -31,9 +31,9 @@ def run_smoke_test(exe_path: str | Path | None = None) -> bool:
 
     if exe_path is None:
         if sys.platform.startswith("win"):
-            candidates = [REPO_ROOT / "dist" / "CatLog.exe", REPO_ROOT / "dist" / "CatLog" / "CatLog.exe"]
+            candidates = [REPO_ROOT / "dist" / "CatLog" / "CatLog.exe", REPO_ROOT / "dist" / "CatLog.exe", REPO_ROOT / "dist" / "CatLog-onefile.exe"]
         else:
-            candidates = [REPO_ROOT / "dist" / "CatLog", REPO_ROOT / "dist" / "CatLog" / "CatLog"]
+            candidates = [REPO_ROOT / "dist" / "CatLog" / "CatLog", REPO_ROOT / "dist" / "CatLog"]
         for c in candidates:
             if c.exists():
                 exe_path = c

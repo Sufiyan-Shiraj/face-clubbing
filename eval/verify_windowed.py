@@ -95,9 +95,12 @@ def get_process_tree_pids(root_pid: int) -> set[int]:
 
 def main():
     repo_root = Path(__file__).resolve().parent.parent
-    exe_path = repo_root / "dist" / "CatLog.exe"
-    if not exe_path.exists():
-        exe_path = repo_root / "dist" / "photosorter.exe"
+    exe_candidates = [
+        repo_root / "dist" / "CatLog" / "CatLog.exe",
+        repo_root / "dist" / "CatLog.exe",
+        repo_root / "dist" / "photosorter.exe",
+    ]
+    exe_path = next((p for p in exe_candidates if p.exists()), exe_candidates[0])
 
     print("=" * 80)
     print("CATLOG / PHOTOSORTER WINDOWED LAUNCH VERIFICATION (eval/verify_windowed.py)")

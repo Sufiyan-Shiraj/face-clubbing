@@ -160,7 +160,7 @@ export const PersonModal: React.FC<PersonModalProps> = ({
                 fontWeight: 'bold',
                 fontSize: '13px',
               }}
-              title="Download all photos for this person in original quality as a ZIP archive"
+              title="Download all photos for this person in full resolution as a ZIP archive"
             >
               <Download className="w-4 h-4" />
               <span>Download ZIP</span>

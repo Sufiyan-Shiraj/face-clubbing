@@ -1116,7 +1116,20 @@ __CONFIG_JSON__
           }
         };
 
-        function getOriginalPhotoUrl(photo) {
+        // Size Guard: warn if total estimated size exceeds 500 MB
+        const estimatedBytes = photoIds.length * 2.5 * 1024 * 1024;
+        if (estimatedBytes > 500 * 1024 * 1024) {
+          const proceed = confirm(`Large Archive Size Warning:\nEstimated download size is ~${Math.round(estimatedBytes / (1024 * 1024))} MB (>500 MB).\nPackaging very large archives in browser memory can cause memory pressure.\n\nClick OK to proceed with download, or Cancel.`);
+          if (!proceed) {
+            if (btn && origContent) {
+              btn.innerHTML = origContent;
+              btn.disabled = false;
+            }
+            return;
+          }
+        }
+
+        function getDriveFileId(photo) {
           if (!photo) return null;
           let driveId = photo.drive_file_id;
           if (!driveId) {
@@ -1124,11 +1137,18 @@ __CONFIG_JSON__
             const m = raw.match(/[/]d[/]([a-zA-Z0-9_-]{15,})/) || raw.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);
             if (m) driveId = m[1];
           }
+          return driveId || null;
+        }
+
+        function getFullResolutionPhotoUrl(photo) {
+          if (!photo) return null;
+          const driveId = getDriveFileId(photo);
           if (driveId) {
             return 'https://lh3.googleusercontent.com/d/' + driveId + '=s0';
           }
           return photo.download || photo.download_url || photo.thumb;
         }
+        const getOriginalPhotoUrl = getFullResolutionPhotoUrl;
 
         // 1. If backend server is active, prefer direct server zip streaming
         const serverZipUrl = '/api/people/' + encodeURIComponent(person.id) + '/download-zip';
@@ -1189,6 +1209,9 @@ __CONFIG_JSON__
             setBtnText(`Packing (0/${photoIds.length})...`);
             const zip = new JSZipLib();
             let packed = 0;
+            let fullResCount = 0;
+            const fallbackItems = [];
+            const failedItems = [];
 
             for (let i = 0; i < photoIds.length; i++) {
               const pid = photoIds[i];
@@ -1198,7 +1221,7 @@ __CONFIG_JSON__
               const ext = photo.name ? (photo.name.split('.').pop() || 'jpg') : 'jpg';
               const filename = `${cleanBase}_${pad}.${ext}`;
 
-              const primaryUrl = getOriginalPhotoUrl(photo);
+              const primaryUrl = getFullResolutionPhotoUrl(photo);
               let blob = null;
 
               if (primaryUrl) {
@@ -1206,18 +1229,39 @@ __CONFIG_JSON__
                   const resp = await fetch(primaryUrl);
                   if (resp.ok) {
                     blob = await resp.blob();
+                    fullResCount++;
                   }
                 } catch (e) {
-                  console.warn('Original fetch failed for', primaryUrl, e);
+                  console.warn('Full resolution fetch failed for', primaryUrl, e);
                 }
               }
 
-              // Fallback to thumbnail if primary URL failed
+              // Fallback attempt: Documented Drive download link
+              const driveId = getDriveFileId(photo);
+              if (!blob && driveId) {
+                const docDriveUrl = 'https://drive.google.com/uc?id=' + driveId + '&export=download';
+                try {
+                  const dResp = await fetch(docDriveUrl);
+                  if (dResp.ok) {
+                    blob = await dResp.blob();
+                    fullResCount++;
+                  }
+                } catch (de) {
+                  console.warn('Documented Drive link fetch failed:', de);
+                }
+              }
+
+              // Fallback to thumbnail if full resolution failed
               if (!blob && photo.thumb && photo.thumb !== primaryUrl) {
                 try {
                   const tResp = await fetch(photo.thumb);
                   if (tResp.ok) {
                     blob = await tResp.blob();
+                    fallbackItems.push({
+                      filename: filename,
+                      originalName: photo.name || filename,
+                      reason: 'Full resolution endpoint unavailable; packaged thumbnail resolution'
+                    });
                   }
                 } catch (te) {
                   console.warn('Thumbnail fallback failed for', photo.thumb, te);
@@ -1228,7 +1272,44 @@ __CONFIG_JSON__
                 zip.file(filename, blob);
                 packed++;
                 setBtnText(`Packing (${packed}/${photoIds.length})...`);
+              } else {
+                failedItems.push({
+                  filename: filename,
+                  originalName: photo.name || filename,
+                  error: 'Failed to fetch image from all sources'
+                });
               }
+            }
+
+            // Include DOWNLOAD_NOTES.txt if any fallbacks or failures occurred
+            if (fallbackItems.length > 0 || failedItems.length > 0) {
+              const notesLines = [
+                '================================================================================',
+                'CATLOG DOWNLOAD NOTES & QUALITY REPORT',
+                '================================================================================',
+                'Person / Cluster : ' + (person.label || person.id),
+                'Generated At     : ' + new Date().toISOString(),
+                'Total In Cluster : ' + photoIds.length,
+                'Full Resolution  : ' + fullResCount,
+                'Thumbnail Fallback : ' + fallbackItems.length,
+                'Failed Downloads   : ' + failedItems.length,
+                '--------------------------------------------------------------------------------'
+              ];
+              if (fallbackItems.length > 0) {
+                notesLines.push('THUMBNAIL FALLBACKS (Reduced resolution):');
+                fallbackItems.forEach(item => {
+                  notesLines.push(' - ' + item.filename + ' (' + item.originalName + '): ' + item.reason);
+                });
+                notesLines.push('--------------------------------------------------------------------------------');
+              }
+              if (failedItems.length > 0) {
+                notesLines.push('FAILED DOWNLOADS:');
+                failedItems.forEach(item => {
+                  notesLines.push(' - ' + item.filename + ' (' + item.originalName + '): ' + item.error);
+                });
+                notesLines.push('--------------------------------------------------------------------------------');
+              }
+              zip.file('DOWNLOAD_NOTES.txt', notesLines.join('\n'));
             }
 
             if (packed > 0) {
@@ -1243,16 +1324,22 @@ __CONFIG_JSON__
               setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 
               if (btn) {
+                const label = fallbackItems.length > 0
+                  ? `Downloaded (${fallbackItems.length} thumbs)`
+                  : 'Downloaded!';
                 btn.innerHTML = `
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span>Downloaded!</span>
+                  <span>${label}</span>
                 `;
+                if (fallbackItems.length > 0) {
+                  alert(`Download notice: ${fallbackItems.length} photo(s) fell back to thumbnail resolution (CDN was unavailable or throttled). A DOWNLOAD_NOTES.txt file was added to your ZIP archive.`);
+                }
                 setTimeout(() => {
                   if (btn && origContent) {
                     btn.innerHTML = origContent;
                     btn.disabled = false;
                   }
-                }, 2500);
+                }, 3000);
               }
               return;
             }

@@ -94,7 +94,7 @@ It takes an event's photo collection, detects faces, extracts mathematical embed
 | **Machine Learning** | InsightFace (`buffalo_l`), ONNX Runtime, NumPy, SciPy |
 | **Organizer UI** | React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons |
 | **Gallery Viewers** | Standalone Single-File HTML5 (Vanilla JS) & Static React Viewer |
-| **Testing** | Pytest (86 tests), Vitest (73 tests, 13 test suites) |
+| **Testing** | Pytest (99 tests), Vitest (94 tests across 15 suites in Frontend & Viewer) |
 
 ---
 
@@ -193,7 +193,8 @@ Portable standalone packages are published for Windows, macOS, and Linux on [Git
 
 | Operating System | Architecture | Package Archive | Status | System Requirements |
 | :--- | :--- | :--- | :---: | :--- |
-| **Windows** | x64 (64-bit) | `CatLog-<version>-windows-x64.zip` | **Stable** | Windows 10 (1809+) or Windows 11; Microsoft Edge WebView2 (pre-installed) |
+| **Windows** | x64 (64-bit) | `CatLog-<version>-windows-x64.zip` | **Stable** | Windows 10 (1809+) or Windows 11; Microsoft Edge WebView2 (pre-installed). Fast onedir archive (~1.6s cold start). |
+| **Windows (Onefile)** | x64 (64-bit) | `CatLog-<version>-windows-x64-onefile.zip` | **Alternative** | Single standalone binary archive for comparison / portable thumbdrives. |
 | **macOS** | Apple Silicon (`arm64`) | `CatLog-<version>-macos-arm64.zip` | **Beta** | macOS 12 Monterey or later; M1/M2/M3/M4 chip; native WebKit |
 | **macOS** | Intel (`x64`) | `CatLog-<version>-macos-x64.zip` | **Beta** | macOS 12 Monterey or later; 64-bit Intel processor; native WebKit |
 | **Linux** | x64 (64-bit) | `CatLog-<version>-linux-x64.tar.gz` | **Beta** | glibc 2.31+ (Ubuntu 20.04+, Debian 11+, Fedora 36+); WebKitGTK or default browser |
@@ -305,12 +306,12 @@ All poses are pre-rendered as transparent PNGs under `frontend/public/mascot/` f
 
 ## Verification & Test Suites
 
-The codebase is backed by 181 automated regression tests and strict metric reproduction checks:
+The codebase is backed by 193 automated regression tests and strict metric reproduction checks:
 
 - **Backend Pytest**:
   ```bash
   pytest tests
-  # 87 passed in ~56s (100% green)
+  # 99 passed in ~11m (100% green, including cold regression benchmarks)
   ```
 - **Frontend Vitest**:
   ```bash
