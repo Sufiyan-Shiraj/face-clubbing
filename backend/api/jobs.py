@@ -164,6 +164,17 @@ class JobManager:
 
         if chosen_input:
             self.state.settings.input_path = chosen_input
+            from backend.drive import is_drive_folder_input
+            if not is_drive_folder_input(chosen_input):
+                inp = Path(chosen_input)
+                if inp.suffix.lower() == ".zip":
+                    self.state.source_folder_name = inp.stem
+                    self.state.active_project_name = inp.stem
+                elif inp.name and inp.name.lower() not in ("export", ".", ""):
+                    self.state.source_folder_name = inp.name
+                    self.state.active_project_name = inp.name
+                if self.state.source_folder_name and (not self.state.settings.event_title or self.state.settings.event_title in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery")):
+                    self.state.settings.event_title = self.state.source_folder_name
         env_out = os.environ.get("PHOTOSORTER_OUTPUT_DIR")
         if out_candidate and (out_candidate != "export" or not env_out):
             self.state.settings.output_dir = out_candidate

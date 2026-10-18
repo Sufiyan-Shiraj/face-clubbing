@@ -60,7 +60,7 @@ class AppState:
         resolved_cache = Path(cache_dir or env_cache).resolve() if (cache_dir or env_cache) else self.work_dir
 
         self.settings = SettingsModel(
-            input_path=str(self.repo_root / "test_photos") if (self.repo_root / "test_photos").exists() else None,
+            input_path=None,
             output_dir=str(resolved_output),
             cache_dir=str(resolved_cache),
         )
@@ -88,12 +88,31 @@ class AppState:
         self.active_project_id: Optional[str] = None
         self.active_project_name: Optional[str] = None
         self.drive_folder_name: Optional[str] = None
+        self.source_folder_name: Optional[str] = None
         self.temp_dirs: List[str] = []
 
         # Only load existing dataset if explicitly specified (e.g. tests or explicit work_dir/output_dir or env var)
         should_auto_load = bool(work_dir or output_dir or os.environ.get("PHOTOSORTER_LOAD_SAVED"))
         if should_auto_load:
             self._try_load_existing_dataset()
+
+    def get_source_title(self) -> Optional[str]:
+        """Resolves the canonical name of the source (Google Drive folder, local folder, or zip file)."""
+        if self.drive_folder_name and self.drive_folder_name.strip():
+            return self.drive_folder_name.strip()
+        if self.source_folder_name and self.source_folder_name.strip() and self.source_folder_name.lower() != "export":
+            return self.source_folder_name.strip()
+        if self.active_project_name and self.active_project_name.strip() and self.active_project_name.lower() != "export":
+            return self.active_project_name.strip()
+        if self.settings.input_path:
+            p = Path(self.settings.input_path)
+            if p.suffix.lower() == ".zip":
+                return p.stem
+            if p.name and p.name.lower() not in ("export", ".", ""):
+                return p.name
+        if self.settings.event_title and self.settings.event_title not in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery"):
+            return self.settings.event_title
+        return None
 
     def _try_load_existing_dataset(self):
         """Attempts to load existing Phase 1/1b export data if present."""
@@ -321,6 +340,14 @@ class AppState:
         if getattr(result, "drive_folder_name", None):
             self.drive_folder_name = result.drive_folder_name
             self.active_project_name = result.drive_folder_name
+            self.source_folder_name = result.drive_folder_name
+        elif getattr(result, "source_title", None):
+            self.source_folder_name = result.source_title
+            self.active_project_name = result.source_title
+
+        st = self.get_source_title()
+        if st and (not self.settings.event_title or self.settings.event_title in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery")):
+            self.settings.event_title = st
 
         if getattr(result, "temp_dir", None):
             self.temp_dirs.append(result.temp_dir)
@@ -894,13 +921,14 @@ class AppState:
             self.settings.output_dir = "export"
         out_p = Path(target).resolve()
 
-        # If a project name or drive folder name is known, ensure we export into a subfolder titled with that name
-        folder_title = self.drive_folder_name or self.active_project_name
-        if not folder_title and self.settings.event_title and self.settings.event_title not in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery"):
-            folder_title = self.settings.event_title
+        # If a project name, drive folder name, zip name, or source folder name is known, ensure we export into a subfolder titled with that name
+        folder_title = self.get_source_title()
+        if folder_title and (not self.settings.event_title or self.settings.event_title in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery")):
+            self.settings.event_title = folder_title
 
-        if folder_title and folder_title.lower() != "export":
-            safe_folder = re.sub(r'[\\/*?:"<>|]', "", folder_title).strip()
+        target_folder = self.settings.event_title or folder_title
+        if target_folder and target_folder.lower() not in ("export", "event gallery", "catlog gallery", "face clubbing gallery"):
+            safe_folder = re.sub(r'[\\/*?:"<>|]', "", target_folder).strip()
             if safe_folder and out_p.name.lower() != safe_folder.lower():
                 out_p = out_p / safe_folder
                 out_p.mkdir(parents=True, exist_ok=True)
@@ -935,14 +963,19 @@ class AppState:
             id_map=self.id_map,
         )
 
+        theme_accent = "#d94b4f" if theme == "t-paper" else ("#f28f24" if theme == "t-navy" else "#fa7175")
         exporter.export(
             result=result,
-            title=self.settings.event_title,
+            title=self.settings.event_title or folder_title or "CatLog Gallery",
             subtitle=self.settings.event_subtitle,
             config_override={
+                "title": self.settings.event_title or folder_title or "CatLog Gallery",
+                "subtitle": self.settings.event_subtitle,
                 "include_maybe": self.settings.include_maybe,
                 "hide_single_photo_default": False,
                 "theme": theme,
+                "accent": theme_accent,
+                "font": "JetBrains Mono",
             },
             include_maybe=self.settings.include_maybe,
             generate_html=True,

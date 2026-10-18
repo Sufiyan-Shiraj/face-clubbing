@@ -291,12 +291,13 @@ class BundleExporter:
                 "title": title,
                 "subtitle": subtitle,
                 "logo": None,
-                "accent": "#2563eb",
-                "font": "Inter",
+                "accent": "#fa7175",
+                "font": "JetBrains Mono",
                 "footer": "Published with CatLog — Who was at the event?",
                 "show_labels": True,
                 "include_maybe": False,
                 "hide_single_photo_default": False,
+                "theme": "t-dark",
             }
             if config_override:
                 default_config.update(config_override)
@@ -320,6 +321,15 @@ class BundleExporter:
                 standalone_html = generate_standalone_gallery_html(people_payload, cfg_dict)
                 (self.output_dir / "index.html").write_text(standalone_html, encoding="utf-8")
                 (self.output_dir / "gallery.html").write_text(standalone_html, encoding="utf-8")
+
+                # Copy built viewer assets if available
+                viewer_assets = Path(__file__).resolve().parent.parent.parent / "viewer" / "dist" / "assets"
+                if viewer_assets.exists() and viewer_assets.is_dir():
+                    target_assets = self.output_dir / "assets"
+                    target_assets.mkdir(parents=True, exist_ok=True)
+                    for af in viewer_assets.iterdir():
+                        if af.is_file():
+                            shutil.copy2(af, target_assets / af.name)
             except Exception as e:
                 print(f"[exporter] Warning: Failed to generate standalone HTML: {e}")
 

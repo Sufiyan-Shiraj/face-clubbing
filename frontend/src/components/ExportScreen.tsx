@@ -40,20 +40,26 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   onExportSuccess,
   theme = 't-dark',
 }) => {
-  // Determine automatic drive folder name
-  const autoDriveName = useMemo(() => {
+  // Determine automatic source folder, zip stem, or drive folder name
+  const autoSourceName = useMemo(() => {
     if (initialTitle && initialTitle !== 'CatLog Gallery' && initialTitle !== 'Face Clubbing Gallery' && initialTitle !== 'Event Gallery') {
       return initialTitle;
     }
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('photosorter-verified-folder-name');
       if (stored && stored.trim()) return stored.trim();
+      const storedPath = localStorage.getItem('photosorter-folder-path');
+      if (storedPath && storedPath.trim()) {
+        const clean = storedPath.trim().replace(/[\\/]+$/, '');
+        const parts = clean.split(/[\\/]/);
+        const last = parts[parts.length - 1];
+        if (last) return last.replace(/\.[^/.]+$/, '');
+      }
     }
     return null;
   }, [initialTitle]);
 
-  const [outputDir, setOutputDir] = useState('export');
-  const [title, setTitle] = useState(autoDriveName || initialTitle || 'CatLog Gallery');
+  const [title, setTitle] = useState(autoSourceName || initialTitle || 'CatLog Gallery');
   const [subtitle, setSubtitle] = useState(initialSubtitle);
   const [includeMaybe, setIncludeMaybe] = useState(false);
   const [viewerTheme, setViewerTheme] = useState<'t-dark' | 't-paper' | 't-navy'>(
@@ -71,13 +77,15 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   const [browseError, setBrowseError] = useState<string | null>(null);
   const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
 
-  const getNestedPath = (basePath: string) => {
+  const getNestedPath = (basePath: string, customTitle?: string) => {
+    const candidate = customTitle !== undefined ? customTitle : (title || autoSourceName);
     const folderTitle =
-      autoDriveName ||
-      (title && title !== 'CatLog Gallery' && title !== 'Face Clubbing Gallery' && title !== 'Event Gallery' ? title : null);
+      candidate && candidate !== 'CatLog Gallery' && candidate !== 'Face Clubbing Gallery' && candidate !== 'Event Gallery'
+        ? candidate
+        : autoSourceName;
     if (!folderTitle) return basePath;
     const safeName = folderTitle.replace(/[\\/*?:"<>|]/g, '').trim();
-    if (!safeName) return basePath;
+    if (!safeName || safeName.toLowerCase() === 'export') return basePath;
 
     const normalized = basePath.replace(/[\\/]+$/, '');
     const lastPart = normalized.split(/[\\/]/).pop();
@@ -87,18 +95,36 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
     return `${normalized}/${safeName}`;
   };
 
+  const [outputDir, setOutputDir] = useState(() => getNestedPath('export', autoSourceName || undefined));
+
+  const handleTitleChange = (newTitle: string) => {
+    setTitle(newTitle);
+    setOutputDir((prev) => {
+      const safeNew = newTitle.replace(/[\\/*?:"<>|]/g, '').trim();
+      if (!safeNew) return prev;
+      const prevNorm = prev.replace(/[\\/]+$/, '');
+      const parts = prevNorm.split(/[\\/]/);
+      if (parts.length > 1) {
+        parts[parts.length - 1] = safeNew;
+        return parts.join('/');
+      }
+      return getNestedPath(prev, newTitle);
+    });
+  };
+
   // Fetch initial settings & folder list
   useEffect(() => {
     api
       .getSettings()
       .then((s) => {
         const baseOut = s.output_dir || 'export';
-        const nestedOut = getNestedPath(baseOut);
+        const effectiveTitle = autoSourceName || (s.event_title && s.event_title !== 'Event Gallery' && s.event_title !== 'CatLog Gallery' ? s.event_title : undefined);
+        if (effectiveTitle) {
+          setTitle(effectiveTitle);
+        }
+        const nestedOut = getNestedPath(baseOut, effectiveTitle);
         setOutputDir(nestedOut);
         loadFolder(baseOut);
-        if (s.event_title && !autoDriveName && s.event_title !== 'Event Gallery') {
-          setTitle(s.event_title);
-        }
         if (s.event_subtitle) {
           setSubtitle(s.event_subtitle);
         }
@@ -107,11 +133,11 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
         }
       })
       .catch(() => {
-        const nestedOut = getNestedPath('export');
+        const nestedOut = getNestedPath('export', autoSourceName || undefined);
         setOutputDir(nestedOut);
         loadFolder('export');
       });
-  }, [autoDriveName]);
+  }, [autoSourceName]);
 
   const loadFolder = async (path?: string) => {
     setIsBrowsingLoading(true);
@@ -566,9 +592,9 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
                   Gallery Configuration
                 </h3>
               </div>
-              {autoDriveName && (
-                <span className="settings-badge accent text-sm px-3.5 py-1 font-bold" title="Title synchronized with your Google Drive folder">
-                  DRIVE SYNCED
+              {autoSourceName && (
+                <span className="settings-badge accent text-sm px-3.5 py-1 font-bold" title="Title synchronized with your input source (Drive, folder, or zip)">
+                  {typeof window !== 'undefined' && localStorage.getItem('photosorter-source-mode') === 'local' ? 'SOURCE SYNCED' : 'DRIVE SYNCED'}
                 </span>
               )}
             </div>
@@ -579,13 +605,13 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
                   <label htmlFor="export-title-input" className="text-base md:text-lg font-bold uppercase text-[var(--text)] font-mono">
                     Gallery Title
                   </label>
-                  {autoDriveName && (
+                  {autoSourceName && (
                     <button
                       type="button"
-                      onClick={() => setTitle(autoDriveName)}
+                      onClick={() => handleTitleChange(autoSourceName)}
                       className="text-sm text-[var(--accent)] hover:underline flex items-center gap-1 font-mono font-bold"
                     >
-                      <span>Reset to Drive Name</span>
+                      <span>Reset to {typeof window !== 'undefined' && localStorage.getItem('photosorter-source-mode') === 'local' ? 'Source Name' : 'Drive Name'}</span>
                     </button>
                   )}
                 </div>
@@ -594,7 +620,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
                   data-testid="export-title-input"
                   type="text"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => handleTitleChange(e.target.value)}
                   placeholder="Gallery Title..."
                   className="w-full px-4 py-3.5 bg-[var(--input)] border-2 border-[var(--panel-border)] rounded-md text-lg md:text-xl text-[var(--text)] font-sans font-bold focus:outline-none focus:border-[var(--accent)] shadow-[3px_3px_0px_var(--line)]"
                 />

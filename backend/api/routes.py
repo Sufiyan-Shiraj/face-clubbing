@@ -1,5 +1,7 @@
 """FastAPI route definitions for PhotoSorter API layer (BUILD_PLAN Phase 3)."""
 
+import re
+import os
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Depends
@@ -265,8 +267,13 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
     @router.post("/export", response_model=ExportResponse)
     def export_bundle(req: ExportRequest = ExportRequest()):
         try:
-            if req.title:
-                state.settings.event_title = req.title
+            source_title = state.get_source_title()
+            custom_title = req.title.strip() if req.title and req.title.strip() and req.title not in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery") else None
+            effective_title = custom_title or source_title
+
+            if effective_title:
+                state.settings.event_title = effective_title
+
             if req.subtitle:
                 state.settings.event_subtitle = req.subtitle
             if req.include_maybe is not None:
@@ -275,6 +282,17 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             out_dir = req.output_dir or state.settings.output_dir or "export"
             if str(out_dir).startswith("http") or "drive.google.com" in str(out_dir):
                 out_dir = "export"
+
+            # Create folder with the title of the drive/zip/folder or custom gallery title
+            target_folder = effective_title or source_title
+            if target_folder and target_folder.lower() not in ("export", "event gallery", "catlog gallery", "face clubbing gallery"):
+                safe_folder = re.sub(r'[\\/*?:"<>|]', "", target_folder).strip()
+                out_p = Path(out_dir).resolve()
+                if safe_folder and out_p.name.lower() != safe_folder.lower():
+                    out_p = out_p / safe_folder
+                    out_p.mkdir(parents=True, exist_ok=True)
+                    out_dir = str(out_p)
+
             exported_files = state.export_public_bundle(
                 output_dir=out_dir,
                 theme=req.theme or "t-dark",
@@ -306,6 +324,9 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
     @router.get("/settings", response_model=SettingsModel)
     def get_settings():
         from backend.drive import get_drive_api_key, mask_api_key
+        st = state.get_source_title()
+        if st and (not state.settings.event_title or state.settings.event_title in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery")):
+            state.settings.event_title = st
         current = state.settings.model_copy()
         raw_key = get_drive_api_key()
         current.drive_api_key = None  # Never expose raw key

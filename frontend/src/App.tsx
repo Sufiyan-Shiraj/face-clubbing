@@ -314,6 +314,32 @@ export const App: React.FC = () => {
     return undefined;
   });
 
+  const computedSourceTitle = useMemo(() => {
+    if (verifiedFolderName && verifiedFolderName.trim()) {
+      return verifiedFolderName.trim();
+    }
+    if (folderPath && folderPath.trim()) {
+      const clean = folderPath.trim().replace(/[\\/]+$/, '');
+      const parts = clean.split(/[\\/]/);
+      const last = parts[parts.length - 1];
+      if (last) {
+        return last.replace(/\.[^/.]+$/, '');
+      }
+    }
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('photosorter-verified-folder-name');
+      if (stored && stored.trim()) return stored.trim();
+      const storedPath = localStorage.getItem('photosorter-folder-path');
+      if (storedPath && storedPath.trim()) {
+        const clean = storedPath.trim().replace(/[\\/]+$/, '');
+        const parts = clean.split(/[\\/]/);
+        const last = parts[parts.length - 1];
+        if (last) return last.replace(/\.[^/.]+$/, '');
+      }
+    }
+    return undefined;
+  }, [verifiedFolderName, folderPath]);
+
   const handleSourceModeChange = (mode: 'drive' | 'local' | 'zip') => {
     setSourceMode(mode);
     try {
@@ -1056,7 +1082,7 @@ export const App: React.FC = () => {
 
         {activeTab === 'export' && (
           <ExportScreen
-            initialTitle={verifiedFolderName || (typeof window !== 'undefined' ? localStorage.getItem('photosorter-verified-folder-name') || undefined : undefined)}
+            initialTitle={computedSourceTitle}
             peopleCount={people.length}
             photosCount={Object.keys(photos).length}
             onRefreshStats={loadAllData}

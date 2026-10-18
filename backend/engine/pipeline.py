@@ -402,6 +402,16 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             "message": f"Applied {edit_stats.get('applied', 0)} edits ({len(unapplied)} unapplied).",
         })
 
+    source_title = None
+    if is_drive:
+        source_title = folder_name
+    elif config.input_path:
+        p = Path(config.input_path)
+        if p.is_file() and p.suffix.lower() == ".zip":
+            source_title = p.stem
+        elif p.is_dir() or p.name:
+            source_title = p.name
+
     result = EngineResult(
         photos=photos,
         people=people,
@@ -410,6 +420,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         id_map=clusterer.id_map,
         temp_dir=str(drive_cache_p) if is_drive else None,
         drive_folder_name=folder_name if is_drive else None,
+        source_title=source_title,
         unapplied_edits=unapplied,
     )
 
@@ -423,6 +434,10 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     })
 
     # 5. Export Bundle
+    export_title = config.event_title
+    if (not export_title or export_title in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery")) and source_title:
+        export_title = source_title
+
     notify({"stage": "exporting", "current": total_photos, "total": total_photos, "percent": 96.0, "message": f"Generating static export bundle in {out_p}..."})
     exporter = BundleExporter(
         output_dir=out_p,
@@ -432,7 +447,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     )
     exporter.export(
         result=result,
-        title=config.event_title,
+        title=export_title or "CatLog Gallery",
         subtitle=config.event_subtitle,
         config_override={"include_maybe": config.include_maybe},
         include_maybe=config.include_maybe,
