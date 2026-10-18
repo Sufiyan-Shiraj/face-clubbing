@@ -1116,10 +1116,16 @@ __CONFIG_JSON__
           }
         };
 
-        // Size Guard: warn if total estimated size exceeds 500 MB
+        // Size Guard: detect mobile vs desktop
+        const isMobile = (function() {
+          if (navigator.deviceMemory && navigator.deviceMemory <= 4) return true;
+          if (/android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || '')) return true;
+          return false;
+        })();
+        const thresholdBytes = isMobile ? 150 * 1024 * 1024 : 500 * 1024 * 1024;
         const estimatedBytes = photoIds.length * 2.5 * 1024 * 1024;
-        if (estimatedBytes > 500 * 1024 * 1024) {
-          const proceed = confirm(`Large Archive Size Warning:\nEstimated download size is ~${Math.round(estimatedBytes / (1024 * 1024))} MB (>500 MB).\nPackaging very large archives in browser memory can cause memory pressure.\n\nClick OK to proceed with download, or Cancel.`);
+        if (estimatedBytes > thresholdBytes) {
+          const proceed = confirm(`Large Archive Size Warning:\nEstimated download size is ~${Math.round(estimatedBytes / (1024 * 1024))} MB (>${Math.round(thresholdBytes / (1024 * 1024))} MB threshold${isMobile ? ' on mobile' : ''}).\nPackaging very large archives in browser memory can cause memory pressure.\n\nClick OK to proceed with download, or Cancel.`);
           if (!proceed) {
             if (btn && origContent) {
               btn.innerHTML = origContent;
@@ -1293,6 +1299,9 @@ __CONFIG_JSON__
                 'Full Resolution  : ' + fullResCount,
                 'Thumbnail Fallback : ' + fallbackItems.length,
                 'Failed Downloads   : ' + failedItems.length,
+                '',
+                'FORMAT NOTE:',
+                'Drive HEIC photos download as JPEG (full pixel dimensions preserved); JPEGs are byte-identical.',
                 '--------------------------------------------------------------------------------'
               ];
               if (fallbackItems.length > 0) {

@@ -219,11 +219,11 @@ Path      : <REPO_ROOT>\scratch\check_d1_vitest_frontend.txt
 
 ### Check D2: `npm test` in `viewer/` (Static Viewer Vitest Suite)
 - **Source File**: `scratch/check_d2_vitest_viewer.txt`
-- **SHA-256 Digest**: `2BA4B5A40EFE8377950945B88932027AB3B0551D131A93FD9E332AC8412FD6AD`
-- **PowerSHell `Get-FileHash` Verification**:
+- **SHA-256 Digest**: `B78FC809C3519CE9EB0823B0C53D61F36C71C085B004147489B67F4599AFEA7B`
+- **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 2BA4B5A40EFE8377950945B88932027AB3B0551D131A93FD9E332AC8412FD6AD
+Hash      : B78FC809C3519CE9EB0823B0C53D61F36C71C085B004147489B67F4599AFEA7B
 Path      : <REPO_ROOT>\scratch\check_d2_vitest_viewer.txt
 ```
 - **Verbatim Output**:
@@ -234,17 +234,17 @@ Path      : <REPO_ROOT>\scratch\check_d2_vitest_viewer.txt
 
  RUN  v5.0.3 <REPO_ROOT>/viewer
 
- ✓ src/__tests__/viewer.test.tsx (6 tests) 509ms
+ ✓ src/__tests__/viewer.test.tsx (6 tests) 493ms
    ✓ Requirement 12: Config Swap Look Changes Without Code Change (2)
      ✓ loads two different config.json files through App code path and verifies title, accent, footer, and toggle differ 317ms
- ✓ src/__tests__/download.test.tsx (14 tests) 711ms
+ ✓ src/__tests__/download.test.tsx (20 tests) 726ms
 
  Test Files  2 passed (2)
-      Tests  20 passed (20)
-   Start at  22:13:05
-   Duration  27.73s (environment 67%, import 29%, tests 2%, transform 1%)
+      Tests  26 passed (26)
+   Start at  23:50:23
+   Duration  4.32s (import 44%, environment 33%, tests 15%, transform 7%)
 ```
-- **Summary**: 20 passed across 2 test files in 27.73s (0 failed).
+- **Summary**: 26 passed across 2 test files in 4.32s (0 failed).
 
 ---
 
@@ -1171,6 +1171,6 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **15.7** | Dead Code Removal | `git rm backend/engine/cropper.py` | Zero unreferenced files, clean vulture dead-code scan | `cropper.py` deleted; vulture reports 0 dead code | **PASS** |
 | **15.8** | Absolute Path Redaction Audit | `git grep -i "DELL"` | Zero developer username paths in code, scripts, or docs | 0 matches across repository; paths sanitized | **PASS** |
 | **15.9** | Download Honesty & Full Resolution Dimensions Audit | `scratch/drive_dimensions_raw.txt` (SHA-256: `82a1d8251105619f3776ffe87399ebd343ec268e8ed45864434c4d8aed43973c`) & `viewer/src/utils/downloader.ts` | 10 photos tested across sizes/formats; rename to 'full resolution'; inject `DOWNLOAD_NOTES.txt` | 10/10 exact dimensions; 3/10 byte-identical SHA-256 (JPEGs); HEIC converted to JPEG on Drive CDN; 'full resolution' renamed; `DOWNLOAD_NOTES.txt` injected on fallback/failure; UI alerts added | **PASS** |
-| **15.10** | Size Guard & Browser Total Memory (RSS + Heap) | `scratch/peak_browser_memory_100_photos.txt` (SHA-256: `c425a7fa08365f43f286eda3c55a5a858054529ebf59a293b7353f9fa1b3ee92`) | 500 MB threshold, offer split ZIPs; measure total browser memory (process RSS via CDP/psutil) on 100 photos (250 MB payload) | Packaging duration 3.60s (69.4 MB/s); peak Renderer RSS 381.41 MB; peak total Chromium tree RSS 959.59 MB; peak JS heap 69.12 MB; 500 MB guard evaluated safe and necessary against phone-class browser Jetsam/LMK eviction | **PASS** |
+| **15.10** | Size Guard & Browser Total Memory (RSS + Heap) | `scratch/peak_browser_memory_100_photos.txt` (SHA-256: `e7abfa82ab4150a69dd5a6d5942743cd79b7470de0f88dd5d96cfe6b54496a8e`) | Size guard: 150 MB mobile threshold / ~100 MB parts; 500 MB desktop; measure total browser memory (process RSS via CDP/psutil) on 100 photos (250 MB payload) | Duration 3.31s (75.53 MB/s); baseline Renderer RSS 109.77 MB; peak Renderer RSS 371.27 MB; total Chromium tree peak 944.60 MB; peak JS heap 69.14 MB. Phone-class safety marked UNVERIFIED; mobile guard lowered to 150 MB (~100 MB parts) | **PASS** |
 | **15.11** | Release Workflow & Portability Documentation | `.github/workflows/release.yml` & `README.md` | `workflow_dispatch` without tags/publishing; document macOS/Linux caveats | Workflow dispatch configured (dry_run default); README downloads table & packaging caveats documented | **PASS** |
-| **15.12** | Full Stack Test Metric Reconciliation | `pytest`, `npm test` (`frontend/` & `viewer/`) | Exact matching counts across headers, Checks A-M, closeout, and check 6 | Pytest 99/99 passed, Frontend Vitest 74/74 passed, Viewer Vitest 20/20 passed, Export Invariants 15/15 passed (0 stale 87/91/94 counts) | **PASS** |
+| **15.12** | Full Stack Test Metric Reconciliation | `pytest`, `npm test` (`frontend/` & `viewer/`) | Exact matching counts across headers, Checks A-M, closeout, and check 6 | Pytest 99/99 passed, Frontend Vitest 74/74 passed, Viewer Vitest 26/26 passed, Export Invariants 15/15 passed (0 stale 87/91/94/20 counts) | **PASS** |

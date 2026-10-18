@@ -47,7 +47,7 @@ It takes an event's photo collection, detects faces, extracts mathematical embed
   - **3 Color Themes**: Instant toggle between *Dark Slate*, *Riso Paper*, and *Deep Navy* with persistent theme memory.
   - **Per-Person Downloads**: Attendees can click "Download all N photos" or enter **Select Mode** to tick specific photos and download a custom selection.
   - **Client-Side ZIP Streaming**: Local exports stream-build a single ZIP using `client-zip` directly in the browser with live progress and cancel—no server required and low memory footprint.
-  - **Sequential Google Drive Direct Downloads**: Google Drive exports download photos one by one via direct Drive URLs with clear browser permission prompts and "Open in Drive" fallback.
+  - **Sequential Google Drive Direct Downloads**: Google Drive exports download photos one by one via direct Drive URLs with clear browser permission prompts and "Open in Drive" fallback. Drive HEIC photos download as JPEG (full pixel dimensions preserved); JPEGs are byte-identical.
   - **Sanitized Filenames**: Downloads follow clean `personname_001.jpg` naming without exposing private directory paths or attendee IDs.
 - **🔄 Open Saved Projects**  
   Resume past events instantly! Reopen existing export directories without re-scanning or re-embedding photos.
@@ -246,7 +246,7 @@ Because CatLog is distributed as an independent open-source release without comm
 
 - **100% On-Device Processing**: All face detection, feature extraction, 512-dimensional embedding generation, and agglomerative clustering algorithms run entirely locally on your machine's CPU.
 - **Zero Cloud Transmission**: No attendee photos, facial crops, biometric templates, or mathematical vectors are ever uploaded to cloud AI providers, external servers, or analytics trackers.
-- **Google Drive Integration**: When importing from Google Drive, CatLog uses read-only direct API calls to fetch photo thumbnails and originals directly between your computer and Google's servers. No intermediate proxy servers are involved, and Drive API keys are never written to exported web galleries.
+- **Google Drive Integration**: When importing from Google Drive, CatLog uses read-only direct API calls to fetch photo thumbnails and originals directly between your computer and Google's servers. No intermediate proxy servers are involved, and Drive API keys are never written to exported web galleries. Drive HEIC photos download as JPEG (full pixel dimensions preserved); JPEGs are byte-identical.
 
 ---
 

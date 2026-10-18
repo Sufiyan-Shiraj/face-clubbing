@@ -9,6 +9,10 @@ import {
   downloadLocalZip,
   downloadDriveSequential,
   PhotoDownloadItem,
+  isMobileClassBrowser,
+  checkDownloadSize,
+  SIZE_GUARD_MOBILE_THRESHOLD_BYTES,
+  SIZE_GUARD_DESKTOP_THRESHOLD_BYTES,
 } from '../utils/downloader';
 import { PersonCluster, PhotoInfo } from '../types';
 
@@ -337,5 +341,81 @@ describe('Privacy and Cross-Person Leak Check', () => {
     expect(downloadName).not.toContain('confidential');
     expect(JSON.stringify(targetItems)).not.toContain('bob');
     expect(JSON.stringify(targetItems)).not.toContain('confidential');
+  });
+});
+
+describe('Mobile vs Desktop Size Guard Threshold Logic (isMobileClassBrowser, checkDownloadSize)', () => {
+  it('detects mobile user agents (iOS, Android, etc.)', () => {
+    expect(isMobileClassBrowser({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15' })).toBe(true);
+    expect(isMobileClassBrowser({ userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile Safari/537.36' })).toBe(true);
+    expect(isMobileClassBrowser({ userAgent: 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15' })).toBe(true);
+    expect(isMobileClassBrowser({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', maxTouchPoints: 5 })).toBe(true);
+  });
+
+  it('detects constrained devices via navigator.deviceMemory <= 4 even on desktop UA', () => {
+    expect(isMobileClassBrowser({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', deviceMemory: 2 })).toBe(true);
+    expect(isMobileClassBrowser({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', deviceMemory: 4 })).toBe(true);
+  });
+
+  it('defaults conservative (true) when navigator or userAgent is absent or unknown', () => {
+    expect(isMobileClassBrowser(undefined)).toBe(true);
+    expect(isMobileClassBrowser({})).toBe(true);
+    expect(isMobileClassBrowser({ userAgent: '' })).toBe(true);
+  });
+
+  it('identifies unconstrained desktop browser with > 4 GB memory', () => {
+    expect(isMobileClassBrowser({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36', deviceMemory: 8 })).toBe(false);
+    expect(isMobileClassBrowser({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36', maxTouchPoints: 0, deviceMemory: 16 })).toBe(false);
+  });
+
+  it('enforces 150 MB threshold on mobile and calculates proposed parts using ~100 MB target', () => {
+    const mobileEnv = { userAgent: 'iPhone', deviceMemory: 4 };
+
+    // 50 photos @ 2.5 MB = 125 MB (under 150 MB threshold)
+    const items50: PhotoDownloadItem[] = Array.from({ length: 50 }, (_, i) => ({
+      id: `p${i}`,
+      photo: { name: `photo_${i}.jpg`, thumb: 'thumb.jpg', download: 'dl.jpg' },
+    }));
+    const check50 = checkDownloadSize(items50, undefined, undefined, mobileEnv);
+    expect(check50.isMobile).toBe(true);
+    expect(check50.thresholdBytes).toBe(SIZE_GUARD_MOBILE_THRESHOLD_BYTES); // 150 MB
+    expect(check50.isOverThreshold).toBe(false);
+    expect(check50.proposedParts).toBe(1);
+
+    // 80 photos @ 2.5 MB = 200 MB (over 150 MB threshold)
+    const items80: PhotoDownloadItem[] = Array.from({ length: 80 }, (_, i) => ({
+      id: `p${i}`,
+      photo: { name: `photo_${i}.jpg`, thumb: 'thumb.jpg', download: 'dl.jpg' },
+    }));
+    const check80 = checkDownloadSize(items80, undefined, undefined, mobileEnv);
+    expect(check80.isMobile).toBe(true);
+    expect(check80.isOverThreshold).toBe(true);
+    // 200 MB / 100 MB part size = 2 parts
+    expect(check80.proposedParts).toBe(2);
+  });
+
+  it('enforces 500 MB threshold on desktop and preserves single archive for 200 MB', () => {
+    const desktopEnv = { userAgent: 'Windows NT 10.0; Win64; x64', deviceMemory: 8, maxTouchPoints: 0 };
+
+    // 80 photos @ 2.5 MB = 200 MB (over mobile 150 MB, but under desktop 500 MB)
+    const items80: PhotoDownloadItem[] = Array.from({ length: 80 }, (_, i) => ({
+      id: `p${i}`,
+      photo: { name: `photo_${i}.jpg`, thumb: 'thumb.jpg', download: 'dl.jpg' },
+    }));
+    const checkDesktop = checkDownloadSize(items80, undefined, undefined, desktopEnv);
+    expect(checkDesktop.isMobile).toBe(false);
+    expect(checkDesktop.thresholdBytes).toBe(SIZE_GUARD_DESKTOP_THRESHOLD_BYTES); // 500 MB
+    expect(checkDesktop.isOverThreshold).toBe(false);
+    expect(checkDesktop.proposedParts).toBe(1);
+
+    // 220 photos @ 2.5 MB = 550 MB (over desktop 500 MB threshold)
+    const items220: PhotoDownloadItem[] = Array.from({ length: 220 }, (_, i) => ({
+      id: `p${i}`,
+      photo: { name: `photo_${i}.jpg`, thumb: 'thumb.jpg', download: 'dl.jpg' },
+    }));
+    const check220 = checkDownloadSize(items220, undefined, undefined, desktopEnv);
+    expect(check220.isOverThreshold).toBe(true);
+    // 550 MB / 250 MB = 3 parts
+    expect(check220.proposedParts).toBe(3);
   });
 });

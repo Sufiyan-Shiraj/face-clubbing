@@ -5769,27 +5769,32 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
     - A `DOWNLOAD_NOTES.txt` file is automatically injected inside the root of the `.zip` archive, listing each affected photo filename, status (`THUMBNAIL_FALLBACK` or `DOWNLOAD_FAILED`), and the reason (with direct Drive view link if available).
     - Qualities are never silently mixed.
 - **Size Guard & Browser Peak Memory**:
-  - Configured 500 MB threshold in `viewer/src/utils/downloader.ts` and `frontend/src/components/PhotoGallery.tsx`.
-  - When total expected size exceeds 500 MB:
-    - User is presented with a clear warning modal displaying the estimated archive size.
-    - User is offered a choice to download as split-into-parts ZIP archives (~450 MB each) or proceed with a single archive.
+  - Configured dynamic threshold in `viewer/src/utils/downloader.ts` and `frontend/src/components/PhotoGallery.tsx`:
+    - **Mobile-Class Browsers**: 150 MB threshold (split-into-parts: ~100 MB each). Detected via `navigator.deviceMemory <= 4` and mobile user agent patterns, defaulting conservative.
+    - **Desktop Browsers**: 500 MB threshold (split-into-parts: ~250 MB each).
+  - When total expected size exceeds the active threshold:
+    - User is presented with a clear warning modal displaying the estimated archive size and device-specific threshold.
+    - User is offered a choice to download as split-into-parts ZIP archives (~100 MB mobile, ~250 MB desktop) or proceed with a single archive.
   - **Total Browser Memory Measured on 100 Photos (`viewer/scripts/measure_zip_memory.cjs`)**:
     - Synthetic 250 MB 100-photo archive (2.50 MB realistic event photos) packaged via headless Chromium with continuous process working set (RSS via psutil/CDP) and JS heap sampling:
-    - Packaging Duration: **3.60 seconds** (Streaming throughput: 69.41 MB/s).
+    - Packaging Duration: **3.31 seconds** (Streaming throughput: 75.53 MB/s).
     - **Process Working Set (Total Resident Memory / RSS)**:
-      - Total Chromium Tree Baseline: **181.04 MB**
-      - Total Chromium Tree Peak: **959.59 MB** (Delta: 778.54 MB across browser download manager, renderer buffers, GPU, and network services).
-      - Renderer Process Peak RSS: **381.41 MB** (Webview tab process).
-      - Browser Main Process Peak RSS: **363.60 MB** (Host download stream).
+      - Total Chromium Tree Baseline: **393.22 MB**
+      - Total Chromium Tree Peak: **944.60 MB** (Delta: 551.38 MB across browser download manager, renderer buffers, GPU, and network services).
+      - Renderer Process Baseline: **109.77 MB**
+      - Renderer Process Peak RSS: **371.27 MB** (Delta: 261.50 MB, Webview tab process).
+      - Browser Main Process Baseline: **103.04 MB**
+      - Browser Main Process Peak RSS: **361.87 MB** (Host download stream).
     - **V8 JavaScript Heap**:
       - Baseline JS Heap: **3.25 MB**
-      - Peak JS Heap: **69.12 MB** (Peak Expansion: 65.87 MB).
-      - Post-GC JS Heap: **61.13 MB**.
+      - Peak JS Heap: **69.14 MB** (Peak Expansion: 65.89 MB).
+      - Post-GC JS Heap: **43.63 MB**.
     - **Safety Analysis for Phone-Class Browsers**:
-      - Mobile operating systems (iOS WebKit Jetsam and Android Low Memory Killer / LMK) enforce aggressive working set limits (~300-400 MB on 2-3 GB devices, ~500-700 MB on 4-6 GB devices).
-      - For a 250 MB archive, the renderer process peaks at 381.41 MB, operating right near the survivable ceiling for low-end mobile devices.
-      - **The 500 MB Size Guard is therefore critical and safe**: allowing archives over 500 MB on mobile browsers would drive renderer and blob buffering queues beyond 500-700 MB, causing immediate OS Jetsam / tab crashes. The 500 MB guard prevents this by warning the user and splitting downloads into safe ~450 MB parts.
-    - Raw Output: `scratch/peak_browser_memory_100_photos.txt` (SHA-256: `c425a7fa08365f43f286eda3c55a5a858054529ebf59a293b7353f9fa1b3ee92`).
+      - Verdict: **UNVERIFIED**.
+      - Mobile operating systems (iOS WebKit Jetsam and Android Low Memory Killer / LMK) enforce aggressive per-process working set limits (often terminating tabs exceeding 300-400 MB on memory-constrained devices).
+      - For a 250 MB archive, the desktop renderer process peaked at **371.27 MB**. Safety cannot be claimed for mobile hardware without empirical testing on physical mobile devices or under dedicated mobile emulation with enforced Jetsam limits.
+      - **Conservative Mitigation Implemented**: Lowered the mobile zip size guard to 150 MB with ~100 MB split parts, preventing constrained phone browsers from attempting 250+ MB client-side archives.
+    - Raw Output: `scratch/peak_browser_memory_100_photos.txt` (SHA-256: `e7abfa82ab4150a69dd5a6d5942743cd79b7470de0f88dd5d96cfe6b54496a8e`).
 
 ### 34.5 Codebase Cleanup: Dead Code & Paths
 - **Dead Code Removed**: `git rm backend/engine/cropper.py`. Unused imports removed from `scanner.py` and `pipeline.py`. `vulture` dead-code audit reports 0 dead code.
@@ -5808,8 +5813,8 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 | :--- | :--- | :--- | :--- |
 | **Backend Pytest Full Suite** | `pytest -q -rs` | **99 / 99 passed (100%)** (672.48s) | 0 failed, 0 skipped, 2 warnings across 16 test files |
 | **Frontend Organizer Vitest** | `npm --prefix frontend test -- --run` | **74 / 74 passed (100%)** (54.49s) | 13/13 test files |
-| **Public Viewer Vitest** | `npm --prefix viewer test -- --run` | **20 / 20 passed (100%)** (27.73s) | 2/2 test files |
+| **Public Viewer Vitest** | `npm --prefix viewer test -- --run` | **26 / 26 passed (100%)** (4.32s) | 2/2 test files |
 | **Phase 1b Verification Audit** | `python eval/verify_export.py` | **15 / 15 checks passed (100%)** | Check 6 verified 99 pytest passed |
 | **SPEC 6.2 Settings Audit** | `python eval/check_settings_spec.py` | **15 / 15 parameters match (100%)** | Zero divergence from SPEC 6.2 |
-| **Fresh Clone Suite (HEAD `22d1b87`)** | `pytest -q -rs` | **94 passed, 5 skipped (total 99 items)** | 5 skipped require local live caches/photos |
-| **Total Automated Tests** | Stack-wide | **193 passed (100% green)** | 99 pytest + 74 frontend + 20 viewer |
+| **Fresh Clone Suite** | `pytest -q -rs` | **94 passed, 5 skipped (total 99 items)** | 5 skipped require local live caches/photos |
+| **Total Automated Tests** | Stack-wide | **199 passed (100% green)** | 99 pytest + 74 frontend + 26 viewer |

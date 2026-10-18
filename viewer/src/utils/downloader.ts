@@ -1,8 +1,70 @@
 import { downloadZip } from 'client-zip';
 import { PhotoInfo, PersonCluster } from '../types';
 
-export const SIZE_GUARD_THRESHOLD_BYTES = 500 * 1024 * 1024; // 500 MB
-export const ESTIMATED_BYTES_PER_PHOTO = 2.5 * 1024 * 1024;  // ~2.5 MB average full resolution
+export const SIZE_GUARD_DESKTOP_THRESHOLD_BYTES = 500 * 1024 * 1024; // 500 MB desktop threshold
+export const SIZE_GUARD_MOBILE_THRESHOLD_BYTES = 150 * 1024 * 1024;  // 150 MB mobile threshold
+export const PART_SIZE_DESKTOP_BYTES = 250 * 1024 * 1024;            // ~250 MB per part on desktop
+export const PART_SIZE_MOBILE_BYTES = 100 * 1024 * 1024;             // ~100 MB per part on mobile
+export const SIZE_GUARD_THRESHOLD_BYTES = SIZE_GUARD_DESKTOP_THRESHOLD_BYTES; // Backwards-compatible alias
+export const ESTIMATED_BYTES_PER_PHOTO = 2.5 * 1024 * 1024;          // ~2.5 MB average full resolution
+
+export interface BrowserEnvironmentInfo {
+  userAgent?: string;
+  deviceMemory?: number;
+  maxTouchPoints?: number;
+}
+
+/**
+ * Detects whether the current environment is a mobile-class browser.
+ * Uses navigator.deviceMemory (<= 4 GB) and user agent string.
+ * Defaults conservative (true) if environment is ambiguous or missing.
+ */
+export function isMobileClassBrowser(info?: BrowserEnvironmentInfo): boolean {
+  const nav = info !== undefined ? info : (typeof navigator !== 'undefined' ? navigator : undefined);
+  if (!nav) {
+    return true; // Default conservative
+  }
+
+  // 1. Device Memory API: <= 4 GB indicates mobile or memory-constrained device
+  const deviceMemory = (nav as any).deviceMemory;
+  if (typeof deviceMemory === 'number' && deviceMemory <= 4) {
+    return true;
+  }
+
+  // 2. User Agent inspection
+  const ua = (nav.userAgent || '').toLowerCase();
+  if (ua) {
+    if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(ua)) {
+      return true;
+    }
+    // Modern iPadOS reporting as Macintosh with multi-touch
+    if (typeof nav.maxTouchPoints === 'number' && nav.maxTouchPoints > 1 && /macintosh/i.test(ua)) {
+      return true;
+    }
+    // Desktop UA with sufficient memory (> 4 GB)
+    if (typeof deviceMemory === 'number' && deviceMemory > 4) {
+      return false;
+    }
+    if (/windows|macintosh|linux|x11/i.test(ua) && !/mobile|android/i.test(ua)) {
+      return false;
+    }
+  }
+
+  // Default conservative if user agent is absent or unrecognized
+  return true;
+}
+
+/**
+ * Returns threshold and part size config based on detected browser environment.
+ */
+export function getSizeGuardConfig(info?: BrowserEnvironmentInfo) {
+  const isMobile = isMobileClassBrowser(info);
+  return {
+    isMobile,
+    thresholdBytes: isMobile ? SIZE_GUARD_MOBILE_THRESHOLD_BYTES : SIZE_GUARD_DESKTOP_THRESHOLD_BYTES,
+    partSizeBytes: isMobile ? PART_SIZE_MOBILE_BYTES : PART_SIZE_DESKTOP_BYTES,
+  };
+}
 
 export interface PhotoDownloadItem {
   id: string;
@@ -120,15 +182,34 @@ export function estimateDownloadSize(items: PhotoDownloadItem[]): number {
 
 /**
  * Checks if total download exceeds size guard threshold.
+ * Uses 150 MB threshold on mobile-class browsers and 500 MB on desktop.
+ * Split-into-parts size is ~100 MB on mobile, ~250 MB on desktop.
  */
 export function checkDownloadSize(
   items: PhotoDownloadItem[],
-  thresholdBytes = SIZE_GUARD_THRESHOLD_BYTES
-): { isOverThreshold: boolean; estimatedBytes: number; proposedParts: number } {
+  customThresholdBytes?: number,
+  customPartBytes?: number,
+  envInfo?: BrowserEnvironmentInfo
+): {
+  isOverThreshold: boolean;
+  estimatedBytes: number;
+  proposedParts: number;
+  isMobile: boolean;
+  thresholdBytes: number;
+} {
+  const config = getSizeGuardConfig(envInfo);
+  const thresholdBytes = customThresholdBytes !== undefined ? customThresholdBytes : config.thresholdBytes;
+  const partBytes = customPartBytes !== undefined ? customPartBytes : config.partSizeBytes;
   const estimatedBytes = estimateDownloadSize(items);
   const isOverThreshold = estimatedBytes > thresholdBytes;
-  const proposedParts = isOverThreshold ? Math.ceil(estimatedBytes / (250 * 1024 * 1024)) : 1;
-  return { isOverThreshold, estimatedBytes, proposedParts };
+  const proposedParts = isOverThreshold ? Math.max(2, Math.ceil(estimatedBytes / partBytes)) : 1;
+  return {
+    isOverThreshold,
+    estimatedBytes,
+    proposedParts,
+    isMobile: config.isMobile,
+    thresholdBytes,
+  };
 }
 
 /**
@@ -167,6 +248,9 @@ export function generateDownloadNotes(
     `Full Resolution  : ${fullResCount}`,
     `Fell Back        : ${fallbackItems.length} (packaged at thumbnail resolution)`,
     `Failed           : ${failedItems.length}`,
+    '',
+    'FORMAT NOTE:',
+    'Drive HEIC photos download as JPEG (full pixel dimensions preserved); JPEGs are byte-identical.',
     '',
     'ATTENTION — HONESTY INVOICE:',
     'Not all photos could be retrieved at full native resolution.',

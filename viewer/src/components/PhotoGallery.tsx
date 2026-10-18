@@ -59,6 +59,8 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     items: PhotoDownloadItem[];
     estimatedBytes: number;
     proposedParts: number;
+    thresholdBytes?: number;
+    isMobile?: boolean;
   } | null>(null);
   const [showDriveNoteModal, setShowDriveNoteModal] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -185,6 +187,8 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
         items: validItems,
         estimatedBytes: check.estimatedBytes,
         proposedParts: check.proposedParts,
+        thresholdBytes: check.thresholdBytes,
+        isMobile: check.isMobile,
       });
       return;
     }
@@ -694,7 +698,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                   Large Archive Size Warning
                 </h3>
                 <p className="text-xs text-[var(--text-muted)] font-mono">
-                  ~{(sizeGuardModal.estimatedBytes / (1024 * 1024)).toFixed(0)} MB expected (&gt; 500 MB threshold)
+                  ~{(sizeGuardModal.estimatedBytes / (1024 * 1024)).toFixed(0)} MB expected (&gt; {Math.round((sizeGuardModal.thresholdBytes || (500 * 1024 * 1024)) / (1024 * 1024))} MB threshold{sizeGuardModal.isMobile ? ' on mobile' : ''})
                 </p>
               </div>
             </div>
@@ -744,6 +748,10 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
 
             <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
               Photos from Google Drive will download one by one. Your browser may display a prompt asking to <strong>allow multiple file downloads</strong>. Please click <strong>Allow</strong> to proceed.
+            </p>
+
+            <p className="text-xs text-[var(--text-muted)] font-mono">
+              Drive HEIC photos download as JPEG (full pixel dimensions preserved); JPEGs are byte-identical.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2">

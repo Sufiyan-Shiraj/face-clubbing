@@ -125,6 +125,17 @@ async function main() {
     args: ['--enable-precise-memory-info', '--js-flags=--expose-gc'],
   });
 
+  const context = await browser.newContext({ acceptDownloads: true });
+  const page = await context.newPage();
+
+  console.log('[BROWSER] Loading viewer gallery...');
+  await page.goto(`http://127.0.0.1:${port}`);
+  await page.waitForSelector('button:has-text("Download All")', { timeout: 10000 });
+
+  // Initial GC & Baseline Memory
+  await page.evaluate(() => window.gc && window.gc());
+  await new Promise((r) => setTimeout(r, 600));
+
   // Query browser root PID via CDP SystemInfo
   const browserCdp = await browser.newBrowserCDPSession();
   const sysInfo = await browserCdp.send('SystemInfo.getProcessInfo');
@@ -136,7 +147,7 @@ async function main() {
     throw new Error('Could not identify root Chromium browser process ID from CDP');
   }
 
-  // Start background Python RSS poller
+  // Start background Python RSS poller NOW (page is loaded, renderer process exists and is idle)
   console.log(`[SAMPLER] Starting continuous process RSS poller (psutil) for PID ${rootPid}...`);
   const stopFile = SAMPLES_JSON + '.stop';
   if (fs.existsSync(stopFile)) fs.unlinkSync(stopFile);
@@ -146,19 +157,8 @@ async function main() {
   sampler.stdout.on('data', (d) => { samplerOutput += d.toString(); });
   sampler.stderr.on('data', (d) => { console.error('[SAMPLER ERR]', d.toString()); });
 
-  // Give sampler a moment to attach
-  await new Promise((r) => setTimeout(r, 200));
-
-  const context = await browser.newContext({ acceptDownloads: true });
-  const page = await context.newPage();
-
-  console.log('[BROWSER] Loading viewer gallery...');
-  await page.goto(`http://127.0.0.1:${port}`);
-  await page.waitForSelector('button:has-text("Download All")', { timeout: 10000 });
-
-  // Initial GC & Baseline Memory
-  await page.evaluate(() => window.gc && window.gc());
-  await new Promise((r) => setTimeout(r, 500));
+  // Give sampler a moment to attach and take idle baseline
+  await new Promise((r) => setTimeout(r, 400));
 
   const baselineHeapBytes = await page.evaluate(() => {
     return (window.performance && window.performance.memory)
@@ -272,33 +272,28 @@ async function main() {
     `  Peak Heap Expansion         : ${heapDeltaMB} MB`,
     `  Post-GC JS Heap Size        : ${postGcHeapMB} MB`,
     '--------------------------------------------------------------------------------',
-    'EVALUATION: IS THE 500 MB GUARD SAFE FOR A PHONE-CLASS BROWSER?',
+    'EVALUATION: PHONE-CLASS BROWSER MEMORY SAFETY',
     '--------------------------------------------------------------------------------',
-    '1. Mobile Web Platform Constraints:',
-    '   - Mobile operating systems (iOS Jetsam and Android Low Memory Killer / LMK)',
-    '     enforce strict per-process memory budgets on browser processes.',
-    '   - Budget-class devices (2 GB - 3 GB device RAM): Tabs exceeding ~300-400 MB RSS',
-    '     are terminated aggressively by the mobile OS.',
-    '   - Mid-range devices (4 GB - 6 GB device RAM): Web processes are allocated a budget',
-    '     of ~500-700 MB before memory pressure triggers tab eviction or reload.',
+    '1. Measured Findings (Desktop Headless Chromium):',
+    `   - For a 250 MB payload (100 photos @ 2.5 MB), peak Renderer process RSS was ${peakRendererRss} MB,`,
+    `     with total Chromium process tree RSS peaking at ${peakTotalRss} MB and JS heap peaking at ${peakHeapMB} MB.`,
+    `   - Renderer process baseline was ${baselineRendererRss} MB (delta: ${expansionRendererRss} MB).`,
+    `   - The data shows substantial resident memory growth across browser processes during streaming packaging,`,
+    `     driven by internal network socket buffering and browser download manager pipeline buffers.`,
     '',
-    '2. Benchmark Streaming Findings:',
-    `   - For a 250 MB payload (100 photos @ 2.5 MB), peak Renderer RSS reached ${peakRendererRss} MB,`,
-    `     with peak total Chromium tree RSS reaching ${peakTotalRss} MB and peak JS heap of ${peakHeapMB} MB.`,
-    '   - Because client-zip processes files as sequential WHATWG Response streams,',
-    '     the full 250 MB payload is NEVER buffered in memory simultaneously.',
-    '   - The memory expansion during streaming packaging is bounded by browser network',
-    '     and disk buffers (~60-120 MB delta), remaining far below the dangerous 300+ MB threshold.',
+    '2. Phone-Class Browser Safety Verdict:',
+    '   - UNVERIFIED.',
+    '   - Mobile operating systems (such as iOS WebKit Jetsam and Android Low Memory Killer) enforce',
+    '     strict per-process memory limits (often terminating tabs exceeding 300-400 MB on memory-constrained devices).',
+    `   - Because peak Renderer RSS reached ${peakRendererRss} MB for a 250 MB zip on desktop Chromium,`,
+    '     safety cannot be established for phone-class browsers without empirical measurement on physical mobile hardware',
+    '     or dedicated mobile OS emulation with enforced memory constraints.',
     '',
-    '3. Verdict on the 500 MB Size Guard Threshold:',
-    '   - SAFE AND NECESSARY. While streaming keeps active memory low, mobile browsers',
-    '     (especially iOS Safari and Android Chrome WebView) incur internal blob buffering',
-    '     and network socket queue growth when packaging large multi-hundred-megabyte archives.',
-    '   - If an archive exceeds 500 MB on mobile, network stalls or slow background blob writes',
-    '     can cause temporary queue backpressure approaching 350-500 MB RSS, risking an OS Jetsam kill.',
-    '   - The 500 MB threshold warns the user before memory pressure spikes and offers',
-    '     split-into-parts ZIPs (~450 MB each), guaranteeing that mobile phone browsers',
-    '     operate comfortably within the safe ~200-300 MB headroom margin without risk of tab crash.',
+    '3. Conservative Mitigations Implemented:',
+    '   - Zip size guard lowered to 150 MB for mobile-class browsers (detected via navigator.deviceMemory <= 4',
+    '     and mobile user agents, defaulting conservative).',
+    '   - Split-into-parts download offers ~100 MB archives on mobile (and ~250 MB on desktop) to protect',
+    '     constrained browsers from memory pressure and process termination.',
     '================================================================================',
   ].join('\n');
 
