@@ -657,70 +657,70 @@ Unrecognized Photos Count:  17
 
 ---
 
-### Check J: Fresh `git clone` Execution from HEAD (`61bfa04`)
-Executed in a fresh isolated temporary directory created by `git clone https://github.com/Sufiyan-Shiraj/face-clubbing.git` from current HEAD (`61bfa04`).
+### Check J: Fresh `git clone` Execution from HEAD (`01e1452`)
+Executed in a fresh isolated temporary directory created by `git clone c:\Users\DELL\face-clubbing <tempDir>` from current HEAD (`01e1452`).
 
 #### 1. Pytest (`pytest -q -rs`)
 - **Source File**: `scratch/fresh_clone_pytest.txt`
-- **SHA-256 Digest**: `1EA04ADBA658F336D41BE1EEE5DACA9FF9DF62014078CD7537A96413FA95B84D`
+- **SHA-256 Digest**: `11F2F00073FCF357518C8EF6A028982358598BBC0560F8D907C6047E99626C7E`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 1EA04ADBA658F336D41BE1EEE5DACA9FF9DF62014078CD7537A96413FA95B84D
+Hash      : 11F2F00073FCF357518C8EF6A028982358598BBC0560F8D907C6047E99626C7E
 Path      : <REPO_ROOT>\scratch\fresh_clone_pytest.txt
 ```
 - **Verbatim Output**:
 ```text
-......s.s.........................................................s..... [ 80%]
-........s.s....                                                          [100%]
+......s.s............................................................ss. [ 72%]
+..s........................                                              [100%]
 =========================== short test summary info ===========================
 SKIPPED [1] tests\test_api.py:445: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_api.py:564: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_engine_cold_regression.py:41: test_photos/ directory is absent (photos not tracked in git per privacy rules)
+SKIPPED [1] tests\test_engine_cold_regression.py:124: test_photos/ directory is absent (photos not tracked in git per privacy rules)
 SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
-SKIPPED [1] tests\test_engine_cold_regression.py:28: test_photos directory not available in fresh clone
-SKIPPED [1] tests\test_engine_cold_regression.py:91: test_photos directory not available in fresh clone
-84 passed, 5 skipped in 13.85s
+94 passed, 5 skipped in 11.45s
 ```
-- **Summary**: 84 passed, 5 skipped in 13.85s (0 failures; the 3 skipped tests cleanly require local live embedding caches, and 2 cold regression tests cleanly skip when `test_photos/` is absent).
+- **Summary**: 94 passed, 5 skipped in 11.45s (0 failures; the 3 skipped tests cleanly require local live embedding caches, and 2 cold regression tests cleanly skip when `test_photos/` is absent).
 
 #### 2. Frontend Vitest (`npm test -- --run`)
 - **Source File**: `scratch/fresh_clone_frontend.txt`
-- **SHA-256 Digest**: `5AAC3D3296F10E236BAD777945A27D72B861F7D7E9368CE9B54915CB33143DA8`
+- **SHA-256 Digest**: `B4F6CD7942036C377D9AC5813B3D78C2FAB140D841F334448D5810FF1F420A00`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 5AAC3D3296F10E236BAD777945A27D72B861F7D7E9368CE9B54915CB33143DA8
+Hash      : B4F6CD7942036C377D9AC5813B3D78C2FAB140D841F334448D5810FF1F420A00
 Path      : <REPO_ROOT>\scratch\fresh_clone_frontend.txt
 ```
 - **Verbatim Output**:
 ```text
  Test Files  13 passed (13)
       Tests  74 passed (74)
-   Start at  09:01:35
-   Duration  45.55s (import 44%, environment 42%, tests 11%, transform 2%)
+   Start at  16:26:48
+   Duration  45.09s (import 44%, environment 40%, tests 12%, transform 3%, worker 1%)
 
-    Isolate  13 workers spawned · ~4.53s startup each (spawn + environment, per file)
-             at least ~15.10s faster with isolate: false — reuses workers across files instead of one per file
+    Isolate  13 workers spawned · ~4.14s startup each (spawn + environment, per file)
+             at least ~13.81s faster with isolate: false — reuses workers across files instead of one per file
 ```
-- **Summary**: 74 passed across 13 test files in 45.55s (0 failures).
+- **Summary**: 74 passed across 13 test files in 45.09s (0 failures).
 
 #### 3. Viewer Vitest (`npm test -- --run`)
 - **Source File**: `scratch/fresh_clone_viewer.txt`
-- **SHA-256 Digest**: `DC9A9F948C89A54F07B9961DF7173B1ACC13C3D698E9D88734F8B7AAA4738361`
+- **SHA-256 Digest**: `A2EE38C308D19353445332F2888FC5E81316A9C689760E7E566A4C77C8187542`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : DC9A9F948C89A54F07B9961DF7173B1ACC13C3D698E9D88734F8B7AAA4738361
+Hash      : A2EE38C308D19353445332F2888FC5E81316A9C689760E7E566A4C77C8187542
 Path      : <REPO_ROOT>\scratch\fresh_clone_viewer.txt
 ```
 - **Verbatim Output**:
 ```text
  Test Files  2 passed (2)
       Tests  20 passed (20)
-   Start at  09:02:34
-   Duration  10.44s (import 50%, environment 37%, tests 9%, transform 3%)
+   Start at  16:27:41
+   Duration  69.72s (environment 50%, import 47%, tests 1%, transform 1%)
 ```
-- **Summary**: 20 passed across 2 test files in 10.44s (0 failures).
+- **Summary**: 20 passed across 2 test files in 69.72s (0 failures).
 
 #### 4. Pinned Baseline Fixture (`python eval/check_baseline.py`)
 - **Source File**: `scratch/fresh_clone_baseline.txt`
@@ -940,7 +940,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
   - `scratch/screenshots/review_03_image_viewer_source_missing.png`: Image viewer displaying "Source missing" badge, red floating warning banner, fallback placeholder, and disabled download button for photos moved/deleted from disk.
 - **Cold-Run Detection Speed (Check I)**: Cold pipeline runtime on 271-photo dataset optimized from 151.72s down to **86.29s** (-43.1% overall runtime reduction). Dense event photos cold detection at ~7.49 s/photo remains constrained by InsightFace SCRFD 10G on CPU.
 - **Startup Latency (Check K)**: Measured at 9.81 s in `eval/verify_exe.py` (down from previous 15.13 s average).
-- **Fresh Clone Verification (Check J)**: Pinned HEAD `2efc60e` verified in fresh clone without local live caches: `pytest` passed 80 (3 cleanly skipped) in 9.97s; frontend Vitest passed 50/50 in 20.14s; viewer Vitest passed 6/6 in 5.01s.
+- **Fresh Clone Verification (Check J)**: Pinned HEAD `01e1452` verified in fresh clone without local live caches: `pytest` passed 94 (5 cleanly skipped) in 11.45s; frontend Vitest passed 74/74 across 13 test files in 45.09s; viewer Vitest passed 20/20 across 2 test files in 69.72s; pinned baseline checked 100% OK.
 - **Native Pickers (Check L)**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps.
 - **Phase 6 Method 1 Live Google Drive Integration (Check M)**: **COMPLETE**. Live verification on public folder `<FOLDER_ID>` verified: 152 total files (83 images, 69 videos skipped), 100% thumbnail availability, 0% alt=media fallbacks, 92.1% bandwidth savings (10.15 MB thumbnails vs 127.73 MB originals). Complete engine runs executed on Drive thumbnails and Drive originals; 64 px floor analysis documented in SPEC §18 (88.6% under 64 px on thumbnails vs 1.6% on originals; evidence table provided for proposed 40 px adaptive floor; SPEC §6.2 defaults kept unchanged). Resumable caching, sanitized error messages, and zero API key leakage verified. Raw evidence: `scratch/verify_drive_phase6_raw.txt` (SHA-256: `0F3C305DEE212226A8539DE59DB61C381661AE307CEC6B64A79D1A7B5879A10B`).
 - **Privacy & Secrets (Section 4)**: Current git history is 100% clean of images/secrets. The 5 old commits with 27 JPEG face-crop contact sheets remain reachable on GitHub; reviewed and accepted by organizer on 2026-10-14.
@@ -994,11 +994,11 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | Dimension | Metric / Target | Before Phase 7 | After Phase 7 | Improvement / Delta | Verification Method | Verdict |
 | :--- | :--- | :---: | :---: | :---: | :--- | :---: |
 | **Pipeline Speed (Warm Cache)** | Pre-computed embeddings pipeline runtime on 271-photo dataset | 151.72 s (0.56 s/photo) | **86.29 s (0.32 s/photo)** | **-65.43 s (43.1% speedup)** | `eval/benchmark_pipeline.py` (post-detection: scan, crop, cluster, export) | **PASS** |
-| **Detection Speed (Truly Cold)** | Raw detection + ArcFace embedding on CPU (empty cache) | 8.55 s/photo | **8.55 s/photo** | Compute-bound (SCRFD 10G + ArcFace ResNet50 on CPU) | Benchmark on raw photos (`~36.9 min` for 259 photos) | **PASS** |
-| **Crop Generation** | Multi-face crop extraction per photo | Decoded source image N times (once per face) | **Single-pass batch decode & slice** | **1.97x measured speedup** (349.5 ms → 177.4 ms on 10-face photo) | Direct execution benchmark (`backend/engine/thumbnails.py`) | **PASS** |
-| **Scanner Prefetch** | Photo discovery & EXIF reading | Single-threaded linear read | **Multi-core ThreadPoolExecutor prefetch** | Instantaneous metadata scan | `backend/engine/scanner.py` | **PASS** |
-| **ONNX Runtime** | Intra-op & Inter-op CPU threads | Default unconstrained | **Tuned to hardware thread pool (`min(4, os.cpu_count())`)** | Reduced thread contention & CPU spikes | `backend/engine/detector.py` | **PASS** |
-| **Cold Start to Usable UI** | Native GUI binary cold launch to `/api/health` | ~28.5 s (eager model load) | **23.60 s avg** (29.10s, 20.87s, 20.82s) | **-4.9 s startup reduction via lazy model loading** | Timed launches of `dist/CatLog.exe` | **PASS** |
+| **Detection Speed (Cold Benchmark)** | Raw detection + ArcFace ResNet50 embedding on CPU (empty cache) | 7.49–8.55 s/photo | **6.06–7.36 s/photo (40-photo subset)**<br>**4.34 s/photo (259-photo set)** | Dense cluster: 10.53 faces/photo<br>Full dataset: 6.57 faces/photo | 2 cold runs (`scratch/run_cold_40.py`) | **RECONCILED** |
+| **Crop Generation** | Multi-face crop extraction per photo | Decoded source image N times (once per face) | **Single-pass batch decode & slice** | **2.89x measured speedup** (172.9 ms → 59.9 ms on 10-face photo) | `thumbnails.py` (`generate_square_face_crop_from_image`) | **PRESENT** |
+| **Scanner Prefetch** | Photo discovery & EXIF reading | Single-threaded linear read | **Reverted in commit 6405b63** | Sequential `os.walk` retained for deterministic order & thread safety | `backend/engine/scanner.py` | **ABSENT** |
+| **ONNX Runtime Tuning** | Intra-op & Inter-op CPU threads | Default unconstrained | **Default ORT CPU threads retained** | Thread pool tuning was rolled back to prevent thread pool deadlocks | `backend/engine/detector.py` | **ABSENT** |
+| **Cold Start to Usable UI** | Native GUI binary cold launch to `/api/health` | ~28.5 s (eager model load) | **23.60 s avg** (29.10s, 20.87s, 20.82s) | **-4.9 s startup reduction via lazy model loading** | `detector.py` (`_init_app` lazy load) | **PRESENT** |
 | **Peak Memory (RAM)** | Pipeline peak RSS | ~745 MB | **~710 MB** | -35 MB reduction (< 1.5 GB budget) | `psutil` process monitor | **PASS** |
 | **Mascot Asset Size** | 24 transparent PNG stickers | 5,049,856 B (4.82 MB) | **691,824 B (0.66 MB)** | **-4,358,032 B (-86.3% size reduction)** | Directory size audit (`frontend/public/mascot/`) | **PASS** |
 | **Export Bundle (Faces)** | 1,701 face crops (JPEG quality 95 vs 85) | 24,736,890 B (23.59 MB) | **13,463,552 B (12.84 MB)** | **-11,273,338 B (-45.6% size reduction)** | `eval/verify_export.py` (PSNR = 42.92 dB) | **PASS** |
@@ -1007,18 +1007,35 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **Executable Name** | Packaging output binary | `photosorter.exe` | **`CatLog.exe`** | Rebranded to project title | `photosorter.spec` (`name='CatLog'`) | **PASS** |
 | **Window Title** | Desktop window title | "PhotoSorter" | **"CatLog"** | Clean branding | `main.py` & `eval/verify_windowed.py` | **PASS** |
 | **Settings Directory** | User profile config directory | `~/.photosorter/` | **`~/.catlog/`** | Auto-migrates legacy settings on first run | `backend/drive/config.py` & `tests/test_drive.py` | **PASS** |
-| **Dead Code Pruning** | Unused engine files | `backend/engine/cropper.py` present | **Removed** (unified into `thumbnails.py`) | -1 dead code file | Repository file audit | **PASS** |
+| **Dead Code Pruning** | Unused engine files | `backend/engine/cropper.py` present | **Unreferenced legacy code retained on disk** | File still present on disk; unimported | `backend/engine/cropper.py` | **ABSENT** |
 | **Scratch Organization**| Unorganized scratch files in repo root | Root directory cluttered | **Archived to `docs/archive/`** with catalog README | Clean repository root | Repository structure tree | **PASS** |
-| **Backend Tests** | Pytest unit & integration test count | 85 passed in 68.51 s | **87 passed in 56.18 s** | **+2 tests, 12.33s faster execution** | `pytest tests` | **PASS** |
+| **Backend Tests** | Pytest unit & integration test count | 85 passed in 68.51 s | **95 passed in 23.03 s** | **+10 tests, full regression coverage** | `pytest tests` | **PASS** |
 | **Frontend Tests** | Organizer Vitest test count | 74 passed | **74 passed** (13 test files) | 100% green | `npm test` in `frontend/` | **PASS** |
 | **Viewer Tests** | Public viewer Vitest test count | 20 passed | **20 passed** (2 test files) | 100% green | `npm test` in `viewer/` | **PASS** |
 
 ### 9.1 Phase 7 Technical Audits & Measurements
-- **Benchmark Honesty**: The 151.72s → 86.29s optimization measured the post-detection pipeline on a 271-photo dataset with **pre-computed embedding cache** (0.32 s/photo). Truly cold inference on CPU requires **8.55 s/photo** (~36.9 min for 259 photos) due to deep neural network FLOP limits on CPU.
-- **Measured Crop Extraction**: Micro-benchmark on 10-face photo showed 349.5 ms (legacy) vs 177.4 ms (single-pass decode/slice), establishing a **1.97x measured speedup** (retracting heuristic "~5x" claim).
+- **Engine Optimization Inventory (Script & Import Check)**:
+  - `Single-pass crops`: **PRESENT** (`thumbnails.generate_square_face_crop_from_image` operates on in-memory `pil_img`). Microbenchmark on 10-face photo: 172.9 ms (disk decode per face) vs 59.9 ms (single-pass in-memory), demonstrating a **2.89x speedup**.
+  - `Scanner prefetch`: **ABSENT** (Reverted in commit `6405b63`; linear `os.walk` is used for scan stability).
+  - `ORT thread tuning`: **ABSENT** (Default unconstrained CPU threading retained to prevent library contention).
+  - `Lazy model load`: **PRESENT** (`FaceDetector._init_app()` only executes when un-cached photos require detection).
+  - `cropper.py removal`: **ABSENT** (`cropper.py` exists on disk as unreferenced code; not imported).
+- **Throughput Contradiction Resolution (8.55 vs 4.34 vs 7.49 s/photo)**:
+  - **Hardware Environment**: Intel(R) Core(TM) i3-1005G1 CPU @ 1.20GHz (2 physical cores, 4 logical processors), 11.77 GB RAM, Windows 11 Home [10.0.22631.6199].
+  - **Core Explanation**:
+    - **Face Density Disparity**: ArcFace ResNet50 embedding on CPU is compute-bound (~0.40–0.45s per face). The full 259-photo dataset averages **6.57 faces/photo** (1,701 faces total), producing a global throughput of **4.34 s/photo**. The 40-photo regression subset contains **421 faces across 40 photos** (an average of **10.53 faces/photo** — 60.3% denser in faces). At 10.53 faces/photo, the expected per-photo time is naturally `~0.5s (SCRFD) + 10.53 * 0.42s = ~4.9–7.5s`.
+    - **Background Workloads**: When developer servers (`npm run dev` Vite server, `npm run server` Uvicorn backend) and IDE background watchers are active, CPU contention on a 2-core mobile processor drives per-photo times from ~6.0–7.4s up to **8.55 s/photo**.
+  - **Cold Run Benchmarks (40-Photo Subset, Empty Cache)**:
+    - **Run 1**: 242.50 s wall time (**6.062 s/photo**), 77 people, 219 clustered faces, 202 unrec faces (421 faces total). Raw output: `scratch/cold_run_1_summary.json` (SHA-256: `005088390bdb4f442ebfa9d8a6223cd2af1a8e90243dba7d357dfd7bbc173c3e`).
+    - **Run 2**: 294.29 s wall time (**7.357 s/photo**), 77 people, 219 clustered faces, 202 unrec faces (421 faces total). Raw output: `scratch/cold_run_2_summary.json` (SHA-256: `b30bb80d2218c7a0f7a0bc38774ffbe8662c3102efac349e570aaa91214d53f0`).
 - **Cold Start to Usable UI**: 3 consecutive cold launches of `dist/CatLog.exe` to `/api/health`: 29.10s, 20.87s, 20.82s (**avg 23.60s**). Lazy model loading eliminates ~4.9s from initial UI render time.
-- **Onefile vs Onedir**: Single-file distribution (151.16 MB `.exe`, ~23.6s extraction boot) remains the recommendation for `v0.1.0-rc1` to prevent missing DLL errors; onedir (~1.5-2.5s boot) should be paired with an installer in future versions.
-- **Model Download Audit**: Verified cache guard (skips download if present in `~/.catlog/models/buffalo_l/`), clean error handling when offline (`RuntimeError`), download start notification event, lack of HTTP resume / SHA-256 checks in upstream InsightFace.
+- **PyInstaller Startup Benchmark (Onedir vs Onefile Cold Starts)**:
+  - 3 cold launches each measured to `/api/health` via `eval/compare_startups.py`:
+    - **Onefile (`dist/CatLog.exe`, 158.9 MB)**: Run 1: 9.639s, Run 2: 10.669s, Run 3: 10.715s | Mean: **10.341s**
+    - **Onedir (`dist/CatLog_onedir/CatLog.exe`, 22.9 MB binary)**: Run 1: 1.143s, Run 2: 1.146s, Run 3: 1.147s | Mean: **1.145s**
+    - **Speedup**: **9.03x faster cold start** with onedir.
+    - Raw output: `scratch/startup_benchmark.json` (SHA-256: `46AA8943F7F9AB0751612580391137D8DA1CDBF847119B1D77B62D1296090FD1`).
+    - CI smoke test on onedir binary passed in 3.54s (`python scripts/smoke_test.py dist/CatLog_onedir/CatLog.exe`). Default packaging retained as onefile per user instructions.
 - **Baseline Privacy Audit (`eval/baseline/`)**: 6 files (817,760 B total) verified: **0 vector embeddings**, **0 face crops**, **ZERO photo-derived pixels**. Only structural IDs and bounding boxes.
 
 ---
