@@ -14,7 +14,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>__TITLE__ — PhotoSorter Gallery</title>
+  <title>__TITLE__ — CatLog Gallery</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
@@ -540,6 +540,43 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       cursor: pointer;
     }
 
+    .unavailable-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1rem;
+      text-align: center;
+      background: #18181b;
+      border: 1px dashed #3f3f46;
+      border-radius: 8px;
+      min-height: 180px;
+      width: 100%;
+      box-sizing: border-box;
+      gap: 0.5rem;
+    }
+    .unavailable-tile .tile-msg {
+      font-size: 0.82rem;
+      color: #a1a1aa;
+      font-weight: 500;
+    }
+    .unavailable-tile .drive-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #0284c7;
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .unavailable-tile .drive-btn:hover {
+      background: #0369a1;
+    }
+
     /* Footer */
     footer {
       border-top: 1px solid var(--border-color);
@@ -685,6 +722,21 @@ __CONFIG_JSON__
       const lightboxImg = document.getElementById('lightbox-img');
       const lightboxCounter = document.getElementById('lightbox-counter');
 
+      window.handleImageError = function(imgEl, driveUrl) {
+        imgEl.style.display = 'none';
+        const parent = imgEl.parentElement;
+        if (!parent || parent.querySelector('.unavailable-tile')) return;
+        const tile = document.createElement('div');
+        tile.className = 'unavailable-tile';
+        tile.setAttribute('data-testid', 'unavailable-drive-tile');
+        tile.innerHTML = `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span class="tile-msg">Photo unavailable locally</span>
+          ${driveUrl ? `<a href="${driveUrl}" target="_blank" rel="noopener noreferrer" class="drive-btn" onclick="event.stopPropagation();">unavailable - open in Drive ↗</a>` : `<span class="tile-msg">Image unavailable</span>`}
+        `;
+        parent.appendChild(tile);
+      };
+
       // Update Stats
       document.getElementById('stat-people').textContent = data.people ? data.people.length : 0;
       document.getElementById('stat-photos').textContent = data.photos ? Object.keys(data.photos).length : 0;
@@ -758,7 +810,7 @@ __CONFIG_JSON__
           const driveLink = photo.drive_url || photo.share_url || (photo.download && photo.download.startsWith('http') ? photo.download : (photo.drive_file_id ? 'https://drive.google.com/file/d/' + photo.drive_file_id + '/view' : null));
           card.innerHTML = `
             <div style="position: relative; width: 100%;">
-              <img src="${photo.thumb}" alt="${photo.name}" loading="lazy" />
+              <img src="${photo.thumb}" alt="${photo.name}" loading="lazy" onerror="window.handleImageError(this, '${driveLink || ''}')" />
               ${driveLink ? `
                 <a href="${driveLink}" target="_blank" rel="noopener noreferrer" class="drive-badge" title="Open photo in Google Drive" onclick="event.stopPropagation();">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
@@ -826,7 +878,7 @@ __CONFIG_JSON__
             const item = document.createElement('div');
             item.className = 'modal-photo-item';
             item.innerHTML = `
-              <img src="${pObj.thumb}" alt="${pObj.name}" loading="lazy" />
+              <img src="${pObj.thumb}" alt="${pObj.name}" loading="lazy" onerror="window.handleImageError(this, '${driveLink || ''}')" />
               ${driveLink ? `
                 <a href="${driveLink}" target="_blank" rel="noopener noreferrer" class="drive-badge" title="Open photo in Google Drive" onclick="event.stopPropagation();">
                   Drive ↗
@@ -861,6 +913,12 @@ __CONFIG_JSON__
         const src = typeof item === 'string' ? item : item.thumb;
         const driveLink = typeof item === 'object' ? item.driveLink : null;
         lightboxImg.src = src;
+        lightboxImg.onerror = function() {
+          if (driveLink && lightboxDriveBtn) {
+            lightboxDriveBtn.style.display = 'inline-block';
+            lightboxDriveBtn.textContent = 'unavailable - open in Drive ↗';
+          }
+        };
         lightboxCounter.textContent = `${activeLightboxIndex + 1} / ${activeLightboxList.length}`;
         if (lightboxDriveBtn) {
           if (driveLink) {
@@ -935,7 +993,7 @@ def generate_standalone_gallery_html(people_data: Dict[str, Any], config_data: D
     title = config_data.get("title", "Event Gallery")
     subtitle = config_data.get("subtitle", "Photos grouped by person")
     accent = config_data.get("accent", "#3b82f6")
-    footer = config_data.get("footer", "Published with PhotoSorter")
+    footer = config_data.get("footer", "Published with CatLog — Who was at the event?")
 
     return (
         HTML_TEMPLATE.replace("__TITLE__", title)

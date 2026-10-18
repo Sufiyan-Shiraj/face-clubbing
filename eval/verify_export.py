@@ -669,7 +669,7 @@ def run_verification(
             "unavailable - open in Drive" in drive_html_text and
             "unavailable-tile" in drive_html_text and
             "handleImageError" in drive_html_text
-        ) if "handleImageError" in drive_html_text else True
+        )
 
         if has_zero_full_size and all_photos_have_drive_url and has_unavailable_tile:
             print("[PASS] Check 15: Drive Export Invariants verified (0 full-size local photos, 100% photos have Drive view links, 'unavailable - open in Drive' tile on image failure)")
