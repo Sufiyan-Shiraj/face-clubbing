@@ -386,7 +386,7 @@ async function run() {
     await page.fill('#input-source-path', 'test_photos');
     await page.click('#start-job-btn');
 
-    await page.waitForSelector('#progress-updates-log', { state: 'attached' });
+    await page.waitForSelector('#progress-updates-log');
     logMessage('[STEP A] Sorting job started. Collecting SSE progress updates...');
 
     const updatesRecorded = [];
@@ -872,14 +872,13 @@ async function run() {
     const exportedItems = readdirSync(TEMP_OUTPUT_DIR).filter((f) => !f.startsWith('.'));
     logMessage(`[STEP H] Contents of isolated export directory on disk:`, exportedItems.sort());
 
-    const allowedItems = new Set(['config.json', 'people.json', 'faces', 'thumbs', 'gallery.html', 'index.html', 'assets']);
+    const allowedItems = new Set(['config.json', 'people.json', 'faces', 'thumbs']);
     for (const item of exportedItems) {
       if (!allowedItems.has(item)) {
         throw new Error(`Hygiene Violation: Forbidden file '${item}' found in public export bundle!`);
       }
     }
-    const requiredItems = ['config.json', 'people.json', 'faces', 'thumbs'];
-    for (const item of requiredItems) {
+    for (const item of allowedItems) {
       if (!exportedItems.includes(item)) {
         throw new Error(`Missing expected bundle item '${item}' in export directory`);
       }

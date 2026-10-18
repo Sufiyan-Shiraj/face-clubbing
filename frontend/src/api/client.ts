@@ -81,7 +81,7 @@ export const api = {
     return fetchJson(`${BASE_URL}/jobs/start`, {
       method: 'POST',
       body: JSON.stringify({
-        input_path: driveFolder ? undefined : (inputPath || undefined),
+        input_path: driveFolder ? undefined : (inputPath || 'test_photos'),
         drive_folder: driveFolder || undefined,
         drive_api_key: apiKey || undefined,
         output_dir: actualOutputDir || 'export',

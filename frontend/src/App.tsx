@@ -11,131 +11,12 @@ import {
 } from './types';
 import { Header, RisoTheme } from './components/Header';
 import { HomeScreen } from './components/HomeScreen';
-import { AlertTriangle, X } from 'lucide-react';
-
-const ProgressScreen = React.lazy(() => import('./components/ProgressScreen').then(m => ({ default: m.ProgressScreen })));
-const ReviewPeopleScreen = React.lazy(() => import('./components/ReviewPeopleScreen').then(m => ({ default: m.ReviewPeopleScreen })));
-const ExportScreen = React.lazy(() => import('./components/ExportScreen').then(m => ({ default: m.ExportScreen })));
-const SettingsScreen = React.lazy(() => import('./components/SettingsScreen').then(m => ({ default: m.SettingsScreen })));
-const OpenProjectModal = React.lazy(() => import('./components/OpenProjectModal').then(m => ({ default: m.OpenProjectModal })));
-const TutorialSpotlight = React.lazy(() => import('./components/TutorialSpotlight').then(m => ({ default: m.TutorialSpotlight })));
-
-const DEMO_TUTORIAL_PEOPLE: PersonCluster[] = [
-  {
-    id: 'demo_p001',
-    label: 'Maya Lin',
-    face: '/faces/f_demo_001.jpg',
-    photo_ids: ['photo_demo_001', 'photo_demo_002'],
-    photos: ['photo_demo_001', 'photo_demo_002'],
-    photo_count: 14,
-    faces: [
-      { face_id: 'f_demo_001', photo_id: 'photo_demo_001', det_score: 0.95, bbox: [100, 100, 300, 300] },
-      { face_id: 'f_demo_002', photo_id: 'photo_demo_002', det_score: 0.92, bbox: [200, 200, 400, 400] },
-    ],
-    anchor_face_ids: ['f_demo_001'],
-  },
-  {
-    id: 'demo_p002',
-    label: 'David Kim',
-    face: '/faces/f_demo_003.jpg',
-    photo_ids: ['photo_demo_003'],
-    photos: ['photo_demo_003'],
-    photo_count: 8,
-    faces: [
-      { face_id: 'f_demo_003', photo_id: 'photo_demo_003', det_score: 0.89, bbox: [150, 150, 350, 350] },
-    ],
-    anchor_face_ids: ['f_demo_003'],
-  },
-  {
-    id: 'demo_p003',
-    label: 'Sarah Chen',
-    face: '/faces/f_demo_004.jpg',
-    photo_ids: ['photo_demo_004'],
-    photos: ['photo_demo_004'],
-    photo_count: 3,
-    faces: [
-      { face_id: 'f_demo_004', photo_id: 'photo_demo_004', det_score: 0.88, bbox: [180, 180, 380, 380] },
-    ],
-    anchor_face_ids: ['f_demo_004'],
-  },
-];
-
-const DEMO_TUTORIAL_PHOTOS: Record<string, PhotoInfo> = {
-  photo_demo_001: {
-    photo_id: 'photo_demo_001',
-    file_name: 'gala_001.jpg',
-    width: 1920,
-    height: 1080,
-    faces: [{ face_id: 'f_demo_001', photo_id: 'photo_demo_001', bbox: [100, 100, 300, 300] }],
-  },
-  photo_demo_002: {
-    photo_id: 'photo_demo_002',
-    file_name: 'gala_002.jpg',
-    width: 1920,
-    height: 1080,
-    faces: [{ face_id: 'f_demo_002', photo_id: 'photo_demo_002', bbox: [200, 200, 400, 400] }],
-  },
-  photo_demo_003: {
-    photo_id: 'photo_demo_003',
-    file_name: 'gala_003.jpg',
-    width: 1920,
-    height: 1080,
-    faces: [{ face_id: 'f_demo_003', photo_id: 'photo_demo_003', bbox: [150, 150, 350, 350] }],
-  },
-  photo_demo_004: {
-    photo_id: 'photo_demo_004',
-    file_name: 'gala_004.jpg',
-    width: 1920,
-    height: 1080,
-    faces: [{ face_id: 'f_demo_004', photo_id: 'photo_demo_004', bbox: [180, 180, 380, 380] }],
-  },
-};
-
-const DEMO_TUTORIAL_SUGGESTIONS: SuggestionsData = {
-  maybe_groups_count: 0,
-  maybe_groups: [],
-  possibly_the_same_count: 1,
-  possibly_the_same: [
-    {
-      person_a_id: 'demo_p001',
-      person_b_id: 'demo_p002',
-      person_a_anchors: ['f_demo_001'],
-      person_b_anchors: ['f_demo_003'],
-      distance: 0.52,
-      confidence: 'medium',
-      reason: 'High facial feature similarity',
-      person_a_photos: 14,
-      person_b_photos: 8,
-      person_a_best_face: '/faces/f_demo_001.jpg',
-      person_b_best_face: '/faces/f_demo_003.jpg',
-    },
-  ],
-  ambiguous_faces_count: 0,
-  ambiguous_faces: [],
-};
-
-const DEMO_TUTORIAL_UNRECOGNIZED: UnrecognizedData = {
-  total_unrecognized_photos: 1,
-  no_face_photos: [],
-  faces: [
-    {
-      face_id: 'f_demo_unrec_01',
-      photo_id: 'photo_demo_001',
-      face: '/faces/f_demo_unrec_01.jpg',
-      rejection_reason: 'low_confidence',
-      bbox: [50, 50, 120, 120],
-      det_score: 0.42,
-    },
-    {
-      face_id: 'f_demo_unrec_02',
-      photo_id: 'photo_demo_002',
-      face: '/faces/f_demo_unrec_02.jpg',
-      rejection_reason: 'small_face',
-      bbox: [80, 80, 140, 140],
-      det_score: 0.55,
-    },
-  ],
-};
+import { ProgressScreen } from './components/ProgressScreen';
+import { ReviewPeopleScreen } from './components/ReviewPeopleScreen';
+import { ExportScreen } from './components/ExportScreen';
+import { SettingsScreen } from './components/SettingsScreen';
+import { OpenProjectModal } from './components/OpenProjectModal';
+import { Lock, AlertTriangle, X } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<RisoTheme>(() => {
@@ -209,10 +90,12 @@ export const App: React.FC = () => {
 
   const [people, setPeople] = useState<PersonCluster[]>([]);
   const [photos, setPhotos] = useState<Record<string, PhotoInfo>>({});
-  const [isOpenProjectModalOpen, setIsOpenProjectModalOpen] = useState<boolean>(false);
-  const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
+  const isProjectActive = people.length > 0 || Object.keys(photos).length > 0;
 
   const handleTabChange = (t: ActiveTab) => {
+    if ((t === 'people' || t === 'export') && !isProjectActive) {
+      return;
+    }
     setActiveTab(t);
     try {
       localStorage.setItem('photosorter-active-tab', t);
@@ -242,7 +125,6 @@ export const App: React.FC = () => {
   });
   const [progressHistory, setProgressHistory] = useState<JobStatus[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [reviewSubTab, setReviewSubTab] = useState<'people' | 'suggestions' | 'unrecognized'>('people');
   const [rejectedPairs, setRejectedPairs] = useState<Set<string>>(new Set());
   const [appliedEditsCount, setAppliedEditsCount] = useState<number>(0);
   const [hasExportedCurrentSession, setHasExportedCurrentSession] = useState<boolean>(false);
@@ -262,9 +144,9 @@ export const App: React.FC = () => {
 
   const [folderPath, setFolderPath] = useState<string>(() => {
     try {
-      return localStorage.getItem('photosorter-folder-path') || '';
+      return localStorage.getItem('photosorter-folder-path') || 'test_photos';
     } catch (e) { }
-    return '';
+    return 'test_photos';
   });
 
   const [driveLink, setDriveLink] = useState<string>(() => {
@@ -304,15 +186,7 @@ export const App: React.FC = () => {
   });
 
   const [discoveredFaceIds, setDiscoveredFaceIds] = useState<string[]>([]);
-
-  const [isApiKeyConfigured, setIsApiKeyConfigured] = useState<boolean | undefined>(() => {
-    try {
-      const val = localStorage.getItem('photosorter-api-key-configured');
-      if (val === 'true') return true;
-      if (val === 'false') return false;
-    } catch (e) { }
-    return undefined;
-  });
+  const [isApiKeyConfigured, setIsApiKeyConfigured] = useState<boolean>(false);
 
   const handleSourceModeChange = (mode: 'drive' | 'local' | 'zip') => {
     setSourceMode(mode);
@@ -359,10 +233,6 @@ export const App: React.FC = () => {
   const loadAllData = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const settingsPromise = (api && typeof api.getSettings === 'function')
-        ? Promise.resolve(api.getSettings()).catch(() => null)
-        : Promise.resolve(null);
-
       const [peopleData, unrecData, sugData, photoData, settingsData] = await Promise.all([
         api.getPeople().catch(() => []),
         api.getUnrecognized().catch(() => ({ total_unrecognized_photos: 0, no_face_photos: [], faces: [] })),
@@ -375,7 +245,7 @@ export const App: React.FC = () => {
           ambiguous_faces: [],
         })),
         api.getPhotos().catch(() => ({})),
-        settingsPromise,
+        api.getSettings().catch(() => null),
       ]);
 
       setPeople(peopleData);
@@ -383,45 +253,13 @@ export const App: React.FC = () => {
       setSuggestions(sugData);
       setPhotos(photoData);
       if (settingsData) {
-        const isConf = Boolean(settingsData.drive_api_key_configured);
-        setIsApiKeyConfigured(isConf);
-        try {
-          localStorage.setItem('photosorter-api-key-configured', String(isConf));
-        } catch (e) { }
+        setIsApiKeyConfigured(Boolean(settingsData.drive_api_key_configured));
       }
     } catch (err) {
       console.error('Failed to load dataset from API:', err);
     } finally {
       setIsRefreshing(false);
     }
-  }, []);
-
-  // Periodic background check & focus sync for API key status
-  useEffect(() => {
-    const checkSettings = () => {
-      try {
-        const p = api?.getSettings?.();
-        if (p && typeof p.then === 'function') {
-          p.then((s) => {
-            if (s) {
-              const isConf = Boolean(s.drive_api_key_configured);
-              setIsApiKeyConfigured(isConf);
-              try {
-                localStorage.setItem('photosorter-api-key-configured', String(isConf));
-              } catch (e) { }
-            }
-          }).catch(() => {});
-        }
-      } catch (e) {}
-    };
-
-    checkSettings();
-    const interval = setInterval(checkSettings, 4000);
-    window.addEventListener('focus', checkSettings);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', checkSettings);
-    };
   }, []);
 
   // Initial load
@@ -431,7 +269,7 @@ export const App: React.FC = () => {
         api.getActiveProject()
           .then((proj) => {
             if (!proj.active) {
-              setActiveTab((prev) => (prev === 'people' ? 'home' : prev));
+              setActiveTab((prev) => (prev === 'people' || prev === 'export' ? 'home' : prev));
             }
           })
           .catch(() => {});
@@ -475,7 +313,7 @@ export const App: React.FC = () => {
         if (last && last.current === status.current && last.stage === status.stage && last.status === status.status && last.percent === status.percent) {
           return prev;
         }
-        return [...prev.slice(-4999), status];
+        return [...prev.slice(-49), status];
       });
       if (status.status === 'completed') {
         loadAllData();
@@ -505,7 +343,7 @@ export const App: React.FC = () => {
             if (last && last.current === st.current && last.stage === st.stage && last.status === st.status && last.percent === st.percent) {
               return prev;
             }
-            return [...prev.slice(-4999), st];
+            return [...prev.slice(-49), st];
           });
           if (st.status === 'completed') {
             loadAllData();
@@ -772,14 +610,11 @@ export const App: React.FC = () => {
 
   const hasUnexportedWork = (people.length > 0 || Object.keys(photos).length > 0) && !hasExportedCurrentSession;
 
+  const [isOpenProjectModalOpen, setIsOpenProjectModalOpen] = useState<boolean>(false);
   const [projectReadOnlyNotice, setProjectReadOnlyNotice] = useState<string | null>(null);
 
   const handleOpenProject = () => {
     setIsOpenProjectModalOpen(true);
-  };
-
-  const handleOpenTutorial = () => {
-    setIsTutorialOpen(true);
   };
 
   const handleNewProject = async () => {
@@ -868,7 +703,6 @@ export const App: React.FC = () => {
         onThemeChange={handleThemeChange}
         onOpenProject={handleOpenProject}
         onNewProject={handleNewProject}
-        onOpenTutorial={handleOpenTutorial}
       />
 
       {/* Left Vertical Step Rail matching screenshot */}
@@ -895,9 +729,10 @@ export const App: React.FC = () => {
           <button
             type="button"
             id="tab-people"
-            onClick={() => handleTabChange('people')}
-            className={`step ${activeTab === 'people' ? 'on' : ''}`}
-            title="Review people and edits"
+            onClick={() => isProjectActive && handleTabChange('people')}
+            className={`step ${activeTab === 'people' ? 'on' : ''} ${!isProjectActive ? 'opacity-40 cursor-not-allowed' : ''}`}
+            disabled={!isProjectActive}
+            title={!isProjectActive ? 'Start a scan or open a project first' : 'Review people and edits'}
           >
             <b>03</b>
             <span>Review</span>
@@ -905,9 +740,10 @@ export const App: React.FC = () => {
           <button
             type="button"
             id="tab-export"
-            onClick={() => handleTabChange('export')}
-            className={`step ${activeTab === 'export' ? 'on' : ''}`}
-            title="Publish standalone gallery"
+            onClick={() => isProjectActive && handleTabChange('export')}
+            className={`step ${activeTab === 'export' ? 'on' : ''} ${!isProjectActive ? 'opacity-40 cursor-not-allowed' : ''}`}
+            disabled={!isProjectActive}
+            title={!isProjectActive ? 'Start a scan or open a project first' : 'Publish standalone gallery'}
           >
             <b>04</b>
             <span>Publish</span>
@@ -917,11 +753,19 @@ export const App: React.FC = () => {
             id="tab-settings"
             onClick={() => handleTabChange('settings')}
             className={`step ${activeTab === 'settings' ? 'on' : ''}`}
-            title="Configure clustering parameters and cloud keys"
           >
             <b>05</b>
             <span>Settings</span>
           </button>
+        </div>
+
+        <div className="rail-footer">
+          <div style={{ fontWeight: 700, color: 'var(--text)', letterSpacing: '0.04em' }}>ORGANIZER</div>
+          <div>On-Device Engine</div>
+          <div style={{ color: 'var(--accent-ink)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)' }}></span>
+            <span>Local Mode</span>
+          </div>
         </div>
       </div>
 
@@ -973,26 +817,12 @@ export const App: React.FC = () => {
             onApiKeySaved={loadAllData}
             isApiKeyConfigured={isApiKeyConfigured}
             onOpenProject={handleOpenProject}
-            onOpenTutorial={handleOpenTutorial}
           />
         )}
 
-        <React.Suspense fallback={<div className="p-8 text-center text-xs font-mono opacity-50">Loading screen...</div>}>
         {activeTab === 'progress' && (
           <ProgressScreen
-            status={
-              isTutorialOpen && jobStatus.status === 'idle'
-                ? {
-                    status: 'running',
-                    stage: 'detecting',
-                    current: 82,
-                    total: 105,
-                    percent: 78,
-                    message: 'Scanning face embeddings (buffalo_l)...',
-                    elapsed_seconds: 14,
-                  }
-                : jobStatus
-            }
+            status={jobStatus}
             progressHistory={progressHistory}
             onCancelJob={handleCancelJob}
             onGoToReview={() => {
@@ -1000,21 +830,17 @@ export const App: React.FC = () => {
               loadAllData();
             }}
             isCancelling={isCancelling}
-            discoveredFaceCrops={
-              isTutorialOpen && allDiscoveredFaces.length === 0
-                ? ['f_demo_001', 'f_demo_002', 'f_demo_003', 'f_demo_004']
-                : allDiscoveredFaces
-            }
+            discoveredFaceCrops={allDiscoveredFaces}
             theme={theme}
           />
         )}
 
         {activeTab === 'people' && (
           <ReviewPeopleScreen
-            people={isTutorialOpen && people.length === 0 ? DEMO_TUTORIAL_PEOPLE : people}
-            photos={isTutorialOpen && Object.keys(photos).length === 0 ? DEMO_TUTORIAL_PHOTOS : photos}
-            unrecognized={isTutorialOpen && unrecognized.faces.length === 0 ? DEMO_TUTORIAL_UNRECOGNIZED : unrecognized}
-            suggestions={isTutorialOpen && suggestions.possibly_the_same.length === 0 ? DEMO_TUTORIAL_SUGGESTIONS : suggestions}
+            people={people}
+            photos={photos}
+            unrecognized={unrecognized}
+            suggestions={suggestions}
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
             onSelectAll={handleSelectAll}
@@ -1033,9 +859,6 @@ export const App: React.FC = () => {
             onUndo={handleUndo}
             appliedEditsCount={appliedEditsCount}
             isMerging={isMerging}
-            activeSubTab={reviewSubTab}
-            onSubTabChange={setReviewSubTab}
-            theme={theme}
           />
         )}
 
@@ -1046,7 +869,6 @@ export const App: React.FC = () => {
             photosCount={Object.keys(photos).length}
             onRefreshStats={loadAllData}
             onExportSuccess={() => setHasExportedCurrentSession(true)}
-            theme={theme}
           />
         )}
 
@@ -1054,46 +876,29 @@ export const App: React.FC = () => {
           <SettingsScreen
             onRerunComplete={loadAllData}
             onOpenProject={handleOpenProject}
-            onOpenTutorial={handleOpenTutorial}
-            theme={theme}
           />
         )}
-        </React.Suspense>
       </div>
 
       {/* Open Saved Project Modal */}
-      <React.Suspense fallback={null}>
-        {isOpenProjectModalOpen && (
-          <OpenProjectModal
-            onClose={() => setIsOpenProjectModalOpen(false)}
-            onProjectOpened={handleProjectOpened}
-            theme={theme}
-            hasUnexportedWork={hasUnexportedWork}
-            onNavigateToExport={() => {
-              setIsOpenProjectModalOpen(false);
-              handleTabChange('export');
-            }}
-          />
-        )}
+      {isOpenProjectModalOpen && (
+        <OpenProjectModal
+          onClose={() => setIsOpenProjectModalOpen(false)}
+          onProjectOpened={handleProjectOpened}
+          theme={theme}
+          hasUnexportedWork={hasUnexportedWork}
+          onNavigateToExport={() => {
+            setIsOpenProjectModalOpen(false);
+            handleTabChange('export');
+          }}
+        />
+      )}
 
-        {/* Interactive Onboarding Spotlight Tour */}
-        {isTutorialOpen && (
-          <TutorialSpotlight
-            isOpen={isTutorialOpen}
-            onClose={() => {
-              setIsTutorialOpen(false);
-              setSelectedIds(new Set());
-              setReviewSubTab('people');
-            }}
-            onNavigateTab={handleTabChange}
-            onSetReviewSubTab={setReviewSubTab}
-            onSetSelectedPeopleIds={setSelectedIds}
-            onSetSourceMode={handleSourceModeChange}
-            activeTab={activeTab}
-            theme={theme}
-          />
-        )}
-      </React.Suspense>
+      {/* Reassurance Footer matching screenshot */}
+      <div className="ftr">
+        <Lock className="w-3.5 h-3.5 text-[var(--accent)] flex-shrink-0" />
+        <span>Projects and credentials stay on this computer. Nothing is uploaded or shared.</span>
+      </div>
     </div>
   );
 };

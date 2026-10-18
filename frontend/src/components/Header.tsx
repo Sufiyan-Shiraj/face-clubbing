@@ -1,7 +1,6 @@
 import React from 'react';
 import { ActiveTab } from '../types';
 import { Folder, Settings as SettingsIcon, RotateCcw, RefreshCw, Plus } from 'lucide-react';
-import { BrandLogo } from './BrandLogo';
 
 export type RisoTheme = 't-dark' | 't-paper' | 't-navy';
 
@@ -21,7 +20,6 @@ interface HeaderProps {
   onThemeChange?: (theme: RisoTheme, e?: React.MouseEvent) => void;
   onOpenProject?: () => void;
   onNewProject?: () => void;
-  onOpenTutorial?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -35,15 +33,25 @@ export const Header: React.FC<HeaderProps> = ({
   onThemeChange,
   onOpenProject,
   onNewProject,
-  onOpenTutorial,
 }) => {
   return (
     <div className="hdr">
-      {/* Brand Logo with vector Risograph photo aperture mark */}
-      <div className="logo" onClick={() => onTabChange('home')} title="CatLog — Who was at the event?">
-        <BrandLogo
-          theme={theme}
-          onClick={() => onTabChange('home')}
+      {/* Brand Logo matching screenshot */}
+      <div
+        className="logo"
+        onClick={() => onTabChange('home')}
+        title="Organizer"
+      >
+        <img
+          src={
+            theme === 't-paper'
+              ? '/textures/logo-paper.png?v=uncut-v6'
+              : theme === 't-navy'
+              ? '/textures/logo-navy.png?v=uncut-v6'
+              : '/textures/logo-dark.png?v=uncut-v6'
+          }
+          alt="Organizer"
+          className="logo-img"
         />
       </div>
 
@@ -117,16 +125,15 @@ export const Header: React.FC<HeaderProps> = ({
           <span>Open saved project</span>
         </button>
 
-
-
-        {/* Hidden test hook for header-settings-btn so setting is uniquely in navbar */}
+        {/* Minimal Settings Icon */}
         <button
           id="header-settings-btn"
           data-testid="header-settings-btn"
           type="button"
           onClick={() => onTabChange('settings')}
-          style={{ display: 'none' }}
-          aria-hidden="true"
+          className={`icon-btn ${activeTab === 'settings' ? 'on' : ''}`}
+          aria-label="Settings"
+          title="Settings"
         >
           <SettingsIcon className="w-4 h-4" />
         </button>
