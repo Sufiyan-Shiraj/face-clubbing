@@ -13,7 +13,19 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `fd37df7` (Phase 7 Step 8: rename leftovers)
+- **HEAD Commit**: `98125b4` (feat(viewer): risograph overhaul, export theme selection, workflow dispatch and release audit updates)
+- **`git status -sb`**:
+  ```text
+  ## main
+  ```
+- **`git log --oneline -5`**:
+  ```text
+  98125b4 feat(viewer): risograph overhaul, export theme selection, workflow dispatch and release audit updates
+  1a68786 fix(ui): fix logo dimensions, remove doubled text, restore theme title texture, and ensure uncluttered screen interaction
+  35078a4 Revert all UI changes to frontend from past 12 commits back to 7d52881
+  d8479ec Fix release notes generation in release.yml workflow
+  73fff31 Phase 9: release automation (GitHub Actions matrix, VERSION source of truth, cross-platform packaging, smoke tests, third-party notices, and documentation)
+  ```
 - **`git remote -v`**:
   ```text
   origin	https://github.com/Sufiyan-Shiraj/face-clubbing.git (fetch)
