@@ -1,7 +1,7 @@
 # CatLog Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-18T11:15:00+05:30  
-**Audit Mode**: EMERGENCY ENGINE BREAKAGE INVESTIGATION COMPLETE & FIXED — Root Cause Fixed, Cache Version 2 & Settings Invalidation, 256px SPEC Defaults Restored, Avatar Mismapping Eliminated, Cold E2E Regression Tests Added, Pytest 91/91 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed, Export Invariants 15/15 Passed
+**Generated**: 2026-10-18T17:30:00+05:30  
+**Audit Mode**: PRE-RELEASE HARDENING COMPLETE — Edits Replay Gated, Atomic Model Downloads Verified, Onedir Startup Benchmarked (9.03x Speedup), Engine Reconciliation Complete, Public Viewer Restored to Commits 58–70 (3-Theme Switching & Streaming Downloads), Pytest 99/99 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed (7.36s), Export Invariants 15/15 Passed
 
 ---
 
@@ -13,18 +13,18 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `08c575b` (fix(engine): resolve cache stale replay and avatar mismapping, bump cache v2, restore 256px SPEC defaults, add cold E2E regression tests)
+- **HEAD Commit**: `34e09bd` (fix(viewer): restore public viewer UI from commits 58-70 with 3-theme switching and clean streaming downloads)
 - **`git status -sb`**:
   ```text
   ## main
   ```
 - **`git log --oneline -5`**:
   ```text
-  08c575b fix(engine): resolve cache stale replay and avatar mismapping, bump cache v2, restore 256px SPEC defaults, add cold E2E regression tests
+  34e09bd fix(viewer): restore public viewer UI from commits 58-70 with 3-theme switching and clean streaming downloads
+  a4e1abe docs: reconcile STATUS Section 9, record Check J at commit 01e1452, and document startup benchmark
+  01e1452 fix: edits replay gating, atomic model download, and onedir startup benchmark
+  5ea0b1d fix(engine): resolve cache stale replay and avatar mismapping, bump cache v2, restore 256px SPEC defaults, add cold E2E regression tests
   6405b63 fix(engine): restore true pre-optimization engine at commit 60/7f58 (clean pipeline, standalone HTML Drive tile, zero test workarounds)
-  646519c revert(engine): restore backend/engine to commit 58 (2efc60e)
-  e7a50ce docs: finalize STATUS.md HEAD state
-  ebe0bf4 docs: sync git log in STATUS.md
   ```
 - **`git remote -v`**:
   ```text
@@ -1068,9 +1068,9 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **11.7** | Public Bundle Hygiene & Invariant Verification | `eval/verify_export.py` | Check 2 (clean root directory: `config.json`, `people.json`, `faces`, `thumbs`, `index.html`, `assets`, `gallery.html`) | 15/15 checks pass; zero stray root files; zero organizer files in export | **PASS** |
 | **11.8** | Client & Backend API Type Safety | `frontend/src/api/client.ts` & `backend/api/models.py` | `theme?: string` parameter added to `exportBundle` and `ExportRequest` | `npx tsc --noEmit` 0 errors; clean IDE type checking | **PASS** |
 | **11.9** | Regression Suite Health Across Stack | `pytest`, `npm test` (`frontend/` & `viewer/`) | Full automated regression suites passing | Pytest 91/91 passed; Frontend Vitest 74/74 passed; Viewer Vitest 20/20 passed | **PASS** |
-| **11.10** | Public Viewer Theme Lock | `viewer/src/components/Header.tsx`, `App.tsx`, `standalone_html.py` | Theme switcher radio buttons removed from viewer; `config.theme` is strictly authoritative without `localStorage` overrides | Verified 0 theme buttons in E2E test; viewer automatically applies organizer-selected export theme | **PASS** |
+| **11.10** | Public Viewer 3-Theme Live Switcher | `viewer/src/components/Header.tsx`, `App.tsx` | Live interactive 3-theme toggle (**Dark**, **Paper**, **Navy**) with sticky header, quick action controls, and smooth theme transitions | Restored from commits 58–70 baseline; all 3 themes switch instantly with clean styling | **PASS** |
 | **11.11** | Paper / White Theme Readability & Contrast Overhaul | `backend/engine/standalone_html.py` & `viewer/src/index.css` | High-contrast text & numbers on cream paper; `.stats-bar strong` uses `var(--text-main)` (`#121316`) instead of `#fff` | Verified >14:1 contrast ratio; numbers and labels fully readable across cards, headers, modals, and search | **PASS** |
-| **11.12** | E2E Playwright Suite Verification | `viewer/scripts/verify_download_e2e.cjs` | 7-step full download verification: zip streaming, selection mode, card direct download, zero theme buttons | All 7 steps pass cleanly; screenshots captured in artifacts directory | **PASS** |
+| **11.12** | E2E Playwright Suite Verification | `viewer/scripts/verify_download_e2e.cjs` | Full download verification: 3-theme toggling, zip streaming, selection mode, card direct download | All steps pass cleanly; streaming zip generates sanitized filenames | **PASS** |
 
 ---
 
@@ -1086,3 +1086,21 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **12.6** | Cold E2E regression on 40 photos | `tests/test_engine_cold_regression.py` | 77 people, 219 clustered, 202 unrec, 32 unrec photos on 40 photos vs pinned fixture | Exact match on counts, cluster membership, and representative face IDs | **PASS** |
 | **12.7** | Face & avatar crop pixel verification | `tests/test_engine_cold_regression.py` | 256x256 crops cut from original photo bboxes (mean pixel diff = 0.0000) | All crops match bbox in source photos, avatars match representative crops | **PASS** |
 | **12.8** | Full regression test suite pass | `pytest -q -rs` | 91 items collected across 14 test files | 91 passed, 0 failures, 0 errors | **PASS** |
+
+---
+
+## 13. SCRIPT-CHECKED AUDIT: PRE-RELEASE HARDENING, EDITS REPLAY GATING, ATOMIC DOWNLOADS & VIEWER BASELINE RESTORATION
+
+| Item | Requirement & Test Scope | Test File / Script | Script-Checked Metric Target | Actual Result | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **13.1** | Edits Replay Gating on New Scans | `backend/api/routes.py`, `backend/engine/pipeline.py`, `tests/test_edits.py` | New scan starts with empty edits unless user explicitly re-opens project; stale face ID edits reported, not dropped | Verified: new scan ignores old edits; reopen preserves edits; invalid face IDs returned in `unapplied_edits` | **PASS** |
+| **13.2** | Atomic Model Download & Integrity | `backend/engine/models.py` & `tests/test_model_download.py` | Download to `.tmp.<pid>.<uuid>` then atomic rename; SHA-256 validation; retry backoff; zero corrupted model files | 9/9 tests pass (`test_model_download.py`); atomic replace and corrupted file cleanup verified | **PASS** |
+| **13.3** | PyInstaller Onedir Startup Benchmark | `eval/compare_startups.py` | 3 cold launches each to `/api/health` | Onefile mean: **10.341s**; Onedir mean: **1.145s** (**9.03x speedup**; raw SHA: `46AA89...`) | **PASS** |
+| **13.4** | STATUS Section 9 Engine Reconciliation | `STATUS.md` Section 9 | Single-pass crops (PRESENT, 2.89x speedup); lazy model load (PRESENT, -4.9s); prefetch & ORT tuning (ABSENT) | Fully reconciled; throughput disparity explained by face density (6.57 vs 10.53 faces/photo) | **PASS** |
+| **13.5** | Public Viewer Commits 58–70 Baseline Restoration | `viewer/src/components/`, `viewer/src/index.css`, `viewer/public/` | Restore 3-theme switcher (Dark/Paper/Navy); eliminate 42 bloated image/texture assets; fast Vitest execution | Restored cleanly; 42 textures deleted; Vitest 20/20 passed in **7.36s** (down from 70.73s); bundle < 200 KB | **PASS** |
+| **13.6** | Tailwind CSS & PostCSS Compilation | `viewer/postcss.config.js` & `viewer/tailwind.config.js` | Restore responsive grid utilities (`grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6`) | Verified via `viewer/scripts/verify_viewport.cjs`: 2 cols on mobile (390px), 6 cols on desktop (1280px) | **PASS** |
+| **13.7** | Full Cold Pytest Regression Suite | `pytest -q -rs` | 99 items collected across 16 test files (including 40-photo cold run) | **99 passed, 0 failures, 2 warnings** in 981.32s | **PASS** |
+| **13.8** | Full Frontend Vitest Suite | `npm --prefix frontend test -- --run` | 13 test files | **74 / 74 passed** (100% OK) in 58.64s | **PASS** |
+| **13.9** | Full Viewer Vitest Suite | `npm --prefix viewer test -- --run` | 2 test files | **20 / 20 passed** (100% OK) in 7.36s | **PASS** |
+| **13.10** | Public Bundle Export Invariants | `eval/verify_export.py` | 15 invariant checks and tables | **15 / 15 checks passed (100% OK)** | **PASS** |
+

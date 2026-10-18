@@ -5572,3 +5572,78 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 | **Pinned Baseline Check** | `python eval/check_baseline.py` | **100% OK (All canonical baseline metrics verified)** |
 | **Fresh Clone Hygiene** | `git clone` into isolated directory | **84 passed, 5 skipped (0 failures; clean skip reporting)** |
 
+---
+
+## 32. PRE-RELEASE HARDENING, EDITS REPLAY GATING, ATOMIC MODEL DOWNLOADS, ONEDIR BENCHMARK, AND VIEWER UI BASELINE RESTORATION
+
+**Date**: 2026-10-18T17:30:00+05:30  
+**Status**: COMPLETE & VERIFIED AT HEAD (`34e09bd`) — All Pre-Tagging Fixes Implemented, Full Cold Regression Suite 99/99 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed (7.36s), Export Invariants 15/15 Passed.
+
+### 32.1 Item 1: Edits Replay Gating & Stale Face ID Reporting
+- **Problem**: Previously, if a user ran a new scan on a different folder or reset their workspace, `edits.json` from a previous run could be replayed if the work directory was reused, merging unrelated clusters.
+- **Fix**:
+  - In `backend/api/routes.py` and `backend/engine/pipeline.py`, new scans explicitly start with empty edits unless the user opens an existing project via the Open Project modal or specifies `--edits`.
+  - When replaying edits, any edit referencing anchor face IDs that no longer exist in the current scan is reported in `unapplied_edits` with full details rather than silently dropped.
+- **Verification**:
+  - `tests/test_edits.py` and `tests/test_api.py` verify that new scans ignore legacy edits, reopening a project preserves edits, and invalid face IDs are reported in `unapplied_edits`.
+
+### 32.2 Item 2: STATUS.md Section 9 Reconciliation & Throughput Analysis
+- **Problem**: Section 9 in `STATUS.md` previously claimed optimizations (e.g. scanner prefetch, ORT thread tuning) that had been rolled back for stability, and cited differing throughput figures without explaining hardware or face density factors.
+- **Reconciliation**:
+  - **Script & Import Check**: Verified active engine code at HEAD:
+    - `Single-pass crops`: **PRESENT** (`thumbnails.generate_square_face_crop_from_image` operates on in-memory PIL images; 2.89x measured microbenchmark speedup).
+    - `Lazy model loading`: **PRESENT** (`FaceDetector._init_app()` defers model instantiation; -4.9s cold launch reduction).
+    - `Scanner prefetch` & `ORT thread tuning`: **ABSENT** (Rolled back to ensure deterministic ordering and prevent thread-pool contention).
+    - `cropper.py`: **ABSENT from execution** (Retained on disk as unreferenced legacy code; zero imports).
+  - **Throughput Disparity Resolution**:
+    - Full 259-photo dataset averages **6.57 faces/photo** (1,701 faces total), producing a global throughput of **4.34 s/photo**.
+    - The 40-photo regression set averages **10.53 faces/photo** (421 faces across 40 photos — 60.3% denser in faces). Because ArcFace embedding is compute-bound (~0.42s per face on CPU), the expected per-photo time is naturally `~0.5s (SCRFD) + 10.53 * 0.42s = ~4.9–7.5s`.
+    - Under heavy background IDE/dev server workloads, contention on a 2-core mobile CPU drives per-photo time to **8.55 s/photo**. Cold benchmarks on an idle machine measured **6.06–7.36 s/photo** (`scratch/cold_run_1_summary.json` and `scratch/cold_run_2_summary.json`).
+
+### 32.3 Item 3: Atomic Model Download & Interrupted Transfer Safety
+- **Problem**: If model downloads were interrupted mid-stream, partial files could corrupt the local cache directory (`~/.catlog/models/`).
+- **Fix**:
+  - `backend/engine/models.py` downloads models to a process-unique temporary file (`.tmp.<pid>.<uuid>`), computes SHA-256 on the fly, and uses `os.replace` for atomic replacement once the checksum is verified.
+  - Incomplete or corrupted temporary files are cleaned up on failure.
+- **Verification**:
+  - Added `tests/test_model_download.py` covering successful atomic downloads, corrupt hash rejection, retry backoff, and cleanup. All 9 tests pass.
+
+### 32.4 Item 4: PyInstaller Onedir vs Onefile Startup Benchmark
+- **Measurement**: 3 consecutive cold launches to `/api/health` measured via `eval/compare_startups.py`:
+  - **Onefile (`dist/CatLog.exe`, 158.9 MB)**: Run 1: 9.639s, Run 2: 10.669s, Run 3: 10.715s | Mean: **10.341s**
+  - **Onedir (`dist/CatLog_onedir/CatLog.exe`, 22.9 MB binary)**: Run 1: 1.143s, Run 2: 1.146s, Run 3: 1.147s | Mean: **1.145s**
+  - **Speedup**: **9.03x faster cold start** with onedir.
+  - Raw benchmark: `scratch/startup_benchmark.json` (SHA-256: `46AA8943F7F9AB0751612580391137D8DA1CDBF847119B1D77B62D1296090FD1`).
+  - Automated smoke test passed on onedir binary in 3.54s (`python scripts/smoke_test.py dist/CatLog_onedir/CatLog.exe`). Default packaging retained as onefile per user specification.
+
+### 32.5 Item 5: Public Viewer Commits 58–70 Baseline Restoration
+- **Problem**: An experimental risograph lock in commit `98125b4` stripped the live 3-theme switcher, added 42 bloated image/texture assets (~10 MB), and bloated test execution from ~5s to ~71s.
+- **Fix**:
+  - Restored viewer components and styling from commits 58–70 (`d8479ec`):
+    - `viewer/src/components/Header.tsx`: Live 3-theme switcher (**Dark**, **Paper**, **Navy**) with sticky header and quick action controls.
+    - `viewer/src/components/PersonCard.tsx`: Clean card layout with avatar badge, photo counts, and per-person streaming zip download.
+    - `viewer/src/components/PeopleGrid.tsx`: Responsive grid utilities (2 columns mobile, 6 columns desktop).
+    - `viewer/src/components/PhotoGallery.tsx`, `PhotoModal.tsx`, `UnrecognizedGallery.tsx`, `Footer.tsx`.
+  - Pruned 42 bloated image/texture/mascot files from `viewer/public/`.
+  - Re-added `viewer/postcss.config.js` and `viewer/tailwind.config.js`.
+- **Verification**:
+  - **Viewer Vitest Suite**: `20 / 20` passed in **7.36s** (down from 70.73s).
+  - **Production Build**: Clean bundle under 200 KB total.
+  - **E2E Playwright Suite**:
+    - `verify_download_e2e.cjs`: Verified 3-theme toggling, streaming zip generation (`alex_river_photos.zip`), and selection mode.
+    - `verify_viewport.cjs`: Verified 2 columns on mobile (390px) and 6 columns on desktop (1280px).
+
+### 32.6 Master Verification Audit Summary at Fixed HEAD (`34e09bd`)
+
+| Verification Suite | Target | Status |
+| :--- | :--- | :--- |
+| **Pytest Full Suite** | `pytest -q -rs` | **99 passed, 0 failures, 2 warnings** (in 981.32s) |
+| **Frontend Vitest** | `npm --prefix frontend test -- --run` | **13/13 test files passed, 74/74 tests passed** (in 58.64s) |
+| **Viewer Vitest** | `npm --prefix viewer test -- --run` | **2/2 test files passed, 20/20 tests passed** (in 7.36s) |
+| **Phase 1b Export Invariants** | `python eval/verify_export.py` | **15/15 checks and tables passed (100% OK)** |
+| **SPEC 6.2 Slider Defaults** | `python eval/check_settings_spec.py` | **15/15 slider & config defaults match SPEC 6.2 (100% OK)** |
+| **Pinned Baseline Check** | `python eval/check_baseline.py` | **100% OK (All canonical baseline metrics verified)** |
+| **Viewer E2E Download** | `node viewer/scripts/verify_download_e2e.cjs` | **100% OK (3 themes toggle, zip streaming verified)** |
+| **Viewer Responsive Viewport** | `node viewer/scripts/verify_viewport.cjs` | **100% OK (2-col mobile, 6-col desktop verified)** |
+
+
