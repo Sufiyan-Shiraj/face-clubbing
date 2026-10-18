@@ -15,6 +15,7 @@ import {
   FileCode,
   HardDrive,
 } from 'lucide-react';
+import { MascotSticker } from './MascotSticker';
 
 interface ExportScreenProps {
   initialTitle?: string;
@@ -23,6 +24,7 @@ interface ExportScreenProps {
   photosCount?: number;
   onRefreshStats?: () => void;
   onExportSuccess?: () => void;
+  theme?: string;
 }
 
 export const ExportScreen: React.FC<ExportScreenProps> = ({
@@ -32,10 +34,11 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   photosCount = 0,
   onRefreshStats,
   onExportSuccess,
+  theme = 't-dark',
 }) => {
   // Determine automatic drive folder name
   const autoDriveName = useMemo(() => {
-    if (initialTitle && initialTitle !== 'Face Clubbing Gallery' && initialTitle !== 'Event Gallery') {
+    if (initialTitle && initialTitle !== 'CatLog Gallery' && initialTitle !== 'Face Clubbing Gallery' && initialTitle !== 'Event Gallery') {
       return initialTitle;
     }
     if (typeof window !== 'undefined') {
@@ -46,7 +49,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   }, [initialTitle]);
 
   const [outputDir, setOutputDir] = useState('export');
-  const [title, setTitle] = useState(autoDriveName || initialTitle || 'Face Clubbing Gallery');
+  const [title, setTitle] = useState(autoDriveName || initialTitle || 'CatLog Gallery');
   const [subtitle, setSubtitle] = useState(initialSubtitle);
   const [includeMaybe, setIncludeMaybe] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -64,7 +67,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   const getNestedPath = (basePath: string) => {
     const folderTitle =
       autoDriveName ||
-      (title && title !== 'Face Clubbing Gallery' && title !== 'Event Gallery' ? title : null);
+      (title && title !== 'CatLog Gallery' && title !== 'Face Clubbing Gallery' && title !== 'Event Gallery' ? title : null);
     if (!folderTitle) return basePath;
     const safeName = folderTitle.replace(/[\\/*?:"<>|]/g, '').trim();
     if (!safeName) return basePath;
@@ -656,8 +659,8 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
         >
           <div className="flex items-center justify-between flex-wrap gap-4 border-b border-emerald-800/60 pb-5">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-emerald-500 text-black flex items-center justify-center flex-shrink-0 font-bold shadow-[2px_2px_0px_var(--line)]">
-                <Check className="w-8 h-8" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-[var(--input)] border-2 border-emerald-500/50 flex items-center justify-center p-1.5 flex-shrink-0 shadow-[2px_2px_0px_var(--line)]">
+                <MascotSticker pose={7} theme={theme} className="w-full h-full object-contain" />
               </div>
               <div>
                 <h3 className="text-2xl md:text-3xl font-black text-white font-mono uppercase">

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { AlertCircle, Folder, FolderArchive, Zap, Info, Check, Key, X, Loader2, FolderOpen } from 'lucide-react';
+import { AlertCircle, Folder, FolderArchive, Info, Check, Key, X, Loader2, FolderOpen, Compass, ChevronRight } from 'lucide-react';
 import { RisoTheme } from './Header';
 import { api } from '../api/client';
 
@@ -10,6 +10,7 @@ export interface HomeScreenProps {
   onNavigateTab?: (tab: string) => void;
   theme?: RisoTheme;
   onOpenProject?: () => void;
+  onOpenTutorial?: () => void;
 
   // Lifted & Persisted state
   sourceMode?: 'drive' | 'local' | 'zip';
@@ -70,7 +71,7 @@ export function extractDriveFolderId(input: string): string | null {
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onStartJob,
   isLoading = false,
-  currentInputPath = 'test_photos',
+  currentInputPath = '',
   theme = 't-dark',
   sourceMode: controlledSourceMode,
   onSourceModeChange,
@@ -87,6 +88,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onApiKeySaved,
   isApiKeyConfigured: controlledApiKeyConfigured,
   onOpenProject,
+  onOpenTutorial,
 }) => {
   // Support both controlled (lifted to App.tsx) and internal fallback state
   const [internalSourceMode, setInternalSourceMode] = useState<'drive' | 'local' | 'zip'>('drive');
@@ -96,7 +98,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     onSourceModeChange?.(mode);
   };
 
-  const [internalFolderPath, setInternalFolderPath] = useState<string>(currentInputPath || 'test_photos');
+  const [internalFolderPath, setInternalFolderPath] = useState<string>(currentInputPath || '');
   const folderPath = controlledFolderPath !== undefined ? controlledFolderPath : internalFolderPath;
   const setFolderPath = (p: string) => {
     setInternalFolderPath(p);
@@ -127,18 +129,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   useEffect(() => {
     let mounted = true;
-    try {
-      const p = api?.getSettings?.();
-      if (p && typeof p.then === 'function') {
-        p.then((s) => {
-          if (mounted && s) {
-            setInternalApiKeyConfigured(Boolean(s.drive_api_key_configured));
-          }
-        }).catch(() => {});
-      }
-    } catch (e) {}
+    const fetchStatus = () => {
+      try {
+        const p = api?.getSettings?.();
+        if (p && typeof p.then === 'function') {
+          p.then((s) => {
+            if (mounted && s) {
+              setInternalApiKeyConfigured(Boolean(s.drive_api_key_configured));
+            }
+          }).catch(() => {});
+        }
+      } catch (e) {}
+    };
+
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 4000);
+    window.addEventListener('focus', fetchStatus);
     return () => {
       mounted = false;
+      clearInterval(interval);
+      window.removeEventListener('focus', fetchStatus);
     };
   }, []);
 
@@ -428,18 +438,39 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 theme === 't-paper'
                   ? '/textures/title-paper.png?v=custom-v5'
                   : theme === 't-navy'
-                    ? '/textures/title-navy.png?v=custom-v5'
-                    : '/textures/title-dark.png?v=custom-v5'
+                  ? '/textures/title-navy.png?v=custom-v5'
+                  : '/textures/title-dark.png?v=custom-v5'
               }
               alt="Who was at the event?"
               className="h1-img"
             />
           </h1>
           <p className="sub-headline">Sort your event photos by person using face clustering.</p>
+          {onOpenTutorial && (
+            <div className="flex items-center justify-center mt-2.5 mb-1">
+              <button
+                type="button"
+                id="home-start-tutorial-btn"
+                data-testid="home-start-tutorial-btn"
+                onClick={onOpenTutorial}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold transition-all hover:scale-105"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px dashed var(--line)',
+                  color: 'var(--text)',
+                }}
+                title="Start the 2-minute CatLog walkthrough"
+              >
+                <Compass className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <span>New to CatLog? Take the 2-minute interactive tour</span>
+                <ChevronRight className="w-3.5 h-3.5 opacity-60" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Three Source-Mode Buttons */}
-        <div className="source-mode-nav" aria-label="Source mode selection">
+        <div id="source-mode-nav" className="source-mode-nav" aria-label="Source mode selection">
           <button
             type="button"
             id="btn-source-drive"
@@ -709,18 +740,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   <Folder className="w-3.5 h-3.5" />
                   <span>Browse folder</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFolderPath('test_photos');
-                    setErrorMsg(null);
-                  }}
-                  className="btn sm"
-                  style={{ color: 'var(--accent-ink)', borderColor: 'var(--accent)' }}
-                >
-                  <Zap className="w-3 h-3" />
-                  <span>Use test_photos</span>
-                </button>
               </div>
             </div>
           ) : (
@@ -843,7 +862,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
           <p className="hint" style={{ marginTop: '14px' }}>
             {discoveredFaceCrops.length > 0
-              ? `${discoveredFaceCrops.length} face${discoveredFaceCrops.length === 1 ? '' : 's'} detected. Faces update as the scan runs.`
+              ? `${discoveredFaceCrops.length} face${discoveredFaceCrops.length === 1 ? '' : 's'} detected.`
               : 'Faces will appear here as the scan runs.'}
           </p>
         </div>

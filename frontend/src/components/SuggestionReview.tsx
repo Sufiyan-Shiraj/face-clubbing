@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RankedPairSuggestion, PersonCluster } from '../types';
 import { Check, X, Sparkles, Filter } from 'lucide-react';
+import { MascotSticker } from './MascotSticker';
 
 interface SuggestionReviewProps {
   suggestions: RankedPairSuggestion[];
@@ -8,6 +9,7 @@ interface SuggestionReviewProps {
   onAccept: (personAId: string, personBId: string) => void;
   onReject: (personAId: string, personBId: string) => void;
   rejectedPairs: Set<string>;
+  theme?: string;
 }
 
 export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
@@ -16,6 +18,7 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
   onAccept,
   onReject,
   rejectedPairs,
+  theme = 't-dark',
 }) => {
   const [filterType, setFilterType] = useState<'all' | 'medium' | 'low'>('all');
 
@@ -112,22 +115,28 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
       {/* Suggestion Cards List */}
       {activeSuggestions.length === 0 ? (
         <div
-          className="text-center py-14 rounded"
+          id="suggestions-empty-state"
+          data-testid="suggestions-empty-state"
+          className="text-center py-14 rounded-lg space-y-3"
           style={{
             background: 'var(--card-bg, var(--panel))',
-            border: '1.5px solid var(--line)',
+            border: '2px dashed var(--line)',
             color: 'var(--muted)',
             boxShadow: '2px 3px 0px rgba(0, 0, 0, 0.2)',
           }}
         >
-          <Check className="w-9 h-9 mx-auto mb-2" style={{ color: 'var(--accent)' }} />
-          <h4 className="text-lg font-bold" style={{ color: 'var(--text)' }}>No Pending Suggestions</h4>
-          <p className="text-sm mt-1 max-w-sm mx-auto">
-            All suggestions in this category have been reviewed, accepted, or rejected for this session.
+          <div className="w-20 h-20 mx-auto rounded-xl bg-[var(--input)] border-2 border-[var(--line)] flex items-center justify-center p-1.5 shadow-[2px_2px_0px_var(--line)]">
+            <MascotSticker pose={6} theme={theme} className="w-full h-full object-contain" />
+          </div>
+          <h4 className="text-xl font-black font-mono uppercase" style={{ color: 'var(--text)' }}>
+            All Suggestions Caught Up!
+          </h4>
+          <p className="text-sm mt-1 max-w-sm mx-auto leading-relaxed">
+            All borderline match suggestions in this filter have been reviewed, merged, or rejected for this session.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4" data-testid="suggestions-list">
+        <div id="suggestions-list" className="grid grid-cols-1 gap-4" data-testid="suggestions-list">
           {activeSuggestions.map((s, idx) => {
             const pA = peopleMap[s.person_a_id];
             const pB = peopleMap[s.person_b_id];
@@ -140,6 +149,7 @@ export const SuggestionReview: React.FC<SuggestionReviewProps> = ({
             return (
               <div
                 key={idx}
+                id={`suggestion-card-${s.person_a_id}-${s.person_b_id}`}
                 data-testid={`suggestion-card-${s.person_a_id}-${s.person_b_id}`}
                 className="p-5 sm:p-6 rounded flex flex-col md:flex-row md:items-center justify-between gap-5"
                 style={{

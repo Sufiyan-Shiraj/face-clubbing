@@ -18,8 +18,9 @@ import {
   ChevronDown,
   ChevronUp,
   Cpu,
-  FolderOpen,
+  Compass,
 } from 'lucide-react';
+import { MascotSticker } from './MascotSticker';
 import {
   OrbitalClusterVisualizer,
   MergeFusionVisualizer,
@@ -36,6 +37,8 @@ import {
 interface SettingsScreenProps {
   onRerunComplete?: () => void;
   onOpenProject?: () => void;
+  onOpenTutorial?: () => void;
+  theme?: string;
 }
 
 const SPEC_6_2_DEFAULTS: Partial<Settings> = {
@@ -58,18 +61,23 @@ const SPEC_6_2_DEFAULTS: Partial<Settings> = {
 
 const THUMB_OPTIONS: DropdownOption[] = [
   { value: 300, label: '300 px', desc: 'Compact', badge: 'LOW RAM' },
-  { value: 400, label: '400 px', desc: 'Default SPEC 6.2', badge: 'STANDARD' },
+  { value: 400, label: '400 px', desc: 'Standard', badge: 'DEFAULT' },
   { value: 500, label: '500 px', desc: 'High Detail', badge: 'HD' },
   { value: 600, label: '600 px', desc: 'Ultra HD', badge: '4K' },
 ];
 
 const FACE_CROP_OPTIONS: DropdownOption[] = [
   { value: 192, label: '192 px', desc: 'Compact', badge: 'FAST' },
-  { value: 256, label: '256 px', desc: 'Default SPEC 6.2', badge: 'STANDARD' },
+  { value: 256, label: '256 px', desc: 'Standard', badge: 'DEFAULT' },
   { value: 320, label: '320 px', desc: 'High Detail', badge: 'CRISP' },
 ];
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete, onOpenProject }) => {
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({
+  onRerunComplete,
+  onOpenProject,
+  onOpenTutorial,
+  theme = 't-dark',
+}) => {
   const [settings, setSettings] = useState<Settings>({
     output_dir: 'export',
     distance_threshold: 0.50,
@@ -89,7 +97,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
     attach_distance_cap: 0.45,
     flip_average: false,
     include_maybe: false,
-    event_title: 'Face Clubbing Gallery',
+    event_title: 'CatLog Gallery',
     event_subtitle: 'Auto-sorted face albums and photo gallery',
   });
 
@@ -128,6 +136,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
       setSettings((prev) => ({ ...prev, ...updated }));
       setDriveKeyInput('');
       setKeySavedMessage('Drive API key saved to ~/.photosorter/settings.json (outside repository).');
+      try {
+        localStorage.setItem('photosorter-api-key-configured', 'true');
+      } catch (e) {}
+      if (onRerunComplete) {
+        onRerunComplete();
+      }
       setTimeout(() => setKeySavedMessage(null), 5000);
     } catch (err: any) {
       setError(err.message || 'Failed to save Drive API key');
@@ -146,6 +160,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
       setSettings((prev) => ({ ...prev, ...updated }));
       setDriveKeyInput('');
       setKeySavedMessage('Drive API key removed from local settings.');
+      try {
+        localStorage.setItem('photosorter-api-key-configured', 'false');
+      } catch (e) {}
+      if (onRerunComplete) {
+        onRerunComplete();
+      }
       setTimeout(() => setKeySavedMessage(null), 5000);
     } catch (err: any) {
       setError(err.message || 'Failed to clear Drive API key');
@@ -203,47 +223,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
             <Sliders className="w-6 h-6" />
           </div>
           <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text)] uppercase font-mono">
-                Clustering & Pipeline Settings
-              </h2>
-              <span className="settings-badge accent text-xs md:text-sm">
-                SPEC 6.2 ACTIVE
-              </span>
-            </div>
-            <p className="text-sm md:text-base text-[var(--muted)] font-mono mt-0.5">
-              Real-time parameter tuning with interactive visualizers. Changes trigger agglomerative re-clustering with stable edit replay.
-            </p>
+            <h2 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text)] uppercase font-mono">
+              Clustering &amp; Pipeline Settings
+            </h2>
           </div>
         </div>
 
         {/* Top Action Controls */}
         <div className="flex items-center gap-3">
-          {onOpenProject && (
-            <button
-              type="button"
-              id="settings-open-project-btn"
-              data-testid="settings-open-project-btn"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onOpenProject();
-              }}
-              className="btn sm"
-              style={{ height: '42px', padding: '0 18px', fontSize: '15px', fontWeight: 700 }}
-              title="Open past export/work folder"
-            >
-              <FolderOpen className="w-4 h-4 text-[var(--accent)]" />
-              <span>Open saved project...</span>
-            </button>
-          )}
-
           <button
             type="button"
             onClick={handleResetDefaults}
             className="btn sm"
             style={{ height: '42px', padding: '0 18px', fontSize: '15px', fontWeight: 700 }}
-            title="Reset parameters to SPEC 6.2 default recommendations"
+            title="Reset parameters to default recommendations"
           >
             <RotateCcw className="w-4 h-4 text-[var(--muted)]" />
             <span>Reset Defaults</span>
@@ -270,6 +263,51 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
         </div>
       )}
 
+      {/* Interactive Tutorial & Tour Banner */}
+      {onOpenTutorial && (
+        <div
+          id="card-settings-tutorial-launcher"
+          data-testid="card-settings-tutorial-launcher"
+          className="p-5 sm:p-6 rounded-lg border-2 border-[var(--accent)] bg-[var(--card-bg)] flex flex-col md:flex-row items-center justify-between gap-5 transition-all shadow-[3px_3px_0px_var(--line)]"
+        >
+          <div className="flex items-center gap-4 sm:gap-5 w-full md:w-auto">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-[var(--input)] border-2 border-[var(--line)] flex items-center justify-center p-1.5 flex-shrink-0 shadow-[2px_2px_0px_var(--line)]">
+              <MascotSticker pose={1} theme={theme} className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="settings-badge accent text-xs uppercase px-2 py-0.5">
+                  Spotlight Guide
+                </span>
+                <span className="text-xs font-mono text-[var(--muted)] font-semibold">
+                  11 Interactive Steps
+                </span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-black text-[var(--text)] uppercase font-mono mt-1">
+                Interactive Tutorial &amp; Feature Walkthrough
+              </h3>
+              <p className="text-xs sm:text-sm text-[var(--muted)] mt-1 max-w-2xl leading-relaxed">
+                Step-by-step spotlight tour across all features: photo source selection, live engine scan &amp; logs, multi-select cluster merging, smart match suggestions, triage, and offline gallery export.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0 w-full md:w-auto flex justify-end">
+            <button
+              type="button"
+              id="btn-launch-tutorial-settings"
+              data-testid="btn-launch-tutorial-settings"
+              onClick={onOpenTutorial}
+              className="btn pri w-full md:w-auto flex items-center justify-center gap-2.5 px-6 shadow-[3px_3px_0px_var(--line)]"
+              style={{ height: '46px', fontSize: '15px', fontWeight: 800 }}
+            >
+              <Compass className="w-4 h-4" />
+              <span>Launch Interactive Tutorial</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* SECTION 1: Clustering Sensitivity Thresholds (Top Spacious Section) */}
       <div className="space-y-3.5">
         <div className="flex items-center justify-between text-xs md:text-sm font-mono px-1">
@@ -277,13 +315,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
             <Sparkles className="w-4 h-4 text-[var(--accent)]" />
             Clustering Sensitivity Thresholds
           </span>
-          <span className="text-[var(--muted)] font-bold text-xs md:text-sm">Agglomerative Average Linkage</span>
         </div>
 
         {/* 2x2 Grid of Spacious Visualizer Slider Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Slider 1: Distance Threshold */}
-          <div className="settings-slider-card">
+          <div id="card-slider-distance" className="settings-slider-card">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <label htmlFor="setting-distance-threshold" className="text-base md:text-lg font-black text-[var(--text)] block leading-tight">
@@ -332,7 +369,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
           </div>
 
           {/* Slider 2: Merge Threshold */}
-          <div className="settings-slider-card">
+          <div id="card-slider-merge" className="settings-slider-card">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <label htmlFor="setting-merge-threshold" className="text-base md:text-lg font-black text-[var(--text)] block leading-tight">
@@ -381,7 +418,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
           </div>
 
           {/* Slider 3: Maybe Threshold */}
-          <div className="settings-slider-card">
+          <div id="card-slider-maybe" className="settings-slider-card">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <label htmlFor="setting-maybe-threshold" className="text-base md:text-lg font-black text-[var(--text)] block leading-tight">
@@ -430,7 +467,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
           </div>
 
           {/* Slider 4: Same-Photo Guard */}
-          <div className="settings-slider-card">
+          <div id="card-slider-guard" className="settings-slider-card">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <label htmlFor="setting-same-photo-guard" className="text-base md:text-lg font-black text-[var(--text)] block leading-tight">
@@ -510,13 +547,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
             <Cpu className="w-4 h-4 text-[var(--accent)]" />
             Storage, Cloud &amp; Pipeline Configuration
           </span>
-          <span className="text-[var(--muted)] font-bold text-xs md:text-sm">Credentials &amp; Replay Telemetry</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Left Side: Google Drive Cloud API Configuration (6 Cols) */}
           <div className="lg:col-span-6 flex flex-col gap-4">
-            <div className="settings-panel p-5 space-y-3.5">
+            <div id="card-settings-drive-key" className="settings-panel p-5 space-y-3.5">
               <div className="flex items-center justify-between border-b-2 border-[var(--line)] pb-2.5">
                 <div className="flex items-center gap-2">
                   <Key className="w-5 h-5 text-amber-500" />
@@ -651,7 +687,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
                           Google Cloud Console <ExternalLink className="w-3 h-3" />
                         </a>.
                       </li>
-                      <li>Create or select a project (e.g. <code className="text-[var(--text)]">PhotoSorter</code>).</li>
+                      <li>Create or select a project (e.g. <code className="text-[var(--text)]">CatLog</code>).</li>
                       <li>Go to <strong>APIs & Services &gt; Library</strong>, search for <strong>Google Drive API</strong>, click <strong>Enable</strong>.</li>
                       <li>Go to <strong>Credentials</strong>, click <strong>+ Create Credentials &gt; API key</strong>.</li>
                       <li>Paste the generated key above and click <strong>Save</strong>.</li>
@@ -674,7 +710,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
                   <Layers className="w-4 h-4 text-[var(--accent)]" />
                   Asset Generation Dimensions
                 </span>
-                <span className="text-sm font-mono font-bold text-[var(--muted)]">SPEC 6.2 Standard</span>
               </div>
 
               <div className="grid grid-cols-2 gap-3.5">
@@ -708,12 +743,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
                 <span className="text-sm md:text-base font-extrabold uppercase tracking-wider text-[var(--text)]">
                   Clustering Telemetry & Replay
                 </span>
-                <span className="settings-badge text-xs">
-                  STABLE FACE IDS
-                </span>
               </div>
 
-              {rerunResult ? (
+              {rerunResult && (
                 <div
                   id="rerun-result-summary"
                   className="space-y-3 animate-fadeIn"
@@ -760,16 +792,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onRerunComplete,
                       All organizer edits survived and were re-applied by stable face ID anchors!
                     </p>
                   )}
-                </div>
-              ) : (
-                <div className="p-3.5 rounded bg-[var(--input)] border border-[var(--panel-border)] text-sm text-[var(--muted)] space-y-2 font-mono">
-                  <div className="flex items-center gap-2.5 text-[var(--text)]">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] animate-pulse" />
-                    <span className="font-bold text-sm uppercase">Engine Ready</span>
-                  </div>
-                  <p className="leading-relaxed">
-                    When you change any parameter above and click &quot;Save &amp; Rerun Clustering&quot;, the engine re-partitions clusters from raw face embeddings and automatically replays all manual person renames, merges, and assigned faces.
-                  </p>
                 </div>
               )}
             </div>
