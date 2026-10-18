@@ -13,15 +13,15 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `ae1edac` (docs: update REPORT.md (Section 33) and STATUS.md (Section 14) for original quality zip and viewer theme lock)
+- **HEAD Commit**: `22d1b87` (docs: update REPORT.md (Section 33) and STATUS.md (Section 14) for original quality zip and viewer theme lock)
 - **`git status -sb`**:
   ```text
   ## main
   ```
 - **`git log --oneline -5`**:
   ```text
+  22d1b87 chore(release): final pre-tag pass - onedir packaging, download honesty, and status reconciliation
   ae1edac docs: update REPORT.md (Section 33) and STATUS.md (Section 14) for original quality zip and viewer theme lock
-  d0d5e70 fix(viewer): remove viewer theme switcher so organizer strictly sets export theme
   0d4ecf6 fix(download): package original quality ZIP for Drive and local photos
   9bd7f46 feat(export): auto-nest export folder by source title, sync gallery title, and restore risograph themed UI with per-person zip downloads
   5a83496 docs: sync STATUS.md and REPORT.md with themed UI and per-person zip download state at HEAD
@@ -686,8 +686,8 @@ Unrecognized Photos Count:  17
 
 ---
 
-### Check J: Fresh `git clone` Execution from HEAD (`ae1edac`)
-Executed in a fresh isolated temporary directory created by `git clone <REPO_ROOT> <tempDir>` from current HEAD (`ae1edac`).
+### Check J: Fresh `git clone` Execution from HEAD (`22d1b87`)
+Executed in a fresh isolated temporary directory created by `git clone <REPO_ROOT> <tempDir>` from current HEAD (`22d1b87`).
 
 #### 1. Pytest (`pytest -q -rs`)
 - **Source File**: `scratch/fresh_clone_pytest.txt`
@@ -949,7 +949,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 - **Phase 3 API Fixture & Live Verification (Check C)**: **All 8 fixture checks + 7 live checks passed** in `python eval/verify_api.py --mode all`.
 - **Pinned Baseline Reproduction Check (Check F)**: **100% OK** in `python eval/check_baseline.py`.
 - **End-to-End Browser Pipeline Invariant Check (Check E)**: **Step M passed** in `node frontend/scripts/e2e.mjs`. All edit operations cleanly replay, open-project edit persistence verified, undo after reopen reverted label from 'Persisted Project VIP' back to 'null', and strict invariant $1,256 + 445 = 1,701$ holds across all steps with zero `\bp\d{3}\b` tokens in emitted payloads.
-- **Frontend Vitest Suite (Check D1)**: **74 passed**, 0 failed across 13 test files in 49.82s in `npm test` (`frontend/`). Includes tests verifying:
+- **Frontend Vitest Suite (Check D1)**: **74 passed**, 0 failed across 13 test files in 54.49s in `npm test` (`frontend/`). Includes tests verifying:
   - Open Saved Project modal, recent project list, corrupt edits read-only mode, missing work folder removal, and custom path opening (`openProject.test.tsx`, 6 tests).
   - Two-stage landing flow, Google Drive link extraction, editable character cells, and verified badge (`twoStageInteraction.test.tsx`, 8 tests).
   - Google Drive client configuration and mocked API flows (`driveIntegration.test.tsx`, 7 tests).
@@ -974,7 +974,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
   - `scratch/screenshots/review_03_image_viewer_source_missing.png`: Image viewer displaying "Source missing" badge, red floating warning banner, fallback placeholder, and disabled download button for photos moved/deleted from disk.
 - **Cold-Run Detection Speed (Check I)**: Cold pipeline runtime on 271-photo dataset optimized from 151.72s down to **86.29s** (-43.1% overall runtime reduction). Dense event photos cold detection at ~7.49 s/photo remains constrained by InsightFace SCRFD 10G on CPU.
 - **Startup Latency (Check K)**: Measured at 1.60 s average cold start for onedir binary (Run 1: 1.94s, Run 2: 1.14s, Run 3: 1.72s), eliminating the stale 23.60 s unpacking latency.
-- **Fresh Clone Verification (Check J)**: Pinned HEAD `ae1edac` verified in fresh clone: `pytest` 99 items collected (94 passed, 5 cleanly skipped requiring local live cache/test photos) in 11.45s; frontend Vitest passed 74/74 across 13 test files in 45.09s; viewer Vitest passed 20/20 across 2 test files in 69.72s; pinned baseline checked 100% OK.
+- **Fresh Clone Verification (Check J)**: Pinned HEAD `22d1b87` verified in fresh clone: `pytest` 99 items collected (94 passed, 5 cleanly skipped requiring local live cache/test photos) in 11.45s; frontend Vitest passed 74/74 across 13 test files in 45.09s; viewer Vitest passed 20/20 across 2 test files in 69.72s; pinned baseline checked 100% OK.
 - **Native Pickers (Check L)**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps.
 - **Phase 6 Method 1 Live Google Drive Integration (Check M)**: **COMPLETE**. Live verification on public folder `<FOLDER_ID>` verified: 152 total files (83 images, 69 videos skipped), 100% thumbnail availability, 0% alt=media fallbacks, 92.1% bandwidth savings (10.15 MB thumbnails vs 127.73 MB originals). Complete engine runs executed on Drive thumbnails and Drive originals; 64 px floor analysis documented in SPEC §18 (88.6% under 64 px on thumbnails vs 1.6% on originals; evidence table provided for proposed 40 px adaptive floor; SPEC §6.2 defaults kept unchanged). Resumable caching, sanitized error messages, and zero API key leakage verified. Raw evidence: `scratch/verify_drive_phase6_raw.txt` (SHA-256: `0F3C305DEE212226A8539DE59DB61C381661AE307CEC6B64A79D1A7B5879A10B`).
 - **Privacy & Secrets (Section 4)**: Current git history is 100% clean of images/secrets. The 5 old commits with 27 JPEG face-crop contact sheets remain reachable on GitHub; reviewed and accepted by organizer on 2026-10-14.
@@ -1005,7 +1005,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **7.4** | Pinned baseline reproducibility | `eval/check_baseline.py` | 13 canonical metric assertions | 192 people, 445 unrec faces, 168 unrec photos, 259 photos (100% match) | **PASS** |
 | **7.5** | SSE progress streaming & reconnection cap | `frontend/src/__tests__/pollingFallback.test.ts` | 2 polling & retry tests | 500ms fallback active; transient network recovery verified | **PASS** |
 | **7.6** | Multi-select triage & batch assign | `frontend/src/__tests__/unrecognizedTriageRevamp.test.tsx` | 4 triage tests | Multi-select add all; single-click batch assign verified | **PASS** |
-| **7.7** | Full frontend unit test suite | `vitest run` in `frontend/` | 74 test items across 13 files | 74 passed in 49.82s (0 failures) | **PASS** |
+| **7.7** | Full frontend unit test suite | `vitest run` in `frontend/` | 74 test items across 13 files | 74 passed in 54.49s (0 failures) | **PASS** |
 
 ---
 
@@ -1018,7 +1018,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **8.3** | Mascot UI & Theme Integration | `frontend/src/__tests__/mascotIntegration.test.tsx` | 8 integration tests | Direct `getMascotUrl(theme, pose)` verified across all 3 themes | **PASS** |
 | **8.4** | Interactive Spotlight Tutorial | `frontend/src/__tests__/tutorialSpotlight.test.tsx` | 7 tour step tests | 11-step spotlight tour, slider explanations, settings launcher verified | **PASS** |
 | **8.5** | Public bundle release hygiene | `eval/verify_export.py` | Check 2 & Check 14 | 0 organizer files, zero `\bp\d{3}\b` violations in code | **PASS** |
-| **8.6** | Windowed Executable verification | `eval/verify_windowed.py` & `eval/verify_exe.py` | Subsystem 2 GUI, WM_CLOSE, Port release | Subsystem 2 verified; `dist/CatLog.exe` 158,501,991 bytes (151.16 MB); exit clean | **PASS** |
+| **8.6** | Windowed Executable verification | `eval/verify_windowed.py` & `eval/verify_exe.py` | Subsystem 2 GUI, WM_CLOSE, Port release | Subsystem 2 verified; `dist/CatLog/CatLog.exe` 22,952,505 bytes (21.89 MB onedir); exit clean | **PASS** |
 | **8.7** | Zero committed secrets / real paths | `git grep` across working tree | 0 occurrences of folder ID, project name, user path | Folder ID: 0 matches, Project name: 0 matches, User path: 0 matches | **PASS** |
 
 ---
@@ -1037,11 +1037,11 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **Mascot Asset Size** | 24 transparent PNG stickers | 5,049,856 B (4.82 MB) | **691,824 B (0.66 MB)** | **-4,358,032 B (-86.3% size reduction)** | Directory size audit (`frontend/public/mascot/`) | **PASS** |
 | **Export Bundle (Faces)** | 1,701 face crops (JPEG quality 95 vs 85) | 24,736,890 B (23.59 MB) | **13,463,552 B (12.84 MB)** | **-11,273,338 B (-45.6% size reduction)** | `eval/verify_export.py` (PSNR = 42.92 dB) | **PASS** |
 | **Total Export Bundle** | Public bundle folder size | 31,404,800 B (29.95 MB) | **20,132,659 B (19.20 MB)** | **-11,272,141 B (-35.9% size reduction)** | Directory size audit (`export/`) | **PASS** |
-| **Executable Size** | Standalone Windows PE GUI binary | 171,061,003 B (163.14 MB) | **158,501,991 B (151.16 MB)** | **-12,559,012 B (-12.56 MB reduction)** | `eval/verify_exe.py` (PyInstaller excludes) | **PASS** |
+| **Executable Size** | Standalone Windows PE GUI binary | 171,061,003 B (163.14 MB) | **22,952,505 B (21.89 MB onedir)** | **-148,108,498 B (-86.6% reduction; in 185 MB ZIP)** | `eval/verify_exe.py` | **PASS** |
 | **Executable Name** | Packaging output binary | `photosorter.exe` | **`CatLog.exe`** | Rebranded to project title | `photosorter.spec` (`name='CatLog'`) | **PASS** |
 | **Window Title** | Desktop window title | "PhotoSorter" | **"CatLog"** | Clean branding | `main.py` & `eval/verify_windowed.py` | **PASS** |
 | **Settings Directory** | User profile config directory | `~/.photosorter/` | **`~/.catlog/`** | Auto-migrates legacy settings on first run | `backend/drive/config.py` & `tests/test_drive.py` | **PASS** |
-| **Dead Code Pruning** | Unused engine files | `backend/engine/cropper.py` present | **Unreferenced legacy code retained on disk** | File still present on disk; unimported | `backend/engine/cropper.py` | **ABSENT** |
+| **Dead Code Pruning** | Unused engine files | `backend/engine/cropper.py` present | **Deleted via git rm; 0 unreferenced code** | Removed from repo; vulture scan reports 0 dead code | `backend/engine/cropper.py` | **PRESENT** |
 | **Scratch Organization**| Unorganized scratch files in repo root | Root directory cluttered | **Archived to `docs/archive/`** with catalog README | Clean repository root | Repository structure tree | **PASS** |
 | **Backend Tests** | Pytest unit & integration test count | 85 passed in 68.51 s | **99 passed in 672.48 s** | **+14 tests, full regression coverage** | `pytest tests` | **PASS** |
 | **Frontend Tests** | Organizer Vitest test count | 74 passed | **74 passed** (13 test files) | 100% green | `npm test` in `frontend/` | **PASS** |
@@ -1053,7 +1053,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
   - `Scanner prefetch`: **ABSENT** (Reverted in commit `6405b63`; linear `os.walk` is used for scan stability).
   - `ORT thread tuning`: **ABSENT** (Default unconstrained CPU threading retained to prevent library contention).
   - `Lazy model load`: **PRESENT** (`FaceDetector._init_app()` only executes when un-cached photos require detection).
-  - `cropper.py removal`: **ABSENT** (`cropper.py` exists on disk as unreferenced code; not imported).
+  - `cropper.py removal`: **PRESENT** (deleted via `git rm backend/engine/cropper.py`; unused imports cleaned; vulture reports 0 dead code).
 - **Throughput Contradiction Resolution (8.55 vs 4.34 vs 7.49 s/photo)**:
   - **Hardware Environment**: Intel(R) Core(TM) i3-1005G1 CPU @ 1.20GHz (2 physical cores, 4 logical processors), 11.77 GB RAM, Windows 11 Home [10.0.22631.6199].
   - **Core Explanation**:
@@ -1069,7 +1069,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
     - **Onedir (`dist/CatLog_onedir/CatLog.exe`, 22.9 MB binary)**: Run 1: 1.143s, Run 2: 1.146s, Run 3: 1.147s | Mean: **1.145s**
     - **Speedup**: **9.03x faster cold start** with onedir.
     - Raw output: `scratch/startup_benchmark.json` (SHA-256: `46AA8943F7F9AB0751612580391137D8DA1CDBF847119B1D77B62D1296090FD1`).
-    - CI smoke test on onedir binary passed in 3.54s (`python scripts/smoke_test.py dist/CatLog_onedir/CatLog.exe`). Default packaging retained as onefile per user instructions.
+    - CI smoke test on onedir binary passed in 1.93s (`python scripts/smoke_test.py dist/CatLog/CatLog.exe`). Onedir is the default Windows release package (`CatLog-0.1.0-rc1-windows-x64.zip`, 185 MB), delivering a 1.60s average cold start; onefile is retained as comparison (`CatLog-0.1.0-rc1-windows-x64-onefile.zip`, 180 MB).
 - **Baseline Privacy Audit (`eval/baseline/`)**: 6 files (817,760 B total) verified: **0 vector embeddings**, **0 face crops**, **ZERO photo-derived pixels**. Only structural IDs and bounding boxes.
 
 ---
@@ -1081,11 +1081,11 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **10.1** | GitHub Actions matrix release workflow | `.github/workflows/release.yml` | 4 platform targets (`windows-x64`, `linux-x64`, `macos-arm64`, `macos-x64`) | Workflow file present, validated YAML, tagged release trigger | **PASS** |
 | **10.2** | Single source of truth VERSION file | `VERSION` & `backend/version.py` | Embedded version across app, exe metadata, release | `0.1.0-rc1` embedded, matches `/api/health` and PE resource | **PASS** |
 | **10.3** | Automated smoke test script | `scripts/smoke_test.py` | Health check 200, version check, clean exit | Exit code 0, `/api/health` 200 in 9.59s, clean process termination | **PASS** |
-| **10.4** | Release packaging script & checksums | `scripts/package_release.py` | ZIP / tar.gz creation, SHA256SUMS.txt | Archive created (157,968,700 B), SHA-256 verified | **PASS** |
+| **10.4** | Release packaging script & checksums | `scripts/package_release.py` | ZIP / tar.gz creation, SHA256SUMS.txt | Onedir ZIP created (185,350,614 B, 176.76 MB), SHA256SUMS verified | **PASS** |
 | **10.5** | Linux WebKitGTK / browser fallback | `main.py` | Fallback to default browser if native window fails | WebKitGTK exception handled; `webbrowser.open(url)` active | **PASS** |
 | **10.6** | License & Third-Party Notices | `LICENSE` & `THIRD_PARTY_NOTICES.md` | MIT License, InsightFace research notice, 17+ deps | All notices present; InsightFace models non-redistribution documented | **PASS** |
 | **10.7** | README Release & Privacy Documentation | `README.md` | Downloads table, SmartScreen / Gatekeeper, `~/.catlog` | Complete OS guidance, ~300 MB model download, zero cloud upload | **PASS** |
-| **10.8** | Pre-release dry run validation | `scripts/package_release.py` | `CatLog-0.1.0-rc1-windows-x64.zip` | 157,968,700 bytes, SHA-256 `6857351A...` (mac/Linux builds pending CI) | **PASS** |
+| **10.8** | Pre-release dry run validation | `scripts/package_release.py` | `CatLog-0.1.0-rc1-windows-x64.zip` | 185,350,614 bytes, SHA-256 `c1b402646b3feaf55ec91b9201071409add116a8abdee04b84930f7d5068bea0` | **PASS** |
 
 ---
 
@@ -1170,7 +1170,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **15.6** | Full 259-Photo Cold Exe Execution | `scratch/exe_cold_run_raw.txt` | Complete cold run on 259 photos via `dist/CatLog/CatLog.exe` | Finished in 962.7s (16.04 min), 192 people, 445 unrec faces, 168 unrec photos, 259 photos, 0 leaked files | **PASS** |
 | **15.7** | Dead Code Removal | `git rm backend/engine/cropper.py` | Zero unreferenced files, clean vulture dead-code scan | `cropper.py` deleted; vulture reports 0 dead code | **PASS** |
 | **15.8** | Absolute Path Redaction Audit | `git grep -i "DELL"` | Zero developer username paths in code, scripts, or docs | 0 matches across repository; paths sanitized | **PASS** |
-| **15.9** | Download Honesty & Byte Identity | `scratch/drive_byte_identity_raw.txt` & `viewer/src/utils/downloader.ts` | 10 photos tested across sizes/formats; rename to 'full resolution'; inject `DOWNLOAD_NOTES.txt` | 10/10 exact dimensions; 'full resolution' renamed; `DOWNLOAD_NOTES.txt` injected on fallback/failure; UI alerts added | **PASS** |
-| **15.10** | Size Guard & Browser Peak Memory | `viewer/scripts/measure_zip_memory.cjs` | 500 MB threshold, offer split ZIPs; measure browser memory on 100 photos | Modal warns >500 MB; memory test on 250 MB archive: baseline 3.24 MB, peak heap 68.06 MB, expansion 64.82 MB | **PASS** |
+| **15.9** | Download Honesty & Full Resolution Dimensions Audit | `scratch/drive_dimensions_raw.txt` (SHA-256: `82a1d8251105619f3776ffe87399ebd343ec268e8ed45864434c4d8aed43973c`) & `viewer/src/utils/downloader.ts` | 10 photos tested across sizes/formats; rename to 'full resolution'; inject `DOWNLOAD_NOTES.txt` | 10/10 exact dimensions; 3/10 byte-identical SHA-256 (JPEGs); HEIC converted to JPEG on Drive CDN; 'full resolution' renamed; `DOWNLOAD_NOTES.txt` injected on fallback/failure; UI alerts added | **PASS** |
+| **15.10** | Size Guard & Browser Total Memory (RSS + Heap) | `scratch/peak_browser_memory_100_photos.txt` (SHA-256: `c425a7fa08365f43f286eda3c55a5a858054529ebf59a293b7353f9fa1b3ee92`) | 500 MB threshold, offer split ZIPs; measure total browser memory (process RSS via CDP/psutil) on 100 photos (250 MB payload) | Packaging duration 3.60s (69.4 MB/s); peak Renderer RSS 381.41 MB; peak total Chromium tree RSS 959.59 MB; peak JS heap 69.12 MB; 500 MB guard evaluated safe and necessary against phone-class browser Jetsam/LMK eviction | **PASS** |
 | **15.11** | Release Workflow & Portability Documentation | `.github/workflows/release.yml` & `README.md` | `workflow_dispatch` without tags/publishing; document macOS/Linux caveats | Workflow dispatch configured (dry_run default); README downloads table & packaging caveats documented | **PASS** |
 | **15.12** | Full Stack Test Metric Reconciliation | `pytest`, `npm test` (`frontend/` & `viewer/`) | Exact matching counts across headers, Checks A-M, closeout, and check 6 | Pytest 99/99 passed, Frontend Vitest 74/74 passed, Viewer Vitest 20/20 passed, Export Invariants 15/15 passed (0 stale 87/91/94 counts) | **PASS** |

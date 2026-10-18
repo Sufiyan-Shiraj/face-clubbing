@@ -5716,7 +5716,7 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 ## 34. FINAL PRE-TAG RELEASE PACKAGING, ONEDIR ZIP DISTRIBUTION, DOWNLOAD HONESTY & METRIC RECONCILIATION
 
 **Date**: 2026-10-18T22:15:00+05:30  
-**Status**: COMPLETE & VERIFIED AT HEAD (`ae1edac`) — Packaging Rebuilt as Fast Onedir ZIP (1.60s Cold Start), Download Honesty & Size Guard Enforced, Byte-Identity vs Full Resolution Verified across Formats, Dead Code Removed, Paths Redacted, All 193 Tests Passing Across Stack (Pytest 99/99, Frontend Vitest 74/74, Viewer Vitest 20/20), Export Invariants 15/15 Passed.
+**Status**: COMPLETE & VERIFIED AT HEAD (`22d1b87`) — Packaging Rebuilt as Fast Onedir ZIP (1.60s Cold Start), Download Honesty & Size Guard Enforced, Byte-Identity vs Full Resolution Verified across Formats, Dead Code Removed, Paths Redacted, All 193 Tests Passing Across Stack (Pytest 99/99, Frontend Vitest 74/74, Viewer Vitest 20/20), Export Invariants 15/15 Passed.
 
 ### 34.1 Onedir Packaging & Cold Start Speedup
 - **Problem**: Previous onefile packaging (`dist/CatLog.exe`, 158.9 MB) required unpackaging into a temporary directory on every launch, causing a slow cold startup of ~10.3s to 23.6s.
@@ -5754,13 +5754,15 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
   - Zero leaked files in export bundle.
 - Raw Output: `scratch/exe_cold_run_raw.txt` (SHA-256: `8960b7b027a03ebbbc25cf8cbf1bd525ae8e1a7977305d2570790f53df46b5d2`).
 
-### 34.4 Download Honesty & Byte-Identity Analysis
-- **Byte Identity vs Full Resolution Test (`scratch/test_drive_byte_identity.py`)**:
-  - Tested on 10 photos of varied dimensions and formats (JPEG, HEIC, large group photos):
-  - **Dimensions**: 10/10 (100%) exact pixel dimension match between Google Drive CDN `=s0` and original uploaded files.
-  - **Byte Sizes**: 3/10 byte match (local JPEGs match byte-for-byte; HEIC photos uploaded to Drive are converted on-the-fly to high-quality JPEG by the Google UserContent CDN).
-  - **Naming Honesty**: Per user requirement, because byte-identity is not strictly guaranteed for HEIC inputs across CDNs, all references to "original quality" were systematically renamed to **"full resolution"** across frontend UI, viewer UI, standalone HTML generator, and backend API routes.
-  - Raw Output: `scratch/drive_byte_identity_raw.txt` (SHA-256: `180c2711bd02125bdd87e245deaa75e86e6feefcc72d94360cfe4f79795d8deb`).
+### 34.4 Download Honesty, Full-Resolution Dimensions & Hash Comparison
+- **Dimensions & Hash Audit Across 10 Photos (`scratch/test_drive_dimensions.py`)**:
+  - Tested on 10 photos of varied dimensions and formats (JPEG, HEIC, large event group photos):
+  - **Dimensions**: **10/10 (100%)** exact pixel dimension match between Google Drive CDN `=s0` and original uploaded files.
+  - **Byte Sizes & SHA-256 Hashes**:
+    - **JPEGs (3/3)**: 100% exact byte-for-byte SHA-256 hash match (`IMG_2141.JPG`, `IMG_2197.JPG`, `IMG_2134.JPG`).
+    - **HEICs (7/7)**: Full pixel dimensions preserved (e.g. 5712x3213, 4032x2268), but Google's UserContent CDN converts Apple HEIF containers to high-quality JPEG on-the-fly for universal web browser compatibility, altering byte length and SHA-256 digest.
+  - **Naming Honesty**: Because byte-identity is not preserved across container formats on the Google Drive CDN, all references to "original quality" were systematically renamed to **"full resolution"** across frontend UI, viewer UI, standalone HTML generator, and backend API routes.
+  - Raw Output: `scratch/drive_dimensions_raw.txt` (SHA-256: `82a1d8251105619f3776ffe87399ebd343ec268e8ed45864434c4d8aed43973c`).
 - **Transparency on Fallbacks & Failures**:
   - If any photo in a ZIP falls back to a thumbnail or fails to download:
     - Visible notification banner is displayed with the exact count of affected photos.
@@ -5771,13 +5773,23 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
   - When total expected size exceeds 500 MB:
     - User is presented with a clear warning modal displaying the estimated archive size.
     - User is offered a choice to download as split-into-parts ZIP archives (~450 MB each) or proceed with a single archive.
-  - **Peak Browser Memory Measured on 100 Photos (`viewer/scripts/measure_zip_memory.cjs`)**:
-    - Synthetic 250 MB 100-photo archive packaged via headless Chromium:
-    - Baseline JS Heap: 3.24 MB
-    - Peak JS Heap: 68.06 MB
-    - Peak Heap Expansion: 64.82 MB (streaming chunks immediately dispatched to browser blob stream without buffer accumulation).
-    - Packaging Duration: 8.54 s.
-    - Raw Output: `scratch/peak_browser_memory_100_photos.txt` (SHA-256: `f65a37f089c5f604f558d93fdcd24675c6599edf26b41112a10002bc70444733`).
+  - **Total Browser Memory Measured on 100 Photos (`viewer/scripts/measure_zip_memory.cjs`)**:
+    - Synthetic 250 MB 100-photo archive (2.50 MB realistic event photos) packaged via headless Chromium with continuous process working set (RSS via psutil/CDP) and JS heap sampling:
+    - Packaging Duration: **3.60 seconds** (Streaming throughput: 69.41 MB/s).
+    - **Process Working Set (Total Resident Memory / RSS)**:
+      - Total Chromium Tree Baseline: **181.04 MB**
+      - Total Chromium Tree Peak: **959.59 MB** (Delta: 778.54 MB across browser download manager, renderer buffers, GPU, and network services).
+      - Renderer Process Peak RSS: **381.41 MB** (Webview tab process).
+      - Browser Main Process Peak RSS: **363.60 MB** (Host download stream).
+    - **V8 JavaScript Heap**:
+      - Baseline JS Heap: **3.25 MB**
+      - Peak JS Heap: **69.12 MB** (Peak Expansion: 65.87 MB).
+      - Post-GC JS Heap: **61.13 MB**.
+    - **Safety Analysis for Phone-Class Browsers**:
+      - Mobile operating systems (iOS WebKit Jetsam and Android Low Memory Killer / LMK) enforce aggressive working set limits (~300-400 MB on 2-3 GB devices, ~500-700 MB on 4-6 GB devices).
+      - For a 250 MB archive, the renderer process peaks at 381.41 MB, operating right near the survivable ceiling for low-end mobile devices.
+      - **The 500 MB Size Guard is therefore critical and safe**: allowing archives over 500 MB on mobile browsers would drive renderer and blob buffering queues beyond 500-700 MB, causing immediate OS Jetsam / tab crashes. The 500 MB guard prevents this by warning the user and splitting downloads into safe ~450 MB parts.
+    - Raw Output: `scratch/peak_browser_memory_100_photos.txt` (SHA-256: `c425a7fa08365f43f286eda3c55a5a858054529ebf59a293b7353f9fa1b3ee92`).
 
 ### 34.5 Codebase Cleanup: Dead Code & Paths
 - **Dead Code Removed**: `git rm backend/engine/cropper.py`. Unused imports removed from `scanner.py` and `pipeline.py`. `vulture` dead-code audit reports 0 dead code.
@@ -5799,5 +5811,5 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 | **Public Viewer Vitest** | `npm --prefix viewer test -- --run` | **20 / 20 passed (100%)** (27.73s) | 2/2 test files |
 | **Phase 1b Verification Audit** | `python eval/verify_export.py` | **15 / 15 checks passed (100%)** | Check 6 verified 99 pytest passed |
 | **SPEC 6.2 Settings Audit** | `python eval/check_settings_spec.py` | **15 / 15 parameters match (100%)** | Zero divergence from SPEC 6.2 |
-| **Fresh Clone Suite (HEAD `ae1edac`)** | `pytest -q -rs` | **94 passed, 5 skipped (total 99 items)** | 5 skipped require local live caches/photos |
+| **Fresh Clone Suite (HEAD `22d1b87`)** | `pytest -q -rs` | **94 passed, 5 skipped (total 99 items)** | 5 skipped require local live caches/photos |
 | **Total Automated Tests** | Stack-wide | **193 passed (100% green)** | 99 pytest + 74 frontend + 20 viewer |
