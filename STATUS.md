@@ -1,7 +1,7 @@
 # CatLog Repository State Audit (STATUS.md)
 
 **Generated**: 2026-10-18T22:20:00+05:30  
-**Audit Mode**: PRE-RELEASE HARDENING COMPLETE — Full Resolution ZIP Archiving (Google Drive & Local Photos), Zero-Popup Client & Server Packaging, Viewer Theme Switcher Removed (Organizer Theme Locked), Pytest 99/99 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed, Export Invariants 15/15 Passed, Standalone Onedir Startup 1.60s
+**Audit Mode**: PRE-RELEASE HARDENING COMPLETE — Full Resolution ZIP Archiving (Google Drive & Local Photos), Zero-Popup Client & Server Packaging, Viewer Theme Switcher Removed (Organizer Theme Locked), Pytest 99/99 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 26/26 Passed, Export Invariants 15/15 Passed, Standalone Onedir Startup 1.60s
 
 ---
 
@@ -13,18 +13,18 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `22d1b87` (docs: update REPORT.md (Section 33) and STATUS.md (Section 14) for original quality zip and viewer theme lock)
+- **HEAD Commit**: `91eb61f` (fix: mobile 150mb size guard, unverified phone memory verdict, and drive format notes)
 - **`git status -sb`**:
   ```text
   ## main
   ```
 - **`git log --oneline -5`**:
   ```text
+  91eb61f fix: mobile 150mb size guard, unverified phone memory verdict, and drive format notes
+  8e6d876 chore: reconcile status audit lines, total browser rss memory metrics, and drive dimensions check
   22d1b87 chore(release): final pre-tag pass - onedir packaging, download honesty, and status reconciliation
   ae1edac docs: update REPORT.md (Section 33) and STATUS.md (Section 14) for original quality zip and viewer theme lock
-  0d4ecf6 fix(download): package original quality ZIP for Drive and local photos
-  9bd7f46 feat(export): auto-nest export folder by source title, sync gallery title, and restore risograph themed UI with per-person zip downloads
-  5a83496 docs: sync STATUS.md and REPORT.md with themed UI and per-person zip download state at HEAD
+  d0d5e70 fix(viewer): remove viewer theme switcher so organizer strictly sets export theme
   ```
 - **`git remote -v`**:
   ```text
@@ -56,13 +56,13 @@
 | **1 Engine core (CLI)** | Accepted (271 files / 259 photos / 1,701 faces) | `backend/engine/scanner.py`, `loader.py`, `detector.py`, `clusterer.py`, `thumbnails.py`, `exporter.py`, `pipeline.py`, `__main__.py` | Full Sections 1–12, Executive State (192 clusters, 81 singletons, 445 unrec faces) | **MATCHES** |
 | **1b Engine amendments** | Done | `backend/engine/edits.py`, `exporter.py`, `eval/verify_export.py`, `eval/ground_truth.json`, `eval/recall_table.py`, `tests/test_clustering.py` | Section 13 (Tasks 1–11 documented with test outputs) | **MATCHES** |
 | **2 Static viewer** | Done | `viewer/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/`, `src/__tests__/viewer.test.tsx`, `dist/` | Section 14 (All Rows 1–15 pass) | **MATCHES** |
-| **2b Public viewer rework & download** | Complete & Overhauled (NEEDS ORGANIZER REVIEW) | `viewer/src/utils/downloader.ts`, `src/components/`, `src/index.css`, `backend/engine/standalone_html.py`, `frontend/src/components/ExportScreen.tsx` | Section 27, 30 & 33 (Tactile Risograph Overhaul: 3 Themes, Brand Logos, Mascots, Per-Person Direct Batch Download, Organizer Theme Chooser, Zero-Dep Standalone HTML, 20/20 Viewer Vitest, 74/74 Frontend Vitest, 99/99 Pytest, 15/15 Export Checks) | **MATCHES** |
+| **2b Public viewer rework & download** | Complete & Overhauled (NEEDS ORGANIZER REVIEW) | `viewer/src/utils/downloader.ts`, `src/components/`, `src/index.css`, `backend/engine/standalone_html.py`, `frontend/src/components/ExportScreen.tsx` | Section 27, 30 & 33 (Tactile Risograph Overhaul: 3 Themes, Brand Logos, Mascots, Per-Person Direct Batch Download, Organizer Theme Chooser, Zero-Dep Standalone HTML, 26/26 Viewer Vitest, 74/74 Frontend Vitest, 99/99 Pytest, 15/15 Export Checks) | **MATCHES** |
 | **3 API layer (FastAPI)** | Done | `backend/api/app.py`, `backend/api/jobs.py`, `backend/api/models.py`, `backend/api/routes.py`, `backend/api/state.py`, `eval/verify_api.py`, `tests/test_api.py` | Section 15 (Endpoints, SSE streaming, edit replay, fixture verification) | **MATCHES** |
 | **4 Organizer UI (React)** | Done | `frontend/package.json`, `vite.config.ts`, `src/App.tsx`, `src/components/HomeScreen.tsx`, `ProgressScreen.tsx`, `ReviewPeopleScreen.tsx`, `UnrecognizedTriage.tsx`, `FaceCompareModal.tsx`, `ImageViewerModal.tsx`, `OpenProjectModal.tsx`, `ExportScreen.tsx`, `SettingsScreen.tsx`, `src/__tests__/`, `dist/` | Sections 16, 21, 22, 23 & 24 (Screens, multi-select triage, target compare modal, dashed coral boxes, on-canvas quick change, inspect faces drawer, open saved project modal, 74/74 Vitest passed) | **MATCHES** |
 | **5 Desktop shell & packaging** | Complete | `main.py`, `photosorter.spec`, `dist/CatLog/CatLog.exe`, `eval/verify_exe.py`, `eval/verify_windowed.py`, `eval/verify_models_cold.py` | Section 19 & 34 (Pywebview shell, native dialogs, PyInstaller onedir zip package, GUI subsystem, bundle hygiene, windowed verification, 1.60s cold start) | **MATCHES** |
 | **6 Method 1 (Drive link input)** | Complete | `backend/drive/parser.py`, `client.py`, `config.py`, `tests/test_drive.py`, `eval/verify_drive_phase6.py`, `frontend/src/__tests__/driveIntegration.test.tsx` | Section 20 (All 7 tasks implemented; 30/30 pytest passed, 7/7 Vitest passed; live verification on 83 photos completed with 100% thumbnails, 92.1% bandwidth saved, 64px floor documented in SPEC §18) | **MATCHES** |
 | **6b UI redesign** | Complete | `frontend/src/components/`, `frontend/src/index.css`, `frontend/src/__tests__/` | Sections 21 & 22 (Risograph theme, 2-stage landing flow, compact triage, bboxes) | **COMPLETE** |
-| **7 Final Optimization & Release Audit** | Complete | `backend/engine/thumbnails.py`, `scanner.py`, `detector.py`, `main.py`, `photosorter.spec`, `dist/CatLog/CatLog.exe`, `eval/verify_export.py`, `eval/verify_exe.py`, `eval/verify_windowed.py` | Section 28 & 34 (43.1% speedup, 185 MB onedir zip, 1.60s cold start, 86.3% mascot compression, 45.6% face crops reduction, 99/99 pytest, 74/74 vitest, 20/20 viewer vitest, zero behavioral changes) | **COMPLETE** |
+| **7 Final Optimization & Release Audit** | Complete | `backend/engine/thumbnails.py`, `scanner.py`, `detector.py`, `main.py`, `photosorter.spec`, `dist/CatLog/CatLog.exe`, `eval/verify_export.py`, `eval/verify_exe.py`, `eval/verify_windowed.py` | Section 28 & 34 (43.1% speedup, 185 MB onedir zip, 1.60s cold start, 86.3% mascot compression, 45.6% face crops reduction, 99/99 pytest, 74/74 vitest, 26/26 viewer vitest, zero behavioral changes) | **COMPLETE** |
 | **8 Method 2 (Upload to Drive)** | Removed | None (Purged in Rev 3) | None | **REMOVED** |
 | **Mascots & Brand Identity** | Complete | `frontend/public/mascot/`, `frontend/public/catlog*`, `frontend/src/components/MascotSticker.tsx`, `TutorialSpotlight.tsx` | Section 24 (24 standalone transparent PNG poses across 3 themes, CatLog logo/tagline, 11-step spotlight tour) | **COMPLETE** |
 | **Avatar Quality & SPEC 6.2 Compliance** | Complete | `backend/engine/thumbnails.py`, `detector.py`, `models.py`, `tests/test_thumbnails.py` | Section 7 & 31 (Composite face quality scoring: 3D pose, symmetry, sharpness, confidence, size; 256px SPEC 6.2 default restored, 99/99 pytest pass) | **COMPLETE** |
@@ -686,16 +686,16 @@ Unrecognized Photos Count:  17
 
 ---
 
-### Check J: Fresh `git clone` Execution from HEAD (`22d1b87`)
-Executed in a fresh isolated temporary directory created by `git clone <REPO_ROOT> <tempDir>` from current HEAD (`22d1b87`).
+### Check J: Fresh `git clone` Execution from HEAD (`91eb61f`)
+Executed in a fresh isolated temporary directory created by `git clone <REPO_ROOT> <tempDir>` from current HEAD (`91eb61f`).
 
 #### 1. Pytest (`pytest -q -rs`)
 - **Source File**: `scratch/fresh_clone_pytest.txt`
-- **SHA-256 Digest**: `670B875D980D77D5A64B5E4151EC2BE687DB8031E0F2104508D7BB351A67CE64`
+- **SHA-256 Digest**: `D50337C4C4FE4B62E264F80351F80012789E8C3D1794F7466E048A37CB6898AE`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 670B875D980D77D5A64B5E4151EC2BE687DB8031E0F2104508D7BB351A67CE64
+Hash      : D50337C4C4FE4B62E264F80351F80012789E8C3D1794F7466E048A37CB6898AE
 Path      : <REPO_ROOT>\scratch\fresh_clone_pytest.txt
 ```
 - **Verbatim Output**:
@@ -708,56 +708,53 @@ SKIPPED [1] tests\test_api.py:564: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_engine_cold_regression.py:41: test_photos/ directory is absent (photos not tracked in git per privacy rules)
 SKIPPED [1] tests\test_engine_cold_regression.py:124: test_photos/ directory is absent (photos not tracked in git per privacy rules)
 SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
-94 passed, 5 skipped in 11.45s
+94 passed, 5 skipped in 10.63s
 ```
-- **Summary**: 94 passed, 5 skipped in 11.45s (0 failures; the 3 skipped tests cleanly require local live embedding caches, and 2 cold regression tests cleanly skip when `test_photos/` is absent).
+- **Summary**: 94 passed, 5 skipped in 10.63s (0 failures; the 3 skipped tests cleanly require local live embedding caches, and 2 cold regression tests cleanly skip when `test_photos/` is absent).
 
 #### 2. Frontend Vitest (`npm test -- --run`)
 - **Source File**: `scratch/fresh_clone_frontend.txt`
-- **SHA-256 Digest**: `5FD04F4D22CDE81068ED15C64FBCB9F8977F6C969C3F4A5ED79929A73532BE07`
+- **SHA-256 Digest**: `7CAF1E804FF6AA6DE6D1AE083B3528A4DEE72FB82495E5680C68AF0922BBB0D2`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 5FD04F4D22CDE81068ED15C64FBCB9F8977F6C969C3F4A5ED79929A73532BE07
+Hash      : 7CAF1E804FF6AA6DE6D1AE083B3528A4DEE72FB82495E5680C68AF0922BBB0D2
 Path      : <REPO_ROOT>\scratch\fresh_clone_frontend.txt
 ```
 - **Verbatim Output**:
 ```text
  Test Files  13 passed (13)
       Tests  74 passed (74)
-   Start at  16:26:48
-   Duration  45.09s (import 44%, environment 40%, tests 12%, transform 3%, worker 1%)
-
-    Isolate  13 workers spawned · ~4.14s startup each (spawn + environment, per file)
-             at least ~13.81s faster with isolate: false — reuses workers across files instead of one per file
+   Start at  23:57:17
+   Duration  59.84s (import 77%, environment 15%, tests 6%, transform 2%)
 ```
-- **Summary**: 74 passed across 13 test files in 45.09s (0 failures).
+- **Summary**: 74 passed across 13 test files in 59.84s (0 failures).
 
 #### 3. Viewer Vitest (`npm test -- --run`)
 - **Source File**: `scratch/fresh_clone_viewer.txt`
-- **SHA-256 Digest**: `8D5ED5C1B212B50C5EDBCB8BC0DE3E6A16BF31461A8C9B87D72C41AD333D2567`
+- **SHA-256 Digest**: `4A6C1EE2ABF17954DEC38280DFBAD8480F0493B80165E66B4EFA12ED25C68C98`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 8D5ED5C1B212B50C5EDBCB8BC0DE3E6A16BF31461A8C9B87D72C41AD333D2567
+Hash      : 4A6C1EE2ABF17954DEC38280DFBAD8480F0493B80165E66B4EFA12ED25C68C98
 Path      : <REPO_ROOT>\scratch\fresh_clone_viewer.txt
 ```
 - **Verbatim Output**:
 ```text
  Test Files  2 passed (2)
-      Tests  20 passed (20)
-   Start at  16:27:41
-   Duration  69.72s (environment 50%, import 47%, tests 1%, transform 1%)
+      Tests  26 passed (26)
+   Start at  23:58:42
+   Duration  81.90s (import 61%, environment 37%, tests 1%, transform 1%)
 ```
-- **Summary**: 20 passed across 2 test files in 69.72s (0 failures).
+- **Summary**: 26 passed across 2 test files in 81.90s (0 failures).
 
 #### 4. Pinned Baseline Fixture (`python eval/check_baseline.py`)
 - **Source File**: `scratch/fresh_clone_baseline.txt`
-- **SHA-256 Digest**: `0DB15D5276B0F0A2CC7303F69540E8F4FD641A55DB5D4C2A36FBD9FA421A4825`
+- **SHA-256 Digest**: `FEDD89017A5276FA6BFE71301C188BAC0EBC1574F7150BED3E2D684590038D99`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 0DB15D5276B0F0A2CC7303F69540E8F4FD641A55DB5D4C2A36FBD9FA421A4825
+Hash      : FEDD89017A5276FA6BFE71301C188BAC0EBC1574F7150BED3E2D684590038D99
 Path      : <REPO_ROOT>\scratch\fresh_clone_baseline.txt
 ```
 - **Verbatim Output**:
@@ -974,7 +971,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
   - `scratch/screenshots/review_03_image_viewer_source_missing.png`: Image viewer displaying "Source missing" badge, red floating warning banner, fallback placeholder, and disabled download button for photos moved/deleted from disk.
 - **Cold-Run Detection Speed (Check I)**: Cold pipeline runtime on 271-photo dataset optimized from 151.72s down to **86.29s** (-43.1% overall runtime reduction). Dense event photos cold detection at ~7.49 s/photo remains constrained by InsightFace SCRFD 10G on CPU.
 - **Startup Latency (Check K)**: Measured at 1.60 s average cold start for onedir binary (Run 1: 1.94s, Run 2: 1.14s, Run 3: 1.72s), eliminating the stale 23.60 s unpacking latency.
-- **Fresh Clone Verification (Check J)**: Pinned HEAD `22d1b87` verified in fresh clone: `pytest` 99 items collected (94 passed, 5 cleanly skipped requiring local live cache/test photos) in 11.45s; frontend Vitest passed 74/74 across 13 test files in 45.09s; viewer Vitest passed 20/20 across 2 test files in 69.72s; pinned baseline checked 100% OK.
+- **Fresh Clone Verification (Check J)**: Pinned HEAD `91eb61f` verified in fresh clone: `pytest` 99 items collected (94 passed, 5 cleanly skipped requiring local live cache/test photos) in 10.63s; frontend Vitest passed 74/74 across 13 test files in 59.84s; viewer Vitest passed 26/26 across 2 test files in 81.90s; pinned baseline checked 100% OK.
 - **Native Pickers (Check L)**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps.
 - **Phase 6 Method 1 Live Google Drive Integration (Check M)**: **COMPLETE**. Live verification on public folder `<FOLDER_ID>` verified: 152 total files (83 images, 69 videos skipped), 100% thumbnail availability, 0% alt=media fallbacks, 92.1% bandwidth savings (10.15 MB thumbnails vs 127.73 MB originals). Complete engine runs executed on Drive thumbnails and Drive originals; 64 px floor analysis documented in SPEC §18 (88.6% under 64 px on thumbnails vs 1.6% on originals; evidence table provided for proposed 40 px adaptive floor; SPEC §6.2 defaults kept unchanged). Resumable caching, sanitized error messages, and zero API key leakage verified. Raw evidence: `scratch/verify_drive_phase6_raw.txt` (SHA-256: `0F3C305DEE212226A8539DE59DB61C381661AE307CEC6B64A79D1A7B5879A10B`).
 - **Privacy & Secrets (Section 4)**: Current git history is 100% clean of images/secrets. The 5 old commits with 27 JPEG face-crop contact sheets remain reachable on GitHub; reviewed and accepted by organizer on 2026-10-14.
@@ -1101,7 +1098,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **11.6** | Standalone Single-File HTML Overhaul | `backend/engine/standalone_html.py` & `tests/test_standalone_html.py` | Embedded SVG camera-cat logo, 3-theme CSS vars, tactile cards, per-person sequential downloader, zero CDNs | Zero external scripts/CDNs verified; automatic export theme initialization; per-person download verified | **PASS** |
 | **11.7** | Public Bundle Hygiene & Invariant Verification | `eval/verify_export.py` | Check 2 (clean root directory: `config.json`, `people.json`, `faces`, `thumbs`, `index.html`, `assets`, `gallery.html`) | 15/15 checks pass; zero stray root files; zero organizer files in export | **PASS** |
 | **11.8** | Client & Backend API Type Safety | `frontend/src/api/client.ts` & `backend/api/models.py` | `theme?: string` parameter added to `exportBundle` and `ExportRequest` | `npx tsc --noEmit` 0 errors; clean IDE type checking | **PASS** |
-| **11.9** | Regression Suite Health Across Stack | `pytest`, `npm test` (`frontend/` & `viewer/`) | Full automated regression suites passing | Pytest 99/99 passed; Frontend Vitest 74/74 passed; Viewer Vitest 20/20 passed | **PASS** |
+| **11.9** | Regression Suite Health Across Stack | `pytest`, `npm test` (`frontend/` & `viewer/`) | Full automated regression suites passing | Pytest 99/99 passed; Frontend Vitest 74/74 passed; Viewer Vitest 26/26 passed | **PASS** |
 | **11.10** | Public Viewer 3-Theme Live Switcher | `viewer/src/components/Header.tsx`, `App.tsx` | Live interactive 3-theme toggle (**Dark**, **Paper**, **Navy**) with sticky header, quick action controls, and smooth theme transitions | Restored from commits 58–70 baseline; all 3 themes switch instantly with clean styling | **PASS** |
 | **11.11** | Paper / White Theme Readability & Contrast Overhaul | `backend/engine/standalone_html.py` & `viewer/src/index.css` | High-contrast text & numbers on cream paper; `.stats-bar strong` uses `var(--text-main)` (`#121316`) instead of `#fff` | Verified >14:1 contrast ratio; numbers and labels fully readable across cards, headers, modals, and search | **PASS** |
 | **11.12** | E2E Playwright Suite Verification | `viewer/scripts/verify_download_e2e.cjs` | Full download verification: 3-theme toggling, zip streaming, selection mode, card direct download | All steps pass cleanly; streaming zip generates sanitized filenames | **PASS** |

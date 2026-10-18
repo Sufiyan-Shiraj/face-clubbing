@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-18  
 **Project**: CatLog — Who was at the event? (`face-clubbing`)  
-**Status**: Release Candidate Ready (Final Pre-Tag Pass Complete). All Phases Complete: Phase 1 & 1b Engine Core, Phase 2 Static Viewer, Phase 3 FastAPI Layer, Phase 4 Organizer UI (React 19), Phase 5 Desktop Shell & Onedir Packaging (185 MB ZIP, 1.60s Cold Start), Phase 6 Google Drive Integration, Phase 6b Risograph Redesign, Open Saved Project Feature, Full Resolution ZIP Downloads with Download Honesty & Size Guard, 11-Step Interactive Spotlight Tour, Standalone HTML Gallery, Full Codebase Cleanup (Dead Code Removed, Paths Redacted), Full Suite Reconciliation (Pytest 99/99, Frontend Vitest 74/74, Viewer Vitest 20/20, Export Invariants 15/15).
+**Status**: Release Candidate Ready (Final Pre-Tag Pass Complete). All Phases Complete: Phase 1 & 1b Engine Core, Phase 2 Static Viewer, Phase 3 FastAPI Layer, Phase 4 Organizer UI (React 19), Phase 5 Desktop Shell & Onedir Packaging (185 MB ZIP, 1.60s Cold Start), Phase 6 Google Drive Integration, Phase 6b Risograph Redesign, Open Saved Project Feature, Full Resolution ZIP Downloads with Download Honesty & Size Guard, 11-Step Interactive Spotlight Tour, Standalone HTML Gallery, Full Codebase Cleanup (Dead Code Removed, Paths Redacted), Full Suite Reconciliation (Pytest 99/99, Frontend Vitest 74/74, Viewer Vitest 26/26, Export Invariants 15/15).
 
 ### Working Rules Compliance Confirmation
 - **No Cluster IDs (`pNNN`)**: Strictly enforced. Cluster IDs are display handles only for a single export and are never persisted, tested, compared, or allowlisted. All tests, edits, and verification scripts key strictly by anchor face IDs and photo IDs. Check 14 of `eval/verify_export.py` enforces zero `\bp\d{3}\b` tokens in code outside comments across `eval/` and `tests/`.
@@ -5716,7 +5716,7 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 ## 34. FINAL PRE-TAG RELEASE PACKAGING, ONEDIR ZIP DISTRIBUTION, DOWNLOAD HONESTY & METRIC RECONCILIATION
 
 **Date**: 2026-10-18T22:15:00+05:30  
-**Status**: COMPLETE & VERIFIED AT HEAD (`22d1b87`) — Packaging Rebuilt as Fast Onedir ZIP (1.60s Cold Start), Download Honesty & Size Guard Enforced, Byte-Identity vs Full Resolution Verified across Formats, Dead Code Removed, Paths Redacted, All 193 Tests Passing Across Stack (Pytest 99/99, Frontend Vitest 74/74, Viewer Vitest 20/20), Export Invariants 15/15 Passed.
+**Status**: COMPLETE & VERIFIED AT HEAD (`91eb61f`) — Packaging Rebuilt as Fast Onedir ZIP (1.60s Cold Start), Download Honesty & Dynamic Size Guard (150 MB Mobile / 500 MB Desktop), Byte-Identity vs Full Resolution Documented across Formats, Measured Browser Memory with UNVERIFIED Phone-Class Safety Verdict, Dead Code Removed, Paths Redacted, All 199 Tests Passing Across Stack (Pytest 99/99, Frontend Vitest 74/74, Viewer Vitest 26/26), Export Invariants 15/15 Passed.
 
 ### 34.1 Onedir Packaging & Cold Start Speedup
 - **Problem**: Previous onefile packaging (`dist/CatLog.exe`, 158.9 MB) required unpackaging into a temporary directory on every launch, causing a slow cold startup of ~10.3s to 23.6s.
