@@ -14,44 +14,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>__TITLE__ — CatLog Gallery</title>
+  <title>__TITLE__ — PhotoSorter Gallery</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root, body.t-dark {
+    :root {
       --color-accent: __ACCENT__;
-      --bg-main: #121316;
-      --bg-card: #18191e;
-      --bg-card-hover: #1f2127;
-      --border-color: #272930;
-      --text-main: #f4f4f7;
-      --text-muted: #8b8f9e;
-      --shadow-color: #0b0c0e;
-      --font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
-    }
-    body.t-paper {
-      --color-accent: __ACCENT__;
-      --color-accent-text: #ffffff;
-      --bg-main: #f4ede2;
-      --bg-card: #fffdfa;
-      --bg-card-hover: #ede7dc;
-      --border-color: #2b2b2b;
-      --text-main: #121316;
-      --text-muted: #424652;
-      --shadow-color: #2b2b2b;
-      --font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-    }
-    body.t-navy {
-      --color-accent: __ACCENT__;
-      --bg-main: #0c1322;
-      --bg-card: #121c32;
-      --bg-card-hover: #182542;
-      --border-color: #1e2e50;
-      --text-main: #f0f4fc;
-      --text-muted: #8294b5;
-      --shadow-color: #050810;
-      --font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+      --bg-main: #09090b;
+      --bg-card: rgba(24, 24, 27, 0.75);
+      --bg-card-hover: rgba(39, 39, 42, 0.85);
+      --border-color: rgba(63, 63, 70, 0.4);
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
 
     * {
@@ -68,76 +44,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       -webkit-font-smoothing: antialiased;
-      transition: background-color 0.2s ease, color 0.2s ease;
     }
 
-    .btn-tactile {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-      padding: 0.45rem 0.9rem;
-      border-radius: 0.6rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      font-size: 0.8rem;
-      border: 2px solid var(--border-color);
-      background: var(--bg-card);
-      color: var(--text-main);
-      box-shadow: 2px 2px 0 var(--shadow-color);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      text-decoration: none;
-    }
-    .btn-tactile:hover {
-      transform: translate(-1px, -1px);
-      box-shadow: 3px 3px 0 var(--shadow-color);
-    }
-    .btn-tactile:active {
-      transform: translate(1px, 1px);
-      box-shadow: 1px 1px 0 var(--shadow-color);
-    }
-    .btn-accent {
-      background: var(--color-accent);
-      color: #ffffff;
-      border-color: var(--border-color);
-    }
-    .btn-download-person {
-      margin-top: 0.6rem;
-      width: 100%;
-      padding: 0.45rem 0.75rem;
-      border-radius: 0.6rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      font-weight: 700;
-      border: 2px solid var(--border-color);
-      background: var(--color-accent);
-      color: #fff;
-      cursor: pointer;
-      box-shadow: 2px 2px 0 var(--shadow-color);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.35rem;
-      transition: all 0.15s ease;
-    }
-    .btn-download-person:hover {
-      filter: brightness(1.08);
-      transform: translate(-1px, -1px);
-      box-shadow: 3px 3px 0 var(--shadow-color);
-    }
-    .btn-download-person:active {
-      transform: translate(1px, 1px);
-      box-shadow: 1px 1px 0 var(--shadow-color);
-    }
     /* Header */
     header {
       position: sticky;
       top: 0;
       z-index: 40;
-      background: var(--bg-card);
-      border-bottom: 2px solid var(--border-color);
-      box-shadow: 0 2px 0 var(--shadow-color);
+      background: rgba(9, 9, 11, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-color);
       padding: 1rem 1.5rem;
     }
 
@@ -154,17 +71,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .brand-title h1 {
       font-family: 'Outfit', var(--font-family);
       font-size: 1.5rem;
-      font-weight: 800;
+      font-weight: 700;
       letter-spacing: -0.02em;
-      color: var(--text-main);
+      color: #fff;
     }
 
     .brand-title p {
       font-size: 0.85rem;
       color: var(--text-muted);
       margin-top: 0.15rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
     }
 
     .controls {
@@ -179,25 +94,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .search-box input {
-      background: var(--bg-card);
-      border: 2px solid var(--border-color);
-      color: var(--text-main);
+      background: rgba(24, 24, 27, 0.8);
+      border: 1px solid var(--border-color);
+      color: #fff;
       padding: 0.5rem 1rem 0.5rem 2.25rem;
       border-radius: 9999px;
       font-size: 0.875rem;
-      font-family: 'JetBrains Mono', monospace;
       outline: none;
       width: 240px;
-      box-shadow: 2px 2px 0 var(--shadow-color);
       transition: all 0.2s;
-    }
-
-    .search-box input::placeholder {
-      color: var(--text-muted);
     }
 
     .search-box input:focus {
       border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
       width: 280px;
     }
 
@@ -215,19 +125,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     /* Nav Tabs */
     .nav-tabs {
       display: flex;
-      background: var(--bg-card);
+      background: rgba(24, 24, 27, 0.6);
       padding: 0.25rem;
       border-radius: 9999px;
-      border: 2px solid var(--border-color);
-      box-shadow: 2px 2px 0 var(--shadow-color);
+      border: 1px solid var(--border-color);
     }
 
     .nav-tab {
       padding: 0.4rem 0.9rem;
       border-radius: 9999px;
       font-size: 0.8rem;
-      font-weight: 700;
-      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
       color: var(--text-muted);
       background: transparent;
       border: none;
@@ -237,8 +145,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     .nav-tab.active {
       background: var(--color-accent);
-      color: #ffffff;
-      box-shadow: 1px 1px 0 var(--shadow-color);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
     }
 
     /* Main Container */
@@ -255,17 +163,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       gap: 1.5rem;
       margin-bottom: 2rem;
       padding-bottom: 1rem;
-      border-bottom: 2px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
       font-size: 0.875rem;
-      font-family: 'JetBrains Mono', monospace;
       color: var(--text-muted);
-      font-weight: 600;
     }
 
     .stats-bar strong {
-      color: var(--text-main);
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 800;
+      color: #fff;
+      font-family: monospace;
     }
 
     /* People Grid */
@@ -277,20 +182,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     .person-card {
       background: var(--bg-card);
-      border: 2px solid var(--border-color);
-      border-radius: 1rem;
-      box-shadow: 3px 3px 0 var(--shadow-color);
+      border: 1px solid var(--border-color);
+      border-radius: 1.25rem;
       overflow: hidden;
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
       display: flex;
       flex-direction: column;
     }
 
     .person-card:hover {
-      transform: translate(-2px, -2px);
-      box-shadow: 5px 5px 0 var(--shadow-color);
-      border-color: var(--color-accent);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.7);
+      border-color: rgba(99, 102, 241, 0.5);
       background: var(--bg-card-hover);
     }
 
@@ -298,7 +202,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       position: relative;
       width: 100%;
       aspect-ratio: 1;
-      background: var(--bg-card);
+      background: #18181b;
       overflow: hidden;
     }
 
@@ -317,15 +221,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       position: absolute;
       bottom: 0.75rem;
       right: 0.75rem;
-      background: var(--bg-card);
-      border: 1.5px solid var(--border-color);
-      color: var(--text-main);
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
       font-size: 0.75rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
+      font-weight: 600;
       padding: 0.25rem 0.6rem;
-      border-radius: 6px;
-      box-shadow: 1.5px 1.5px 0 var(--shadow-color);
+      border-radius: 9999px;
     }
 
     .card-info {
@@ -336,10 +239,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .person-label {
-      font-weight: 700;
+      font-weight: 600;
       font-size: 1rem;
-      font-family: 'Outfit', sans-serif;
-      color: var(--text-main);
+      color: #fff;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -480,26 +382,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .modal-content {
-      background: var(--bg-main);
-      border: 2px solid var(--border-color);
-      color: var(--text-main);
-      border-radius: 1.25rem;
+      background: #121214;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 1.5rem;
       width: 100%;
       max-width: 1100px;
       max-height: 90vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: 6px 6px 0 var(--shadow-color);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
     }
 
     .modal-header {
       padding: 1.25rem 1.5rem;
-      border-bottom: 2px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: var(--bg-card);
+      background: rgba(24, 24, 27, 0.5);
     }
 
     .modal-header-left {
@@ -518,23 +419,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     .modal-title h3 {
       font-size: 1.25rem;
-      font-weight: 800;
-      font-family: 'Outfit', sans-serif;
-      color: var(--text-main);
+      font-weight: 700;
+      color: #fff;
     }
 
     .modal-title p {
       font-size: 0.8rem;
-      font-family: 'JetBrains Mono', monospace;
       color: var(--text-muted);
-      font-weight: 600;
     }
 
     .close-btn {
-      background: var(--bg-card);
-      border: 2px solid var(--border-color);
-      color: var(--text-main);
-      box-shadow: 1.5px 1.5px 0 var(--shadow-color);
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
       width: 2rem;
       height: 2rem;
       border-radius: 9999px;
@@ -543,12 +440,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       align-items: center;
       justify-content: center;
       font-size: 1.25rem;
-      transition: all 0.15s ease;
+      transition: background 0.2s;
     }
 
     .close-btn:hover {
-      transform: translate(-1px, -1px);
-      box-shadow: 2.5px 2.5px 0 var(--shadow-color);
+      background: rgba(255, 255, 255, 0.2);
     }
 
     .modal-body {
@@ -566,7 +462,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .modal-photo-item {
       border-radius: 0.75rem;
       overflow: hidden;
-      background: var(--bg-card);
+      background: #18181b;
       cursor: pointer;
       position: relative;
       border: 1px solid var(--border-color);
@@ -644,53 +540,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       cursor: pointer;
     }
 
-    .unavailable-tile {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem 1rem;
-      text-align: center;
-      background: var(--bg-card);
-      border: 1.5px dashed var(--border-color);
-      border-radius: 8px;
-      min-height: 180px;
-      width: 100%;
-      box-sizing: border-box;
-      gap: 0.5rem;
-    }
-    .unavailable-tile .tile-msg {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-    .unavailable-tile .drive-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: #0284c7;
-      color: #ffffff;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: background 0.15s;
-    }
-    .unavailable-tile .drive-btn:hover {
-      background: #0369a1;
-    }
-
     /* Footer */
     footer {
-      border-top: 2px solid var(--border-color);
-      padding: 1.75rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+      padding: 1.5rem;
       text-align: center;
       color: var(--text-muted);
-      background: var(--bg-card);
-      font-family: 'JetBrains Mono', monospace;
       font-size: 0.8rem;
-      font-weight: 600;
     }
 
     @media (max-width: 640px) {
@@ -707,22 +563,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
   </style>
 </head>
-<body class="__THEME__">
+<body>
 
   <!-- Top Header -->
   <header>
     <div class="header-container">
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <div style="width:38px; height:38px; border-radius:10px; border:2px solid var(--border-color); box-shadow:2px 2px 0 var(--shadow-color); background:var(--bg-card); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-            <circle cx="12" cy="13" r="3"/>
-          </svg>
-        </div>
-        <div class="brand-title">
-          <h1 id="event-title">__TITLE__</h1>
-          <p id="event-subtitle">__SUBTITLE__</p>
-        </div>
+      <div class="brand-title">
+        <h1 id="event-title">__TITLE__</h1>
+        <p id="event-subtitle">__SUBTITLE__</p>
       </div>
 
       <div class="controls">
@@ -837,21 +685,6 @@ __CONFIG_JSON__
       const lightboxImg = document.getElementById('lightbox-img');
       const lightboxCounter = document.getElementById('lightbox-counter');
 
-      window.handleImageError = function(imgEl, driveUrl) {
-        imgEl.style.display = 'none';
-        const parent = imgEl.parentElement;
-        if (!parent || parent.querySelector('.unavailable-tile')) return;
-        const tile = document.createElement('div');
-        tile.className = 'unavailable-tile';
-        tile.setAttribute('data-testid', 'unavailable-drive-tile');
-        tile.innerHTML = `
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-          <span class="tile-msg">Photo unavailable locally</span>
-          ${driveUrl ? `<a href="${driveUrl}" target="_blank" rel="noopener noreferrer" class="drive-btn" onclick="event.stopPropagation();">unavailable - open in Drive ↗</a>` : `<span class="tile-msg">Image unavailable</span>`}
-        `;
-        parent.appendChild(tile);
-      };
-
       // Update Stats
       document.getElementById('stat-people').textContent = data.people ? data.people.length : 0;
       document.getElementById('stat-photos').textContent = data.photos ? Object.keys(data.photos).length : 0;
@@ -871,7 +704,7 @@ __CONFIG_JSON__
         });
 
         if (filtered.length === 0) {
-          peopleGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 3rem;">No people match your search.</p>';
+          peopleGrid.innerHTML = '<p style="color: #71717a; grid-column: 1/-1; text-align: center; padding: 3rem;">No people match your search.</p>';
           return;
         }
 
@@ -897,10 +730,6 @@ __CONFIG_JSON__
             <div class="card-info">
               <div class="person-label">${name}</div>
               <div class="thumb-strip">${thumbsHtml}</div>
-              <button class="btn-download-person" title="Download all ${photoIds.length} photos for ${name}" onclick="event.stopPropagation(); window.downloadPerson('${person.id}')">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download all (${photoIds.length})
-              </button>
             </div>
           `;
 
@@ -919,7 +748,7 @@ __CONFIG_JSON__
         });
 
         if (filtered.length === 0) {
-          photosGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 3rem;">No photos match your search.</p>';
+          photosGrid.innerHTML = '<p style="color: #71717a; grid-column: 1/-1; text-align: center; padding: 3rem;">No photos match your search.</p>';
           return;
         }
 
@@ -929,7 +758,7 @@ __CONFIG_JSON__
           const driveLink = photo.drive_url || photo.share_url || (photo.download && photo.download.startsWith('http') ? photo.download : (photo.drive_file_id ? 'https://drive.google.com/file/d/' + photo.drive_file_id + '/view' : null));
           card.innerHTML = `
             <div style="position: relative; width: 100%;">
-              <img src="${photo.thumb}" alt="${photo.name}" loading="lazy" onerror="window.handleImageError(this, '${driveLink || ''}')" />
+              <img src="${photo.thumb}" alt="${photo.name}" loading="lazy" />
               ${driveLink ? `
                 <a href="${driveLink}" target="_blank" rel="noopener noreferrer" class="drive-badge" title="Open photo in Google Drive" onclick="event.stopPropagation();">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
@@ -963,7 +792,7 @@ __CONFIG_JSON__
         unrecGrid.innerHTML = '';
         const unrecFaces = (data.unrecognized && data.unrecognized.faces) || [];
         if (unrecFaces.length === 0) {
-          unrecGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 3rem;">No unrecognized faces.</p>';
+          unrecGrid.innerHTML = '<p style="color: #71717a; grid-column: 1/-1; text-align: center; padding: 3rem;">No unrecognized faces.</p>';
           return;
         }
 
@@ -997,7 +826,7 @@ __CONFIG_JSON__
             const item = document.createElement('div');
             item.className = 'modal-photo-item';
             item.innerHTML = `
-              <img src="${pObj.thumb}" alt="${pObj.name}" loading="lazy" onerror="window.handleImageError(this, '${driveLink || ''}')" />
+              <img src="${pObj.thumb}" alt="${pObj.name}" loading="lazy" />
               ${driveLink ? `
                 <a href="${driveLink}" target="_blank" rel="noopener noreferrer" class="drive-badge" title="Open photo in Google Drive" onclick="event.stopPropagation();">
                   Drive ↗
@@ -1019,39 +848,6 @@ __CONFIG_JSON__
         personModal.classList.add('open');
       }
 
-      // Per-person photo download handler
-      window.downloadPerson = function(personId) {
-        const person = (data.people || []).find(p => p.id === personId);
-        if (!person) return;
-        const photoIds = person.photo_ids || person.photos || [];
-        if (!photoIds.length) return;
-        const name = person.label || ('person_' + person.id.replace(/^p0*/, ''));
-        const cleanBase = name.toLowerCase().replace(/[^a-z0-9_-]/g, '_').replace(/^_+|_+$/g, '') || 'person';
-
-        let count = 0;
-        photoIds.forEach((pid, i) => {
-          const photo = data.photos[pid];
-          if (!photo) return;
-          count++;
-          const pad = String(count).padStart(3, '0');
-          const ext = photo.name ? (photo.name.split('.').pop() || 'jpg') : 'jpg';
-          const filename = `${cleanBase}_${pad}.${ext}`;
-          const url = photo.download_url || photo.download || (photo.drive_file_id ? 'https://drive.google.com/uc?id=' + photo.drive_file_id + '&export=download' : photo.thumb);
-          if (url) {
-            setTimeout(() => {
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = filename;
-              a.target = '_blank';
-              a.rel = 'noopener noreferrer';
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-            }, i * 250);
-          }
-        });
-      };
-
       // Lightbox Functions
       const lightboxDriveBtn = document.getElementById('lightbox-drive-btn');
       function openLightbox() {
@@ -1065,12 +861,6 @@ __CONFIG_JSON__
         const src = typeof item === 'string' ? item : item.thumb;
         const driveLink = typeof item === 'object' ? item.driveLink : null;
         lightboxImg.src = src;
-        lightboxImg.onerror = function() {
-          if (driveLink && lightboxDriveBtn) {
-            lightboxDriveBtn.style.display = 'inline-block';
-            lightboxDriveBtn.textContent = 'unavailable - open in Drive ↗';
-          }
-        };
         lightboxCounter.textContent = `${activeLightboxIndex + 1} / ${activeLightboxList.length}`;
         if (lightboxDriveBtn) {
           if (driveLink) {
@@ -1121,12 +911,6 @@ __CONFIG_JSON__
         });
       });
 
-      // Apply configured export theme
-      if (config.theme && (config.theme === 't-dark' || config.theme === 't-paper' || config.theme === 't-navy')) {
-        document.body.classList.remove('t-dark', 't-paper', 't-navy');
-        document.body.classList.add(config.theme);
-      }
-
       // Search Handler
       searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value;
@@ -1150,20 +934,14 @@ def generate_standalone_gallery_html(people_data: Dict[str, Any], config_data: D
 
     title = config_data.get("title", "Event Gallery")
     subtitle = config_data.get("subtitle", "Photos grouped by person")
-    theme = config_data.get("theme", "t-dark")
-    if theme not in ("t-dark", "t-paper", "t-navy"):
-        theme = "t-dark"
-
-    footer = config_data.get("footer", "Published with CatLog — Who was at the event?")
-    default_accent = "#d94b4f" if theme == "t-paper" else "#fa7175"
-    accent = config_data.get("accent") or default_accent
+    accent = config_data.get("accent", "#3b82f6")
+    footer = config_data.get("footer", "Published with PhotoSorter")
 
     return (
         HTML_TEMPLATE.replace("__TITLE__", title)
         .replace("__SUBTITLE__", subtitle)
         .replace("__ACCENT__", accent)
         .replace("__FOOTER__", footer)
-        .replace("__THEME__", theme)
         .replace("__PEOPLE_JSON__", people_json_str)
         .replace("__CONFIG_JSON__", config_json_str)
     )

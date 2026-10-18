@@ -30,90 +30,6 @@ class BundleExporter:
         self.faces_dir = self.output_dir / "faces"
         self.thumb_gen = ThumbnailGenerator(thumb_size=thumb_size, face_crop_size=face_crop_size)
 
-    def _resolve_thumb(self, photo_id: str, record: PhotoRecord, thumb_dest: Path, cache_thumbs: Optional[Path]) -> None:
-        if thumb_dest.exists():
-            return
-        if cache_thumbs and (cache_thumbs / f"{photo_id}.jpg").exists():
-            shutil.copy2(cache_thumbs / f"{photo_id}.jpg", thumb_dest)
-            return
-        if self.cache_dir and (self.cache_dir / "thumbs" / f"{photo_id}.jpg").exists():
-            shutil.copy2(self.cache_dir / "thumbs" / f"{photo_id}.jpg", thumb_dest)
-            return
-        if self.cache_dir:
-            sibling_base = self.cache_dir.name.removesuffix(".work")
-            cand1 = self.cache_dir.parent / sibling_base / "thumbs" / f"{photo_id}.jpg"
-            if cand1.exists():
-                shutil.copy2(cand1, thumb_dest)
-                return
-            cand2 = self.cache_dir.parent / f"{sibling_base}.work" / "thumbs" / f"{photo_id}.jpg"
-            if cand2.exists():
-                shutil.copy2(cand2, thumb_dest)
-                return
-        if record.original_path and Path(record.original_path).exists():
-            try:
-                self.thumb_gen.generate_photo_thumbnail(
-                    image_path=record.original_path,
-                    output_path=thumb_dest,
-                )
-                return
-            except Exception:
-                pass
-        # Fallback if original photo temp directory was cleaned up
-        from PIL import Image
-        fallback = Image.new("RGB", (self.thumb_gen.thumb_size, self.thumb_gen.thumb_size), color=(30, 30, 35))
-        thumb_dest.parent.mkdir(parents=True, exist_ok=True)
-        fallback.save(thumb_dest, "JPEG")
-
-    def _resolve_face(
-        self,
-        face_id: str,
-        face_dest: Path,
-        cache_crops: Optional[Path],
-        person_id: Optional[str] = None,
-        orig_photo: Optional[PhotoRecord] = None,
-        bbox: Optional[list] = None,
-    ) -> None:
-        if face_dest.exists():
-            return
-        if cache_crops and (cache_crops / f"{face_id}.jpg").exists():
-            shutil.copy2(cache_crops / f"{face_id}.jpg", face_dest)
-            return
-        if self.cache_dir and (self.cache_dir / "crops" / f"{face_id}.jpg").exists():
-            shutil.copy2(self.cache_dir / "crops" / f"{face_id}.jpg", face_dest)
-            return
-        if self.cache_dir:
-            if person_id and (self.cache_dir / "faces" / f"{person_id}.jpg").exists():
-                shutil.copy2(self.cache_dir / "faces" / f"{person_id}.jpg", face_dest)
-                return
-            if (self.cache_dir / "faces" / f"{face_id}.jpg").exists():
-                shutil.copy2(self.cache_dir / "faces" / f"{face_id}.jpg", face_dest)
-                return
-            sibling_base = self.cache_dir.name.removesuffix(".work")
-            if person_id:
-                cand1 = self.cache_dir.parent / sibling_base / "faces" / f"{person_id}.jpg"
-                if cand1.exists():
-                    shutil.copy2(cand1, face_dest)
-                    return
-            cand2 = self.cache_dir.parent / f"{sibling_base}.work" / "crops" / f"{face_id}.jpg"
-            if cand2.exists():
-                shutil.copy2(cand2, face_dest)
-                return
-        if orig_photo and orig_photo.original_path and Path(orig_photo.original_path).exists() and bbox:
-            try:
-                self.thumb_gen.generate_square_face_crop(
-                    image_path=orig_photo.original_path,
-                    bbox=bbox,
-                    output_path=face_dest,
-                )
-                return
-            except Exception:
-                pass
-        # Fallback if original photo temp directory was cleaned up
-        from PIL import Image
-        fallback = Image.new("RGB", (self.thumb_gen.face_crop_size, self.thumb_gen.face_crop_size), color=(40, 45, 55))
-        face_dest.parent.mkdir(parents=True, exist_ok=True)
-        fallback.save(face_dest, "JPEG")
-
     def export(
         self,
         result: EngineResult,
@@ -142,7 +58,16 @@ class BundleExporter:
             thumb_rel = f"thumbs/{photo_id}.jpg"
             thumb_dest = self.output_dir / thumb_rel
 
-            self._resolve_thumb(photo_id, record, thumb_dest, cache_thumbs)
+            # Use cached thumbnail if present
+            if not thumb_dest.exists():
+                cached_thumb = cache_thumbs / f"{photo_id}.jpg" if cache_thumbs else None
+                if cached_thumb and cached_thumb.exists():
+                    shutil.copy2(cached_thumb, thumb_dest)
+                else:
+                    self.thumb_gen.generate_photo_thumbnail(
+                        image_path=record.original_path,
+                        output_path=thumb_dest,
+                    )
 
             drive_url = getattr(record, "drive_url", None)
             if not drive_url and getattr(record, "drive_file_id", None):
@@ -155,7 +80,6 @@ class BundleExporter:
                 "name": record.file_name,
                 "thumb": thumb_rel,
                 "download": record.download_url,
-                "download_url": record.download_url,
                 "drive_url": drive_url,
                 "share_url": share_url,
                 "drive_file_id": getattr(record, "drive_file_id", None),
@@ -173,15 +97,17 @@ class BundleExporter:
             face_rel = f"faces/{person.id}.jpg"
             face_dest = self.output_dir / face_rel
 
-            orig_photo = result.photos.get(person.rep_face.photo_id)
-            self._resolve_face(
-                face_id=person.rep_face.face_id,
-                face_dest=face_dest,
-                cache_crops=cache_crops,
-                person_id=person.id,
-                orig_photo=orig_photo,
-                bbox=person.rep_face.bbox,
-            )
+            # Copy from crop cache if present, else crop from original image
+            cached_crop = cache_crops / f"{person.rep_face.face_id}.jpg" if cache_crops else None
+            if cached_crop and cached_crop.exists():
+                shutil.copy2(cached_crop, face_dest)
+            else:
+                orig_photo = result.photos[person.rep_face.photo_id]
+                self.thumb_gen.generate_square_face_crop(
+                    image_path=orig_photo.original_path,
+                    bbox=person.rep_face.bbox,
+                    output_path=face_dest,
+                )
 
             # Determine include_maybe flag
             should_include_maybe = False
@@ -200,7 +126,7 @@ class BundleExporter:
                     {
                         "face_id": f.face_id,
                         "photo_id": f.photo_id,
-                        "file_name": result.photos[f.photo_id].file_name if f.photo_id in result.photos else f.photo_id,
+                        "file_name": result.photos[f.photo_id].file_name,
                         "det_score": round(float(f.det_score), 4),
                         "bbox": f.bbox,
                     }
@@ -226,19 +152,20 @@ class BundleExporter:
             face_rel = item.get("face", f"faces/{face_obj.face_id}.jpg")
             face_dest = self.output_dir / face_rel
 
-            orig_photo = result.photos.get(face_obj.photo_id)
-            self._resolve_face(
-                face_id=face_obj.face_id,
-                face_dest=face_dest,
-                cache_crops=cache_crops,
-                orig_photo=orig_photo,
-                bbox=face_obj.bbox,
-            )
-
+            cached_crop = cache_crops / f"{face_obj.face_id}.jpg" if cache_crops else None
+            if cached_crop and cached_crop.exists():
+                shutil.copy2(cached_crop, face_dest)
+            else:
+                orig_photo = result.photos[face_obj.photo_id]
+                self.thumb_gen.generate_square_face_crop(
+                    image_path=orig_photo.original_path,
+                    bbox=face_obj.bbox,
+                    output_path=face_dest,
+                )
             unrecognized_faces_json.append({
                 "face_id": face_obj.face_id,
                 "photo_id": item["photo_id"],
-                "file_name": result.photos[face_obj.photo_id].file_name if face_obj.photo_id in result.photos else item["photo_id"],
+                "file_name": result.photos[face_obj.photo_id].file_name,
                 "face": face_rel,
                 "rejection_reason": face_obj.rejection_reason,
                 "det_score": round(float(face_obj.det_score), 4),
@@ -302,13 +229,12 @@ class BundleExporter:
                 "title": title,
                 "subtitle": subtitle,
                 "logo": None,
-                "accent": "#fa7175",
-                "font": "JetBrains Mono",
-                "footer": "Published with CatLog — Who was at the event?",
+                "accent": "#2563eb",
+                "font": "Inter",
+                "footer": "Published with PhotoSorter",
                 "show_labels": True,
                 "include_maybe": False,
                 "hide_single_photo_default": False,
-                "theme": "t-dark",
             }
             if config_override:
                 default_config.update(config_override)

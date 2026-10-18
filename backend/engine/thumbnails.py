@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from PIL import Image, ImageOps, ImageFilter
 import numpy as np
+import cv2
+
 from backend.engine.models import FaceDetection, PersonCluster
 
 # Ensure HEIF support if available
@@ -20,7 +22,6 @@ def compute_image_sharpness(img_input: Path | str | Image.Image | np.ndarray) ->
     """Computes the sharpness score of an image or crop using variance of Laplacian.
     Higher values indicate sharp, in-focus images, while lower values (< 30) indicate blurriness."""
     try:
-        import cv2
         if isinstance(img_input, (str, Path)):
             p = Path(img_input)
             if not p.exists():
@@ -234,7 +235,7 @@ class ThumbnailGenerator:
         bbox: List[float],
         output_path: Path | str,
         margin_factor: float = 1.45,
-        quality: int = 85,
+        quality: int = 95,
     ) -> None:
         """
         Generates a centered, square crop of the face with margin directly from a PIL Image.
@@ -309,7 +310,7 @@ class ThumbnailGenerator:
                 ImageFilter.UnsharpMask(radius=1.0, percent=35, threshold=2)
             )
 
-        # Save with quality=85 and subsampling=0 (4:4:4 lossless chroma, zero color bleeding)
+        # Save with quality=95 and subsampling=0 (4:4:4 lossless chroma, zero color bleeding)
         cropped_resized.save(
             out_p,
             format="JPEG",
@@ -324,7 +325,7 @@ class ThumbnailGenerator:
         bbox: List[float],
         output_path: Path | str,
         margin_factor: float = 1.45,
-        quality: int = 85,
+        quality: int = 95,
     ) -> None:
         """
         Generates a centered, square crop of the face with margin from file path.

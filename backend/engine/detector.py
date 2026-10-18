@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple
 from pathlib import Path
 import shutil
 import warnings
+import cv2
 import numpy as np
 
 # Suppress upstream scikit-image FutureWarning from insightface face_align
@@ -31,9 +32,8 @@ class FaceDetector:
     ):
         self.model_name = model_name
         if model_root is None:
-            # Models stored under ~/.catlog/models (with automatic legacy ~/.photosorter migration)
-            from backend.drive.config import get_user_settings_dir
-            model_root = str(get_user_settings_dir())
+            # SPEC section 9 & 13: Models stored under ~/.photosorter/models
+            model_root = str(Path.home() / ".photosorter")
         self.model_root = model_root
         self.det_size = det_size
         self.min_det_score = min_det_score
@@ -48,35 +48,22 @@ class FaceDetector:
         if self._app is None:
             from insightface.app import FaceAnalysis
 
-            import onnxruntime as ort
-            sess_options = ort.SessionOptions()
-            sess_options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
-            sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-
-            kwargs = {"name": self.model_name, "sess_options": sess_options}
+            kwargs = {"name": self.model_name}
             if self.model_root:
                 kwargs["root"] = self.model_root
             if self.providers:
                 kwargs["providers"] = self.providers
 
             target_model_dir = Path(self.model_root) / "models" / self.model_name
-            legacy_model_dir = Path.home() / ".photosorter" / "models" / self.model_name
             fallback_model_dir = Path.home() / ".insightface" / "models" / self.model_name
 
-            # If default target model directory doesn't exist, check legacy and fallback and copy
-            if not target_model_dir.exists() or not any(target_model_dir.glob("*.onnx")):
-                source_dir = None
-                if legacy_model_dir.exists() and any(legacy_model_dir.glob("*.onnx")):
-                    source_dir = legacy_model_dir
-                elif fallback_model_dir.exists() and any(fallback_model_dir.glob("*.onnx")):
-                    source_dir = fallback_model_dir
-
-                if source_dir:
-                    try:
-                        target_model_dir.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copytree(source_dir, target_model_dir, dirs_exist_ok=True)
-                    except Exception:
-                        pass
+            # If default target model directory doesn't exist, check fallback and migrate to ~/.photosorter/models
+            if self.model_root == str(Path.home() / ".photosorter") and not target_model_dir.exists() and fallback_model_dir.exists():
+                try:
+                    target_model_dir.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copytree(fallback_model_dir, target_model_dir)
+                except Exception:
+                    pass
 
             if not target_model_dir.exists() or not any(target_model_dir.glob("*.onnx")):
                 if self.progress_callback:
@@ -120,7 +107,6 @@ class FaceDetector:
             ArcFace embeddings, and 3D head pose.
         """
         self._init_app()
-        import cv2
 
         orig_h, orig_w = orig_rgb.shape[:2]
         orig_bgr = cv2.cvtColor(orig_rgb, cv2.COLOR_RGB2BGR)

@@ -212,185 +212,120 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
 
     photos: Dict[str, PhotoRecord] = {}
 
-    # Bounded background prefetch queue for image decoding
-    import queue
-    import threading
-
-    prefetch_queue: queue.Queue = queue.Queue(maxsize=2)
-    stop_prefetch = threading.Event()
-
-    def _prefetch_worker():
-        for item in scanned_photos:
-            if stop_prefetch.is_set():
-                break
-            if config.cancel_check and config.cancel_check():
-                break
-            p_id = item.photo_id
-            if cache.has(p_id):
-                cached_thumb = cache_thumbs_p / f"{p_id}.jpg"
-                rec = cache.get(p_id)
-                needs_load = False
-                if rec:
-                    if not cached_thumb.exists():
-                        needs_load = True
-                    elif any(not (cache_crops_p / f"{f.face_id}.jpg").exists() for f in rec.faces):
-                        needs_load = True
-                if needs_load:
-                    try:
-                        data = loader.load_image(item.file_path)
-                        prefetch_queue.put((p_id, data, None))
-                    except Exception as ex:
-                        prefetch_queue.put((p_id, None, ex))
-                else:
-                    prefetch_queue.put((p_id, None, None))
-            else:
-                try:
-                    data = loader.load_image(item.file_path)
-                    prefetch_queue.put((p_id, data, None))
-                except Exception as ex:
-                    prefetch_queue.put((p_id, None, ex))
-        prefetch_queue.put((None, None, None))
-
-    prefetch_thread = threading.Thread(target=_prefetch_worker, daemon=True)
-    prefetch_thread.start()
-
     # 3. Detect and Embed (with thumbnail & crop caching)
-    try:
-        start_time = time.time()
-        for idx, item in enumerate(scanned_photos):
-            if config.cancel_check and config.cancel_check():
-                raise InterruptedError("Job cancelled by user")
-            photo_id = item.photo_id
+    start_time = time.time()
+    for idx, item in enumerate(scanned_photos):
+        if config.cancel_check and config.cancel_check():
+            raise InterruptedError("Job cancelled by user")
+        photo_id = item.photo_id
 
-            # Retrieve preloaded image data from prefetch queue
-            queued_id, img_data, load_err = prefetch_queue.get()
-            if load_err is not None:
-                raise load_err
-
-            if cache.has(photo_id):
-                record = cache.get(photo_id)
-                if record:
-                    record.original_path = str(item.file_path)
-                    record.file_name = item.file_name
-                    if getattr(item, "download_url", None):
-                        record.download_url = item.download_url
-                    if getattr(item, "drive_file_id", None):
-                        record.drive_file_id = item.drive_file_id
-                    if getattr(item, "drive_url", None):
-                        record.drive_url = item.drive_url
-                    if getattr(item, "share_url", None):
-                        record.share_url = item.share_url
-                    photos[photo_id] = record
-
-                    # Ensure thumbnail and crops are cached for fast exports
-                    cached_thumb = cache_thumbs_p / f"{photo_id}.jpg"
-                    crops_missing = any(
-                        not (cache_crops_p / f"{f.face_id}.jpg").exists()
-                        for f in record.faces
-                    )
-                    if not cached_thumb.exists() or crops_missing:
-                        if img_data is not None:
-                            _, _, _, pil_img = img_data
-                        else:
-                            _, _, _, pil_img = loader.load_image(item.file_path)
-                        if not cached_thumb.exists():
-                            thumb_gen.generate_photo_thumbnail_from_image(pil_img, cached_thumb)
-                        for f in record.faces:
-                            cpath = cache_crops_p / f"{f.face_id}.jpg"
-                            if not cpath.exists():
-                                thumb_gen.generate_square_face_crop_from_image(pil_img, f.bbox, cpath)
-                        del pil_img
-            else:
-                if detector is None:
-                    notify({
-                        "stage": "model_init",
-                        "current": 0,
-                        "total": total_photos,
-                        "percent": 2.0,
-                        "message": "Initializing InsightFace model...",
-                    })
-                    detector = FaceDetector(
-                        model_name="buffalo_l",
-                        model_root=config.model_root,
-                        min_det_score=config.min_det_score,
-                        min_face_size=config.min_face_size,
-                        max_yaw=config.max_yaw,
-                        max_image_dim=config.max_image_dim,
-                        progress_callback=notify,
-                    )
-
-                if img_data is not None:
-                    rgb_img, orig_w, orig_h, pil_img = img_data
-                else:
-                    rgb_img, orig_w, orig_h, pil_img = loader.load_image(item.file_path)
-
-                faces = detector.detect_and_embed(
-                    orig_rgb=rgb_img,
-                    photo_id=photo_id,
-                )
-
-                # Pre-generate and cache photo thumbnail from in-memory image
-                cached_thumb = cache_thumbs_p / f"{photo_id}.jpg"
-                if not cached_thumb.exists():
-                    thumb_gen.generate_photo_thumbnail_from_image(pil_img, cached_thumb)
-
-                # Pre-generate and cache face crops from in-memory image
-                for f in faces:
-                    cached_crop = cache_crops_p / f"{f.face_id}.jpg"
-                    if not cached_crop.exists():
-                        thumb_gen.generate_square_face_crop_from_image(pil_img, f.bbox, cached_crop)
-
-                # Free image memory
-                del rgb_img, pil_img
-
-                record = PhotoRecord(
-                    photo_id=photo_id,
-                    original_path=str(item.file_path),
-                    file_name=item.file_name,
-                    width=orig_w,
-                    height=orig_h,
-                    download_url=getattr(item, "download_url", None),
-                    drive_file_id=getattr(item, "drive_file_id", None),
-                    drive_url=getattr(item, "drive_url", None),
-                    share_url=getattr(item, "share_url", None),
-                    faces=faces,
-                )
-                cache.save(record)
+        if cache.has(photo_id):
+            record = cache.get(photo_id)
+            if record:
+                record.original_path = str(item.file_path)
+                record.file_name = item.file_name
+                if getattr(item, "download_url", None):
+                    record.download_url = item.download_url
+                if getattr(item, "drive_file_id", None):
+                    record.drive_file_id = item.drive_file_id
+                if getattr(item, "drive_url", None):
+                    record.drive_url = item.drive_url
+                if getattr(item, "share_url", None):
+                    record.share_url = item.share_url
                 photos[photo_id] = record
 
-            # Periodic GC every 50 photos instead of every single photo
-            if (idx + 1) % 50 == 0:
-                gc.collect()
+                # Ensure thumbnail and crops are cached for fast exports
+                cached_thumb = cache_thumbs_p / f"{photo_id}.jpg"
+                crops_missing = any(
+                    not (cache_crops_p / f"{f.face_id}.jpg").exists()
+                    for f in record.faces
+                )
+                if not cached_thumb.exists() or crops_missing:
+                    _, _, _, pil_img = loader.load_image(item.file_path)
+                    if not cached_thumb.exists():
+                        thumb_gen.generate_photo_thumbnail_from_image(pil_img, cached_thumb)
+                    for f in record.faces:
+                        cpath = cache_crops_p / f"{f.face_id}.jpg"
+                        if not cpath.exists():
+                            thumb_gen.generate_square_face_crop_from_image(pil_img, f.bbox, cpath)
+                    del pil_img
+                    gc.collect()
+        else:
+            if detector is None:
+                notify({
+                    "stage": "model_init",
+                    "current": 0,
+                    "total": total_photos,
+                    "percent": 2.0,
+                    "message": "Initializing InsightFace model...",
+                })
+                detector = FaceDetector(
+                    model_name="buffalo_l",
+                    model_root=config.model_root,
+                    min_det_score=config.min_det_score,
+                    min_face_size=config.min_face_size,
+                    max_yaw=config.max_yaw,
+                    max_image_dim=config.max_image_dim,
+                    progress_callback=notify,
+                )
 
-            # Compute ETA
-            elapsed = time.time() - start_time
-            processed = idx + 1
-            avg_per_photo = elapsed / processed
-            eta_seconds = (total_photos - processed) * avg_per_photo
+            rgb_img, orig_w, orig_h, pil_img = loader.load_image(item.file_path)
+            faces = detector.detect_and_embed(
+                orig_rgb=rgb_img,
+                photo_id=photo_id,
+            )
 
-            # Scale detection/embedding phase from 2% to 88% so subsequent stages (clustering, export) never go backwards
-            pct = round(2.0 + (processed / total_photos) * 86.0, 1) if total_photos > 0 else 2.0
-            face_ids_found = [f.face_id for f in photos[photo_id].faces if getattr(f, "face_id", None)]
-            notify({
-                "stage": "processing",
-                "current": processed,
-                "total": total_photos,
-                "percent": pct,
-                "photo_id": photo_id,
-                "file_name": item.file_name,
-                "faces_found": len(photos[photo_id].faces),
-                "new_faces": face_ids_found,
-                "eta_seconds": round(eta_seconds, 1),
-                "message": f"[{processed}/{total_photos}] {item.file_name} ({len(photos[photo_id].faces)} faces)",
-            })
-    finally:
-        stop_prefetch.set()
-        while not prefetch_queue.empty():
-            try:
-                prefetch_queue.get_nowait()
-            except Exception:
-                break
-        gc.collect()
+            # Pre-generate and cache photo thumbnail from in-memory image
+            cached_thumb = cache_thumbs_p / f"{photo_id}.jpg"
+            if not cached_thumb.exists():
+                thumb_gen.generate_photo_thumbnail_from_image(pil_img, cached_thumb)
+
+            # Pre-generate and cache face crops from in-memory image
+            for f in faces:
+                cached_crop = cache_crops_p / f"{f.face_id}.jpg"
+                if not cached_crop.exists():
+                    thumb_gen.generate_square_face_crop_from_image(pil_img, f.bbox, cached_crop)
+
+            # Free image memory immediately
+            del rgb_img, pil_img
+            gc.collect()
+
+            record = PhotoRecord(
+                photo_id=photo_id,
+                original_path=str(item.file_path),
+                file_name=item.file_name,
+                width=orig_w,
+                height=orig_h,
+                download_url=getattr(item, "download_url", None),
+                drive_file_id=getattr(item, "drive_file_id", None),
+                drive_url=getattr(item, "drive_url", None),
+                share_url=getattr(item, "share_url", None),
+                faces=faces,
+            )
+            cache.save(record)
+            photos[photo_id] = record
+
+        # Compute ETA
+        elapsed = time.time() - start_time
+        processed = idx + 1
+        avg_per_photo = elapsed / processed
+        eta_seconds = (total_photos - processed) * avg_per_photo
+
+        # Scale detection/embedding phase from 2% to 88% so subsequent stages (clustering, export) never go backwards
+        pct = round(2.0 + (processed / total_photos) * 86.0, 1) if total_photos > 0 else 2.0
+        face_ids_found = [f.face_id for f in photos[photo_id].faces if getattr(f, "face_id", None)]
+        notify({
+            "stage": "processing",
+            "current": processed,
+            "total": total_photos,
+            "percent": pct,
+            "photo_id": photo_id,
+            "file_name": item.file_name,
+            "faces_found": len(photos[photo_id].faces),
+            "new_faces": face_ids_found,
+            "eta_seconds": round(eta_seconds, 1),
+            "message": f"[{processed}/{total_photos}] {item.file_name} ({len(photos[photo_id].faces)} faces)",
+        })
 
     # 4. Clustering (with optional flip_average)
     if config.flip_average:
