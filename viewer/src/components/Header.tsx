@@ -1,6 +1,6 @@
 import React from 'react';
 import { ViewerConfig } from '../types';
-import { Users, Image as ImageIcon, Search, ArrowLeft, X, Moon, Sun, Compass } from 'lucide-react';
+import { Users, Image as ImageIcon, Search, ArrowLeft, X } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
 export type ViewerTheme = 't-dark' | 't-paper' | 't-navy';
@@ -68,61 +68,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <ImageIcon className="w-3.5 h-3.5 text-[var(--accent)]" />
                 <span>{totalPhotos} Photos</span>
               </span>
-            </div>
-
-            {/* Live 3-Theme Switcher */}
-            <div
-              className="inline-flex items-center p-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] gap-1"
-              role="radiogroup"
-              aria-label="Select theme"
-            >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={theme === 't-dark'}
-                onClick={() => onThemeChange('t-dark')}
-                className={`touch-target px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
-                  theme === 't-dark'
-                    ? 'bg-[var(--color-accent)] text-[var(--color-accent-text)] shadow-sm'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                }`}
-                title="Dark theme"
-              >
-                <Moon className="w-3.5 h-3.5 mr-1 inline" />
-                <span>Dark</span>
-              </button>
-
-              <button
-                type="button"
-                role="radio"
-                aria-checked={theme === 't-paper'}
-                onClick={() => onThemeChange('t-paper')}
-                className={`touch-target px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
-                  theme === 't-paper'
-                    ? 'bg-[var(--color-accent)] text-[var(--color-accent-text)] shadow-sm'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                }`}
-                title="Paper theme"
-              >
-                <Sun className="w-3.5 h-3.5 mr-1 inline" />
-                <span>Paper</span>
-              </button>
-
-              <button
-                type="button"
-                role="radio"
-                aria-checked={theme === 't-navy'}
-                onClick={() => onThemeChange('t-navy')}
-                className={`touch-target px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
-                  theme === 't-navy'
-                    ? 'bg-[var(--color-accent)] text-[var(--color-accent-text)] shadow-sm'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                }`}
-                title="Navy theme"
-              >
-                <Compass className="w-3.5 h-3.5 mr-1 inline" />
-                <span>Navy</span>
-              </button>
             </div>
 
             {/* Search Input on Grid View */}
