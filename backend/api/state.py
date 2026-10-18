@@ -581,6 +581,7 @@ class AppState:
             "photos_count": len(self.photos),
             "unrecognized_faces_count": len(self.unrecognized.faces),
             "applied_edits_count": len(self.edits_list),
+            "unapplied_edits": unapplied_edits,
             "read_only": self.read_only,
             "edits_error": self.edits_error,
         }

@@ -377,3 +377,175 @@ def test_deterministic_identical_runs(tmp_path: Path):
     data1.pop("generated_at")
     data2.pop("generated_at")
     assert data1 == data2, "people.json should be identical excluding generated_at"
+
+
+def test_new_scan_ignores_old_edits(tmp_path: Path):
+    """A new scan with default replay_edits=False ignores edits.json in work dir."""
+    photos_dir = tmp_path / "photos"
+    photos_dir.mkdir()
+    imA = Image.new("RGB", (100, 100), color=(128, 0, 0))
+    imA.save(photos_dir / "imgA.jpg")
+    imB = Image.new("RGB", (100, 100), color=(0, 128, 0))
+    imB.save(photos_dir / "imgB.jpg")
+
+    scanner = PhotoScanner(photos_dir)
+    scanned = scanner.scan()
+    pid_map = {item.file_name: item.photo_id for item in scanned}
+    assert len(pid_map) == 2
+
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    cache = EmbeddingCache(work_dir)
+
+    e0 = np.zeros(512, dtype=np.float32)
+    e0[0] = 1.0
+    e1 = np.zeros(512, dtype=np.float32)
+    e1[1] = 1.0
+
+    pidA = pid_map["imgA.jpg"]
+    pidB = pid_map["imgB.jpg"]
+
+    fA = FaceDetection(face_id=f"f_{pidA}_001", photo_id=pidA, bbox=[10, 10, 80, 80], det_score=0.9, embedding=e0, is_good_quality=True)
+    fB = FaceDetection(face_id=f"f_{pidB}_001", photo_id=pidB, bbox=[10, 10, 80, 80], det_score=0.9, embedding=e1, is_good_quality=True)
+
+    cache.save(PhotoRecord(photo_id=pidA, original_path=str(photos_dir / "imgA.jpg"), file_name="imgA.jpg", width=100, height=100, faces=[fA]))
+    cache.save(PhotoRecord(photo_id=pidB, original_path=str(photos_dir / "imgB.jpg"), file_name="imgB.jpg", width=100, height=100, faces=[fB]))
+
+    # Place an edits.json that merges them
+    edits_file = work_dir / "edits.json"
+    with open(edits_file, "w", encoding="utf-8") as f:
+        json.dump({
+            "version": 1,
+            "edits": [{"op": "merge", "anchors": [[fA.face_id], [fB.face_id]]}]
+        }, f)
+
+    # 1. Fresh scan: replay_edits=False (default) -> edits must NOT be applied (2 separate people)
+    out_fresh = tmp_path / "out_fresh"
+    config_fresh = EngineConfig(
+        input_path=photos_dir,
+        output_dir=out_fresh,
+        cache_dir=work_dir,
+        distance_threshold=0.50,
+        replay_edits=False,
+    )
+    res_fresh = run_pipeline(config_fresh)
+    assert len(res_fresh.people) == 2, "Default scan must ignore old edits.json"
+    assert len(res_fresh.unapplied_edits) == 0
+
+    # 2. Scan with replay_edits=True -> edits ARE applied (1 merged person)
+    out_replay = tmp_path / "out_replay"
+    config_replay = EngineConfig(
+        input_path=photos_dir,
+        output_dir=out_replay,
+        cache_dir=work_dir,
+        distance_threshold=0.50,
+        replay_edits=True,
+    )
+    res_replay = run_pipeline(config_replay)
+    assert len(res_replay.people) == 1, "Scan with replay_edits=True must apply edits.json"
+
+
+def test_reopen_keeps_saved_edits(tmp_path: Path):
+    """Reopening an existing project preserves and applies its saved edits."""
+    from backend.api.state import AppState
+
+    photos_dir = tmp_path / "photos"
+    photos_dir.mkdir()
+    im1 = Image.new("RGB", (100, 100), color=(100, 150, 200))
+    im1.save(photos_dir / "img1.jpg")
+    im2 = Image.new("RGB", (100, 100), color=(200, 100, 50))
+    im2.save(photos_dir / "img2.jpg")
+
+    scanner = PhotoScanner(photos_dir)
+    scanned = scanner.scan()
+    pid_map = {item.file_name: item.photo_id for item in scanned}
+    assert len(pid_map) == 2
+
+    work_dir = tmp_path / "my_project.work"
+    work_dir.mkdir()
+    cache = EmbeddingCache(work_dir)
+
+    e0 = np.zeros(512, dtype=np.float32)
+    e0[0] = 1.0
+    e1 = np.zeros(512, dtype=np.float32)
+    e1[1] = 1.0
+
+    pid1 = pid_map["img1.jpg"]
+    pid2 = pid_map["img2.jpg"]
+    f1 = FaceDetection(face_id=f"f_{pid1}_001", photo_id=pid1, bbox=[10, 10, 80, 80], det_score=0.9, embedding=e0, is_good_quality=True)
+    f2 = FaceDetection(face_id=f"f_{pid2}_001", photo_id=pid2, bbox=[10, 10, 80, 80], det_score=0.9, embedding=e1, is_good_quality=True)
+
+    cache.save(PhotoRecord(photo_id=pid1, original_path=str(photos_dir / "img1.jpg"), file_name="img1.jpg", width=100, height=100, faces=[f1]))
+    cache.save(PhotoRecord(photo_id=pid2, original_path=str(photos_dir / "img2.jpg"), file_name="img2.jpg", width=100, height=100, faces=[f2]))
+
+    export_dir = tmp_path / "my_project"
+    config = EngineConfig(input_path=photos_dir, output_dir=export_dir, cache_dir=work_dir, distance_threshold=0.50)
+    run_pipeline(config)
+
+    # Save an edit in work_dir / edits.json (rename person 1)
+    with open(export_dir / "people.json", "r", encoding="utf-8") as f:
+        pdata = json.load(f)
+    assert len(pdata["people"]) == 2
+
+    edits_file = work_dir / "edits.json"
+    with open(edits_file, "w", encoding="utf-8") as f:
+        json.dump({
+            "version": 1,
+            "edits": [
+                {"op": "name", "person": [f1.face_id], "label": "Alice"},
+            ]
+        }, f)
+
+    state = AppState(work_dir=tmp_path / "dummy.work", output_dir=tmp_path / "dummy_out")
+    res = state.open_saved_project(work_dir=work_dir, export_path=export_dir)
+
+    assert res["applied_edits_count"] == 1
+    # Check that Alice is applied in state
+    alice_person = next((p for p in state.people if p.label == "Alice"), None)
+    assert alice_person is not None, "Saved name edit must be applied and kept on project reopen"
+
+
+def test_edits_for_nonexistent_face_ids_reported(tmp_path: Path):
+    """Edits targeting nonexistent face IDs are explicitly reported in unapplied_edits, not silently dropped."""
+    from backend.api.state import AppState
+
+    photos_dir = tmp_path / "photos"
+    photos_dir.mkdir()
+    im = Image.new("RGB", (100, 100), color=(50, 50, 50))
+    im.save(photos_dir / "test.jpg")
+
+    scanner = PhotoScanner(photos_dir)
+    scanned = scanner.scan()
+    pid = scanned[0].photo_id
+
+    work_dir = tmp_path / "proj.work"
+    work_dir.mkdir()
+    cache = EmbeddingCache(work_dir)
+    e0 = np.zeros(512, dtype=np.float32)
+    e0[0] = 1.0
+    f0 = FaceDetection(face_id=f"f_{pid}_001", photo_id=pid, bbox=[10, 10, 80, 80], det_score=0.9, embedding=e0, is_good_quality=True)
+    cache.save(PhotoRecord(photo_id=pid, original_path=str(photos_dir / "test.jpg"), file_name="test.jpg", width=100, height=100, faces=[f0]))
+
+    export_dir = tmp_path / "proj"
+    config = EngineConfig(input_path=photos_dir, output_dir=export_dir, cache_dir=work_dir)
+    run_pipeline(config)
+
+    # Add an edit with nonexistent face ID
+    edits_file = work_dir / "edits.json"
+    with open(edits_file, "w", encoding="utf-8") as f:
+        json.dump({
+            "version": 1,
+            "edits": [
+                {"op": "assign", "face_id": "f_nonexistent_9999", "person": [f0.face_id]},
+            ]
+        }, f)
+
+    state = AppState(work_dir=tmp_path / "dummy.work", output_dir=tmp_path / "dummy_out")
+    res = state.open_saved_project(work_dir=work_dir, export_path=export_dir)
+
+    assert "unapplied_edits" in res
+    assert len(res["unapplied_edits"]) == 1
+    unapplied = res["unapplied_edits"][0]
+    assert "f_nonexistent_9999" in unapplied.get("reason", "")
+    assert unapplied.get("edit", {}).get("face_id") == "f_nonexistent_9999"
+

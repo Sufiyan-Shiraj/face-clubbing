@@ -42,6 +42,8 @@ class JobStartRequest(BaseModel):
     output_dir: Optional[str] = "export"
     cache_dir: Optional[str] = None
     settings: Optional[SettingsModel] = None
+    keep_edits: Optional[bool] = False
+    replay_edits: Optional[bool] = False
 
 
 class DriveVerifyRequest(BaseModel):
@@ -268,4 +270,16 @@ class OpenProjectResponse(BaseModel):
     read_only: bool = False
     edits_error: Optional[str] = None
     applied_edits_count: int = 0
+    unapplied_edits: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class CheckEditsResponse(BaseModel):
+    has_saved_edits: bool = False
+    saved_edits_count: int = 0
+    work_dir: str = ""
+    is_different_source: bool = False
+    default_action: str = "fresh"  # "keep" or "fresh"
+    previous_source: Optional[str] = None
+    message: str = ""
+
 

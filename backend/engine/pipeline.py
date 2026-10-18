@@ -56,6 +56,7 @@ class EngineConfig:
     attach_distance_cap: float = 0.45
     flip_average: bool = False
     include_maybe: bool = False
+    replay_edits: bool = False
     model_root: Optional[str] = None
     suggestions_path: Optional[str | Path] = None
     drive_api_key: Optional[str] = None
@@ -382,7 +383,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
 
     # 4c. Organizer edit replay (SPEC 6.3)
     edits_path = cache_p / "edits.json"
-    if edits_path.exists():
+    unapplied = []
+    if config.replay_edits and edits_path.exists():
         notify({"stage": "applying_edits", "message": f"Applying organizer edits from {edits_path}..."})
         with open(edits_path, "r", encoding="utf-8") as f:
             edits_data = json.load(f)
@@ -396,6 +398,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             "stage": "edits_applied",
             "applied": edit_stats.get("applied", 0),
             "unapplied": len(unapplied),
+            "unapplied_edits": unapplied,
             "message": f"Applied {edit_stats.get('applied', 0)} edits ({len(unapplied)} unapplied).",
         })
 
@@ -407,6 +410,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         id_map=clusterer.id_map,
         temp_dir=str(drive_cache_p) if is_drive else None,
         drive_folder_name=folder_name if is_drive else None,
+        unapplied_edits=unapplied,
     )
 
     notify({

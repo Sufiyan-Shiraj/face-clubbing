@@ -791,5 +791,54 @@ def test_pywebview_api_dialogs():
     assert windowless_api.select_file() == ""
 
 
+def test_check_edits_api(tmp_path: Path):
+    """Test GET /api/projects/check-edits detects saved edits and identifies different source folders."""
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+
+    # Create dummy edits.json
+    edits_file = work_dir / "edits.json"
+    with open(edits_file, "w", encoding="utf-8") as f:
+        json.dump({
+            "version": 1,
+            "edits": [{"op": "name", "person": ["f001"], "label": "Bob"}]
+        }, f)
+
+    # Manifest with source folder
+    manifest_file = work_dir / "manifest.json"
+    with open(manifest_file, "w", encoding="utf-8") as f:
+        json.dump({"input_folder": str(tmp_path / "original_photos")}, f)
+
+    app = create_app(work_dir=work_dir, output_dir=tmp_path / "export")
+    client = TestClient(app)
+
+    # 1. Same source folder -> default_action is keep
+    resp = client.get(f"/api/projects/check-edits?work_dir={work_dir}&input_path={tmp_path / 'original_photos'}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["has_saved_edits"] is True
+    assert data["saved_edits_count"] == 1
+    assert data["is_different_source"] is False
+    assert data["default_action"] == "keep"
+
+    # 2. Different source folder -> default_action is fresh
+    resp2 = client.get(f"/api/projects/check-edits?work_dir={work_dir}&input_path={tmp_path / 'different_photos'}")
+    assert resp2.status_code == 200
+    data2 = resp2.json()
+    assert data2["has_saved_edits"] is True
+    assert data2["saved_edits_count"] == 1
+    assert data2["is_different_source"] is True
+    assert data2["default_action"] == "fresh"
+
+    # 3. No edits directory
+    empty_work = tmp_path / "empty_work"
+    empty_work.mkdir()
+    resp3 = client.get(f"/api/projects/check-edits?work_dir={empty_work}")
+    assert resp3.status_code == 200
+    assert resp3.json()["has_saved_edits"] is False
+    assert resp3.json()["saved_edits_count"] == 0
+
+
+
 
 

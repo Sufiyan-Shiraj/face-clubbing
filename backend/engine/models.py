@@ -142,4 +142,5 @@ class EngineResult:
     id_map: Dict[str, Any] = field(default_factory=dict)
     temp_dir: Optional[str] = None
     drive_folder_name: Optional[str] = None
+    unapplied_edits: List[Dict[str, Any]] = field(default_factory=list)
 

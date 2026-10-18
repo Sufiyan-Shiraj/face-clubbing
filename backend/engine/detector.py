@@ -48,44 +48,25 @@ class FaceDetector:
         if self._app is None:
             from insightface.app import FaceAnalysis
 
+            from backend.engine.models_downloader import ensure_model_available
+
+            ensure_model_available(
+                model_name=self.model_name,
+                model_root=self.model_root,
+                progress_callback=self.progress_callback,
+            )
+
             kwargs = {"name": self.model_name}
             if self.model_root:
                 kwargs["root"] = self.model_root
             if self.providers:
                 kwargs["providers"] = self.providers
 
-            target_model_dir = Path(self.model_root) / "models" / self.model_name
-            fallback_model_dir = Path.home() / ".insightface" / "models" / self.model_name
-
-            # If default target model directory doesn't exist, check fallback and migrate to ~/.photosorter/models
-            if self.model_root == str(Path.home() / ".photosorter") and not target_model_dir.exists() and fallback_model_dir.exists():
-                try:
-                    target_model_dir.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copytree(fallback_model_dir, target_model_dir)
-                except Exception:
-                    pass
-
-            if not target_model_dir.exists() or not any(target_model_dir.glob("*.onnx")):
-                if self.progress_callback:
-                    self.progress_callback({
-                        "stage": "model_download",
-                        "current": 0,
-                        "total": 1,
-                        "percent": 2.0,
-                        "progress": 0.02,
-                        "message": f"Downloading {self.model_name} face model weights (~300MB) to ~/.photosorter/models... Please keep internet connected.",
-                    })
-
             try:
                 app = FaceAnalysis(**kwargs)
                 app.prepare(ctx_id=0, det_size=self.det_size)
                 self._app = app
             except Exception as e:
-                if not target_model_dir.exists() or not any(target_model_dir.glob("*.onnx")):
-                    raise RuntimeError(
-                        f"InsightFace model '{self.model_name}' is not available at '{target_model_dir}' and automatic download failed ({e}). "
-                        f"Please ensure an internet connection on first run to download models to '{target_model_dir}', or manually place the model ONNX files."
-                    ) from e
                 raise RuntimeError(f"Failed to initialize FaceAnalysis model '{self.model_name}': {e}") from e
 
     def detect_and_embed(

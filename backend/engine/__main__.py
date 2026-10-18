@@ -57,6 +57,12 @@ def main():
         default="Event Gallery",
         help="Event title for config.json (default: 'Event Gallery').",
     )
+    parser.add_argument(
+        "--replay-edits",
+        action="store_true",
+        default=False,
+        help="Replay saved organizer edits from edits.json in work directory (default: False for fresh scan).",
+    )
 
     args = parser.parse_args()
 
@@ -80,6 +86,7 @@ def main():
         min_face_size=args.min_size,
         max_yaw=args.max_yaw,
         event_title=args.title,
+        replay_edits=args.replay_edits,
         progress_callback=print_progress,
     )
 

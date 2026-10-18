@@ -739,7 +739,22 @@ export const App: React.FC = () => {
   // Start job
   const handleStartJob = async (inputPath?: string, driveFolder?: string, driveApiKey?: string) => {
     try {
-      const st = await api.startJob(inputPath, driveFolder, driveApiKey, 'export');
+      let keepEdits = false;
+      try {
+        const check = await api.checkEdits(undefined, inputPath || driveFolder);
+        if (check && check.has_saved_edits) {
+          const promptMsg = `${check.saved_edits_count} saved edits will be re-applied.\n\n` +
+            (check.is_different_source
+              ? `Source folder is different from the previous scan (${inputPath || driveFolder} vs ${check.previous_source || 'previous'}). Default: Start fresh.\n\n`
+              : '') +
+            `Click OK to Keep saved edits, or Cancel to Start fresh with empty edits.`;
+          keepEdits = window.confirm(promptMsg);
+        }
+      } catch (checkErr) {
+        console.warn('Failed to check edits prior to scan:', checkErr);
+      }
+
+      const st = await api.startJob(inputPath, driveFolder, driveApiKey, 'export', keepEdits);
       setJobStatus(st);
       setProgressHistory([st]);
       setActiveTab('progress');

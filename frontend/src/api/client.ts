@@ -48,7 +48,8 @@ export const api = {
     inputPath?: string,
     driveFolderOrOutputDir?: string,
     driveApiKey?: string,
-    outputDir: string = 'export'
+    outputDir: string = 'export',
+    keepEdits?: boolean
   ): Promise<JobStatus> {
     let driveFolder: string | undefined = undefined;
     let apiKey: string | undefined = driveApiKey;
@@ -85,6 +86,7 @@ export const api = {
         drive_folder: driveFolder || undefined,
         drive_api_key: apiKey || undefined,
         output_dir: actualOutputDir || 'export',
+        keep_edits: !!keepEdits,
       }),
     });
   },
@@ -368,6 +370,22 @@ export const api = {
 
   async getActiveProject(): Promise<{ active: boolean; name?: string; people_count: number; photos_count: number }> {
     return fetchJson(`${BASE_URL}/projects/active`);
+  },
+
+  async checkEdits(workDir?: string, inputPath?: string): Promise<{
+    has_saved_edits: boolean;
+    saved_edits_count: number;
+    work_dir: string;
+    is_different_source: boolean;
+    default_action: 'keep' | 'fresh';
+    previous_source?: string;
+    message: string;
+  }> {
+    const params = new URLSearchParams();
+    if (workDir) params.append('work_dir', workDir);
+    if (inputPath) params.append('input_path', inputPath);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return fetchJson(`${BASE_URL}/projects/check-edits${qs}`);
   },
 };
 

@@ -29,6 +29,7 @@ from backend.api.models import (
     ProjectItem,
     OpenProjectRequest,
     OpenProjectResponse,
+    CheckEditsResponse,
 )
 from backend.api.state import AppState
 from backend.api.jobs import JobManager
@@ -537,6 +538,68 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             read_only=res["read_only"],
             edits_error=res["edits_error"],
             applied_edits_count=res["applied_edits_count"],
+            unapplied_edits=res.get("unapplied_edits", []),
+        )
+
+    @router.get("/projects/check-edits", response_model=CheckEditsResponse)
+    def check_edits(work_dir: Optional[str] = None, input_path: Optional[str] = None):
+        target_work = Path(work_dir).resolve() if work_dir else state.work_dir
+        edits_file = target_work / "edits.json"
+
+        has_edits = False
+        edit_count = 0
+        if edits_file.exists():
+            try:
+                import json
+                with open(edits_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, dict) and isinstance(data.get("edits"), list):
+                    edit_count = len(data["edits"])
+                    has_edits = edit_count > 0
+            except Exception:
+                pass
+
+        prev_source = None
+        for cand in [
+            target_work / "manifest.json",
+            target_work.parent / target_work.name.removesuffix(".work") / "manifest.json",
+            state.repo_root / "export" / "manifest.json",
+        ]:
+            if cand.exists():
+                try:
+                    import json
+                    with open(cand, "r", encoding="utf-8") as f:
+                        m_data = json.load(f)
+                    prev_source = m_data.get("input_folder") or m_data.get("input_path")
+                    if prev_source:
+                        break
+                except Exception:
+                    pass
+
+        if not prev_source:
+            from backend.api.projects import load_recent_projects
+            for p in load_recent_projects():
+                if Path(p.get("work_dir", "")).resolve() == target_work:
+                    prev_source = p.get("source_description")
+                    break
+
+        is_diff = False
+        if input_path and prev_source:
+            p1 = str(Path(input_path).resolve()) if Path(input_path).exists() else str(input_path).strip().rstrip("/\\").lower()
+            p2 = str(Path(prev_source).resolve()) if Path(prev_source).exists() else str(prev_source).strip().rstrip("/\\").lower()
+            is_diff = (p1 != p2)
+
+        default_act = "fresh" if is_diff else ("keep" if has_edits else "fresh")
+        msg = f"{edit_count} saved edits found in {target_work.name}" if has_edits else "No saved edits found."
+
+        return CheckEditsResponse(
+            has_saved_edits=has_edits,
+            saved_edits_count=edit_count,
+            work_dir=str(target_work),
+            is_different_source=is_diff,
+            default_action=default_act,
+            previous_source=str(prev_source) if prev_source else None,
+            message=msg,
         )
 
     @router.post("/projects/{project_id}/open", response_model=OpenProjectResponse)

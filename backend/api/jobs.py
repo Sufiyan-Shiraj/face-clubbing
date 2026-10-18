@@ -202,6 +202,16 @@ class JobManager:
             out_dir = "export"
             self.state.settings.output_dir = "export"
 
+        should_replay = bool(getattr(req, "keep_edits", False) or getattr(req, "replay_edits", False))
+        if not should_replay:
+            self.state.edits_list = []
+            if self.state.edits_path.exists():
+                try:
+                    with open(self.state.edits_path, "w", encoding="utf-8") as f:
+                        json.dump({"version": 1, "edits": []}, f, indent=2)
+                except Exception as e:
+                    print(f"[jobs] Warning: Failed to reset edits.json: {e}")
+
         from backend.engine.pipeline import EngineConfig
 
         config = EngineConfig(
@@ -225,6 +235,7 @@ class JobManager:
             attach_distance_cap=self.state.settings.attach_distance_cap,
             flip_average=self.state.settings.flip_average,
             include_maybe=self.state.settings.include_maybe,
+            replay_edits=should_replay,
             event_title=self.state.settings.event_title,
             event_subtitle=self.state.settings.event_subtitle,
             drive_api_key=drive_key,
@@ -248,6 +259,7 @@ class JobManager:
                         "photos_count": len(res.photos),
                         "unrecognized_faces": len(res.unrecognized.faces),
                         "unrecognized_photos": len(res.unrecognized.photo_ids),
+                        "unapplied_edits": getattr(res, "unapplied_edits", []),
                     }
 
                 # Auto-save recent project entry
