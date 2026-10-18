@@ -5616,30 +5616,34 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
   - Raw benchmark: `scratch/startup_benchmark.json` (SHA-256: `46AA8943F7F9AB0751612580391137D8DA1CDBF847119B1D77B62D1296090FD1`).
   - Automated smoke test passed on onedir binary in 3.54s (`python scripts/smoke_test.py dist/CatLog_onedir/CatLog.exe`). Default packaging retained as onefile per user specification.
 
-### 32.5 Item 5: Public Viewer Commits 58–70 Baseline Restoration
-- **Problem**: An experimental risograph lock in commit `98125b4` stripped the live 3-theme switcher, added 42 bloated image/texture assets (~10 MB), and bloated test execution from ~5s to ~71s.
-- **Fix**:
-  - Restored viewer components and styling from commits 58–70 (`d8479ec`):
-    - `viewer/src/components/Header.tsx`: Live 3-theme switcher (**Dark**, **Paper**, **Navy**) with sticky header and quick action controls.
-    - `viewer/src/components/PersonCard.tsx`: Clean card layout with avatar badge, photo counts, and per-person streaming zip download.
-    - `viewer/src/components/PeopleGrid.tsx`: Responsive grid utilities (2 columns mobile, 6 columns desktop).
-    - `viewer/src/components/PhotoGallery.tsx`, `PhotoModal.tsx`, `UnrecognizedGallery.tsx`, `Footer.tsx`.
-  - Pruned 42 bloated image/texture/mascot files from `viewer/public/`.
-  - Re-added `viewer/postcss.config.js` and `viewer/tailwind.config.js`.
+### 32.5 Item 5: Public Viewer & Themed UI Synchronization
+- **Scope & User Requirements**:
+  - The public viewer features the tactile Risograph aesthetic (`t-dark`, `t-paper`, `t-navy`) with borders, drop shadows, badge chips, brand identity, noise textures, and theme-reactive mascots.
+  - Every person card in `viewer/src/components/PersonCard.tsx` features a direct **"Download All ({count})"** button that builds and streams a client-side zip of all photos for that person (or downloads sequentially via Google Drive if Drive links).
+  - Inside the photo gallery (`viewer/src/components/PhotoGallery.tsx`), the primary **"Download all N photos"** button and selection mode are active.
+  - The organizer selects the default theme in `frontend/src/components/ExportScreen.tsx` (`t-dark` Tokyo Neon, `t-paper` Warm Risograph, `t-navy` Blueprint), which is saved in `config.json` and automatically applied upon export.
+  - The viewer header (`viewer/src/components/Header.tsx`) also features a live 3-theme switcher toggle so viewers can toggle between Dark, Paper, and Navy themes on the fly.
 - **Verification**:
-  - **Viewer Vitest Suite**: `20 / 20` passed in **7.36s** (down from 70.73s).
-  - **Production Build**: Clean bundle under 200 KB total.
-  - **E2E Playwright Suite**:
-    - `verify_download_e2e.cjs`: Verified 3-theme toggling, streaming zip generation (`alex_river_photos.zip`), and selection mode.
-    - `verify_viewport.cjs`: Verified 2 columns on mobile (390px) and 6 columns on desktop (1280px).
+  - **Viewer Vitest Suite**: `20 / 20` passed in **6.98s**.
+  - **Viewer Production Build**: `npm run build` passed cleanly in 17.76s (chunk size < 180 KB).
+  - **E2E Playwright Suite** (`node viewer/scripts/verify_download_e2e.cjs`):
+    - All 3 themes toggled & verified (Dark, Paper, Navy).
+    - Per-person card direct download button verified.
+    - "Download all 3 photos" displays exact photo count.
+    - Per-photo download links use clean `personname_001.jpg` format.
+    - Select mode ticks photos & shows sticky bottom bar.
+    - Local streaming zip generation downloads `alex_river_photos.zip`.
+    - Unrecognized gallery strictly has NO "Download all" button.
+  - **Viewer Responsive Viewport** (`node viewer/scripts/verify_viewport.cjs`):
+    - Verified 2 columns on mobile viewport (390px) and 6 columns on desktop viewport (1280px).
 
-### 32.6 Master Verification Audit Summary at Fixed HEAD (`34e09bd`)
+### 32.6 Master Verification Audit Summary at Fixed HEAD (`6632e91`)
 
 | Verification Suite | Target | Status |
 | :--- | :--- | :--- |
 | **Pytest Full Suite** | `pytest -q -rs` | **99 passed, 0 failures, 2 warnings** (in 981.32s) |
-| **Frontend Vitest** | `npm --prefix frontend test -- --run` | **13/13 test files passed, 74/74 tests passed** (in 58.64s) |
-| **Viewer Vitest** | `npm --prefix viewer test -- --run` | **2/2 test files passed, 20/20 tests passed** (in 7.36s) |
+| **Frontend Vitest** | `npm --prefix frontend test -- --run` | **13/13 test files passed, 74/74 tests passed** (in 30.92s) |
+| **Viewer Vitest** | `npm --prefix viewer test -- --run` | **2/2 test files passed, 20/20 tests passed** (in 6.98s) |
 | **Phase 1b Export Invariants** | `python eval/verify_export.py` | **15/15 checks and tables passed (100% OK)** |
 | **SPEC 6.2 Slider Defaults** | `python eval/check_settings_spec.py` | **15/15 slider & config defaults match SPEC 6.2 (100% OK)** |
 | **Pinned Baseline Check** | `python eval/check_baseline.py` | **100% OK (All canonical baseline metrics verified)** |

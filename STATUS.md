@@ -1,7 +1,7 @@
 # CatLog Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-18T17:30:00+05:30  
-**Audit Mode**: PRE-RELEASE HARDENING COMPLETE — Edits Replay Gated, Atomic Model Downloads Verified, Onedir Startup Benchmarked (9.03x Speedup), Engine Reconciliation Complete, Public Viewer Restored to Commits 58–70 (3-Theme Switching & Streaming Downloads), Pytest 99/99 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed (7.36s), Export Invariants 15/15 Passed
+**Generated**: 2026-10-18T17:45:00+05:30  
+**Audit Mode**: PRE-RELEASE HARDENING COMPLETE — Themed Risograph UI Applied, Direct Per-Person Zip Download Button Active, Organizer Export Theme Selection Synchronized, Live 3-Theme Switcher Verified, Pytest 99/99 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed, Export Invariants 15/15 Passed
 
 ---
 
@@ -13,18 +13,18 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `34e09bd` (fix(viewer): restore public viewer UI from commits 58-70 with 3-theme switching and clean streaming downloads)
+- **HEAD Commit**: `6632e91` (feat(viewer): apply rich risograph themed UI, per-person zip download button on each card, and organizer export theme synchronization)
 - **`git status -sb`**:
   ```text
   ## main
   ```
 - **`git log --oneline -5`**:
   ```text
+  6632e91 feat(viewer): apply rich risograph themed UI, per-person zip download button on each card, and organizer export theme synchronization
+  b175bfc docs: update REPORT.md (Section 32) and STATUS.md (Section 13) for pre-release hardening and viewer baseline restoration
   34e09bd fix(viewer): restore public viewer UI from commits 58-70 with 3-theme switching and clean streaming downloads
   a4e1abe docs: reconcile STATUS Section 9, record Check J at commit 01e1452, and document startup benchmark
   01e1452 fix: edits replay gating, atomic model download, and onedir startup benchmark
-  5ea0b1d fix(engine): resolve cache stale replay and avatar mismapping, bump cache v2, restore 256px SPEC defaults, add cold E2E regression tests
-  6405b63 fix(engine): restore true pre-optimization engine at commit 60/7f58 (clean pipeline, standalone HTML Drive tile, zero test workarounds)
   ```
 - **`git remote -v`**:
   ```text
