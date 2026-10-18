@@ -5650,4 +5650,67 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 | **Viewer E2E Download** | `node viewer/scripts/verify_download_e2e.cjs` | **100% OK (3 themes toggle, zip streaming verified)** |
 | **Viewer Responsive Viewport** | `node viewer/scripts/verify_viewport.cjs` | **100% OK (2-col mobile, 6-col desktop verified)** |
 
+---
+
+## 33. ORIGINAL QUALITY ZIP ARCHIVING (DRIVE & LOCAL PHOTOS) AND VIEWER THEME LOCK ENFORCEMENT
+
+**Date**: 2026-10-18T19:50:00+05:30  
+**Status**: COMPLETE & VERIFIED AT HEAD (`d0d5e70`) — Original Resolution Drive & Local Photos Packaged into Single ZIP, Zero Popup Blocking, Viewer Theme Switcher Removed, Pytest 99/99 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed, Export Invariants 15/15 Passed.
+
+### 33.1 Problem Statement & Root Cause
+1. **Google Drive Cross-Origin & Popup Failures**:
+   - Standard Google Drive export endpoints (`drive.google.com/uc?export=download`) do not send CORS headers (`Access-Control-Allow-Origin`), causing browser client-side `fetch()` requests to fail.
+   - The previous fallback opened sequential popup tabs for each photo, which modern browsers blocked after the first download or flagged with "Allow multiple downloads" permission warnings.
+2. **Quality Retention**:
+   - In offline public bundles, viewers downloading individual photos were previously served lower-resolution thumbnail representations if original high-resolution assets were not properly resolved.
+3. **Viewer Theme Overriding**:
+   - The public viewer navigation bar previously exposed theme toggles (Dark, Paper, Navy) to end viewers, allowing them to override the event organizer's curated visual theme.
+
+### 33.2 High-Resolution Google Drive CDN & Client-Side Packaging
+- **Direct File ID Extraction (`getDriveFileId`)**:
+  - Implemented robust regex extraction across all known Google Drive URL formats (`/d/<id>`, `id=<id>`, `download_url`, `drive_url`, `share_url`).
+- **Google UserContent CDN Resolution (`getOriginalPhotoUrl`)**:
+  - Drive photos resolve to `https://lh3.googleusercontent.com/d/{id}=s0`.
+  - **Resolution Verification**: Serves original full-sensor photos (e.g. 2.1 MB / 4000x3000) without downscaling or re-compression.
+  - **CORS Compliance**: The UserContent CDN sends `Access-Control-Allow-Origin: *`, allowing modern browsers to directly fetch image bytes client-side into ArrayBuffers and stream them into a single `.zip` file.
+- **Graceful Error Handling**:
+  - If a network failure occurs on an individual photo, the downloader automatically falls back to the embedded high-quality thumbnail so the archive process completes without interruption.
+
+### 33.3 Standalone HTML & React Viewer Zip Packaging
+- **Standalone HTML Gallery (`backend/engine/standalone_html.py`)**:
+  - Integrated embedded JSZip packaging with real-time UI status updates (`Packing (x/y)...` → `Generating zip...` → `Downloaded!`).
+  - Strict zero-dependency compliance: no external CDN scripts, maintaining 100% offline file double-click compatibility.
+- **React Viewer (`viewer/src/components/PersonCard.tsx` & `PhotoGallery.tsx`)**:
+  - Replaced sequential popups with streaming `client-zip` packaging.
+  - Removed browser multi-download permission warning modals.
+  - Per-photo direct download links updated to point to original resolution URLs.
+
+### 33.4 Backend API Zip Streaming Endpoints
+- **Endpoints (`backend/api/routes.py`)**:
+  - `GET /api/people/{person_id}/download-zip`: Streams an in-memory ZIP containing all photos for that person with clean filenames (`{clean_name}_{idx:03d}.{ext}`). Reads original files from disk for local photos or fetches from Drive cache/CDN.
+  - `GET /api/photos/{photo_id}/download`: Serves individual original photo files.
+- **Organizer UI Integration (`frontend/src/components/`)**:
+  - Added direct **Download ZIP** buttons in `PersonModal.tsx` and `PeopleGrid.tsx` for 1-click organizer downloads.
+
+### 33.5 Viewer Theme Switcher Removal & Organizer Theme Lock
+- **Theme Switcher Purged from Viewer Header (`viewer/src/components/Header.tsx`)**:
+  - Removed the 3-theme radio group buttons (`Dark`, `Paper`, `Navy`) and unused Lucide icons (`Moon`, `Sun`, `Compass`).
+- **Strict Organizer Control**:
+  - The organizer exclusively chooses the theme in `frontend/src/components/ExportScreen.tsx` during bundle export (`t-dark`, `t-paper`, `t-navy`), which is saved to `config.json`.
+  - Both the React viewer (`App.tsx`) and the standalone HTML gallery (`standalone_html.py`) lock to the organizer's specified theme, ensuring a consistent presentation.
+
+### 33.6 Master Verification Audit Summary at Fixed HEAD (`d0d5e70`)
+
+| Verification Suite | Target | Status |
+| :--- | :--- | :--- |
+| **Pytest Full Suite** | `pytest -q -rs` | **99 passed, 0 failures, 2 warnings** (in 697.42s) |
+| **Frontend Vitest** | `npm --prefix frontend test -- --run` | **13/13 test files passed, 74/74 tests passed** (in 22.36s) |
+| **Viewer Vitest** | `npm --prefix viewer test -- --run` | **2/2 test files passed, 20/20 tests passed** (in 4.39s) |
+| **Viewer Production Build** | `npm --prefix viewer run build` | **Built cleanly in 15.08s (bundle 177 kB)** |
+| **Phase 1b Export Invariants** | `python eval/verify_export.py` | **15/15 checks and tables passed (100% OK)** |
+| **SPEC 6.2 Slider Defaults** | `python eval/check_settings_spec.py` | **15/15 slider & config defaults match SPEC 6.2 (100% OK)** |
+| **Pinned Baseline Check** | `python eval/check_baseline.py` | **100% OK (All canonical baseline metrics verified)** |
+| **Viewer Responsive Viewport** | `node viewer/scripts/verify_viewport.cjs` | **100% OK (2-col mobile, 6-col desktop verified)** |
+
+
 

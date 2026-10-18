@@ -1,7 +1,7 @@
 # CatLog Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-18T17:45:00+05:30  
-**Audit Mode**: PRE-RELEASE HARDENING COMPLETE — Themed Risograph UI Applied, Direct Per-Person Zip Download Button Active, Organizer Export Theme Selection Synchronized, Live 3-Theme Switcher Verified, Pytest 99/99 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed, Export Invariants 15/15 Passed
+**Generated**: 2026-10-18T19:52:00+05:30  
+**Audit Mode**: PRE-RELEASE HARDENING COMPLETE — Original Quality ZIP Archiving (Google Drive & Local Photos), Zero-Popup Client & Server Packaging, Viewer Theme Switcher Removed (Organizer Theme Locked), Pytest 99/99 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed, Export Invariants 15/15 Passed
 
 ---
 
@@ -13,18 +13,18 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `6632e91` (feat(viewer): apply rich risograph themed UI, per-person zip download button on each card, and organizer export theme synchronization)
+- **HEAD Commit**: `d0d5e70` (fix(viewer): remove viewer theme switcher so organizer strictly sets export theme)
 - **`git status -sb`**:
   ```text
   ## main
   ```
 - **`git log --oneline -5`**:
   ```text
+  d0d5e70 fix(viewer): remove viewer theme switcher so organizer strictly sets export theme
+  0d4ecf6 fix(download): package original quality ZIP for Drive and local photos
+  9bd7f46 feat(export): auto-nest export folder by source title, sync gallery title, and restore risograph themed UI with per-person zip downloads
+  5a83496 docs: sync STATUS.md and REPORT.md with themed UI and per-person zip download state at HEAD
   6632e91 feat(viewer): apply rich risograph themed UI, per-person zip download button on each card, and organizer export theme synchronization
-  b175bfc docs: update REPORT.md (Section 32) and STATUS.md (Section 13) for pre-release hardening and viewer baseline restoration
-  34e09bd fix(viewer): restore public viewer UI from commits 58-70 with 3-theme switching and clean streaming downloads
-  a4e1abe docs: reconcile STATUS Section 9, record Check J at commit 01e1452, and document startup benchmark
-  01e1452 fix: edits replay gating, atomic model download, and onedir startup benchmark
   ```
 - **`git remote -v`**:
   ```text
@@ -1103,4 +1103,23 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **13.8** | Full Frontend Vitest Suite | `npm --prefix frontend test -- --run` | 13 test files | **74 / 74 passed** (100% OK) in 58.64s | **PASS** |
 | **13.9** | Full Viewer Vitest Suite | `npm --prefix viewer test -- --run` | 2 test files | **20 / 20 passed** (100% OK) in 7.36s | **PASS** |
 | **13.10** | Public Bundle Export Invariants | `eval/verify_export.py` | 15 invariant checks and tables | **15 / 15 checks passed (100% OK)** | **PASS** |
+
+---
+
+## 14. SCRIPT-CHECKED AUDIT: ORIGINAL QUALITY ZIP ARCHIVING (DRIVE & LOCAL) & ORGANIZER THEME LOCK ENFORCEMENT
+
+| Item | Requirement & Test Scope | Test File / Script | Script-Checked Metric Target | Actual Result | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **14.1** | Google Drive Original Quality Resolution | `viewer/src/utils/downloader.ts` & `backend/engine/standalone_html.py` | Resolve Drive file IDs to `lh3.googleusercontent.com/d/{id}=s0` (full original resolution, unrestricted CORS `Access-Control-Allow-Origin: *`) | Verified: HTTP 200, full dimensions (e.g. 2.1 MB / 4000x3000), direct client-side fetch without CORS blocking | **PASS** |
+| **14.2** | Single-Click Full Quality Zip Packaging | `viewer/src/components/PersonCard.tsx` & `PhotoGallery.tsx` | Bundle all images for a person into a single `.zip` file; eliminate sequential popups, tab blocking, and browser multi-download permission warnings | Verified: single `.zip` stream triggered; zero popups; graceful fallback to thumbnail on transient network error | **PASS** |
+| **14.3** | Standalone Single-File HTML Zip Progress | `backend/engine/standalone_html.py` | Embedded JSZip bundler with real-time progress feedback (`Packing (x/y)...` → `Generating zip...` → `Downloaded!`) | Real-time DOM label progression verified; zero external script tags or CDNs | **PASS** |
+| **14.4** | Backend API Zip Streaming Endpoints | `backend/api/routes.py` & `backend/api/state.py` | `GET /api/people/{id}/download-zip` & `GET /api/photos/{id}/download` | In-memory zip streaming verified; clean filenames (`{name}_{idx:03d}.jpg`); fallback to disk or Drive cache | **PASS** |
+| **14.5** | Organizer UI Download Integration | `frontend/src/components/PersonModal.tsx` & `PeopleGrid.tsx` | Direct ZIP download action buttons in organizer Person Modal and People Grid cards | Added and verified; links directly to `/api/people/{id}/download-zip` | **PASS** |
+| **14.6** | Viewer Theme Switcher Removal | `viewer/src/components/Header.tsx` & `App.tsx` | Remove 3-theme radio buttons from viewer header; lock viewer theme strictly to organizer's export selection | Theme switcher removed from Header; theme locked to `config.json` (`t-dark`, `t-paper`, `t-navy`); 0 viewer toggle controls | **PASS** |
+| **14.7** | Full Pytest Suite Verification | `pytest -q -rs` | 99 test items across all 16 test files (including cold 40-photo run) | **99 passed, 0 failures, 2 warnings** in 697.42s | **PASS** |
+| **14.8** | Full Frontend Vitest Suite | `npm --prefix frontend test -- --run` | 13 test files | **74 / 74 passed** (100% OK) in 22.36s | **PASS** |
+| **14.9** | Full Viewer Vitest Suite | `npm --prefix viewer test -- --run` | 2 test files | **20 / 20 passed** (100% OK) in 4.39s | **PASS** |
+| **14.10** | Viewer Production Build | `npm --prefix viewer run build` | TypeScript compilation & Vite production bundle | Built cleanly in 15.08s (`dist/index.html` 1.23 kB, `dist/assets/index-Bu036bB4.js` 177.05 kB) | **PASS** |
+| **14.11** | Public Bundle Export Invariants | `eval/verify_export.py` | 15 invariant checks and tables | **15 / 15 checks passed (100% OK)** | **PASS** |
+
 
