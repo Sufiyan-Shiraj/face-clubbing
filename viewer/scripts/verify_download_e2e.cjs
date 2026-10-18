@@ -129,12 +129,10 @@ async function runE2E() {
   const url = `http://127.0.0.1:${port}/`;
   console.log(`[E2E] Test server active at: ${url}`);
 
-  const chromePath = process.env.LOCALAPPDATA
-    ? path.join(process.env.LOCALAPPDATA, 'ms-playwright', 'chromium-1200', 'chrome-win64', 'chrome.exe')
-    : undefined;
+  const chromePath = 'C:\\Users\\DELL\\AppData\\Local\\ms-playwright\\chromium-1200\\chrome-win64\\chrome.exe';
   const browser = await chromium.launch({
     headless: true,
-    executablePath: chromePath && fs.existsSync(chromePath) ? chromePath : undefined,
+    executablePath: fs.existsSync(chromePath) ? chromePath : undefined,
   });
 
   const context = await browser.newContext({
@@ -156,18 +154,30 @@ async function runE2E() {
       throw new Error(`Expected title 'CatLog Event Gallery', got '${titleText}'`);
     }
 
-    // Verify Theme Switcher option is removed from the viewer page
-    console.log('[E2E Step 2] Verifying theme switcher is removed from viewer page...');
+    // Verify Theme Switcher (3 themes: Dark, Paper, Navy)
+    console.log('[E2E Step 2] Verifying 3 themes & toggle behavior...');
     const themeButtons = await page.$$('div[role="radiogroup"] button');
-    console.log(`  Found ${themeButtons.length} theme buttons (expected 0: viewer does not show theme selector).`);
-    if (themeButtons.length !== 0) {
-      throw new Error(`Expected 0 theme buttons on viewer page, found ${themeButtons.length}`);
+    console.log(`  Found ${themeButtons.length} theme buttons (Dark, Paper, Navy).`);
+    if (themeButtons.length !== 3) {
+      throw new Error(`Expected 3 theme buttons, found ${themeButtons.length}`);
     }
 
-    // Verify configured export theme is automatically active
-    const hasConfigTheme = await page.evaluate(() => document.documentElement.classList.contains('t-dark'));
-    console.log(`  Configured theme ('t-dark') active on document: ${hasConfigTheme}`);
-    if (!hasConfigTheme) throw new Error('Expected configured theme t-dark to be applied to document');
+    // Test switching to Paper theme
+    await page.click('button[title="Paper theme"]');
+    const hasPaperClass = await page.evaluate(() => document.documentElement.classList.contains('t-paper'));
+    console.log(`  Paper theme active: ${hasPaperClass}`);
+    if (!hasPaperClass) throw new Error('Failed to switch to Paper theme');
+
+    // Test switching to Navy theme
+    await page.click('button[title="Navy theme"]');
+    const hasNavyClass = await page.evaluate(() => document.documentElement.classList.contains('t-navy'));
+    console.log(`  Navy theme active: ${hasNavyClass}`);
+    if (!hasNavyClass) throw new Error('Failed to switch to Navy theme');
+
+    // Switch back to Dark theme
+    await page.click('button[title="Dark theme"]');
+    const hasDarkClass = await page.evaluate(() => document.documentElement.classList.contains('t-dark'));
+    console.log(`  Dark theme active: ${hasDarkClass}`);
 
     // Capture Screenshot 1: Grid View (with NO real faces)
     const ss1Path = path.join(SCREENSHOT_DIR, 'viewer_01_grid.png');

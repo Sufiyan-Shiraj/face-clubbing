@@ -53,35 +53,23 @@ export const UnrecognizedGallery: React.FC<UnrecognizedGalleryProps> = ({
   return (
     <div className="space-y-6 pb-20 animate-fadeIn">
       {/* Top Banner: Notice NO "Download all" button here! */}
-      <div
-        className="p-4 sm:p-5 rounded-xl glass-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-        style={{
-          background: 'var(--panel)',
-          border: '2px solid var(--line)',
-          boxShadow: '4px 4px 0px var(--line)',
-        }}
-      >
+      <div className="p-4 sm:p-5 rounded-2xl glass-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-amber-500/30">
         <div className="flex items-center gap-3.5">
           <button
             onClick={onBack}
-            className="btn-tactile btn-sm"
+            className="touch-target p-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] transition-colors focus:outline-none focus-visible:ring-2"
             title="Back to all people"
             aria-label="Back to all people"
-            style={{ padding: '8px 12px' }}
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="font-mono font-bold hidden sm:inline">Back</span>
           </button>
 
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border-2 border-[var(--line)] shadow-[2px_2px_0px_var(--line)]"
-            style={{ background: 'var(--bg)', color: 'var(--accent)' }}
-          >
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
             <HelpCircle className="w-6 h-6" />
           </div>
 
           <div>
-            <h2 className="text-xl sm:text-2xl font-black font-mono text-[var(--text)] tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-main)] tracking-tight">
               Unrecognized Faces ({faceCrops.length})
             </h2>
           </div>
@@ -89,8 +77,7 @@ export const UnrecognizedGallery: React.FC<UnrecognizedGalleryProps> = ({
 
         <button
           onClick={onBack}
-          className="btn-tactile btn-sm"
-          style={{ padding: '8px 14px', fontSize: '13px' }}
+          className="touch-target text-xs sm:text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--color-accent)] transition-colors focus:outline-none focus-visible:ring-2"
         >
           View all people
         </button>
@@ -99,22 +86,18 @@ export const UnrecognizedGallery: React.FC<UnrecognizedGalleryProps> = ({
       {/* Grid of Unrecognized Face Crops */}
       {faceCrops.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-xs sm:text-sm font-bold font-mono uppercase tracking-wider text-[var(--muted)]">
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">
             Detected Face Crops ({faceCrops.length})
           </h3>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-3">
             {faceCrops.map((fItem, idx) => {
+              const photo = photos[fItem.photo_id];
               return (
                 <div
                   key={`${fItem.face_id || fItem.photo_id}-${idx}`}
                   onClick={() => setSelectedPhotoId(fItem.photo_id)}
-                  className="group relative rounded-xl overflow-hidden glass-card aspect-square cursor-pointer select-none transition-all duration-200"
-                  style={{
-                    background: 'var(--panel)',
-                    border: '2px solid var(--line)',
-                    boxShadow: '2px 2px 0px var(--line)',
-                  }}
+                  className="group relative rounded-xl overflow-hidden glass-card border border-[var(--border-color)] hover:border-amber-400 aspect-square bg-[var(--bg-main)] cursor-pointer select-none transition-all duration-200"
                 >
                   <img
                     src={fItem.face}
@@ -137,8 +120,8 @@ export const UnrecognizedGallery: React.FC<UnrecognizedGalleryProps> = ({
 
       {/* Photos without any detected faces */}
       {noFacePhotoIds.length > 0 && (
-        <div className="space-y-3 pt-6 border-t-2 border-[var(--line)]">
-          <h3 className="text-xs sm:text-sm font-bold font-mono uppercase tracking-wider text-[var(--muted)]">
+        <div className="space-y-3 pt-6 border-t border-[var(--border-color)]">
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">
             Photos Without Faces ({noFacePhotoIds.length})
           </h3>
 
@@ -151,12 +134,7 @@ export const UnrecognizedGallery: React.FC<UnrecognizedGalleryProps> = ({
                 <div
                   key={pid}
                   onClick={() => setSelectedPhotoId(pid)}
-                  className="group relative rounded-xl overflow-hidden glass-card aspect-[4/3] cursor-pointer select-none transition-all duration-200"
-                  style={{
-                    background: 'var(--panel)',
-                    border: '2px solid var(--line)',
-                    boxShadow: '2px 2px 0px var(--line)',
-                  }}
+                  className="group relative rounded-xl overflow-hidden glass-card border border-[var(--border-color)] aspect-[4/3] bg-[var(--bg-main)] cursor-pointer select-none transition-all duration-200"
                 >
                   <img
                     src={photo.thumb}
