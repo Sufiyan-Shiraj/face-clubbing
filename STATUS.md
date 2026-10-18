@@ -13,18 +13,18 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `5f9381b` (fix(e2e): restore PYTHON_PATH definition in e2e.mjs)
+- **HEAD Commit**: `3758b7b` (docs: record fresh clone audit outputs and SHA-256 digests in STATUS.md)
 - **`git status -sb`**:
   ```text
   ## main
   ```
 - **`git log --oneline -5`**:
   ```text
+  3758b7b docs: record fresh clone audit outputs and SHA-256 digests in STATUS.md
+  61bfa04 docs: update STATUS.md HEAD commit to 5f9381b
   5f9381b fix(e2e): restore PYTHON_PATH definition in e2e.mjs
   40fdca1 docs: record git status -sb and log at HEAD in STATUS.md
   98125b4 feat(viewer): risograph overhaul, export theme selection, workflow dispatch and release audit updates
-  1a68786 fix(ui): fix logo dimensions, remove doubled text, restore theme title texture, and ensure uncluttered screen interaction
-  35078a4 Revert all UI changes to frontend from past 12 commits back to 7d52881
   ```
 - **`git remote -v`**:
   ```text
