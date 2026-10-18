@@ -13,18 +13,18 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `3758b7b` (docs: record fresh clone audit outputs and SHA-256 digests in STATUS.md)
+- **HEAD Commit**: `ebe0bf4` (docs: sync git log in STATUS.md)
 - **`git status -sb`**:
   ```text
   ## main
   ```
 - **`git log --oneline -5`**:
   ```text
+  ebe0bf4 docs: sync git log in STATUS.md
   3758b7b docs: record fresh clone audit outputs and SHA-256 digests in STATUS.md
   61bfa04 docs: update STATUS.md HEAD commit to 5f9381b
   5f9381b fix(e2e): restore PYTHON_PATH definition in e2e.mjs
   40fdca1 docs: record git status -sb and log at HEAD in STATUS.md
-  98125b4 feat(viewer): risograph overhaul, export theme selection, workflow dispatch and release audit updates
   ```
 - **`git remote -v`**:
   ```text
