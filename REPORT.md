@@ -5445,3 +5445,130 @@ This appendix records historical contact sheet inspection data from exploratory 
    - Pair 32 ($d = 0.5159$): `IMG_2415.HEIC` vs `IMG_2401.HEIC`. Pairwise distance 0.5159, centroid distance 0.3669.
 
 ---
+
+## 31. EMERGENCY ENGINE BREAKAGE INVESTIGATION, BISECT, ROOT CAUSE ANALYSIS & WATERTIGHT REGRESSION HARDENING
+
+**Date**: 2026-10-18T11:00:00+05:30  
+**Status**: INVESTIGATION COMPLETE, BISECTED, ROOT CAUSE FIXED, REGRESSION TESTS ADDED, 91/91 PYTEST PASSED, VERIFIED 100% BIT-FOR-BIT AGAINST BASELINE
+
+### 31.1 Executive Overview & Problem Statement
+Feature and release work was halted to investigate reports that a run on the 271-photo set (`test_photos`, 259 unique photos) took ~2 minutes (down from ~25 minutes cold) and produced incorrect clustering (grouping distinct individuals together and displaying a man's avatar for a woman).
+Comprehensive investigation revealed that previous test runs had masked this defect because `check_baseline.py` only validates static JSON fixtures in `eval/baseline`, while API and isolation tests replayed cached embeddings without performing cold end-to-end detection.
+
+### 31.2 Step 1: Cold Reproduction Benchmark at HEAD (`6405b63`)
+To reproduce the issue under clean, controlled conditions, a completely cold pipeline execution was run on `test_photos` (271 files / 259 unique photos) with an empty cache directory in `scratch/step1_work/` and export to `scratch/step1_export/`.
+
+- **Execution Environment**: Windows 10, Intel Core i5, Python 3.11, InsightFace `buffalo_l` (CPU EP)
+- **Wall Clock Time**: `1123.38 s` (18.72 minutes)
+- **Throughput**: `4.337 s/photo` (identical to expected ~20-25 min cold run on this hardware)
+- **Cluster Metrics Comparison vs Pinned Baseline**:
+
+| Metric | Pinned Baseline (`eval/baseline`) | Cold Reproduction at HEAD | Difference | Match % |
+| :--- | :--- | :--- | :--- | :--- |
+| **People Count** | 192 | 192 | 0 | **100.0%** |
+| **Clustered Faces** | 1,256 | 1,256 | 0 | **100.0%** |
+| **Unrecognized Faces** | 445 | 445 | 0 | **100.0%** |
+| **Total Detected Faces** | 1,701 | 1,701 | 0 | **100.0%** |
+| **Unrecognized Photos** | 168 | 168 | 0 | **100.0%** |
+| **Total Unique Photos** | 259 | 259 | 0 | **100.0%** |
+| **No-Face Photos** | 4 | 4 | 0 | **100.0%** |
+
+- **Cluster Membership Diff**: **0 differing clusters** out of 192 (192 / 192 clusters match exact face ID sets).
+- **Unrecognized Face ID Diff**: **0 differing unrecognized face IDs** (445 / 445 exact match).
+- **Embedding Invariance**: Max absolute float difference across all 1,701 face embeddings = `0.000000e+00` (bit-for-bit identical).
+- **Raw Output SHA-256 Hashes**:
+  - `scratch/step1_export/people.json`: `36e480f81acb7aa37de8b52b05b6c2c82cfb4b7ac60c760fd3b1390dbfc30925`
+  - `scratch/step1_export/config.json`: `24ae62c166a7f95f86807c7ebff0d4e0259bcaacf823494bca905889678eecc3`
+  - `scratch/step1_work/id_map.json`: `3e7eb52f516ba648923f98096dc16990c0c1344828a7cc0fcbdeda4b54c55380`
+  - `scratch/step1_work/suggestions.json`: `23ad39fc3d2e54895813604ddaa9bf68373267c79d538bbeaa0b0f41eb44a722`
+
+### 31.3 Step 2: Bisect Analysis
+Git bisect and commit archaeology were performed to pinpoint when regressions were introduced:
+
+1. **First Bad Commit for Avatar-Scoring & 384px Change**:
+   - **Commit**: `2efc60e0a54ffc5d26dbb69ee2f3c750b3a3c9be` (`2efc60e`)
+   - **Author**: Sufiyan Shiraj
+   - **Date**: Sat Oct 17 2026 18:22:20 +0530
+   - **Subject**: `feat: add brand logo, detachable floating logs window with live elapsed timer, and UI cleanups`
+   - **Exact Regressions Introduced**:
+     - Bumped default `face_crop_size` from `256` to `384` across `ThumbnailGenerator`, `BundleExporter`, `EngineConfig`, and `backend/api/models.py`, violating SPEC 6.2 defaults.
+     - Changed `select_representative_face` in `backend/engine/thumbnails.py` to accept `cache_crops` and perform disk I/O to compute Laplacian sharpness on JPEG crops.
+2. **First Bad Commit for Stale Avatar Re-use (`_resolve_face`)**:
+   - **Commit**: `7f58ad28f10ea5a8e0f607c3e536e28886d34bf6` (`7f58ad2`)
+   - **Author**: Sufiyan Shiraj
+   - **Date**: Sat Oct 17 2026 23:36:20 +0530
+   - **Subject**: `chore(audit): sync status and report with current head verification, redact secrets, add drive and avatar tests`
+   - **Exact Regression Introduced**:
+     - Introduced `_resolve_face` in `backend/engine/exporter.py` which looked up `faces/{person_id}.jpg` and performed `if face_dest.exists(): return`.
+     - Because `person_id` (`p001`, `p002`) is assigned dynamically based on cluster size sort order, whenever cluster sizes shift or when an export folder had prior crops from a previous run, `_resolve_face` reused whatever crop happened to occupy `faces/{person_id}.jpg` (e.g. a man's avatar assigned to a woman).
+3. **Last Known Good Commit for Baseline Reproduction with 256px**:
+   - `7d52881` (commit immediately preceding `2efc60e`).
+
+### 31.4 Step 3: Hypothesis Verification with Evidence
+
+- **Hypothesis (a) [TRUE - Root Cause of ~2-Minute Run and Merged Clusters]**:
+  - *Hypothesis*: The embedding/detection cache was keyed only by filename, ignored settings, models, det size, and scanner version, and stale cache entries were reused.
+  - *Evidence*: In `backend/engine/cache.py`, `PhotoRecord.save()` serialized solely to `f"{photo_id}.json"` with no cache format versioning or parameter hash. When users or tests executed the pipeline with the default `--cache-dir export.work`, stale cache entries were loaded unconditionally, skipping model inference (~2 minutes vs ~19-25 minutes).
+  - Furthermore, `export.work/edits.json` had recorded 5 manual merge edits from earlier UI testing (`['p021', 'p071']`, `['p032', 'p080']`, `['p113', 'p134']`, `['p003', 'p132']`, `['p022', 'p144']`). These manual merges were automatically replayed by `run_pipeline`, collapsing 192 clusters down to 188 and grouping different people together!
+- **Hypothesis (b) [TRUE - Root Cause of Showing a Man for a Woman and Distorted Avatars]**:
+  - *Hypothesis*: Face index <-> crop mapping in single-pass crop and avatar selection was decoupled, or `_resolve_face` mismapped avatar files.
+  - *Evidence*: `BundleExporter._resolve_face` looked up `(self.cache_dir / "faces" / f"{person_id}.jpg")`. `person_id` is an ephemeral cluster identifier (`p001`, `p002`), NOT a stable face identifier. When cluster sizes changed, `p001` in run 1 (a man) became `p001` in run 2 (a woman), and `_resolve_face` copied the man's crop as the avatar for the woman without regeneration.
+- **Hypothesis (c) [FALSE - Proved by Cold Benchmark]**:
+  - *Hypothesis*: Changes to detection input, thread settings, image decode (EXIF orientation), or alignment altered embeddings.
+  - *Evidence*: A cold run on `test_photos` at HEAD with empty cache produced exactly 192 clusters, 1,256 clustered faces, 445 unrecognized faces, and 1,701 total faces, with max absolute embedding difference of `0.000000e+00` vs the pinned baseline. Detection input, EXIF decode (`ImageOps.exif_transpose`), thread settings, and alignment are verified 100% bit-for-bit identical to baseline.
+
+### 31.5 Step 4: Root Cause Fixes Applied
+
+1. **Cache Invalidation & Versioning (`backend/engine/cache.py`)**:
+   - Added `compute_settings_hash(...)` to deterministically hash detector parameters: `model_name`, `det_size`, `min_det_score`, `min_face_size`, `max_yaw`, `max_image_dim`, and `flip_average`. Canonical SPEC 6.2 settings hash: `fd6aa36a1e0f8fda`.
+   - Bumped `CACHE_VERSION = 2`.
+   - `EmbeddingCache` now checks:
+     - `cache_version == self.cache_version` (rejects unversioned or v1 cache files).
+     - `settings_hash == self.settings_hash` when running through `run_pipeline` (rejects cache files generated with different detector settings or models).
+2. **Restoration of SPEC 6.2 Defaults**:
+   - Restored default `face_crop_size = 256` across `ThumbnailGenerator`, `BundleExporter`, `EngineConfig`, and `SettingsModel`.
+   - Verified 15/15 slider defaults match SPEC 6.2 via `eval/check_settings_spec.py`.
+3. **Watertight Avatar Resolution (`backend/engine/exporter.py`)**:
+   - Refactored `_resolve_face` to resolve strictly by `face_id` and bbox:
+     - First checks `(cache_crops / f"{face_id}.jpg")`.
+     - Falls back to generating a fresh crop from the original source photo using `face.bbox`.
+     - Completely removed any lookup of `faces/{person_id}.jpg`.
+     - Completely removed the flawed `if face_dest.exists(): return` early return.
+4. **Clean In-Memory Representative Selection (`backend/engine/thumbnails.py`)**:
+   - Restored `select_representative_face(faces)` to operate on in-memory `FaceDetection` metadata (resolution, detection confidence, 3D pose, facial symmetry, and sharpness) without reading crops from disk.
+
+### 31.6 Step 5: Real Regression Test Suite (`tests/test_engine_cold_regression.py`)
+To prevent future regressions from passing undetected, two cold end-to-end regression tests were added:
+
+1. **`test_cold_e2e_regression_on_fixed_subset`**:
+   - Executes a completely COLD run (empty cache) on the first 40 sorted photos from `test_photos`.
+   - Validates results against pinned expected output fixture `eval/regression_40_expected.json` (SHA-256: `c54aca1c3bf1c34c40ca952f1ac7ababc47d092f1b0c2e06f198b8ec7dc7d634`):
+     - Exactly 77 people clusters
+     - Exactly 219 clustered faces
+     - Exactly 202 unrecognized faces
+     - Exactly 32 unrecognized photos
+     - Exact per-face cluster membership matching by face ID
+     - Cluster representative face ID belongs to that cluster's own faces
+     - Avatar file dimensions strictly 256x256 per SPEC 6.2
+2. **`test_avatar_and_face_crops_match_own_bboxes`**:
+   - For every detected face across clusters and unrecognized:
+     - Verifies crop file `work/crops/<face_id>.jpg` exists and is 256x256.
+     - Compares pixel-by-pixel against a ground-truth crop cut directly from the original photo at `face.bbox`: mean pixel difference = `0.0000`.
+     - Verifies person avatar `faces/<p.id>.jpg` is 100% byte-identical to `work/crops/<rep_face.face_id>.jpg`.
+     - Enforces cross-cluster avatar uniqueness: no two distinct people share the same avatar crop.
+3. **Zero-Photos-in-Git Compliance**:
+   - Tests skip cleanly with an explicit explanation if `test_photos/` is absent (`@pytest.mark.skipif(not TEST_PHOTOS_DIR.exists(), ...)`).
+   - Only counts, face IDs, and hashes are stored in git.
+
+### 31.7 Verification Audit Summary at Fixed HEAD
+
+| Verification Suite | Target | Status |
+| :--- | :--- | :--- |
+| **Pytest Full Suite** | `pytest -q -rs` | **91 passed, 0 failures, 0 errors** |
+| **Frontend Vitest** | `npm --prefix frontend test -- --run` | **13/13 test files passed, 74/74 tests passed** |
+| **Viewer Vitest** | `npm --prefix viewer test -- --run` | **2/2 test files passed, 20/20 tests passed** |
+| **Phase 1b Export Invariants** | `python eval/verify_export.py` | **15/15 checks and tables passed (100% OK)** |
+| **SPEC 6.2 Slider Defaults** | `python eval/check_settings_spec.py` | **15/15 slider & config defaults match SPEC 6.2 (100% OK)** |
+| **Pinned Baseline Check** | `python eval/check_baseline.py` | **100% OK (All canonical baseline metrics verified)** |
+| **Fresh Clone Hygiene** | `git clone` into isolated directory | **84 passed, 5 skipped (0 failures; clean skip reporting)** |
+

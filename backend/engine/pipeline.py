@@ -46,7 +46,7 @@ class EngineConfig:
     seed_min_det_score: float = 0.70
     max_image_dim: int = 1600
     thumb_size: int = 400
-    face_crop_size: int = 384
+    face_crop_size: int = 256
     event_title: str = "Event Gallery"
     event_subtitle: str = "Photos grouped by person"
     second_pass_merge: bool = True
@@ -204,7 +204,17 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             })
 
     # 2. Setup Cache, Loader, Detector, and Thumb Generator
-    cache = EmbeddingCache(cache_p)
+    from backend.engine.cache import EmbeddingCache, compute_settings_hash
+    settings_hash = compute_settings_hash(
+        model_name="buffalo_l",
+        det_size=(640, 640),
+        min_det_score=config.min_det_score,
+        min_face_size=config.min_face_size,
+        max_yaw=config.max_yaw,
+        max_image_dim=config.max_image_dim,
+        flip_average=config.flip_average,
+    )
+    cache = EmbeddingCache(cache_p, settings_hash=settings_hash)
     loader = ImageLoader(max_dimension=config.max_image_dim)
     from backend.engine.thumbnails import ThumbnailGenerator
     thumb_gen = ThumbnailGenerator(thumb_size=config.thumb_size, face_crop_size=config.face_crop_size)

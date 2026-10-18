@@ -50,11 +50,11 @@ def compute_face_quality_score(
     """
     Computes a composite quality score for selecting an optimal, high-quality avatar for a person.
     Prioritizes:
-      1. Resolution & Face Size: strongly rewards large, sharp faces; penalizes tiny distant faces (< 70px)
+      1. Resolution & Face Size: strongly rewards large faces; penalizes tiny distant faces (< 70px)
       2. Detection Confidence: favors high detector certainty (det_score)
       3. Flattering Pose: rewards frontal eye-level view; penalizes severe yaw/profile (> 25°), pitch (> 15°), or tilted roll (> 8°)
       4. Facial Symmetry: rewards horizontal eyes, centered nose, and upright proportions
-      5. Sharpness / In-focus: rewards high Laplacian variance and penalizes motion-blurred or soft faces
+      5. Sharpness / In-focus: rewards in-focus faces and penalizes motion-blurred or soft faces
       6. Quality Flag: penalizes faces marked as poor quality or rejected
     """
     x1, y1, x2, y2 = face.bbox
@@ -63,10 +63,8 @@ def compute_face_quality_score(
     min_dim = min(w, h)
 
     # 1. Size & Resolution (progressive square root curve)
-    # 60px -> 12.4 pts, 120px -> 17.5 pts, 200px -> 22.6 pts, 400px+ -> 32 pts
     size_score = math.sqrt(min(min_dim, 400.0)) * 1.6
     if min_dim < 70.0:
-        # Severe penalty for tiny distant faces that upscale into blurry pixels
         size_score -= (70.0 - min_dim) * 0.35
 
     # 2. Confidence component (quadratic scaling)
@@ -82,30 +80,24 @@ def compute_face_quality_score(
         abs_pitch = abs(pitch)
         abs_roll = abs(roll)
 
-        # Yaw (horizontal face angle):
         if abs_yaw <= 10.0:
-            pose_score += 4.0  # Perfect frontal portrait
+            pose_score += 4.0
         elif abs_yaw <= 20.0:
-            pose_score += 2.0  # Slight 3/4 turn
+            pose_score += 2.0
         elif abs_yaw > 25.0:
-            # Turned head / profile shot looks awkward as an avatar
             pose_score -= min(14.0, (abs_yaw - 20.0) * 0.6)
 
-        # Pitch (looking up or down):
         if abs_pitch <= 10.0:
-            pose_score += 2.0  # Eye-level
+            pose_score += 2.0
         elif abs_pitch > 15.0:
-            # Chin to chest or looking up
             pose_score -= min(8.0, (abs_pitch - 12.0) * 0.4)
 
-        # Roll (head tilt sideways):
         if abs_roll <= 6.0:
-            pose_score += 2.0  # Upright head
+            pose_score += 2.0
         elif abs_roll > 10.0:
             pose_score -= min(8.0, (abs_roll - 8.0) * 0.5)
 
     # 4. 5-point facial landmarks geometry & symmetry:
-    # [left_eye, right_eye, nose, left_mouth, right_mouth]
     if face.landmarks and len(face.landmarks) >= 5:
         le, re, nose, lm, rm = face.landmarks[:5]
         eye_dx = re[0] - le[0]
@@ -113,12 +105,10 @@ def compute_face_quality_score(
         eye_dist = math.hypot(eye_dx, eye_dy)
 
         if eye_dist > 1e-4:
-            # Roll tilt from eye horizontal
             tilt_ratio = abs(eye_dy) / eye_dist
             if tilt_ratio > 0.12:
                 pose_score -= min(6.0, (tilt_ratio - 0.12) * 20.0)
 
-            # Nose horizontal symmetry between eyes:
             d_left = abs(nose[0] - le[0])
             d_right = abs(re[0] - nose[0])
             max_d = max(d_left, d_right)
@@ -129,10 +119,8 @@ def compute_face_quality_score(
                 elif symmetry < 0.5:
                     pose_score -= (0.5 - symmetry) * 10.0
 
-            # Mouth vertically below nose check:
             mouth_mid_y = (lm[1] + rm[1]) / 2.0
             if mouth_mid_y < nose[1]:
-                # Distorted/inverted face detection
                 pose_score -= 20.0
 
     # 5. Sharpness & Clarity
@@ -144,10 +132,8 @@ def compute_face_quality_score(
     sharpness_score = 0.0
     if sharpness is not None and sharpness > 0.0:
         if sharpness < 35.0:
-            # Blurry / out-of-focus penalty
             sharpness_score -= min(10.0, (35.0 - sharpness) * 0.3)
         else:
-            # Sharpness bonus
             sharpness_score += min(10.0, math.log10(max(1.0, sharpness)) * 3.5)
 
     # 6. Quality flag & rejection penalty
@@ -164,25 +150,18 @@ def select_representative_face(
     faces: List[FaceDetection],
     cache_crops: Optional[Path | str] = None,
 ) -> FaceDetection:
-    """Pick the highest quality, most flattering face in a cluster to represent the person."""
+    """Pick the highest scoring face in a cluster to represent the person."""
     if not faces:
         raise ValueError("Cannot select representative face from empty face list.")
     if len(faces) == 1:
         return faces[0]
-
-    cache_p = Path(cache_crops) if cache_crops else None
-
-    def _score(f: FaceDetection) -> float:
-        crop_path = (cache_p / f"{f.face_id}.jpg") if (cache_p and getattr(f, "face_id", None)) else None
-        return compute_face_quality_score(f, crop_path=crop_path)
-
-    return max(faces, key=_score)
+    return max(faces, key=compute_face_quality_score)
 
 
 class ThumbnailGenerator:
-    """Generates photo thumbnails and high-quality square face crops for static export."""
+    """Generates photo thumbnails and square face crops for static export."""
 
-    def __init__(self, thumb_size: int = 400, face_crop_size: int = 384):
+    def __init__(self, thumb_size: int = 400, face_crop_size: int = 256):
         self.thumb_size = thumb_size
         self.face_crop_size = face_crop_size
 

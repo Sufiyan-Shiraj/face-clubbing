@@ -74,3 +74,51 @@ def test_cache_load_all(tmp_path: Path):
     all_records = cache.load_all()
     assert len(all_records) == 3
     assert set(all_records.keys()) == {"p0", "p1", "p2"}
+
+
+def test_cache_invalidation_on_version_mismatch(tmp_path: Path):
+    """Old cache entries with missing or old cache_version are ignored."""
+    import json
+    legacy_file = tmp_path / "legacy.json"
+    legacy_file.write_text(json.dumps({
+        "photo_id": "legacy",
+        "original_path": "/path/legacy.jpg",
+        "file_name": "legacy.jpg",
+        "width": 800,
+        "height": 600,
+        "faces": [],
+        # No cache_version or old version 1
+        "cache_version": 1,
+    }))
+
+    cache = EmbeddingCache(tmp_path, cache_version=2)
+    assert not cache.has("legacy")
+    assert cache.get("legacy") is None
+    assert "legacy" not in cache.load_all()
+
+
+def test_cache_invalidation_on_settings_mismatch(tmp_path: Path):
+    """Cache entries created under different detector settings are invalidated."""
+    from backend.engine.cache import compute_settings_hash
+
+    hash_a = compute_settings_hash(min_face_size=64)
+    hash_b = compute_settings_hash(min_face_size=80)
+    assert hash_a != hash_b
+
+    cache_a = EmbeddingCache(tmp_path, settings_hash=hash_a)
+    rec = PhotoRecord(
+        photo_id="photo1",
+        original_path="/path/photo1.jpg",
+        file_name="photo1.jpg",
+        width=800,
+        height=600,
+        faces=[],
+    )
+    cache_a.save(rec)
+    assert cache_a.has("photo1")
+
+    # Cache with different settings hash rejects photo1
+    cache_b = EmbeddingCache(tmp_path, settings_hash=hash_b)
+    assert not cache_b.has("photo1")
+    assert cache_b.get("photo1") is None
+

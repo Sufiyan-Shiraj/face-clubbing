@@ -1,7 +1,7 @@
 # CatLog Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-18T08:10:00+05:30  
-**Audit Mode**: PUBLIC WEB VIEWER & STANDALONE HTML RISOGRAPH OVERHAUL COMPLETE — Viewer Theme Switcher Removed (Organizer Config Authority), Light/Paper Theme High-Contrast Readability Overhaul, Brand Logos & Mascots, Per-Person Direct Batch Download, Organizer ExportScreen Theme Chooser, Zero-Dependency Standalone HTML, Pytest 87/87 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed, Export Invariants 15/15 Passed, E2E Playwright 7/7 Passed
+**Generated**: 2026-10-18T11:15:00+05:30  
+**Audit Mode**: EMERGENCY ENGINE BREAKAGE INVESTIGATION COMPLETE & FIXED — Root Cause Fixed, Cache Version 2 & Settings Invalidation, 256px SPEC Defaults Restored, Avatar Mismapping Eliminated, Cold E2E Regression Tests Added, Pytest 91/91 Passed, Frontend Vitest 74/74 Passed, Viewer Vitest 20/20 Passed, Export Invariants 15/15 Passed
 
 ---
 
@@ -13,18 +13,18 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `ebe0bf4` (docs: sync git log in STATUS.md)
+- **HEAD Commit**: `08c575b` (fix(engine): resolve cache stale replay and avatar mismapping, bump cache v2, restore 256px SPEC defaults, add cold E2E regression tests)
 - **`git status -sb`**:
   ```text
   ## main
   ```
 - **`git log --oneline -5`**:
   ```text
+  08c575b fix(engine): resolve cache stale replay and avatar mismapping, bump cache v2, restore 256px SPEC defaults, add cold E2E regression tests
+  6405b63 fix(engine): restore true pre-optimization engine at commit 60/7f58 (clean pipeline, standalone HTML Drive tile, zero test workarounds)
+  646519c revert(engine): restore backend/engine to commit 58 (2efc60e)
+  e7a50ce docs: finalize STATUS.md HEAD state
   ebe0bf4 docs: sync git log in STATUS.md
-  3758b7b docs: record fresh clone audit outputs and SHA-256 digests in STATUS.md
-  61bfa04 docs: update STATUS.md HEAD commit to 5f9381b
-  5f9381b fix(e2e): restore PYTHON_PATH definition in e2e.mjs
-  40fdca1 docs: record git status -sb and log at HEAD in STATUS.md
   ```
 - **`git remote -v`**:
   ```text
@@ -65,8 +65,8 @@
 | **7 Final Optimization & Release Audit** | Complete | `backend/engine/thumbnails.py`, `scanner.py`, `detector.py`, `main.py`, `photosorter.spec`, `dist/CatLog.exe`, `eval/verify_export.py`, `eval/verify_exe.py`, `eval/verify_windowed.py` | Section 28 (43.1% speedup, 151.16 MB CatLog.exe, 86.3% mascot compression, 45.6% face crops reduction, 87/87 pytest, 74/74 vitest, 20/20 viewer vitest, zero behavioral changes) | **COMPLETE** |
 | **8 Method 2 (Upload to Drive)** | Removed | None (Purged in Rev 3) | None | **REMOVED** |
 | **Mascots & Brand Identity** | Complete | `frontend/public/mascot/`, `frontend/public/catlog*`, `frontend/src/components/MascotSticker.tsx`, `TutorialSpotlight.tsx` | Section 24 (24 standalone transparent PNG poses across 3 themes, CatLog logo/tagline, 11-step spotlight tour) | **COMPLETE** |
-| **Open saved project (feature)** | Complete | `backend/api/projects.py`, `tests/test_projects.py`, `frontend/src/components/OpenProjectModal.tsx`, `frontend/src/__tests__/openProject.test.tsx` | Section 23 (Reopening past exports without re-scan, 5 edge cases, invariant preservation, privacy guarantee, 87 pytest passed, 13 Vitest test files passed) | **COMPLETE** |
-| **Avatar Quality & High-Def Crops** | Complete | `backend/engine/thumbnails.py`, `detector.py`, `models.py`, `tests/test_thumbnails.py` | Section 7 (Face sharpness, flattering 3D pose, symmetry, 384px crops, 4:4:4 chroma, quality=85, 87/87 pytest pass) | **COMPLETE** |
+| **Avatar Quality & SPEC 6.2 Compliance** | Complete | `backend/engine/thumbnails.py`, `detector.py`, `models.py`, `tests/test_thumbnails.py` | Section 7 & 31 (Composite face quality scoring: 3D pose, symmetry, sharpness, confidence, size; 256px SPEC 6.2 default restored, 91/91 pytest pass) | **COMPLETE** |
+| **Emergency Breakage Fix & Cold Regression Hardening** | Complete & Verified | `backend/engine/cache.py`, `exporter.py`, `pipeline.py`, `eval/regression_40_expected.json`, `tests/test_engine_cold_regression.py` | Section 31 (Stale cache & edits replay eliminated, Cache Version 2 + detector settings hash, avatar mismapping fixed, 40-photo cold E2E regression test, 91/91 pytest pass) | **COMPLETE** |
 
 
 ### SPEC.md vs Code Verification (`eval/check_settings_spec.py`)
@@ -88,25 +88,26 @@ platform win32 -- Python 3.11.17, pytest-9.1.1, pluggy-1.6.0
 rootdir: <REPO_ROOT>
 configfile: pytest.ini
 plugins: anyio-4.15.1
-collected 87 items
+collected 91 items
 
 tests\test_api.py ............                                           [ 13%]
 tests\test_batch_assign.py ....                                          [ 18%]
-tests\test_cache.py ...                                                  [ 21%]
-tests\test_clustering.py .........                                       [ 32%]
+tests\test_cache.py .....                                                [ 23%]
+tests\test_clustering.py .........                                       [ 33%]
 tests\test_drive.py ..............................                       [ 66%]
-tests\test_edits.py .....                                                [ 72%]
-tests\test_exporter.py ...                                               [ 75%]
-tests\test_isolation.py .                                                [ 77%]
-tests\test_pipeline.py .                                                 [ 78%]
-tests\test_projects.py ........                                          [ 87%]
+tests\test_edits.py .....                                                [ 71%]
+tests\test_engine_cold_regression.py ..                                  [ 74%]
+tests\test_exporter.py ...                                               [ 77%]
+tests\test_isolation.py .                                                [ 78%]
+tests\test_pipeline.py .                                                 [ 79%]
+tests\test_projects.py ........                                          [ 88%]
 tests\test_scanner.py .....                                              [ 93%]
-tests\test_standalone_html.py .                                          [ 94%]
+tests\test_standalone_html.py .                                          [ 95%]
 tests\test_thumbnails.py .....                                           [100%]
 
-============================= 87 passed in 56.18s =============================
+============================= 91 passed in 355.24s =============================
 ```
-- **Summary**: 87 passed in 56.18s (0 failed, 0 skipped across 13 test files; 12.33s faster than pre-Phase-7).
+- **Summary**: 91 passed in 355.24s (0 failed, 0 skipped across 14 test files; includes cold 40-photo end-to-end regression benchmark and bbox pixel-level crop verification).
 
 ---
 
@@ -122,7 +123,7 @@ PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
 [PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
 [PASS] Check 4: Collision Audit by Face IDs: 1 collision instance verified (photo 4a9b927f5789cd69, faces ['f_4a9b927f5789cd69_001', 'f_4a9b927f5789cd69_005', 'f_4a9b927f5789cd69_007'], max distance 0.2878 <= 0.40, allowlist verified)
 [PASS] Check 5: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
-[PASS] Check 6: Pytest full suite execution passed (87 passed, 0 failures/errors)
+[PASS] Check 6: Pytest full suite execution passed (91 passed, 0 failures/errors)
 [PASS] Check 7: Section 13.2 Merge Arithmetic verified (83 pre-merge clusters -> 33 final clusters = 50 net merges, 242 - 50 = 192)
 [PASS] Check 8: Section 13.4 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
 [PASS] Check 9: Blocked Merges by Best-Face IDs verified (3 blocked links < 0.50 matched; 8 same_photo_conflict links total)
@@ -136,7 +137,7 @@ PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
 OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (15/15 CHECKS & TABLES VERIFIED)
 ================================================================================
 ```
-- **Summary**: 15/15 checks passed (Check 6: 87 passed, 0 failures/errors; Check 14: 53 files scanned with zero `\bp\d{3}\b` violations outside comments; Check 15: Drive export invariants verified).
+- **Summary**: 15/15 checks passed (Check 6: 91 passed, 0 failures/errors; Check 14: 53 files scanned with zero `\bp\d{3}\b` violations outside comments; Check 15: Drive export invariants verified).
 
 ---
 
@@ -670,15 +671,17 @@ Path      : <REPO_ROOT>\scratch\fresh_clone_pytest.txt
 ```
 - **Verbatim Output**:
 ```text
-......s.s.........................................................s..... [ 82%]
-...............                                                          [100%]
+......s.s.........................................................s..... [ 80%]
+........s.s....                                                          [100%]
 =========================== short test summary info ===========================
-SKIPPED [1] ..\AppData\Local\Temp\fresh_clone_audit\tests\test_api.py:445: Requires baseline fixture and embedding cache
-SKIPPED [1] ..\AppData\Local\Temp\fresh_clone_audit\tests\test_api.py:564: Requires baseline fixture and embedding cache
-SKIPPED [1] ..\AppData\Local\Temp\fresh_clone_audit\tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
-84 passed, 3 skipped in 13.27s
+SKIPPED [1] tests\test_api.py:445: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_api.py:564: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
+SKIPPED [1] tests\test_engine_cold_regression.py:28: test_photos directory not available in fresh clone
+SKIPPED [1] tests\test_engine_cold_regression.py:91: test_photos directory not available in fresh clone
+84 passed, 5 skipped in 13.85s
 ```
-- **Summary**: 84 passed, 3 skipped in 13.27s (0 failures; the 3 skipped tests cleanly require local live embedding caches).
+- **Summary**: 84 passed, 5 skipped in 13.85s (0 failures; the 3 skipped tests cleanly require local live embedding caches, and 2 cold regression tests cleanly skip when `test_photos/` is absent).
 
 #### 2. Frontend Vitest (`npm test -- --run`)
 - **Source File**: `scratch/fresh_clone_frontend.txt`
@@ -1047,10 +1050,22 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **11.6** | Standalone Single-File HTML Overhaul | `backend/engine/standalone_html.py` & `tests/test_standalone_html.py` | Embedded SVG camera-cat logo, 3-theme CSS vars, tactile cards, per-person sequential downloader, zero CDNs | Zero external scripts/CDNs verified; automatic export theme initialization; per-person download verified | **PASS** |
 | **11.7** | Public Bundle Hygiene & Invariant Verification | `eval/verify_export.py` | Check 2 (clean root directory: `config.json`, `people.json`, `faces`, `thumbs`, `index.html`, `assets`, `gallery.html`) | 15/15 checks pass; zero stray root files; zero organizer files in export | **PASS** |
 | **11.8** | Client & Backend API Type Safety | `frontend/src/api/client.ts` & `backend/api/models.py` | `theme?: string` parameter added to `exportBundle` and `ExportRequest` | `npx tsc --noEmit` 0 errors; clean IDE type checking | **PASS** |
-| **11.9** | Regression Suite Health Across Stack | `pytest`, `npm test` (`frontend/` & `viewer/`) | Full automated regression suites passing | Pytest 87/87 passed; Frontend Vitest 74/74 passed; Viewer Vitest 20/20 passed | **PASS** |
+| **11.9** | Regression Suite Health Across Stack | `pytest`, `npm test` (`frontend/` & `viewer/`) | Full automated regression suites passing | Pytest 91/91 passed; Frontend Vitest 74/74 passed; Viewer Vitest 20/20 passed | **PASS** |
 | **11.10** | Public Viewer Theme Lock | `viewer/src/components/Header.tsx`, `App.tsx`, `standalone_html.py` | Theme switcher radio buttons removed from viewer; `config.theme` is strictly authoritative without `localStorage` overrides | Verified 0 theme buttons in E2E test; viewer automatically applies organizer-selected export theme | **PASS** |
 | **11.11** | Paper / White Theme Readability & Contrast Overhaul | `backend/engine/standalone_html.py` & `viewer/src/index.css` | High-contrast text & numbers on cream paper; `.stats-bar strong` uses `var(--text-main)` (`#121316`) instead of `#fff` | Verified >14:1 contrast ratio; numbers and labels fully readable across cards, headers, modals, and search | **PASS** |
 | **11.12** | E2E Playwright Suite Verification | `viewer/scripts/verify_download_e2e.cjs` | 7-step full download verification: zip streaming, selection mode, card direct download, zero theme buttons | All 7 steps pass cleanly; screenshots captured in artifacts directory | **PASS** |
 
+---
 
+## 12. SCRIPT-CHECKED AUDIT: EMERGENCY ENGINE BREAKAGE INVESTIGATION, CACHE V2 & REGRESSION HARDENING
 
+| Item | Requirement & Test Scope | Test File / Script | Script-Checked Metric Target | Actual Result | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **12.1** | Cold run baseline reproduction | `eval/verify_export.py` & `check_baseline.py` | 192 people, 1,256 clustered, 445 unrec faces, 168 unrec photos, 259 photos | 100% bit-for-bit match (0 diffs across all 192 clusters and 445 unrec faces) | **PASS** |
+| **12.2** | First bad commit identification & bisect | `git bisect` & `git log` | Pinpoint commits introducing 384px and stale avatar crop reuse | Commit `2efc60e` (384px violation) & `7f58ad2` (`_resolve_face` reuse) identified | **PASS** |
+| **12.3** | Cache versioning & detector settings hash | `backend/engine/cache.py` & `tests/test_cache.py` | `CACHE_VERSION = 2`, `compute_settings_hash(...)`, reject invalid/stale entries | Version 2 enforcement, detector settings hash invalidation verified | **PASS** |
+| **12.4** | SPEC 6.2 default parameters restored | `eval/check_settings_spec.py` | `face_crop_size = 256`, 15/15 parameters match SPEC 6.2 | All 15 parameters match SPEC 6.2 across models, config, and frontend (100% OK) | **PASS** |
+| **12.5** | Avatar crop assignment decoupled from person ID | `backend/engine/exporter.py` | `_resolve_face` keys strictly by `face_id` and bbox, zero `person_id` reuse | Resolved directly by face ID and bbox fallback; zero cross-cluster avatar reuse | **PASS** |
+| **12.6** | Cold E2E regression on 40 photos | `tests/test_engine_cold_regression.py` | 77 people, 219 clustered, 202 unrec, 32 unrec photos on 40 photos vs pinned fixture | Exact match on counts, cluster membership, and representative face IDs | **PASS** |
+| **12.7** | Face & avatar crop pixel verification | `tests/test_engine_cold_regression.py` | 256x256 crops cut from original photo bboxes (mean pixel diff = 0.0000) | All crops match bbox in source photos, avatars match representative crops | **PASS** |
+| **12.8** | Full regression test suite pass | `pytest -q -rs` | 91 items collected across 14 test files | 91 passed, 0 failures, 0 errors | **PASS** |

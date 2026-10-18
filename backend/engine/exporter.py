@@ -19,7 +19,7 @@ class BundleExporter:
         output_dir: Path | str,
         cache_dir: Optional[Path | str] = None,
         thumb_size: int = 400,
-        face_crop_size: int = 384,
+        face_crop_size: int = 256,
     ):
         out_dir_str = str(output_dir or "export")
         if out_dir_str.startswith("http://") or out_dir_str.startswith("https://") or "drive.google.com" in out_dir_str:
@@ -69,34 +69,24 @@ class BundleExporter:
         face_id: str,
         face_dest: Path,
         cache_crops: Optional[Path],
-        person_id: Optional[str] = None,
         orig_photo: Optional[PhotoRecord] = None,
         bbox: Optional[list] = None,
     ) -> None:
-        if face_dest.exists():
-            return
+        # Strictly resolve by unique face_id (never by ephemeral person_id)
         if cache_crops and (cache_crops / f"{face_id}.jpg").exists():
             shutil.copy2(cache_crops / f"{face_id}.jpg", face_dest)
             return
         if self.cache_dir and (self.cache_dir / "crops" / f"{face_id}.jpg").exists():
             shutil.copy2(self.cache_dir / "crops" / f"{face_id}.jpg", face_dest)
             return
-        if self.cache_dir:
-            if person_id and (self.cache_dir / "faces" / f"{person_id}.jpg").exists():
-                shutil.copy2(self.cache_dir / "faces" / f"{person_id}.jpg", face_dest)
-                return
-            if (self.cache_dir / "faces" / f"{face_id}.jpg").exists():
-                shutil.copy2(self.cache_dir / "faces" / f"{face_id}.jpg", face_dest)
-                return
-            sibling_base = self.cache_dir.name.removesuffix(".work")
-            if person_id:
-                cand1 = self.cache_dir.parent / sibling_base / "faces" / f"{person_id}.jpg"
-                if cand1.exists():
-                    shutil.copy2(cand1, face_dest)
-                    return
-            cand2 = self.cache_dir.parent / f"{sibling_base}.work" / "crops" / f"{face_id}.jpg"
-            if cand2.exists():
-                shutil.copy2(cand2, face_dest)
+        if self.cache_dir and (self.cache_dir / "faces" / f"{face_id}.jpg").exists():
+            shutil.copy2(self.cache_dir / "faces" / f"{face_id}.jpg", face_dest)
+            return
+        sibling_base = self.cache_dir.name.removesuffix(".work") if self.cache_dir else None
+        if sibling_base and self.cache_dir:
+            cand = self.cache_dir.parent / f"{sibling_base}.work" / "crops" / f"{face_id}.jpg"
+            if cand.exists():
+                shutil.copy2(cand, face_dest)
                 return
         if orig_photo and orig_photo.original_path and Path(orig_photo.original_path).exists() and bbox:
             try:
@@ -168,7 +158,7 @@ class BundleExporter:
         for person in result.people:
             # Pick representative face if not assigned
             if person.rep_face is None:
-                person.rep_face = select_representative_face(person.faces, cache_crops=cache_crops)
+                person.rep_face = select_representative_face(person.faces)
 
             face_rel = f"faces/{person.id}.jpg"
             face_dest = self.output_dir / face_rel
@@ -178,7 +168,6 @@ class BundleExporter:
                 face_id=person.rep_face.face_id,
                 face_dest=face_dest,
                 cache_crops=cache_crops,
-                person_id=person.id,
                 orig_photo=orig_photo,
                 bbox=person.rep_face.bbox,
             )
