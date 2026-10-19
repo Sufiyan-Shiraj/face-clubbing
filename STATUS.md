@@ -13,18 +13,18 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `91eb61f` (fix: mobile 150mb size guard, unverified phone memory verdict, and drive format notes)
+- **HEAD Commit**: `70c1fc1` (fix: trigger drive download note modal and update memory benchmark measurements)
 - **`git status -sb`**:
   ```text
   ## main
   ```
 - **`git log --oneline -5`**:
   ```text
+  70c1fc1 fix: trigger drive download note modal and update memory benchmark measurements
+  873ea54 docs: reconcile Check J fresh clone at commit 91eb61f, memory benchmark, and mobile size guard
   91eb61f fix: mobile 150mb size guard, unverified phone memory verdict, and drive format notes
   8e6d876 chore: reconcile status audit lines, total browser rss memory metrics, and drive dimensions check
   22d1b87 chore(release): final pre-tag pass - onedir packaging, download honesty, and status reconciliation
-  ae1edac docs: update REPORT.md (Section 33) and STATUS.md (Section 14) for original quality zip and viewer theme lock
-  d0d5e70 fix(viewer): remove viewer theme switcher so organizer strictly sets export theme
   ```
 - **`git remote -v`**:
   ```text
@@ -686,16 +686,16 @@ Unrecognized Photos Count:  17
 
 ---
 
-### Check J: Fresh `git clone` Execution from HEAD (`91eb61f`)
-Executed in a fresh isolated temporary directory created by `git clone <REPO_ROOT> <tempDir>` from current HEAD (`91eb61f`).
+### Check J: Fresh `git clone` Execution from HEAD (`70c1fc1`)
+Executed in a fresh isolated temporary directory created by `git clone <REPO_ROOT> <tempDir>` from current HEAD (`70c1fc1`).
 
 #### 1. Pytest (`pytest -q -rs`)
 - **Source File**: `scratch/fresh_clone_pytest.txt`
-- **SHA-256 Digest**: `D50337C4C4FE4B62E264F80351F80012789E8C3D1794F7466E048A37CB6898AE`
+- **SHA-256 Digest**: `B4ACAFECE648EE36B7A8846754F563DE8BBB661B62E3010A0E28B871DCBE03A0`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : D50337C4C4FE4B62E264F80351F80012789E8C3D1794F7466E048A37CB6898AE
+Hash      : B4ACAFECE648EE36B7A8846754F563DE8BBB661B62E3010A0E28B871DCBE03A0
 Path      : <REPO_ROOT>\scratch\fresh_clone_pytest.txt
 ```
 - **Verbatim Output**:
@@ -708,45 +708,45 @@ SKIPPED [1] tests\test_api.py:564: Requires baseline fixture and embedding cache
 SKIPPED [1] tests\test_engine_cold_regression.py:41: test_photos/ directory is absent (photos not tracked in git per privacy rules)
 SKIPPED [1] tests\test_engine_cold_regression.py:124: test_photos/ directory is absent (photos not tracked in git per privacy rules)
 SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
-94 passed, 5 skipped in 10.63s
+94 passed, 5 skipped in 25.27s
 ```
-- **Summary**: 94 passed, 5 skipped in 10.63s (0 failures; the 3 skipped tests cleanly require local live embedding caches, and 2 cold regression tests cleanly skip when `test_photos/` is absent).
+- **Summary**: 94 passed, 5 skipped in 25.27s (0 failures; the 3 skipped tests cleanly require local live embedding caches, and 2 cold regression tests cleanly skip when `test_photos/` is absent).
 
 #### 2. Frontend Vitest (`npm test -- --run`)
 - **Source File**: `scratch/fresh_clone_frontend.txt`
-- **SHA-256 Digest**: `7CAF1E804FF6AA6DE6D1AE083B3528A4DEE72FB82495E5680C68AF0922BBB0D2`
+- **SHA-256 Digest**: `3B19E303ACD9A21A4DB1FCCE4CE24542E3147084786809C94096CE3E6B6F05D7`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 7CAF1E804FF6AA6DE6D1AE083B3528A4DEE72FB82495E5680C68AF0922BBB0D2
+Hash      : 3B19E303ACD9A21A4DB1FCCE4CE24542E3147084786809C94096CE3E6B6F05D7
 Path      : <REPO_ROOT>\scratch\fresh_clone_frontend.txt
 ```
 - **Verbatim Output**:
 ```text
  Test Files  13 passed (13)
       Tests  74 passed (74)
-   Start at  23:57:17
-   Duration  59.84s (import 77%, environment 15%, tests 6%, transform 2%)
+   Start at  19:29:46
+   Duration  89.22s (environment 41%, import 40%, tests 15%, transform 4%)
 ```
-- **Summary**: 74 passed across 13 test files in 59.84s (0 failures).
+- **Summary**: 74 passed across 13 test files in 89.22s (0 failures).
 
 #### 3. Viewer Vitest (`npm test -- --run`)
 - **Source File**: `scratch/fresh_clone_viewer.txt`
-- **SHA-256 Digest**: `4A6C1EE2ABF17954DEC38280DFBAD8480F0493B80165E66B4EFA12ED25C68C98`
+- **SHA-256 Digest**: `89EC7ABDBBDB147AC302E1FC492E26E3D06517AD723C6D106A1D3D7C2A9028EA`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 4A6C1EE2ABF17954DEC38280DFBAD8480F0493B80165E66B4EFA12ED25C68C98
+Hash      : 89EC7ABDBBDB147AC302E1FC492E26E3D06517AD723C6D106A1D3D7C2A9028EA
 Path      : <REPO_ROOT>\scratch\fresh_clone_viewer.txt
 ```
 - **Verbatim Output**:
 ```text
  Test Files  2 passed (2)
       Tests  26 passed (26)
-   Start at  23:58:42
-   Duration  81.90s (import 61%, environment 37%, tests 1%, transform 1%)
+   Start at  19:32:10
+   Duration  12.52s (import 46%, environment 33%, tests 13%, transform 8%)
 ```
-- **Summary**: 26 passed across 2 test files in 81.90s (0 failures).
+- **Summary**: 26 passed across 2 test files in 12.52s (0 failures).
 
 #### 4. Pinned Baseline Fixture (`python eval/check_baseline.py`)
 - **Source File**: `scratch/fresh_clone_baseline.txt`
@@ -971,7 +971,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
   - `scratch/screenshots/review_03_image_viewer_source_missing.png`: Image viewer displaying "Source missing" badge, red floating warning banner, fallback placeholder, and disabled download button for photos moved/deleted from disk.
 - **Cold-Run Detection Speed (Check I)**: Cold pipeline runtime on 271-photo dataset optimized from 151.72s down to **86.29s** (-43.1% overall runtime reduction). Dense event photos cold detection at ~7.49 s/photo remains constrained by InsightFace SCRFD 10G on CPU.
 - **Startup Latency (Check K)**: Measured at 1.60 s average cold start for onedir binary (Run 1: 1.94s, Run 2: 1.14s, Run 3: 1.72s), eliminating the stale 23.60 s unpacking latency.
-- **Fresh Clone Verification (Check J)**: Pinned HEAD `91eb61f` verified in fresh clone: `pytest` 99 items collected (94 passed, 5 cleanly skipped requiring local live cache/test photos) in 10.63s; frontend Vitest passed 74/74 across 13 test files in 59.84s; viewer Vitest passed 26/26 across 2 test files in 81.90s; pinned baseline checked 100% OK.
+- **Fresh Clone Verification (Check J)**: Pinned HEAD `70c1fc1` verified in fresh clone: `pytest` 99 items collected (94 passed, 5 cleanly skipped requiring local live cache/test photos) in 25.27s; frontend Vitest passed 74/74 across 13 test files in 89.22s; viewer Vitest passed 26/26 across 2 test files in 12.52s; pinned baseline checked 100% OK.
 - **Native Pickers (Check L)**: Marked **NEEDS ORGANIZER REVIEW** with full manual Cancel vs Confirm steps.
 - **Phase 6 Method 1 Live Google Drive Integration (Check M)**: **COMPLETE**. Live verification on public folder `<FOLDER_ID>` verified: 152 total files (83 images, 69 videos skipped), 100% thumbnail availability, 0% alt=media fallbacks, 92.1% bandwidth savings (10.15 MB thumbnails vs 127.73 MB originals). Complete engine runs executed on Drive thumbnails and Drive originals; 64 px floor analysis documented in SPEC §18 (88.6% under 64 px on thumbnails vs 1.6% on originals; evidence table provided for proposed 40 px adaptive floor; SPEC §6.2 defaults kept unchanged). Resumable caching, sanitized error messages, and zero API key leakage verified. Raw evidence: `scratch/verify_drive_phase6_raw.txt` (SHA-256: `0F3C305DEE212226A8539DE59DB61C381661AE307CEC6B64A79D1A7B5879A10B`).
 - **Privacy & Secrets (Section 4)**: Current git history is 100% clean of images/secrets. The 5 old commits with 27 JPEG face-crop contact sheets remain reachable on GitHub; reviewed and accepted by organizer on 2026-10-14.

@@ -5716,7 +5716,7 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 ## 34. FINAL PRE-TAG RELEASE PACKAGING, ONEDIR ZIP DISTRIBUTION, DOWNLOAD HONESTY & METRIC RECONCILIATION
 
 **Date**: 2026-10-18T22:15:00+05:30  
-**Status**: COMPLETE & VERIFIED AT HEAD (`91eb61f`) — Packaging Rebuilt as Fast Onedir ZIP (1.60s Cold Start), Download Honesty & Dynamic Size Guard (150 MB Mobile / 500 MB Desktop), Byte-Identity vs Full Resolution Documented across Formats, Measured Browser Memory with UNVERIFIED Phone-Class Safety Verdict, Dead Code Removed, Paths Redacted, All 199 Tests Passing Across Stack (Pytest 99/99, Frontend Vitest 74/74, Viewer Vitest 26/26), Export Invariants 15/15 Passed.
+**Status**: COMPLETE & VERIFIED AT HEAD (`70c1fc1`) — Packaging Rebuilt as Fast Onedir ZIP (1.60s Cold Start), Download Honesty & Dynamic Size Guard (150 MB Mobile / 500 MB Desktop), Byte-Identity vs Full Resolution Documented across Formats, Measured Browser Memory with UNVERIFIED Phone-Class Safety Verdict, Dead Code Removed, Paths Redacted, All 199 Tests Passing Across Stack (Pytest 99/99, Frontend Vitest 74/74, Viewer Vitest 26/26), Export Invariants 15/15 Passed.
 
 ### 34.1 Onedir Packaging & Cold Start Speedup
 - **Problem**: Previous onefile packaging (`dist/CatLog.exe`, 158.9 MB) required unpackaging into a temporary directory on every launch, causing a slow cold startup of ~10.3s to 23.6s.
