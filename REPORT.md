@@ -5777,24 +5777,24 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
     - User is offered a choice to download as split-into-parts ZIP archives (~100 MB mobile, ~250 MB desktop) or proceed with a single archive.
   - **Total Browser Memory Measured on 100 Photos (`viewer/scripts/measure_zip_memory.cjs`)**:
     - Synthetic 250 MB 100-photo archive (2.50 MB realistic event photos) packaged via headless Chromium with continuous process working set (RSS via psutil/CDP) and JS heap sampling:
-    - Packaging Duration: **3.31 seconds** (Streaming throughput: 75.53 MB/s).
+    - Packaging Duration: **5.85 seconds** (Streaming throughput: 42.72 MB/s).
     - **Process Working Set (Total Resident Memory / RSS)**:
-      - Total Chromium Tree Baseline: **393.22 MB**
-      - Total Chromium Tree Peak: **944.60 MB** (Delta: 551.38 MB across browser download manager, renderer buffers, GPU, and network services).
-      - Renderer Process Baseline: **109.77 MB**
-      - Renderer Process Peak RSS: **371.27 MB** (Delta: 261.50 MB, Webview tab process).
-      - Browser Main Process Baseline: **103.04 MB**
-      - Browser Main Process Peak RSS: **361.87 MB** (Host download stream).
+      - Total Chromium Tree Baseline: **367.32 MB**
+      - Total Chromium Tree Peak: **948.81 MB** (Delta: 581.49 MB across browser download manager, renderer buffers, GPU, and network services).
+      - Renderer Process Baseline: **94.22 MB**
+      - Renderer Process Peak RSS: **374.66 MB** (Delta: 280.44 MB, Webview tab process).
+      - Browser Main Process Baseline: **104.54 MB**
+      - Browser Main Process Peak RSS: **363.70 MB** (Host download stream).
     - **V8 JavaScript Heap**:
-      - Baseline JS Heap: **3.25 MB**
-      - Peak JS Heap: **69.14 MB** (Peak Expansion: 65.89 MB).
-      - Post-GC JS Heap: **43.63 MB**.
+      - Baseline JS Heap: **3.41 MB**
+      - Peak JS Heap: **70.66 MB** (Peak Expansion: 67.26 MB).
+      - Post-GC JS Heap: **61.14 MB**.
     - **Safety Analysis for Phone-Class Browsers**:
       - Verdict: **UNVERIFIED**.
       - Mobile operating systems (iOS WebKit Jetsam and Android Low Memory Killer / LMK) enforce aggressive per-process working set limits (often terminating tabs exceeding 300-400 MB on memory-constrained devices).
-      - For a 250 MB archive, the desktop renderer process peaked at **371.27 MB**. Safety cannot be claimed for mobile hardware without empirical testing on physical mobile devices or under dedicated mobile emulation with enforced Jetsam limits.
+      - For a 250 MB archive, the desktop renderer process peaked at **374.66 MB**. Safety cannot be claimed for mobile hardware without empirical testing on physical mobile devices or under dedicated mobile emulation with enforced Jetsam limits.
       - **Conservative Mitigation Implemented**: Lowered the mobile zip size guard to 150 MB with ~100 MB split parts, preventing constrained phone browsers from attempting 250+ MB client-side archives.
-    - Raw Output: `scratch/peak_browser_memory_100_photos.txt` (SHA-256: `e7abfa82ab4150a69dd5a6d5942743cd79b7470de0f88dd5d96cfe6b54496a8e`).
+    - Raw Output: `scratch/peak_browser_memory_100_photos.txt` (SHA-256: `84E175BAF709E96BF0129164E1678DEC93EDE0449ABC96985C8BAFE26C15FFCB`).
 
 ### 34.5 Codebase Cleanup: Dead Code & Paths
 - **Dead Code Removed**: `git rm backend/engine/cropper.py`. Unused imports removed from `scanner.py` and `pipeline.py`. `vulture` dead-code audit reports 0 dead code.

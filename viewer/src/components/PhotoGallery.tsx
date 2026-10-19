@@ -180,6 +180,12 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
 
     if (validItems.length === 0) return;
 
+    const isDrive = validItems.some((item) => isDrivePhoto(item.photo));
+    if (isDrive && typeof window !== 'undefined' && window.sessionStorage?.getItem('catlog-drive-dl-note-shown') !== '1') {
+      setShowDriveNoteModal(true);
+      return;
+    }
+
     const check = checkDownloadSize(validItems);
     if (check.isOverThreshold) {
       setSizeGuardModal({
