@@ -94,7 +94,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         {showSubtitle && (
           <span
             style={{
-              fontSize: '9px',
+              fontSize: '12px',
               fontFamily: 'monospace',
               fontWeight: 700,
               color: 'var(--muted)',

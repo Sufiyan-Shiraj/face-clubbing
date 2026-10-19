@@ -307,7 +307,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
                   border: '1px solid var(--line)',
                   background: 'var(--panel)',
                   color: 'var(--muted)',
-                  fontSize: '11px',
+                  fontSize: '12px',
                   fontWeight: 700,
                 }}
               >
@@ -339,7 +339,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
                 </span>
               )}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>
               Detached Window • Main window can be minimized safely while this remains active
             </div>
           </div>
@@ -434,7 +434,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
               type="button"
               onClick={() => setLogSearchQuery('')}
               style={{
-                fontSize: '11px',
+                fontSize: '12px',
                 color: 'var(--muted)',
                 background: 'none',
                 border: 'none',
@@ -462,7 +462,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
               style={{
                 padding: '2px 8px',
                 borderRadius: '3px',
-                fontSize: '11px',
+                fontSize: '12px',
                 fontWeight: stageFilter === chip.id ? 700 : 500,
                 border: '1px solid var(--line)',
                 background: stageFilter === chip.id ? 'var(--accent)' : 'var(--input)',
@@ -479,7 +479,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '5px',
-              fontSize: '11px',
+              fontSize: '12px',
               color: 'var(--muted)',
               cursor: 'pointer',
               marginLeft: '8px',
@@ -537,7 +537,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
                 <span
                   style={{
                     color: 'var(--muted)',
-                    fontSize: '11px',
+                    fontSize: '12px',
                     minWidth: '34px',
                     textAlign: 'right',
                     userSelect: 'none',
@@ -551,7 +551,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
                   style={{
                     padding: '1px 6px',
                     borderRadius: '3px',
-                    fontSize: '10px',
+                    fontSize: '12px',
                     fontWeight: 700,
                     textTransform: 'uppercase',
                     background: 'var(--panel)',
@@ -573,7 +573,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
                 style={{
                   color: 'var(--accent-ink)',
                   fontWeight: 700,
-                  fontSize: '11px',
+                  fontSize: '12px',
                   flexShrink: 0,
                   fontFamily: 'inherit',
                 }}
@@ -594,7 +594,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
           padding: '8px 18px',
           borderTop: '2px solid var(--line)',
           background: 'var(--bg)',
-          fontSize: '11px',
+          fontSize: '12px',
           color: 'var(--muted)',
           flexShrink: 0,
         }}
@@ -625,7 +625,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
               color: 'var(--accent)',
               cursor: 'pointer',
               textDecoration: 'underline',
-              fontSize: '11px',
+              fontSize: '12px',
               fontFamily: 'inherit',
             }}
           >
