@@ -40,6 +40,8 @@ export const MascotSticker: React.FC<MascotStickerProps> = ({
   width,
   height,
 }) => {
+  const themeFolder = theme === 't-navy' ? 'navy' : theme === 't-paper' ? 'paper' : 'dark';
+  const clampedPose = Math.max(1, Math.min(8, Math.round(pose)));
   const src = getMascotUrl(theme, pose);
   const defaultAlt = `CatLog Mascot - ${MASCOT_POSE_LABELS[pose] || `Pose ${pose}`}`;
 
@@ -57,8 +59,13 @@ export const MascotSticker: React.FC<MascotStickerProps> = ({
       width={width}
       height={height}
       onError={(e) => {
-        // Hide if mascot sticker is not found
-        (e.target as HTMLElement).style.display = 'none';
+        const target = e.currentTarget;
+        if (!target.dataset.retried) {
+          target.dataset.retried = 'true';
+          target.src = `./assets/mascot/${themeFolder}/pose${clampedPose}.png`;
+          return;
+        }
+        target.style.display = 'none';
       }}
     />
   );

@@ -5,6 +5,7 @@ directly via double-click (file:// protocol) in any browser without CORS errors,
 while loading local images from faces/ and thumbs/ relative paths.
 """
 
+import base64
 import json
 from pathlib import Path
 from typing import Dict, Any
@@ -241,49 +242,82 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       box-shadow: 1px 1px 0 var(--shadow-color);
     }
 
-    /* Theme Switcher */
-    .theme-switcher {
+    /* Brand Badge & Header Elements */
+    .brand-container {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .catlog-brand-badge {
       display: inline-flex;
       align-items: center;
-      gap: 0.25rem;
-      padding: 0.25rem;
-      border-radius: 9999px;
+      gap: 8px;
+      cursor: default;
+      user-select: none;
+      text-decoration: none;
+    }
+
+    .catlog-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
       border: 2px solid var(--border-color);
-      background: var(--bg-card);
       box-shadow: 2px 2px 0 var(--shadow-color);
-    }
-
-    .theme-btn {
-      display: inline-flex;
+      background: var(--bg-card);
+      display: flex;
       align-items: center;
-      gap: 0.35rem;
-      padding: 0.35rem 0.65rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--text-muted);
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      transition: all 0.15s ease;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
     }
 
-    .theme-btn:hover {
+    .catlog-icon-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .catlog-brand-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .catlog-brand-name {
+      font-family: 'Outfit', 'Archivo Black', 'Inter', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 900;
       color: var(--text-main);
+      letter-spacing: -0.02em;
+      text-shadow: 1.5px 1.5px 0 var(--color-accent);
+      line-height: 1;
     }
 
-    .theme-btn.active {
-      background: var(--color-accent);
-      color: #ffffff;
-      box-shadow: 1px 1px 0 var(--shadow-color);
+    .catlog-brand-sub {
+      font-size: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 3px;
     }
 
-    .theme-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      display: inline-block;
+    .brand-divider {
+      width: 2px;
+      height: 28px;
+      background: var(--border-color);
+      margin: 0 0.15rem;
+    }
+
+    @media (max-width: 640px) {
+      .brand-divider {
+        display: none;
+      }
     }
 
     /* Main Container */
@@ -757,13 +791,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <!-- Top Header -->
   <header>
     <div class="header-container">
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <div style="width:38px; height:38px; border-radius:10px; border:2px solid var(--border-color); box-shadow:2px 2px 0 var(--shadow-color); background:var(--bg-card); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-            <circle cx="12" cy="13" r="3"/>
-          </svg>
+      <div class="brand-container">
+        <div class="catlog-brand-badge" title="CatLog — Who was at the event?">
+          <div class="catlog-icon-box">
+            <img src="__CATLOG_ICON_DATA__" alt="CatLog" />
+          </div>
+          <div class="catlog-brand-text">
+            <span class="catlog-brand-name">CatLog</span>
+            <span class="catlog-brand-sub">WHO WAS AT THE EVENT?</span>
+          </div>
         </div>
+
+        <div class="brand-divider"></div>
+
         <div class="brand-title">
           <h1 id="event-title">__TITLE__</h1>
           <p id="event-subtitle">__SUBTITLE__</p>
@@ -783,21 +823,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <button class="nav-tab active" data-tab="people">People</button>
           <button class="nav-tab" data-tab="photos">All Photos</button>
           <button class="nav-tab" data-tab="unrecognized">Unrecognized</button>
-        </div>
-
-        <div class="theme-switcher" role="radiogroup" aria-label="Theme selector">
-          <button type="button" class="theme-btn" data-theme="t-dark" title="Dark tactile theme">
-            <span class="theme-dot" style="background:#fa7175;"></span>
-            <span>Dark</span>
-          </button>
-          <button type="button" class="theme-btn" data-theme="t-paper" title="Paper risograph theme">
-            <span class="theme-dot" style="background:#d94b4f;"></span>
-            <span>Paper</span>
-          </button>
-          <button type="button" class="theme-btn" data-theme="t-navy" title="Navy midnight theme">
-            <span class="theme-dot" style="background:#38bdf8;"></span>
-            <span>Navy</span>
-          </button>
         </div>
       </div>
     </div>
@@ -866,7 +891,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   <!-- Footer -->
   <footer>
-    <p>__FOOTER__</p>
+    <div style="max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <img src="__MASCOT_POSE6_DATA__" class="mascot-footer" alt="CatLog Mascot" onerror="this.style.display='none'" style="width: 32px; height: 32px; object-fit: contain;" />
+        <p style="margin: 0;">__FOOTER__</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span class="badge-chip" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 9999px; border: 1.5px solid var(--border-color); background: var(--bg-main); color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-weight: 700;">CatLog v0.1.0</span>
+      </div>
+    </div>
   </footer>
 
   <!-- Inline Gallery Dataset -->
@@ -937,7 +970,12 @@ __CONFIG_JSON__
         });
 
         if (filtered.length === 0) {
-          peopleGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 3rem;">No people match your search.</p>';
+          peopleGrid.innerHTML = `
+            <div style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 1rem; text-align: center;">
+              <img src="__MASCOT_POSE2_DATA__" alt="Searching" onerror="this.style.display='none'" style="width: 96px; height: 96px; object-fit: contain; margin-bottom: 0.75rem;" />
+              <p style="color: var(--text-muted); font-size: 0.95rem; font-family: 'JetBrains Mono', monospace; font-weight: 600;">No people match your search.</p>
+            </div>
+          `;
           return;
         }
 
@@ -985,7 +1023,12 @@ __CONFIG_JSON__
         });
 
         if (filtered.length === 0) {
-          photosGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 3rem;">No photos match your search.</p>';
+          photosGrid.innerHTML = `
+            <div style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 1rem; text-align: center;">
+              <img src="__MASCOT_POSE2_DATA__" alt="Searching" onerror="this.style.display='none'" style="width: 96px; height: 96px; object-fit: contain; margin-bottom: 0.75rem;" />
+              <p style="color: var(--text-muted); font-size: 0.95rem; font-family: 'JetBrains Mono', monospace; font-weight: 600;">No photos match your search.</p>
+            </div>
+          `;
           return;
         }
 
@@ -1029,7 +1072,12 @@ __CONFIG_JSON__
         unrecGrid.innerHTML = '';
         const unrecFaces = (data.unrecognized && data.unrecognized.faces) || [];
         if (unrecFaces.length === 0) {
-          unrecGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 3rem;">No unrecognized faces.</p>';
+          unrecGrid.innerHTML = `
+            <div style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 1rem; text-align: center;">
+              <img src="__MASCOT_POSE6_DATA__" alt="All Clear" onerror="this.style.display='none'" style="width: 96px; height: 96px; object-fit: contain; margin-bottom: 0.75rem;" />
+              <p style="color: var(--text-muted); font-size: 0.95rem; font-family: 'JetBrains Mono', monospace; font-weight: 600;">No unrecognized faces — all faces organized!</p>
+            </div>
+          `;
           return;
         }
 
@@ -1464,34 +1512,10 @@ __CONFIG_JSON__
         });
       });
 
-      // Apply configured export theme & interactive switcher
-      function applyTheme(themeName) {
-        if (!themeName || !['t-dark', 't-paper', 't-navy'].includes(themeName)) {
-          themeName = 't-dark';
-        }
-        document.body.classList.remove('t-dark', 't-paper', 't-navy');
-        document.body.classList.add(themeName);
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.theme === themeName);
-        });
-        try { localStorage.setItem('catlog-viewer-theme', themeName); } catch (e) {}
-      }
-
-      document.querySelectorAll('.theme-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          applyTheme(btn.dataset.theme);
-        });
-      });
-
-      // Apply initial theme from saved preference or config
-      let initTheme = config.theme || 't-dark';
-      try {
-        const saved = localStorage.getItem('catlog-viewer-theme');
-        if (saved && ['t-dark', 't-paper', 't-navy'].includes(saved)) {
-          initTheme = saved;
-        }
-      } catch (e) {}
-      applyTheme(initTheme);
+      // Enforce organizer configured export theme (no viewer toggle or localStorage override)
+      const exportTheme = config.theme || '__THEME__' || 't-dark';
+      document.body.classList.remove('t-dark', 't-paper', 't-navy');
+      document.body.classList.add(exportTheme);
 
       // Search Handler
       searchInput.addEventListener('input', (e) => {
@@ -1509,6 +1533,9 @@ __CONFIG_JSON__
 """
 
 
+CATLOG_ICON_DATA_URI = "data:image/png;base64,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"
+
+
 def generate_standalone_gallery_html(people_data: Dict[str, Any], config_data: Dict[str, Any]) -> str:
     """Produces the complete standalone HTML string with inline data and reactive UI."""
     people_json_str = json.dumps(people_data, ensure_ascii=False)
@@ -1520,6 +1547,18 @@ def generate_standalone_gallery_html(people_data: Dict[str, Any], config_data: D
     if theme not in ("t-dark", "t-paper", "t-navy"):
         theme = "t-dark"
 
+    theme_folder = "navy" if theme == "t-navy" else ("paper" if theme == "t-paper" else "dark")
+    mascot_dir = Path(__file__).resolve().parent.parent.parent / "viewer" / "public" / "mascot" / theme_folder
+    pose2_uri = ""
+    pose6_uri = ""
+    if mascot_dir.exists():
+        p2_path = mascot_dir / "pose2.png"
+        p6_path = mascot_dir / "pose6.png"
+        if p2_path.exists():
+            pose2_uri = "data:image/png;base64," + base64.b64encode(p2_path.read_bytes()).decode("ascii")
+        if p6_path.exists():
+            pose6_uri = "data:image/png;base64," + base64.b64encode(p6_path.read_bytes()).decode("ascii")
+
     footer = config_data.get("footer", "Published with CatLog — Who was at the event?")
     default_accent = "#d94b4f" if theme == "t-paper" else "#fa7175"
     accent = config_data.get("accent") or default_accent
@@ -1530,6 +1569,10 @@ def generate_standalone_gallery_html(people_data: Dict[str, Any], config_data: D
         .replace("__ACCENT__", accent)
         .replace("__FOOTER__", footer)
         .replace("__THEME__", theme)
+        .replace("__THEME_FOLDER__", theme_folder)
+        .replace("__CATLOG_ICON_DATA__", CATLOG_ICON_DATA_URI)
+        .replace("__MASCOT_POSE2_DATA__", pose2_uri)
+        .replace("__MASCOT_POSE6_DATA__", pose6_uri)
         .replace("__PEOPLE_JSON__", people_json_str)
         .replace("__CONFIG_JSON__", config_json_str)
     )

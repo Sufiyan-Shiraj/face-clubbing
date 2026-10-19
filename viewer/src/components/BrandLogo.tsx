@@ -64,8 +64,13 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
             display: 'block',
           }}
           onError={(e) => {
-            // Fallback to SVG camera icon if png not found
             const target = e.currentTarget;
+            if (!target.dataset.retried) {
+              target.dataset.retried = 'true';
+              target.src = './assets/catlog-icon.png';
+              return;
+            }
+            // Fallback to SVG camera icon if png not found
             target.style.display = 'none';
             if (target.parentElement) {
               target.parentElement.innerHTML = `
