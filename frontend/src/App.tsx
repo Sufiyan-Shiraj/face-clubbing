@@ -11,6 +11,7 @@ import {
 } from './types';
 import { Header, RisoTheme } from './components/Header';
 import { HomeScreen } from './components/HomeScreen';
+import { CustomDialog, DialogOptions } from './components/CustomDialog';
 import { AlertTriangle, X } from 'lucide-react';
 
 const ProgressScreen = React.lazy(() => import('./components/ProgressScreen').then(m => ({ default: m.ProgressScreen })));
@@ -250,6 +251,59 @@ export const App: React.FC = () => {
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [isMerging, setIsMerging] = useState<boolean>(false);
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
+
+  // Custom tactile dialog state
+  const [dialogState, setDialogState] = useState<DialogOptions>({
+    isOpen: false,
+    type: 'error',
+    message: '',
+  });
+
+  const showErrorDialog = useCallback((message: string, details?: string, title?: string) => {
+    setDialogState({
+      isOpen: true,
+      type: 'error',
+      title: title || 'Action Failed',
+      message,
+      details,
+      confirmLabel: 'Dismiss',
+      onConfirm: () => setDialogState((prev) => ({ ...prev, isOpen: false })),
+      onCancel: () => setDialogState((prev) => ({ ...prev, isOpen: false })),
+    });
+  }, []);
+
+  const showActiveProjectGuard = useCallback((actionDescription: string, onProceed: () => void) => {
+    setDialogState({
+      isOpen: true,
+      type: 'active-project',
+      title: 'Active Project in Progress',
+      subtitle: 'Unexported albums and edits detected',
+      message: `You have an active project with unexported work.\n\nProceeding to ${actionDescription} will replace your current workspace.\n\nWould you like to export your albums first, or discard unexported changes?`,
+      exportLabel: 'Export First (Recommended)',
+      confirmLabel: 'Discard & Proceed',
+      cancelLabel: 'Keep Project',
+      onExportFirst: () => {
+        setDialogState((prev) => ({ ...prev, isOpen: false }));
+        handleTabChange('export');
+      },
+      onConfirm: () => {
+        setDialogState((prev) => ({ ...prev, isOpen: false }));
+        onProceed();
+      },
+      onCancel: () => setDialogState((prev) => ({ ...prev, isOpen: false })),
+    });
+  }, []);
+
+  // Intercept window.alert so all child components also render CustomDialog
+  useEffect(() => {
+    const originalAlert = window.alert;
+    window.alert = (msg?: any) => {
+      showErrorDialog(String(msg ?? 'An error occurred'));
+    };
+    return () => {
+      window.alert = originalAlert;
+    };
+  }, [showErrorDialog]);
 
   // Persistent Home Screen State
   const [sourceMode, setSourceMode] = useState<'drive' | 'local' | 'zip'>(() => {
@@ -625,7 +679,7 @@ export const App: React.FC = () => {
         await loadAllData();
       }
     } catch (err: any) {
-      alert(`Merge failed: ${err.message || err}`);
+      showErrorDialog(`Merge failed: ${err.message || err}`);
     } finally {
       setIsMerging(false);
     }
@@ -652,7 +706,7 @@ export const App: React.FC = () => {
         await loadAllData();
       }
     } catch (err: any) {
-      alert(`Suggestion accept failed: ${err.message || err}`);
+      showErrorDialog(`Suggestion accept failed: ${err.message || err}`);
     }
   };
 
@@ -670,7 +724,7 @@ export const App: React.FC = () => {
         await loadAllData();
       }
     } catch (err: any) {
-      alert(`Assign face failed: ${err.message || err}`);
+      showErrorDialog(`Assign face failed: ${err.message || err}`);
     }
   };
 
@@ -682,7 +736,7 @@ export const App: React.FC = () => {
         await loadAllData();
       }
     } catch (err: any) {
-      alert(`Batch assign failed: ${err.message || err}`);
+      showErrorDialog(`Batch assign failed: ${err.message || err}`);
     }
   };
 
@@ -694,7 +748,7 @@ export const App: React.FC = () => {
         await loadAllData();
       }
     } catch (err: any) {
-      alert(`Assign photos failed: ${err.message || err}`);
+      showErrorDialog(`Assign photos failed: ${err.message || err}`);
     }
   };
 
@@ -707,7 +761,7 @@ export const App: React.FC = () => {
         await loadAllData();
       }
     } catch (err: any) {
-      alert(`Rename failed: ${err.message || err}`);
+      showErrorDialog(`Rename failed: ${err.message || err}`);
     }
   };
 
@@ -719,7 +773,7 @@ export const App: React.FC = () => {
         await loadAllData();
       }
     } catch (err: any) {
-      alert(`Hide failed: ${err.message || err}`);
+      showErrorDialog(`Hide failed: ${err.message || err}`);
     }
   };
 
@@ -731,7 +785,7 @@ export const App: React.FC = () => {
         await loadAllData();
       }
     } catch (err: any) {
-      alert(`Remove face failed: ${err.message || err}`);
+      showErrorDialog(`Remove face failed: ${err.message || err}`);
     }
   };
 
@@ -743,7 +797,7 @@ export const App: React.FC = () => {
         await loadAllData();
       }
     } catch (err: any) {
-      alert(`Remove photo failed: ${err.message || err}`);
+      showErrorDialog(`Remove photo failed: ${err.message || err}`);
     }
   };
 
@@ -755,10 +809,10 @@ export const App: React.FC = () => {
         setAppliedEditsCount((c) => Math.max(0, c - 1));
         await loadAllData();
       } else {
-        alert(res.message || 'No edits to undo');
+        showErrorDialog(res.message || 'No edits to undo', undefined, 'Undo Status');
       }
     } catch (err: any) {
-      alert(`Undo failed: ${err.message || err}`);
+      showErrorDialog(`Undo failed: ${err.message || err}`);
     }
   };
 
@@ -773,10 +827,39 @@ export const App: React.FC = () => {
             (check.is_different_source
               ? `Source folder is different from the previous scan (${inputPath || driveFolder} vs ${check.previous_source || 'previous'}). Default: Start fresh.\n\n`
               : '') +
-            `Click OK to Keep saved edits, or Cancel to Start fresh with empty edits.`;
-          keepEdits = window.confirm(promptMsg);
+            `Would you like to keep saved edits or start fresh with empty edits?`;
+
+          const userChoice = await new Promise<'keep' | 'fresh' | 'cancel'>((resolve) => {
+            setDialogState({
+              isOpen: true,
+              type: 'saved-edits',
+              title: 'Saved Edits Detected',
+              subtitle: `${check.saved_edits_count} edits from previous scan`,
+              message: promptMsg,
+              confirmLabel: 'Keep Saved Edits',
+              secondaryLabel: 'Start Fresh',
+              cancelLabel: 'Cancel Scan',
+              onConfirm: () => {
+                setDialogState((prev) => ({ ...prev, isOpen: false }));
+                resolve('keep');
+              },
+              onSecondaryAction: () => {
+                setDialogState((prev) => ({ ...prev, isOpen: false }));
+                resolve('fresh');
+              },
+              onCancel: () => {
+                setDialogState((prev) => ({ ...prev, isOpen: false }));
+                resolve('cancel');
+              },
+            });
+          });
+
+          if (userChoice === 'cancel') {
+            return;
+          }
+          keepEdits = userChoice === 'keep';
         }
-      } catch (checkErr) {
+      } catch (checkErr: any) {
         console.warn('Failed to check edits prior to scan:', checkErr);
       }
 
@@ -785,7 +868,7 @@ export const App: React.FC = () => {
       setProgressHistory([st]);
       setActiveTab('progress');
     } catch (err: any) {
-      alert(`Failed to start sorting job: ${err.message || err}`);
+      showErrorDialog(`Failed to start sorting job: ${err.message || err}`);
     }
   };
 
@@ -796,7 +879,7 @@ export const App: React.FC = () => {
       const st = await api.cancelJob();
       setJobStatus(st);
     } catch (err: any) {
-      alert(`Cancel failed: ${err.message || err}`);
+      showErrorDialog(`Cancel failed: ${err.message || err}`);
     } finally {
       setIsCancelling(false);
     }
@@ -816,6 +899,12 @@ export const App: React.FC = () => {
   const [projectReadOnlyNotice, setProjectReadOnlyNotice] = useState<string | null>(null);
 
   const handleOpenProject = () => {
+    if (hasUnexportedWork) {
+      showActiveProjectGuard('open another project', () => {
+        setIsOpenProjectModalOpen(true);
+      });
+      return;
+    }
     setIsOpenProjectModalOpen(true);
   };
 
@@ -823,14 +912,7 @@ export const App: React.FC = () => {
     setIsTutorialOpen(true);
   };
 
-  const handleNewProject = async () => {
-    if (hasUnexportedWork) {
-      const confirmMsg =
-        'You have an active project with unexported work.\n\nAre you sure you want to start a new project? Any unsaved edits will be discarded.';
-      if (!window.confirm(confirmMsg)) {
-        return;
-      }
-    }
+  const executeNewProject = async () => {
     try {
       await api.newProject();
     } catch (e) {
@@ -864,6 +946,14 @@ export const App: React.FC = () => {
       localStorage.removeItem('photosorter-verified-img-count');
     } catch (e) { }
     setActiveTab('home');
+  };
+
+  const handleNewProject = async () => {
+    if (hasUnexportedWork) {
+      showActiveProjectGuard('start a new project', executeNewProject);
+      return;
+    }
+    await executeNewProject();
   };
 
   const handleProjectOpened = async (res: OpenProjectResponse) => {
@@ -1135,6 +1225,9 @@ export const App: React.FC = () => {
           />
         )}
       </React.Suspense>
+
+      {/* CatLog Tactile Custom Dialog for errors & active-project guard */}
+      <CustomDialog {...dialogState} theme={theme} />
     </div>
   );
 };

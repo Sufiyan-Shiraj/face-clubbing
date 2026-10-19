@@ -59,6 +59,39 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-color) transparent;
+    }
+
+    /* WebKit Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 9999px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+      transition: background-color 0.15s ease;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--color-accent);
+      background-clip: content-box;
+    }
+
+    ::-webkit-scrollbar-thumb:active {
+      background: var(--color-accent);
+    }
+
+    ::-webkit-scrollbar-corner {
+      background: transparent;
     }
 
     body {
