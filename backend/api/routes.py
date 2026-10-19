@@ -467,9 +467,17 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
         if getattr(p_rec, "drive_file_id", None):
             candidates = []
             if state.work_dir:
+                candidates.append(state.work_dir / "photos")
                 candidates.append(state.work_dir / "drive")
+                candidates.append(state.work_dir)
+            for td in state.temp_dirs:
+                tdp = Path(td)
+                candidates.append(tdp / "photos")
+                candidates.append(tdp / "drive")
+                candidates.append(tdp)
             candidates.append(state.repo_root / "export.work" / "drive")
             if state.settings.cache_dir:
+                candidates.append(Path(state.settings.cache_dir).resolve() / "photos")
                 candidates.append(Path(state.settings.cache_dir).resolve() / "drive")
                 candidates.append(Path(state.settings.cache_dir).resolve())
 
@@ -549,9 +557,17 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                 if content is None and getattr(p_rec, "drive_file_id", None):
                     candidates = []
                     if state.work_dir:
+                        candidates.append(state.work_dir / "photos")
                         candidates.append(state.work_dir / "drive")
+                        candidates.append(state.work_dir)
+                    for td in state.temp_dirs:
+                        tdp = Path(td)
+                        candidates.append(tdp / "photos")
+                        candidates.append(tdp / "drive")
+                        candidates.append(tdp)
                     candidates.append(state.repo_root / "export.work" / "drive")
                     if state.settings.cache_dir:
+                        candidates.append(Path(state.settings.cache_dir).resolve() / "photos")
                         candidates.append(Path(state.settings.cache_dir).resolve() / "drive")
                         candidates.append(Path(state.settings.cache_dir).resolve())
 

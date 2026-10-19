@@ -57,12 +57,12 @@ class AppState:
         self.edits_path = self.work_dir / "edits.json"
 
         resolved_output = Path(output_dir or env_output).resolve() if (output_dir or env_output) else (self.repo_root / "export")
-        resolved_cache = Path(cache_dir or env_cache).resolve() if (cache_dir or env_cache) else self.work_dir
+        resolved_cache = Path(cache_dir or env_cache).resolve() if (cache_dir or env_cache) else None
 
         self.settings = SettingsModel(
             input_path=None,
             output_dir=str(resolved_output),
-            cache_dir=str(resolved_cache),
+            cache_dir=str(resolved_cache) if resolved_cache else None,
         )
 
         # In-memory runtime dataset
@@ -330,6 +330,11 @@ class AppState:
         if work_dir:
             self.work_dir = Path(work_dir)
             self.edits_path = self.work_dir / "edits.json"
+        elif getattr(result, "temp_dir", None):
+            self.work_dir = Path(result.temp_dir)
+            self.edits_path = self.work_dir / "edits.json"
+            self.settings.work_dir = str(self.work_dir)
+            self.settings.cache_dir = str(self.work_dir)
 
         self.photos = result.photos
         self.people = result.people
@@ -350,7 +355,8 @@ class AppState:
             self.settings.event_title = st
 
         if getattr(result, "temp_dir", None):
-            self.temp_dirs.append(result.temp_dir)
+            if result.temp_dir not in self.temp_dirs:
+                self.temp_dirs.append(result.temp_dir)
 
         # Snapshot base unedited state
         self.base_people = copy.deepcopy(result.people)
@@ -991,11 +997,28 @@ class AppState:
                 pass
         self.temp_dirs.clear()
 
-        # Also search for any <folder_name>_temp directory around cache, work dir, or repo root
+        # Delete work_dir if it is a temporary project folder (<name>_temp)
+        if self.work_dir and self.work_dir.name.endswith("_temp") and self.work_dir.exists():
+            try:
+                shutil.rmtree(self.work_dir, ignore_errors=True)
+            except Exception:
+                pass
+
+        # Also search for any <name>_temp directory around cache, work dir, repo root, or out_p
+        candidate_names = set()
         if folder_title:
-            safe_folder = re.sub(r'[\\/*?:"<>|]', "", folder_title).strip()
+            candidate_names.add(folder_title)
+        if self.settings.event_title:
+            candidate_names.add(self.settings.event_title)
+        if self.active_project_name:
+            candidate_names.add(self.active_project_name)
+
+        for fn in candidate_names:
+            safe_folder = re.sub(r'[\\/*?:"<>|]', "", fn).strip()
             if safe_folder:
-                for base in [self.work_dir.parent, self.work_dir, self.repo_root, out_p.parent]:
+                for base in [self.work_dir.parent if self.work_dir else None, self.repo_root, out_p.parent, out_p]:
+                    if not base:
+                        continue
                     temp_cand = base / f"{safe_folder}_temp"
                     if temp_cand.exists() and temp_cand.is_dir():
                         try:

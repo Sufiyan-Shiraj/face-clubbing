@@ -48,34 +48,98 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const logsContainerRef = useRef<HTMLDivElement>(null);
 
-  // Map backend stages to 4 visible pipeline steps
+  // Map backend stages to 4 visible pipeline steps:
+  // 1. Download / Load face model (0% - 5%)
+  // 2. Find faces (face detection & embeddings) (5% - 65%)
+  // 3. Group people (clustering, flip_averaging, suggestions, edits) (65% - 85%)
+  // 4. Build gallery (exporting thumbnails, static gallery bundle) (85% - 100%)
   const stage = (status.stage || '').toLowerCase();
-  const isStage1Done = isCompleted || ['detecting', 'faces', 'clustering', 'exporting'].some((s) => stage.includes(s));
-  const isStage1Active = isRunning && (stage.includes('model') || stage.includes('load') || stage === 'downloading' || stage === 'listing' || stage === 'starting');
+  const isStage1Done = isCompleted || ['detect', 'process', 'face', 'cluster', 'group', 'export', 'complete'].some((s) => stage.includes(s));
+  const isStage1Active = isRunning && (stage.includes('model') || stage.includes('load') || stage.includes('download') || stage.includes('list') || stage === 'starting');
 
-  const isStage2Done = isCompleted || ['clustering', 'exporting'].some((s) => stage.includes(s));
-  const isStage2Active = isRunning && (stage.includes('detect') || stage.includes('face') || stage.includes('scan'));
+  const isStage2Done = isCompleted || ['cluster', 'group', 'export', 'gallery', 'complete'].some((s) => stage.includes(s));
+  const isStage2Active = isRunning && (stage.includes('process') || stage.includes('detect') || stage.includes('face') || stage.includes('scan'));
 
-  const isStage3Done = isCompleted || stage.includes('export');
-  const isStage3Active = isRunning && (stage.includes('cluster') || stage.includes('group'));
+  const isStage3Done = isCompleted || ['export', 'gallery', 'complete'].some((s) => stage.includes(s));
+  const isStage3Active = isRunning && (stage.includes('cluster') || stage.includes('group') || stage.includes('flip') || stage.includes('edit'));
 
   const isStage4Done = isCompleted;
-  const isStage4Active = isRunning && (stage.includes('export') || stage.includes('gallery') || stage.includes('save'));
+  const isStage4Active = isRunning && (stage.includes('export') || stage.includes('gallery') || stage.includes('save') || stage.includes('bundle'));
 
   // Calculate stats display
   const photosCurrent = status.current || 0;
   const photosTotal = status.total || 0;
-  const percentDisplay = Math.min(
-    100,
-    Math.max(
-      0,
-      status.percent !== undefined
-        ? status.percent
-        : photosTotal > 0
-        ? Math.round((photosCurrent / photosTotal) * 100)
-        : 0
-    )
-  );
+
+  // Calculate percentage accurately according to user budget:
+  // - Downloading of images: max 5% (0 - 5%)
+  // - Processing (face detection / embedding): 5% - 65% (takes 60%)
+  // - Grouping (clustering / suggestions / edits): 65% - 85% (takes 20%)
+  // - Build gallery (export bundle): 85% - 99% (takes 14%)
+  // - Completed: 100%
+  const percentDisplay = useMemo(() => {
+    if (isCompleted) {
+      return 100;
+    }
+
+    const rawPct = typeof status.percent === 'number' && Number.isFinite(status.percent) ? status.percent : null;
+
+    // Phase 1: Downloading images from Drive or initial photo scanning
+    if (stage.includes('download') || stage.includes('listing') || stage === 'starting') {
+      if (rawPct !== null && rawPct > 0 && rawPct <= 5) {
+        return Math.min(5, Math.max(1, Math.round(rawPct)));
+      }
+      if (photosTotal > 0) {
+        const fraction = Math.min(1, Math.max(0, photosCurrent / photosTotal));
+        return Math.min(5, Math.max(1, Math.round(fraction * 5)));
+      }
+      return 2;
+    }
+
+    // Model loading
+    if (stage.includes('model') || stage.includes('load')) {
+      return 5;
+    }
+
+    // Phase 2: Face detection & embeddings ("processing", "detecting", "scan")
+    if (stage.includes('process') || stage.includes('detect') || stage.includes('face') || stage.includes('scan')) {
+      if (rawPct !== null && rawPct >= 5 && rawPct <= 65) {
+        return Math.round(rawPct);
+      }
+      // If rawPct was somehow > 65 or invalid (e.g. earlier buggy 100%), compute from current/total
+      if (photosTotal > 0) {
+        const fraction = Math.min(1, Math.max(0, photosCurrent / photosTotal));
+        const calculated = Math.round(5 + fraction * 60);
+        return Math.min(65, Math.max(5, calculated));
+      }
+      return 5;
+    }
+
+    // Phase 3: Grouping faces / clustering
+    if (stage.includes('cluster') || stage.includes('group') || stage.includes('flip') || stage.includes('edit')) {
+      if (rawPct !== null && rawPct >= 65 && rawPct <= 85) {
+        return Math.round(rawPct);
+      }
+      return 75;
+    }
+
+    // Phase 4: Building static gallery / export
+    if (stage.includes('export') || stage.includes('gallery') || stage.includes('save') || stage.includes('bundle')) {
+      if (rawPct !== null && rawPct >= 85 && rawPct < 100) {
+        return Math.round(rawPct);
+      }
+      return 90;
+    }
+
+    // Fallback if stage is unknown or generic running
+    if (rawPct !== null && rawPct > 0 && rawPct < 100) {
+      return Math.min(99, Math.max(1, Math.round(rawPct)));
+    }
+    if (photosTotal > 0 && photosCurrent < photosTotal) {
+      const fraction = Math.min(1, Math.max(0, photosCurrent / photosTotal));
+      return Math.min(65, Math.max(5, Math.round(5 + fraction * 60)));
+    }
+    return 0;
+  }, [isCompleted, stage, photosTotal, photosCurrent, status.percent]);
 
   // Take only the latest 11 faces to display neatly in a single row without crowding
   const MAX_VISIBLE_FACES = 11;
@@ -199,6 +263,12 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
                 ? 'Scan interrupted'
                 : isCancelled
                 ? 'Scan cancelled'
+                : stage.includes('download')
+                ? 'Downloading photos'
+                : stage.includes('cluster') || stage.includes('group') || stage.includes('flip')
+                ? 'Grouping faces'
+                : stage.includes('export') || stage.includes('gallery')
+                ? 'Building gallery'
                 : 'Reading faces'}
             </h1>
             <span
@@ -222,47 +292,6 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            id="btn-open-logs"
-            data-testid="btn-open-logs"
-            onClick={() => {
-              if (isDetached) {
-                setIsDetached(false);
-                setTimeout(() => setIsDetached(true), 10);
-              } else {
-                setShowLogsModal(true);
-              }
-            }}
-            className="btn sm"
-            style={{ height: '36px', padding: '0 14px' }}
-            title={isDetached ? 'Focus detached logs window' : 'Open complete engine activity log window'}
-          >
-            <Terminal className="w-4 h-4 text-[var(--accent)]" />
-            <span>Logs</span>
-            {allLogs.length > 0 && (
-              <span className="ml-1 text-xs px-1.5 py-0.2 rounded bg-[var(--input)] text-[var(--muted)] font-mono">
-                {allLogs.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            id="btn-detach-logs"
-            data-testid="btn-detach-logs"
-            onClick={() => {
-              setShowLogsModal(false);
-              setIsDetached(true);
-            }}
-            className={`btn sm ${isDetached ? 'pri' : ''}`}
-            style={{ height: '36px', padding: '0 12px' }}
-            title="Detach logs into separate floating window (stays open when main window is minimized)"
-          >
-            <ExternalLink className="w-3.5 h-3.5 mr-1 text-[var(--accent)]" />
-            <span>{isDetached ? 'Detached ↗' : 'Detach'}</span>
-          </button>
-
           {isRunning && (
             <button
               id="cancel-job-btn"
@@ -330,7 +359,21 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
         <div className="flex items-baseline gap-4 sm:gap-6">
           <p className="big" style={{ margin: 0 }}>{percentDisplay}%</p>
           <p className="sub m-0 mb-1.5 text-base md:text-lg" style={{ textAlign: 'left', margin: 0 }}>
-            {photosTotal > 0
+            {isCompleted
+              ? 'Face clustering and static gallery bundle ready.'
+              : stage.includes('download')
+              ? photosTotal > 0
+                ? `Downloading photo ${photosCurrent} of ${photosTotal} from Google Drive...`
+                : 'Downloading photos from Google Drive...'
+              : stage.includes('process') || stage.includes('detect') || stage.includes('face')
+              ? photosTotal > 0
+                ? `Reading faces: Photo ${photosCurrent} of ${photosTotal}...`
+                : 'Detecting and embedding faces...'
+              : stage.includes('cluster') || stage.includes('group') || stage.includes('flip') || stage.includes('edit')
+              ? status.message || 'Grouping faces and resolving identities...'
+              : stage.includes('export') || stage.includes('gallery')
+              ? status.message || 'Building static HTML gallery and face crops...'
+              : photosTotal > 0
               ? `Photo ${photosCurrent} of ${photosTotal}.`
               : status.message || 'Processing photos locally on your computer.'}
           </p>

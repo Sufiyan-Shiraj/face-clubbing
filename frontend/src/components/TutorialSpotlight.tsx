@@ -45,13 +45,13 @@ export const TUTORIAL_SPOTLIGHT_STEPS: TutorialSpotlightStep[] = [
   {
     id: 'scan-pipeline-logs',
     tab: 'progress',
-    selector: '#btn-open-logs',
-    fallbackSelector: '[data-testid="progress-elapsed-badge"]',
+    selector: '#btn-view-all-logs',
+    fallbackSelector: '#btn-detach-bottom',
     pageTitle: '02 SCAN • LIVE ENGINE & LOGS',
     stepTitle: 'Detachable Activity Logs',
     description:
-      'Watch real-time face detection, InsightFace 512-D embeddings, and clustering. Click "Logs" to open an independent pop-out window with a live elapsed timer so you can keep working while it scans.',
-    preferredPlacement: 'bottom',
+      'Watch real-time face detection, InsightFace 512-D embeddings, and clustering. Click "Open Logs Window" or "Detach" to view all engine activity in a live modal or separate floating window.',
+    preferredPlacement: 'top',
     mascotPose: 5, // Working on laptop
   },
 

@@ -81,12 +81,21 @@ class JobManager:
                 self.percent = 100.0
                 if self.total > 0:
                     self.current = self.total
-            elif "percent" in payload:
-                self.percent = max(self.percent, float(payload["percent"]))
-            elif "progress" in payload:
-                self.percent = max(self.percent, round(float(payload["progress"]) * 100.0, 1))
-            elif self.total > 0 and self.current >= 0:
-                self.percent = max(self.percent, round((self.current / self.total) * 100.0, 1))
+            else:
+                if "percent" in payload:
+                    new_pct = float(payload["percent"])
+                    if self.stage in ("processing", "flip_averaging", "clustering", "exporting"):
+                        self.percent = min(99.0, max(0.0, new_pct))
+                    else:
+                        self.percent = min(99.0, max(self.percent, new_pct))
+                elif "progress" in payload:
+                    new_pct = round(float(payload["progress"]) * 100.0, 1)
+                    if self.stage in ("processing", "flip_averaging", "clustering", "exporting"):
+                        self.percent = min(99.0, max(0.0, new_pct))
+                    else:
+                        self.percent = min(99.0, max(self.percent, new_pct))
+                elif self.total > 0 and self.current >= 0:
+                    self.percent = min(99.0, round((self.current / self.total) * 100.0, 1))
 
             if "file_name" in payload:
                 self.current_file = payload["file_name"]
@@ -252,6 +261,7 @@ class JobManager:
             drive_api_key=drive_key,
             progress_callback=self._broadcast_progress,
             cancel_check=lambda: self._cancel_event.is_set(),
+            cleanup_temp=False,
         )
 
         def worker():

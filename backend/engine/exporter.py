@@ -112,6 +112,7 @@ class BundleExporter:
         config_override: Optional[Dict[str, Any]] = None,
         include_maybe: Optional[bool] = None,
         generate_html: bool = False,
+        cleanup_temp: bool = True,
     ) -> Path:
         """
         Creates the complete export bundle.
@@ -333,15 +334,21 @@ class BundleExporter:
             except Exception as e:
                 print(f"[exporter] Warning: Failed to generate standalone HTML: {e}")
 
-        # 7. Clean up temporary working directory if specified
-        temp_dir = getattr(result, "temp_dir", None)
-        if temp_dir:
-            temp_p = Path(temp_dir)
-            if temp_p.exists() and temp_p.is_dir():
-                try:
-                    shutil.rmtree(temp_p, ignore_errors=True)
-                except Exception:
-                    pass
+        # 7. Clean up temporary working directory once exported
+        if cleanup_temp:
+            temp_dirs_to_clean = set()
+            temp_dir = getattr(result, "temp_dir", None)
+            if temp_dir:
+                temp_dirs_to_clean.add(Path(temp_dir))
+            if self.cache_dir and self.cache_dir.name.endswith("_temp"):
+                temp_dirs_to_clean.add(self.cache_dir)
+
+            for t_p in temp_dirs_to_clean:
+                if t_p.exists() and t_p.is_dir():
+                    try:
+                        shutil.rmtree(t_p, ignore_errors=True)
+                    except Exception:
+                        pass
 
         # 8. Verify Bundle Integrity
         self._verify_bundle(people_payload)

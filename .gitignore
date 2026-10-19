@@ -41,6 +41,8 @@ export.work/edits_test_*.json
 export.api_test/
 export_flip/
 export.e2e_temp*/
+*_temp/
+*_temp
 *.cache
 *.pkl
 

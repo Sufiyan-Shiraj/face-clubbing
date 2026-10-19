@@ -195,13 +195,13 @@ describe('ProgressScreen Time Elapsed Component', () => {
     // Verify "Face crops stay on this computer" was removed
     expect(screen.queryByText(/Face crops stay on this computer/i)).toBeNull();
 
-    // Verify Logs button is rendered
-    const logsBtn = screen.getByTestId('btn-open-logs');
-    expect(logsBtn).toBeTruthy();
-    expect(logsBtn.textContent).toContain('Logs');
+    // Verify top duplicate logs button was removed
+    expect(screen.queryByTestId('btn-open-logs')).toBeNull();
 
+    // Verify consolidated bottom logs button is rendered
     const viewAllBtn = screen.getByTestId('btn-view-all-logs');
     expect(viewAllBtn).toBeTruthy();
+    expect(viewAllBtn.textContent).toContain('Open Logs Window');
 
     // Click to open dedicated logs window
     fireEvent.click(viewAllBtn);
@@ -258,16 +258,16 @@ describe('ProgressScreen Time Elapsed Component', () => {
       />
     );
 
-    // Verify Detach button is rendered on top action bar and bottom bar
-    const detachTopBtn = screen.getByTestId('btn-detach-logs');
-    expect(detachTopBtn).toBeTruthy();
-    expect(detachTopBtn.textContent).toContain('Detach');
+    // Verify top duplicate detach button was removed
+    expect(screen.queryByTestId('btn-detach-logs')).toBeNull();
 
+    // Verify consolidated bottom Detach button is rendered
     const detachBottomBtn = screen.getByTestId('btn-detach-bottom');
     expect(detachBottomBtn).toBeTruthy();
+    expect(detachBottomBtn.textContent).toContain('Detach');
 
     // Click detach button
-    fireEvent.click(detachTopBtn);
+    fireEvent.click(detachBottomBtn);
 
     // Verify window.open was called with dimensions for detached floating window
     expect(windowOpenSpy).toHaveBeenCalledWith(
@@ -281,5 +281,104 @@ describe('ProgressScreen Time Elapsed Component', () => {
     expect(mockPopup.document.title).toContain('Engine Activity Log');
 
     windowOpenSpy.mockRestore();
+  });
+
+  it('does not display 100% when only a few photos have been read even if status.percent is 100', () => {
+    // Simulating the bug reported by user: 5 of 147 photos read, but status.percent was erroneously 100
+    // Processing phase (5% - 65% budget): 5/147 photos -> 5 + round((5/147)*60) = 7%
+    const status: JobStatus = {
+      status: 'running',
+      stage: 'processing',
+      current: 5,
+      total: 147,
+      percent: 100,
+      message: '[5/147] IMG_2225.JPG (9 faces)',
+    };
+
+    const { container } = render(
+      <ProgressScreen
+        status={status}
+        progressHistory={[status]}
+        onCancelJob={vi.fn()}
+        onGoToReview={vi.fn()}
+      />
+    );
+
+    // Big percentage text should NOT be 100% or jump to 92%
+    const bigPercent = container.querySelector('.big');
+    expect(bigPercent).toBeTruthy();
+    expect(bigPercent?.textContent).not.toBe('100%');
+    expect(bigPercent?.textContent).not.toBe('92%');
+    expect(bigPercent?.textContent).toBe('7%');
+
+    // Progress bar width should be 7%
+    const progressBar = container.querySelector('.bar i') as HTMLElement;
+    expect(progressBar).toBeTruthy();
+    expect(progressBar.style.width).toBe('7%');
+
+    // Subtitle displays face reading status
+    const subtitle = container.querySelector('.sub');
+    expect(subtitle?.textContent).toContain('Reading faces: Photo 5 of 147...');
+
+    // Completion banner should NOT be rendered while still running
+    expect(screen.queryByTestId('scan-completion-banner')).toBeNull();
+  });
+
+  it('caps image downloading progress at max 5% and does not jump to 92% when 147 of 147 are downloaded', () => {
+    // 147 of 147 photos downloaded from Google Drive
+    const downloadStatus: JobStatus = {
+      status: 'running',
+      stage: 'downloading',
+      current: 147,
+      total: 147,
+      percent: 5,
+      message: 'Downloading photos from Google Drive (147/147)...',
+    };
+
+    const { container } = render(
+      <ProgressScreen
+        status={downloadStatus}
+        progressHistory={[downloadStatus]}
+        onCancelJob={vi.fn()}
+        onGoToReview={vi.fn()}
+      />
+    );
+
+    // Big percentage must stay capped at max 5%
+    const bigPercent = container.querySelector('.big');
+    expect(bigPercent?.textContent).toBe('5%');
+
+    // Progress bar width must be 5%
+    const progressBar = container.querySelector('.bar i') as HTMLElement;
+    expect(progressBar.style.width).toBe('5%');
+
+    // Header says 'Downloading photos'
+    expect(container.querySelector('h1')?.textContent).toBe('Downloading photos');
+
+    // Subtitle specifies downloading from Google Drive
+    expect(container.querySelector('.sub')?.textContent).toContain('Downloading photo 147 of 147 from Google Drive...');
+  });
+
+  it('allocates clustering and exporting stages to 65-100% of progress', () => {
+    const clusterStatus: JobStatus = {
+      status: 'running',
+      stage: 'clustering',
+      current: 147,
+      total: 147,
+      percent: 72,
+      message: 'Clustering faces by person with second-pass merge...',
+    };
+
+    const { container: clusterContainer } = render(
+      <ProgressScreen
+        status={clusterStatus}
+        progressHistory={[clusterStatus]}
+        onCancelJob={vi.fn()}
+        onGoToReview={vi.fn()}
+      />
+    );
+
+    expect(clusterContainer.querySelector('.big')?.textContent).toBe('72%');
+    expect(clusterContainer.querySelector('h1')?.textContent).toBe('Grouping faces');
   });
 });

@@ -59,6 +59,7 @@ class EngineConfig:
     drive_api_key: Optional[str] = None
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None
     cancel_check: Optional[Callable[[], bool]] = None
+    cleanup_temp: bool = True
 
 
 def run_pipeline(config: EngineConfig) -> EngineResult:
@@ -70,11 +71,6 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     if out_dir_str.startswith("http://") or out_dir_str.startswith("https://") or "drive.google.com" in out_dir_str:
         out_dir_str = "export"
     out_p = Path(out_dir_str).resolve()
-    cache_p = Path(config.cache_dir).resolve() if config.cache_dir else out_p.parent / f"{out_p.name}.work"
-    cache_thumbs_p = cache_p / "thumbs"
-    cache_crops_p = cache_p / "crops"
-    cache_thumbs_p.mkdir(parents=True, exist_ok=True)
-    cache_crops_p.mkdir(parents=True, exist_ok=True)
 
     def notify(payload: Dict[str, Any]):
         if config.cancel_check and config.cancel_check():
@@ -82,9 +78,10 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         if config.progress_callback:
             config.progress_callback(payload)
 
-    input_str = str(config.input_path)
+    input_str = str(config.input_path) if config.input_path else ""
     is_drive = is_drive_folder_input(input_str)
 
+    folder_name: Optional[str] = None
     if is_drive:
         folder_id = parse_drive_folder_id(input_str)
         api_key = config.drive_api_key or get_drive_api_key()
@@ -96,11 +93,33 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         client = DriveClient(api_key=api_key)
         folder_name = client.get_folder_name(folder_id)
         if not folder_name:
-            folder_name = config.event_title if config.event_title and config.event_title != "Event Gallery" else "drive"
-        safe_folder_name = re.sub(r'[\\/*?:"<>|]', "", folder_name).strip() or "drive"
+            folder_name = config.event_title if config.event_title and config.event_title not in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery") else "drive"
+    elif config.input_path:
+        inp_p = Path(config.input_path).resolve()
+        if inp_p.is_file() and inp_p.suffix.lower() == ".zip":
+            folder_name = inp_p.stem
+        elif config.event_title and config.event_title not in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery"):
+            folder_name = config.event_title
+        elif inp_p.is_dir() and inp_p.name and inp_p.name not in (".", ""):
+            folder_name = inp_p.name
 
-        # Temporary folder named <folder_name>_temp (deleted when bundle is exported)
-        drive_cache_p = cache_p.parent / f"{safe_folder_name}_temp"
+    if not folder_name:
+        folder_name = config.event_title if config.event_title and config.event_title not in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery") else "project"
+
+    safe_project_name = re.sub(r'[\\/*?:"<>|]', "", folder_name).strip() or "project"
+
+    # Temporary project folder named <name>_temp (all temp files saved here and deleted once exported)
+    project_temp_p = out_p.parent / f"{safe_project_name}_temp"
+    project_temp_p.mkdir(parents=True, exist_ok=True)
+
+    cache_p = Path(config.cache_dir).resolve() if config.cache_dir else project_temp_p
+    cache_thumbs_p = cache_p / "thumbs"
+    cache_crops_p = cache_p / "crops"
+    cache_thumbs_p.mkdir(parents=True, exist_ok=True)
+    cache_crops_p.mkdir(parents=True, exist_ok=True)
+
+    if is_drive:
+        drive_cache_p = cache_p / "photos"
         drive_cache_p.mkdir(parents=True, exist_ok=True)
 
         notify({
@@ -141,10 +160,20 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             "message": f"Downloading {list_res.image_count} photos from Google Drive...",
         })
 
+        def on_download_progress(p: Dict[str, Any]):
+            # Scale Google Drive photo download to max 5.0% of total pipeline per specification
+            cur = p.get("current", 0)
+            tot = p.get("total", list_res.image_count)
+            pct = round(1.0 + (cur / tot) * 4.0, 1) if tot > 0 else 1.0
+            notify({
+                **p,
+                "percent": min(5.0, pct),
+            })
+
         downloaded_items = client.download_thumbnails(
             files=list_res.files,
             cache_dir=drive_cache_p,
-            progress_callback=notify,
+            progress_callback=on_download_progress,
             cancel_check=config.cancel_check,
         )
 
@@ -169,21 +198,21 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             "stage": "scanned",
             "current": 0,
             "total": total_photos,
-            "percent": 2.0,
+            "percent": 5.0,
             "message": f"Downloaded {total_photos} photos ready for face detection.",
         })
     else:
         input_p = Path(config.input_path).resolve()
-        # 1. Scan photos
+        # 1. Scan photos (max 5.0%)
         notify({"stage": "scanning", "current": 0, "total": 0, "percent": 0.0, "message": f"Scanning input: {input_p}"})
-        with PhotoScanner(input_p) as scanner:
+        with PhotoScanner(input_p, temp_dir=cache_p / "photos") as scanner:
             def on_scan_progress(cur: int, tot: int, fname: str):
-                pct = round((cur / tot) * 2.0, 1) if tot > 0 else 0.0
+                pct = round((cur / tot) * 5.0, 1) if tot > 0 else 0.0
                 notify({
                     "stage": "scanning",
                     "current": cur,
                     "total": tot,
-                    "percent": pct,
+                    "percent": min(5.0, pct),
                     "file_name": fname,
                     "message": f"Scanning photos: [{cur}/{tot}] {fname}",
                 })
@@ -197,7 +226,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                 "stage": "scanned",
                 "current": 0,
                 "total": total_photos,
-                "percent": 2.0,
+                "percent": 5.0,
                 "message": f"Found {total_photos} photos to process.",
             })
 
@@ -264,9 +293,18 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                     "stage": "model_init",
                     "current": 0,
                     "total": total_photos,
-                    "percent": 2.0,
+                    "percent": 5.0,
                     "message": "Initializing InsightFace model...",
                 })
+                def on_detector_progress(p: Dict[str, Any]):
+                    # Scale model download smoothly between 0.0% and 5.0%
+                    p_pct = p.get("percent", 0.0)
+                    scaled_pct = round((p_pct / 100.0) * 5.0, 1)
+                    notify({
+                        **p,
+                        "percent": scaled_pct,
+                    })
+
                 detector = FaceDetector(
                     model_name="buffalo_l",
                     model_root=config.model_root,
@@ -274,7 +312,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                     min_face_size=config.min_face_size,
                     max_yaw=config.max_yaw,
                     max_image_dim=config.max_image_dim,
-                    progress_callback=notify,
+                    progress_callback=on_detector_progress,
                 )
 
             rgb_img, orig_w, orig_h, pil_img = loader.load_image(item.file_path)
@@ -319,8 +357,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         avg_per_photo = elapsed / processed
         eta_seconds = (total_photos - processed) * avg_per_photo
 
-        # Scale detection/embedding phase from 2% to 88% so subsequent stages (clustering, export) never go backwards
-        pct = round(2.0 + (processed / total_photos) * 86.0, 1) if total_photos > 0 else 2.0
+        # Processing (reading faces) takes up 5% to 65% (60% of total bar)
+        pct = round(5.0 + (processed / total_photos) * 60.0, 1) if total_photos > 0 else 5.0
         face_ids_found = [f.face_id for f in photos[photo_id].faces if getattr(f, "face_id", None)]
         notify({
             "stage": "processing",
@@ -337,13 +375,13 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
 
     # 4. Clustering (with optional flip_average)
     if config.flip_average:
-        notify({"stage": "flip_averaging", "current": total_photos, "total": total_photos, "percent": 90.0, "message": "Applying flip-averaged embeddings..."})
+        notify({"stage": "flip_averaging", "current": total_photos, "total": total_photos, "percent": 68.0, "message": "Applying flip-averaged embeddings..."})
         for photo in photos.values():
             for face in photo.faces:
                 if face.embedding_flipped is not None:
                     face.embedding = face.embedding_flipped
 
-    notify({"stage": "clustering", "current": total_photos, "total": total_photos, "percent": 92.0, "message": "Clustering faces by person with second-pass merge..."})
+    notify({"stage": "clustering", "current": total_photos, "total": total_photos, "percent": 72.0, "message": "Clustering faces by person with second-pass merge..."})
     clusterer = FaceClusterer(
         distance_threshold=config.distance_threshold,
         seed_min_face_size=config.seed_min_face_size or config.min_face_size,
@@ -382,7 +420,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     edits_path = cache_p / "edits.json"
     unapplied = []
     if config.replay_edits and edits_path.exists():
-        notify({"stage": "applying_edits", "message": f"Applying organizer edits from {edits_path}..."})
+        notify({"stage": "applying_edits", "percent": 84.0, "message": f"Applying organizer edits from {edits_path}..."})
         with open(edits_path, "r", encoding="utf-8") as f:
             edits_data = json.load(f)
         from backend.engine.edits import apply_edits
@@ -393,6 +431,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                 print(f"  - {u.get('reason')}: {u.get('edit')}")
         notify({
             "stage": "edits_applied",
+            "percent": 86.0,
             "applied": edit_stats.get("applied", 0),
             "unapplied": len(unapplied),
             "unapplied_edits": unapplied,
@@ -415,7 +454,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         unrecognized=unrecognized,
         distance_threshold=config.distance_threshold,
         id_map=clusterer.id_map,
-        temp_dir=str(drive_cache_p) if is_drive else None,
+        temp_dir=str(project_temp_p),
         drive_folder_name=folder_name if is_drive else None,
         source_title=source_title,
         unapplied_edits=unapplied,
@@ -423,6 +462,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
 
     notify({
         "stage": "clustered",
+        "percent": 82.0,
         "people_count": len(people),
         "unrecognized_photos": len(unrecognized.photo_ids),
         "unrecognized_faces": len(unrecognized.faces),
@@ -435,7 +475,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     if (not export_title or export_title in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery")) and source_title:
         export_title = source_title
 
-    notify({"stage": "exporting", "current": total_photos, "total": total_photos, "percent": 96.0, "message": f"Generating static export bundle in {out_p}..."})
+    notify({"stage": "exporting", "current": total_photos, "total": total_photos, "percent": 88.0, "message": f"Generating static export bundle in {out_p}..."})
     exporter = BundleExporter(
         output_dir=out_p,
         cache_dir=cache_p,
@@ -448,6 +488,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         subtitle=config.event_subtitle,
         config_override={"include_maybe": config.include_maybe},
         include_maybe=config.include_maybe,
+        cleanup_temp=config.cleanup_temp,
     )
 
     notify({

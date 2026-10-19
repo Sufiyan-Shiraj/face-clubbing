@@ -1318,7 +1318,7 @@ __CONFIG_JSON__
                 });
                 notesLines.push('--------------------------------------------------------------------------------');
               }
-              zip.file('DOWNLOAD_NOTES.txt', notesLines.join('\n'));
+              zip.file('DOWNLOAD_NOTES.txt', notesLines.join(String.fromCharCode(10)));
             }
 
             if (packed > 0) {

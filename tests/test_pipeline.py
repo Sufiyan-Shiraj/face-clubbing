@@ -116,3 +116,77 @@ def test_pipeline_organizer_and_public_bundle(tmp_path: Path):
     assert "_metadata" in id_map_data
     pre_keys = [k for k in id_map_data.keys() if not k.startswith("_")]
     assert len(pre_keys) >= 1
+
+
+def test_project_temp_folder_creation_and_cleanup_on_export(tmp_path: Path):
+    """Verifies that project temporary files are saved in <name>_temp and deleted once exported."""
+    input_folder = tmp_path / "SummerFestival"
+    input_folder.mkdir()
+    p1 = input_folder / "img1.jpg"
+    img = Image.new("RGB", (200, 200), color=(150, 100, 50))
+    img.save(p1)
+
+    export_parent = tmp_path / "export"
+    export_parent.mkdir()
+    out_dir = export_parent / "SummerFestival"
+    expected_temp_dir = export_parent / "SummerFestival_temp"
+
+    # Pre-populate cache in expected_temp_dir so detector is not invoked
+    cache = EmbeddingCache(expected_temp_dir)
+    e0 = np.zeros(512, dtype=np.float32)
+    e0[0] = 1.0
+
+    from backend.engine.scanner import PhotoScanner
+    with PhotoScanner(input_folder) as scanner:
+        scanned = scanner.scan()
+    assert len(scanned) == 1
+    pid = scanned[0].photo_id
+
+    f1 = FaceDetection(
+        face_id=f"f_{pid}_001",
+        photo_id=pid,
+        bbox=[10.0, 10.0, 80.0, 80.0],
+        det_score=0.95,
+        embedding=e0,
+        pose=[0.0, 0.0, 0.0],
+        is_good_quality=True,
+    )
+    rec = PhotoRecord(
+        photo_id=pid,
+        original_path=str(p1),
+        file_name="img1.jpg",
+        width=200,
+        height=200,
+        faces=[f1],
+    )
+    cache.save(rec)
+
+    # 1. Run pipeline with cleanup_temp=False (simulating background scan job before export)
+    config = EngineConfig(
+        input_path=input_folder,
+        output_dir=out_dir,
+        event_title="SummerFestival",
+        cleanup_temp=False,
+    )
+    res = run_pipeline(config)
+
+    # Verify temp files are saved in <name>_temp
+    assert res.temp_dir == str(expected_temp_dir)
+    assert expected_temp_dir.exists()
+    assert (expected_temp_dir / "id_map.json").is_file()
+    assert (expected_temp_dir / "suggestions.json").is_file()
+    assert (expected_temp_dir / "thumbs").is_dir()
+    assert (expected_temp_dir / "crops").is_dir()
+
+    # 2. Export bundle with cleanup_temp=True -> verifies <name>_temp folder is deleted once exported
+    from backend.engine.exporter import BundleExporter
+    exporter = BundleExporter(output_dir=out_dir, cache_dir=expected_temp_dir)
+    exporter.export(result=res, cleanup_temp=True)
+
+    # <name>_temp MUST be deleted
+    assert not expected_temp_dir.exists(), f"Expected {expected_temp_dir} to be deleted on export!"
+    # Public export bundle must exist and be intact
+    assert (out_dir / "people.json").is_file()
+    assert (out_dir / "thumbs").is_dir()
+    assert (out_dir / "faces").is_dir()
+

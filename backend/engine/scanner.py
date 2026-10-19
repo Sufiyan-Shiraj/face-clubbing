@@ -40,19 +40,22 @@ def compute_file_hash(path: Path | str, chunk_size: int = 65536) -> str:
 class PhotoScanner:
     """Scans directories or zip archives for photo files."""
 
-    def __init__(self, input_path: str | Path):
+    def __init__(self, input_path: str | Path, temp_dir: Optional[Path | str] = None):
         self.input_path = Path(input_path).resolve()
+        self.custom_temp_dir = Path(temp_dir).resolve() if temp_dir else None
         self.temp_dir: Optional[Path] = None
+        self._owns_temp_dir: bool = False
 
     def __enter__(self) -> PhotoScanner:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cleanup()
+        if self._owns_temp_dir:
+            self.cleanup()
 
     def cleanup(self) -> None:
-        """Remove any temporary extracted directories."""
-        if self.temp_dir and self.temp_dir.exists():
+        """Remove any temporary extracted directories created internally."""
+        if self._owns_temp_dir and self.temp_dir and self.temp_dir.exists():
             try:
                 shutil.rmtree(self.temp_dir, ignore_errors=True)
             except Exception:
@@ -67,7 +70,13 @@ class PhotoScanner:
         source_dir = self.input_path
         if self.input_path.is_file():
             if zipfile.is_zipfile(self.input_path):
-                self.temp_dir = Path(tempfile.mkdtemp(prefix="photosorter_zip_"))
+                if self.custom_temp_dir:
+                    self.temp_dir = self.custom_temp_dir / "extracted"
+                    self.temp_dir.mkdir(parents=True, exist_ok=True)
+                    self._owns_temp_dir = False
+                else:
+                    self.temp_dir = Path(tempfile.mkdtemp(prefix="photosorter_zip_"))
+                    self._owns_temp_dir = True
                 with zipfile.ZipFile(self.input_path, "r") as z:
                     z.extractall(self.temp_dir)
                 source_dir = self.temp_dir
