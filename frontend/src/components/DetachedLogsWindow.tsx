@@ -66,6 +66,18 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
       return;
     }
 
+    // In pywebview / WebView2 desktop shell, popup windows are not supported
+    // and cause Windows to prompt for an unhandled 'about:' protocol handler.
+    const isDesktopShell =
+      typeof window !== 'undefined' &&
+      (Boolean((window as any).pywebview) ||
+        Boolean((window as any).chrome?.webview) ||
+        Boolean((window as any).__pywebview__));
+    if (isDesktopShell) {
+      onDock();
+      return;
+    }
+
     // Open new native detached window
     const width = 880;
     const height = 640;
@@ -73,14 +85,16 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
     const top = Math.max(50, Math.floor((window.screen?.availHeight || 800) / 2 - height / 2));
     const windowFeatures = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
 
-    const popup = window.open('', 'CatLogDetachedLogs', windowFeatures);
+    let popup: Window | null = null;
+    try {
+      popup = window.open('', 'CatLogDetachedLogs', windowFeatures);
+    } catch {
+      popup = null;
+    }
 
     if (!popup || !popup.document) {
-      // Popup blocked by browser settings
-      alert(
-        'Pop-up window was blocked by your browser.\n\nPlease enable pop-ups for this site to use the detached floating logs window, or use the in-page logs modal.'
-      );
-      onClose();
+      // Seamlessly fall back to docked in-page logs modal without intrusive alerts
+      onDock();
       return;
     }
 

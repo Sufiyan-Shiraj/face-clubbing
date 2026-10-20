@@ -611,8 +611,18 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
             id="btn-detach-bottom"
             data-testid="btn-detach-bottom"
             onClick={() => {
-              setShowLogsModal(false);
-              setIsDetached(true);
+              const isDesktopShell =
+                typeof window !== 'undefined' &&
+                (Boolean((window as any).pywebview) ||
+                  Boolean((window as any).chrome?.webview) ||
+                  Boolean((window as any).__pywebview__));
+              if (isDesktopShell) {
+                // In desktop pywebview / WebView2, popup windows trigger Windows 'about:' error; use in-page modal
+                setShowLogsModal(true);
+              } else {
+                setShowLogsModal(false);
+                setIsDetached(true);
+              }
             }}
             className="btn sm"
             style={{ height: '36px', padding: '0 14px' }}
@@ -684,8 +694,17 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
                   id="btn-detach-modal"
                   data-testid="btn-detach-modal"
                   onClick={() => {
-                    setShowLogsModal(false);
-                    setIsDetached(true);
+                    const isDesktopShell =
+                      typeof window !== 'undefined' &&
+                      (Boolean((window as any).pywebview) ||
+                        Boolean((window as any).chrome?.webview) ||
+                        Boolean((window as any).__pywebview__));
+                    if (isDesktopShell) {
+                      setShowLogsModal(true);
+                    } else {
+                      setShowLogsModal(false);
+                      setIsDetached(true);
+                    }
                   }}
                   className="btn sm"
                   style={{ height: '30px', padding: '0 10px', fontSize: '12px' }}
