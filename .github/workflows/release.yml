@@ -36,7 +36,8 @@ permissions:
 # - A comparison onefile archive (CatLog-<version>-<platform>-onefile.zip) is also bundled.
 #
 # Known Platform-Specific Considerations & Potential CI Failure Modes:
-# - macOS Intel Runner: 'macos-13' is used for x86_64 Intel builds (macos-14/macos-15 are Apple Silicon arm64).
+# - macOS Intel Runner: 'macos-15-intel' is GitHub's official label for x86_64 Intel builds
+#   (macos-13 has been retired by GitHub; macos-14/macos-15 are Apple Silicon arm64).
 # - macOS Gatekeeper: Unsigned macOS binaries trigger Apple Gatekeeper warnings unless
 #   signed with an Apple Developer ID and notarized via 'xcrun notarytool'.
 # - Linux WebKitGTK & Display: Ubuntu 24.04+ requires 'gir1.2-webkit2-4.1' while 20.04/22.04
@@ -62,7 +63,7 @@ jobs:
             platform: macos-arm64
             archive_ext: zip
             is_beta: true
-          - os: macos-13
+          - os: macos-15-intel
             platform: macos-x64
             archive_ext: zip
             is_beta: true
@@ -107,7 +108,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pyinstaller pytest
+          pip install -r requirements.txt pyinstaller pytest httpx requests
 
       - name: Synchronize version across project files
         run: |

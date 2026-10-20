@@ -168,9 +168,9 @@ def create_app(
         def index_placeholder():
             return """<!DOCTYPE html>
 <html>
-<head><title>PhotoSorter API</title></head>
+<head><title>CatLog API</title></head>
 <body style="font-family:sans-serif;background:#0a0a0a;color:#fff;padding:40px;text-align:center;">
-  <h1>PhotoSorter Local API Server</h1>
+  <h1>CatLog Local API Server</h1>
   <p>API endpoints running at <a href="/docs" style="color:#3b82f6;">/docs</a></p>
   <p>Static UI directory not found at frontend/dist or viewer/dist. Run <code>npm run build</code> in frontend/.</p>
 </body>

@@ -272,7 +272,7 @@ describe('ProgressScreen Time Elapsed Component', () => {
     // Verify window.open was called with dimensions for detached floating window
     expect(windowOpenSpy).toHaveBeenCalledWith(
       '',
-      'PhotoSorterDetachedLogs',
+      'CatLogDetachedLogs',
       expect.stringContaining('width=880')
     );
 

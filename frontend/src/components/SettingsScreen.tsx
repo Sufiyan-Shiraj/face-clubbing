@@ -135,7 +135,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       const updated = await api.getSettings();
       setSettings((prev) => ({ ...prev, ...updated }));
       setDriveKeyInput('');
-      setKeySavedMessage('Drive API key saved to ~/.photosorter/settings.json (outside repository).');
+      setKeySavedMessage('Drive API key saved to ~/.catlog/settings.json (outside repository).');
       try {
         localStorage.setItem('photosorter-api-key-configured', 'true');
       } catch (e) {}
@@ -655,7 +655,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <ShieldCheck className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <strong className="text-[var(--text)]">Local Security Guarantee: </strong>
-                  Stored strictly in your home directory profile (<code className="font-mono text-[var(--text)]">~/.photosorter/settings.json</code>). Never committed to git, never uploaded, and masked in logs.
+                  Stored strictly in your home directory profile (<code className="font-mono text-[var(--text)]">~/.catlog/settings.json</code>). Never committed to git, never uploaded, and masked in logs.
                 </div>
               </div>
 

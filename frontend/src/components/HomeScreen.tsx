@@ -888,7 +888,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </div>
 
             <p className="api-key-modal-desc">
-              A free Google Drive API key is required to scan Google Drive folders. The key will be saved securely in your local settings (<code className="text-sm">~/.photosorter/settings.json</code>) and can also be viewed in the Settings tab.
+              A free Google Drive API key is required to scan Google Drive folders. The key will be saved securely in your local settings (<code className="text-sm">~/.catlog/settings.json</code>) and can also be viewed in the Settings tab.
             </p>
 
             <input

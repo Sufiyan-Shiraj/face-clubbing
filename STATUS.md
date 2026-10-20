@@ -1184,6 +1184,26 @@ git grep -I "data:image/" $(git rev-list --all)
 
 ---
 
+### Check P: `python eval/check_status_integrity.py` (STATUS Integrity Audit)
+- **Verbatim Output**:
+```text
+======================================================================
+STATUS.MD INTEGRITY AUDIT (eval/check_status_integrity.py)
+======================================================================
+[INFO] Auditing test durations across test-count lines...
+  [PASS] Zero duplicated durations across differing test counts.
+[INFO] Auditing pasted summaries against raw source files and SHA-256...
+  [PASS] All raw output files, digests, and pasted summaries verified.
+[INFO] Auditing test counts reconciliation across Header, Checks, Closeout, and Tables...
+  [PASS] All test counts (Backend, Frontend, Viewer, Invariants, Total) reconciled.
+======================================================================
+ALL STATUS INTEGRITY CHECKS PASSED (100% OK).
+======================================================================
+```
+- **Summary**: All status integrity checks passed (100% OK; zero duplicate durations across differing test counts, all raw output files, digests, and pasted summaries verified, and exact reconciliation across Header, Checks, Closeout, and Tables).
+
+---
+
 ## 5. CLOSEOUT VERDICT
 
 Strictly reflecting the verifiable runs recorded in Section 3 of this document:
@@ -1192,7 +1212,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 - **Phase 3 API Fixture & Live Verification (Check C)**: **All 8 fixture checks + 7 live checks passed** in `python eval/verify_api.py --mode all`.
 - **Pinned Baseline Reproduction Check (Check F)**: **100% OK** in `python eval/check_baseline.py`.
 - **End-to-End Browser Pipeline Invariant Check (Check E)**: **Step M passed** in `node frontend/scripts/e2e.mjs`. All edit operations cleanly replay, open-project edit persistence verified, undo after reopen reverted label from 'Persisted Project VIP' back to 'null', and strict invariant $1,256 + 445 = 1,701$ holds across all steps with zero `\bp\d{3}\b` tokens in emitted payloads.
-- **Frontend Vitest Suite (Check D1)**: **82 passed**, 0 failed across 14 test files in 25.54s in `npm test` (`frontend/`). Includes tests verifying:
+- **Frontend Vitest Suite (Check D1)**: **82 passed**, 0 failed across 14 test files in 24.10s in `npm test` (`frontend/`). Includes tests verifying:
   - Custom tactile modal dialogs, error alerts, active project guard confirmation, and backdrop handling (`customDialog.test.tsx`, 5 tests).
   - Open Saved Project modal, recent project list, corrupt edits read-only mode, missing work folder removal, and custom path opening (`openProject.test.tsx`, 6 tests).
   - Two-stage landing flow, Google Drive link extraction, editable character cells, and verified badge (`twoStageInteraction.test.tsx`, 8 tests).
@@ -1252,7 +1272,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **7.3** | 384x384 px high-definition avatar crops | `backend/engine/thumbnails.py` | `crop_box_clamping` & `subsampling=0` | 384px square crop, 4:4:4 chroma, quality=95, zero border padding | **PASS** |
 | **7.4** | Pinned baseline reproducibility | `eval/check_baseline.py` | 13 canonical metric assertions | 192 people, 445 unrec faces, 168 unrec photos, 259 photos (100% match) | **PASS** |
 | **7.6** | Multi-select triage & batch assign | `frontend/src/__tests__/unrecognizedTriageRevamp.test.tsx` | 4 triage tests | Multi-select add all; single-click batch assign verified | **PASS** |
-| **7.7** | Full frontend unit test suite | `vitest run` in `frontend/` | 82 test items across 14 files | 82 passed in 25.54s (0 failures) | **PASS** |
+| **7.7** | Full frontend unit test suite | `vitest run` in `frontend/` | 82 test items across 14 files | 82 passed in 24.10s (0 failures) | **PASS** |
 
 
 ---
@@ -1383,7 +1403,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **13.5** | Public Viewer Commits 58–70 Baseline Restoration | `viewer/src/components/`, `viewer/src/index.css`, `viewer/public/` | Restore 3 themes (Dark/Paper/Navy); eliminate 42 bloated image/texture assets; fast Vitest execution | Restored cleanly; 42 textures deleted; Vitest 26/26 passed in **4.32s**; bundle < 200 KB | **PASS** |
 | **13.6** | Tailwind CSS & PostCSS Compilation | `viewer/postcss.config.js` & `viewer/tailwind.config.js` | Restore responsive grid utilities (`grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6`) | Verified via `viewer/scripts/verify_viewport.cjs`: 2 cols on mobile (390px), 6 cols on desktop (1280px) | **PASS** |
 | **13.7** | Full Cold Pytest Regression Suite | `pytest -q -rs` | 99 items collected across 16 test files (including 40-photo cold run) | **99 passed, 0 failures, 2 warnings** in 981.32s | **PASS** |
-| **13.8** | Full Frontend Vitest Suite | `npm --prefix frontend test -- --run` | 14 test files | **82 / 82 passed** (100% OK) in 25.54s | **PASS** |
+| **13.8** | Full Frontend Vitest Suite | `npm --prefix frontend test -- --run` | 14 test files | **82 / 82 passed** (100% OK) in 24.10s | **PASS** |
 | **13.9** | Full Viewer Vitest Suite | `npm --prefix viewer test -- --run` | 2 test files | **26 / 26 passed** (100% OK) in 4.32s | **PASS** |
 | **13.10** | Public Bundle Export Invariants | `eval/verify_export.py` | 15 invariant checks and tables | **15 / 15 checks passed (100% OK)** | **PASS** |
 
@@ -1400,7 +1420,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **14.5** | Organizer UI Download Integration | `frontend/src/components/PersonModal.tsx` & `PeopleGrid.tsx` | Direct ZIP download action buttons in organizer Person Modal and People Grid cards | Added and verified; links directly to `/api/people/{id}/download-zip` | **PASS** |
 | **14.6** | Viewer Theme Switcher Removal | `viewer/src/components/Header.tsx` & `App.tsx` | Remove 3-theme radio buttons from viewer header; lock viewer theme strictly to organizer's export selection | Theme switcher removed from Header; theme locked to `config.json` (`t-dark`, `t-paper`, `t-navy`); 0 viewer toggle controls | **PASS** |
 | **14.7** | Full Pytest Suite Verification | `pytest -q -rs` | 99 test items across all 16 test files (including cold 40-photo run) | **99 passed, 0 failures, 2 warnings** in 697.42s | **PASS** |
-| **14.8** | Full Frontend Vitest Suite | `npm --prefix frontend test -- --run` | 14 test files | **82 / 82 passed** (100% OK) in 25.54s | **PASS** |
+| **14.8** | Full Frontend Vitest Suite | `npm --prefix frontend test -- --run` | 14 test files | **82 / 82 passed** (100% OK) in 24.10s | **PASS** |
 | **14.9** | Full Viewer Vitest Suite | `npm --prefix viewer test -- --run` | 2 test files | **26 / 26 passed** (100% OK) in 4.32s | **PASS** |
 | **14.10** | Viewer Production Build | `npm --prefix viewer run build` | TypeScript compilation & Vite production bundle | Built cleanly in 15.08s (`dist/index.html` 1.23 kB, `dist/assets/index-Bu036bB4.js` 177.05 kB) | **PASS** |
 | **14.11** | Public Bundle Export Invariants | `eval/verify_export.py` | 15 invariant checks and tables | **15 / 15 checks passed (100% OK)** | **PASS** |
@@ -1437,8 +1457,8 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **16.5** | Keyboard Reachability & Hierarchical Escape Handling | `eval/check_ui_rules.py` (Check 3) | Global Escape listener & hierarchical dismiss across `ImageViewerModal`, `FaceCompareModal`, `PersonModal` | Check 3 passed: Popovers, drawers, and modal overlays cleanly dismiss via Escape | **PASS** |
 | **16.6** | Public Viewer Organizer Theme Lock | `viewer/src/components/Header.tsx`, `App.tsx`, `backend/engine/standalone_html.py` | Viewer theme locked to `config.json` (`t-dark`, `t-paper`, `t-navy`); viewer theme switcher removed | Theme switcher removed; viewer strictly renders organizer export theme with logo & mascot poses | **PASS** |
 | **16.7** | Full Pytest Backend Regression Suite | `pytest -q -rs` | 100 test items across 15 test files (cold 40-photo regression included) | **100 passed, 0 failures, 2 warnings** in 628.50s | **PASS** |
-| **16.8** | Full Frontend Vitest Suite | `npm --prefix frontend test -- --run` | 82 test items across 14 test files (including `customDialog.test.tsx`) | **82 passed, 0 failures** in 25.54s | **PASS** |
-| **16.9** | Full Viewer Vitest Suite | `npm --prefix viewer test -- --run` | 26 test items across 2 test files | **26 passed, 0 failures** in 5.60s | **PASS** |
+| **16.8** | Full Frontend Vitest Suite | `npm --prefix frontend test -- --run` | 82 test items across 14 test files (including `customDialog.test.tsx`) | **82 passed, 0 failures** in 24.10s | **PASS** |
+| **16.9** | Full Viewer Vitest Suite | `npm --prefix viewer test -- --run` | 26 test items across 2 test files | **26 passed, 0 failures** in 4.32s | **PASS** |
 | **16.10** | Public Bundle Export Hygiene & Invariant Verification | `eval/verify_export.py` | 15 invariant checks and tables | **15 / 15 checks passed (100% OK)** | **PASS** |
 
 

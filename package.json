@@ -1,5 +1,5 @@
 {
-  "name": "photosorter-workspace",
+  "name": "catlog-workspace",
   "private": true,
   "scripts": {
     "dev": "npm --prefix frontend run dev",

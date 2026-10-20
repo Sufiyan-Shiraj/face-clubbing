@@ -974,7 +974,7 @@ export const App: React.FC = () => {
       <div className={`app ${theme}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '28px', height: '28px', border: '2px solid var(--line)', borderTopColor: 'var(--accent)', borderRadius: '50%', margin: '0 auto', animation: 'dot-spin 0.8s linear infinite' }}></div>
-          <p style={{ marginTop: '14px', fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', letterSpacing: '0.05em' }}>ORGANIZER</p>
+          <p style={{ marginTop: '14px', fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', letterSpacing: '0.05em' }}>CatLog</p>
           <p style={{ color: 'var(--muted)', fontSize: '12px' }}>Connecting to local engine...</p>
         </div>
       </div>

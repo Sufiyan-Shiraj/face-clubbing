@@ -73,7 +73,7 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
     const top = Math.max(50, Math.floor((window.screen?.availHeight || 800) / 2 - height / 2));
     const windowFeatures = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
 
-    const popup = window.open('', 'PhotoSorterDetachedLogs', windowFeatures);
+    const popup = window.open('', 'CatLogDetachedLogs', windowFeatures);
 
     if (!popup || !popup.document) {
       // Popup blocked by browser settings
