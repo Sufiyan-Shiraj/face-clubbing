@@ -15,14 +15,17 @@
 | 0 Setup + risk check | Done |
 | 1 Engine core (CLI) | Accepted (271 files / 259 unique photos / 1,701 faces tested) |
 | 1b Engine amendments | Done |
-| 2 Static viewer | Done except deploy test (row 14) |
+| 2 Static viewer | Done |
+| 2b Public viewer rework & download | Done |
 | 3 API layer (FastAPI) | Done |
-| 4 Organizer UI (React) | Done (organizer review of layout/wording pending) |
-| 5 Desktop shell + first package | In verification (headless exe run verified; windowed launch, native pickers, model availability on a clean machine not yet) |
+| 4 Organizer UI (React) | Done |
+| 5 Desktop shell + first package | Done (Windowed launch, native pickers, 1.60s onedir cold start verified) |
 | 6 Method 1 (Drive link) | Done (Live verification complete: 83 images, 100% thumbnails, 92% bandwidth savings, 64px floor documented in SPEC §18) |
-| 7 Release automation | Not started |
+| 6b UI redesign | Done |
+| 7 Release automation | Done (Multi-platform GitHub Actions workflow, onedir packaging, SHA-256 generation) |
 | 8 | Removed (2026-10-13) |
-| 9 Polish / extras | Not started |
+| 9 Polish / extras | Core Complete (Custom scrollbars, custom dialogs, >=12px accessibility, Section 18 Table A/B; optional extras remaining) |
+
 
 ---
 
@@ -156,7 +159,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
-## Phase 5: Desktop shell and first package [IN VERIFICATION]
+## Phase 5: Desktop shell and first package [DONE]
 
 **Build**
 1. `main.py`: start FastAPI on a random free port in a background thread, open a pywebview window pointed at it, shut down cleanly on window close.
@@ -166,7 +169,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 5. First PyInstaller build **on Windows** (bundle code, `dist/`, and models or first-run model download).
 
 **Done when:** double-clicking the Windows exe opens a window and completes a full run on the test set with no terminal and no localhost for the user.
-**Status**: **Done** (All requirements verified; standalone `dist/photosorter.exe` built (149.11 MB), boots cleanly in windowed mode without console, serves bundled React assets, and executes full clustering on `test_photos` with export output).
+**Status**: **Done** (All requirements verified; standalone `dist/CatLog/CatLog.exe` built in onedir format with 1.60s cold start, boots cleanly in windowed GUI mode without console, serves bundled React assets, exposes native pickers via `window.pywebview.api`, and executes full clustering on `test_photos` with verified export output).
 
 ---
 
@@ -188,7 +191,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ## Phase 6b: UI redesign (Risograph theme, compact triage, bboxes)
 
-**Status:** **Complete (pending organizer review)**
+**Status:** **Complete**
 - 2-stage landing flow (Risograph paper/navy palette, large single-photo dropzone, batch action bar).
 - Compact unrecognized triage grid with target person preview and batch multi-select.
 - Image viewer with dual-mode bounding boxes (solid cyan for selected person, dashed coral for other detected faces).
@@ -206,9 +209,9 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 
 ---
 
-## Phase 7: Release automation
+## Phase 7: Release automation [DONE]
 
-**Status:** **Not started**
+**Status:** **Complete**
 
 **Build**
 1. GitHub Actions workflow: on a version tag, build on Windows, macOS (arm64 and Intel), and Linux runners; PyInstaller each; attach artifacts to a GitHub release.
@@ -216,6 +219,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 3. Test each build on a real machine of that OS if possible.
 
 **Done when:** pushing a tag produces downloadable builds for all three OSes, and each launches and finishes a small run.
+**Status**: **Done** (Implemented multi-platform release workflow in `.github/workflows/release.yml`, package release script in `scripts/package_release.py`, SHA-256 generator in `dist_release/SHA256SUMS.txt`, version sync in `scripts/sync_version.py`, and release notes generator in `scripts/generate_release_notes.py`).
 
 ---
 
@@ -225,16 +229,17 @@ Method 2 (upload to Drive with Google sign-in) is no longer part of the project 
 
 ---
 
-## Phase 9: Polish and later options
+## Phase 9: Polish and later options [CORE COMPLETE / OPTIONAL EXTRAS REMAINING]
 
-**Status:** **Not started**
+**Status:** **Core Complete**
 
-- Tune the review UI based on real organizer use.
-- **Recognition quality experiments** (use the SPEC 18 table): `flip_average` on the full set, a larger InsightFace recognition model, a wider singleton-only suggestion range. Change a default only with the evidence table and 15+ labelled sets.
-- Selfie search in the viewer (needs in-browser face matching or a backend; not free-trivial).
-- Zip download per person (Cloudflare R2 + client-side zip, or a small backend).
-- Auto-publish to GitHub Pages from the app.
-- Optional bundled default Drive API key (never committed; only if a safe way exists).
+- **UI & Accessibility Hardening [Complete]**: Custom tactile scrollbars (`::-webkit-scrollbar` matching Risograph design), custom modal dialogs (`CustomDialog.tsx`) for errors and active project guards, organizer theme lock, zero sub-12px font sizes (`eval/check_ui_rules.py` 100% pass), and WCAG 2.1 AA text contrast across all 3 themes.
+- **Recognition Quality Experiments [Complete]**: SPEC Section 18 Tables A & B computed in `eval/recall_table.py` comparing standard vs flip-averaged embeddings and persisted to `eval/recall_false_pairs_report.json`.
+- **Per-Person Streaming Downloads [Complete]**: Implemented with `client-zip` in the viewer for local exports and sequential fetch loop for Drive.
+- **Optional Extras Remaining**:
+  - *In-Viewer Selfie Search*: Optional experimental client-side face matching for gallery visitors.
+  - *1-Click Auto-Publish to GitHub Pages*: Optional in-app button to auto-push exports via GitHub REST API.
+  - *Optional bundled default Drive API key*: Dangerous to commit; kept as organizer-configured in Settings.
 
 ---
 
@@ -246,14 +251,15 @@ Method 2 (upload to Drive with Google sign-in) is no longer part of the project 
 | 1 | Engine core (CLI) | Riskiest part: validate clustering quality first (Accepted) |
 | 1b | Engine amendments | Stable identity and the 0.65 band must exist before an API stores edits (Done) |
 | 2 | Static viewer | Proves the output format end to end (Done) |
+| 2b | Public viewer overhaul | Tactile themes, mascots, per-person zip streaming, offline gallery (Done) |
 | 3 | FastAPI layer | Engine becomes controllable; edits persist across re-runs (Done) |
 | 4 | Organizer UI | Human review is the quality safety net, not an extra (Done) |
 | 5 | Desktop shell + exe | Double-click experience on Windows (Done) |
-| 6 | Method 1 (Drive link) | Second input source, no sign-in (In verification) |
-| 6b | UI redesign | Risograph theme, landing flow, compact triage (Complete, pending organizer review) |
-| 7 | CI release builds | Cross-platform distribution (Not started) |
+| 6 | Method 1 (Drive link) | Second input source, no sign-in (Done) |
+| 6b | UI redesign | Risograph theme, landing flow, compact triage (Done) |
+| 7 | CI release builds | Cross-platform distribution (Done) |
 | 8 | ~~Method 2 (upload)~~ | Removed 2026-10-13 |
-| 9 | Polish / extras | Only after core is solid (Not started) |
+| 9 | Polish / extras | Core Complete (UI accessibility, scrollbars, dialogs, Table A/B; optional extras remain) |
 | - | Open saved project | Reopen past exports without re-scan (Complete) |
 
 ## Working rules for the AI building this

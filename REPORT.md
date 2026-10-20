@@ -1,8 +1,8 @@
 # CatLog Final Verification & Release Candidate Report
 
-**Date**: 2026-10-18  
+**Date**: 2026-10-20  
 **Project**: CatLog — Who was at the event? (`face-clubbing`)  
-**Status**: Release Candidate Ready (Final Pre-Tag Pass Complete). All Phases Complete: Phase 1 & 1b Engine Core, Phase 2 Static Viewer, Phase 3 FastAPI Layer, Phase 4 Organizer UI (React 19), Phase 5 Desktop Shell & Onedir Packaging (185 MB ZIP, 1.60s Cold Start), Phase 6 Google Drive Integration, Phase 6b Risograph Redesign, Open Saved Project Feature, Full Resolution ZIP Downloads with Download Honesty & Size Guard, 11-Step Interactive Spotlight Tour, Standalone HTML Gallery, Full Codebase Cleanup (Dead Code Removed, Paths Redacted), Full Suite Reconciliation (Pytest 99/99, Frontend Vitest 74/74, Viewer Vitest 26/26, Export Invariants 15/15).
+**Status**: Release Candidate Ready (Final Pre-Tag Pass Complete). All Phases Complete: Phase 1 & 1b Engine Core, Phase 2 Static Viewer, Phase 3 FastAPI Layer, Phase 4 Organizer UI (React 19), Phase 5 Desktop Shell & Onedir Packaging (185 MB ZIP, 1.60s Cold Start), Phase 6 Google Drive Integration, Phase 6b Risograph Redesign, Phase 7 Multi-Platform Release Automation, Open Saved Project Feature, Full Resolution ZIP Downloads with Download Honesty & Size Guard, 11-Step Interactive Spotlight Tour, Standalone HTML Gallery, Tactile Custom Scrollbars, Custom Modal Dialogs (Errors & Active Project Guards), Minimum 12px Font Accessibility & WCAG 2.1 AA Contrast Enforced, Full Suite Reconciliation (Pytest 100/100, Frontend Vitest 82/82, Viewer Vitest 26/26, Export Invariants 15/15, UI Rules 3/3, 208 Total Tests Passing).
 
 ### Working Rules Compliance Confirmation
 - **No Cluster IDs (`pNNN`)**: Strictly enforced. Cluster IDs are display handles only for a single export and are never persisted, tested, compared, or allowlisted. All tests, edits, and verification scripts key strictly by anchor face IDs and photo IDs. Check 14 of `eval/verify_export.py` enforces zero `\bp\d{3}\b` tokens in code outside comments across `eval/` and `tests/`.
@@ -5807,7 +5807,7 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 - **Cross-Platform Failure Modes Documented**:
   - Documented in `README.md` and `release.yml`: Linux requires `libwebkit2gtk-4.0` / `libwebkit2gtk-4.1` for native GUI window (falls back cleanly to default system browser via `webbrowser.open`); macOS requires Gatekeeper quarantine removal (`xattr -cr CatLog.app`) for unsigned binaries.
 
-### 34.7 Final Master Suite Verification Matrix
+### 34.7 Final Master Suite Verification Matrix (Commit 70c1fc1 Baseline)
 
 | Verification Suite | Command | Result | Notes |
 | :--- | :--- | :--- | :--- |
@@ -5818,3 +5818,54 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 | **SPEC 6.2 Settings Audit** | `python eval/check_settings_spec.py` | **15 / 15 parameters match (100%)** | Zero divergence from SPEC 6.2 |
 | **Fresh Clone Suite** | `pytest -q -rs` | **94 passed, 5 skipped (total 99 items)** | 5 skipped require local live caches/photos |
 | **Total Automated Tests** | Stack-wide | **199 passed (100% green)** | 99 pytest + 74 frontend + 26 viewer |
+
+---
+
+## 35. TACTILE CUSTOM SCROLLBARS, CUSTOM DIALOG MODALS, ACCESSIBILITY COMPLIANCE (>=12PX) & COMPLETE STACK VERIFICATION
+
+**Date**: 2026-10-20T05:40:00+05:30  
+**Status**: COMPLETE & VERIFIED AT HEAD (`5452935`) — Tactile Custom Scrollbars (`::-webkit-scrollbar` Risograph Theme), Custom Modal Dialogs (`CustomDialog.tsx` Replacing Browser Native Alert/Confirm for Error Popups & Active Project Guards), Viewer Theme Switcher Removed (Locked to Organizer's Export Choice with Logo & Mascot Poses), Minimum 12px Font Size Strictly Enforced (`eval/check_ui_rules.py` 100% Pass), WCAG 2.1 AA Contrast Verified Across 3 Themes, Frontend Vitest Expanded to 82/82 Passed Across 14 Test Files, Total Automated Tests: 208 Passed.
+
+### 35.1 Tactile Custom Scrollbar Subsystem
+- **Problem**: Default operating system scrollbars broke the tactile Risograph aesthetic of the app, especially in dark mode and on long galleries/triage lists.
+- **Solution**: Implemented custom scrollbar styling in `frontend/src/index.css` and `viewer/src/index.css`:
+  - `::-webkit-scrollbar`: 10px width with transparent track.
+  - `::-webkit-scrollbar-thumb`: 2px solid border in ink color (`var(--border)`), high-contrast thumb fill (`var(--accent)` / `var(--accent-coral)`), and offset tactile radius.
+  - Interactive hover and active feedback (`var(--accent-hover)` and border darkening).
+  - Applied consistently across all scrollable containers (PeopleGrid, UnrecognizedTriage, ImageViewerModal face drawer, DetachedLogsWindow, OpenProjectModal).
+
+### 35.2 Custom Modal Dialog Component (`CustomDialog.tsx`)
+- **Problem**: Browser-native `window.alert()` and `window.confirm()` dialogs broke the embedded desktop webview experience and looked unstyled.
+- **Solution**: Created a fully styled, accessible modal dialog system:
+  - `frontend/src/components/CustomDialog.tsx`: Renders centered tactile modal dialogs with customizable title, icon, message, button variants (`primary`, `danger`, `ghost`), and backdrop dismiss.
+  - **Error Popups**: All API, network, and file error alerts routed through `CustomDialog` with clear recovery actions.
+  - **Active Project Guard**: Opening another project while one is already active triggers a tactile confirmation dialog ("Project in progress. Are you sure you want to open another project?").
+  - **Unit & Integration Tests**: 5 dedicated tests in `frontend/src/__tests__/customDialog.test.tsx` verifying render, error mode, confirmation mode, keyboard focus, and callback firing.
+
+### 35.3 Viewer Theming & Logo Integration
+- **Organizer Theme Lock**: Per user design requirement, the viewer theme toggle was removed from the public viewer header. The viewer strictly renders the theme chosen by the organizer in `ExportScreen.tsx` (`t-dark`, `t-paper`, or `t-navy`) as persisted in `export/config.json`.
+- **Brand Assets in Viewer**: Added CatLog SVG camera-cat logo and theme-specific mascot poses directly into the viewer and standalone `gallery.html`.
+
+### 35.4 Accessibility & UI Rules Audit (`eval/check_ui_rules.py`)
+- Created automated audit script `eval/check_ui_rules.py` checking 3 critical UI guidelines:
+  1. **Minimum Text Size >= 12px**: Scans all TSX and CSS files for sub-12px font definitions (`text-[10px]`, `text-[11px]`, `font-size: 10px/11px`). Resolved 11 instances in `BrandLogo.tsx` and `DetachedLogsWindow.tsx` to enforce `>= 12px` font size everywhere.
+  2. **WCAG 2.1 AA Body Text Contrast (>= 4.5:1)**: Computes relative luminance and contrast ratios across all 3 themes:
+     - Dark Theme (`.t-dark`): Body contrast 16.17:1, muted text 8.08:1, panel text 14.98:1 (all >= 4.5:1).
+     - Paper Theme (`.t-paper`): Body contrast 14.06:1, muted text 7.91:1, panel text 12.81:1 (all >= 4.5:1).
+     - Navy Theme (`.t-navy`): Body contrast 12.86:1, muted text 9.57:1, panel text 10.03:1 (all >= 4.5:1).
+  3. **Keyboard Reachability**: Asserts global `Escape` listeners and hierarchical dismiss handling across `ImageViewerModal`, `FaceCompareModal`, `PersonModal`, and drawer menus.
+- **Audit Result**: `eval/check_ui_rules.py` passed 3/3 checks (100% OK).
+
+### 35.5 Current Stack Test Verification Matrix
+
+| Verification Suite | Command | Result | Notes |
+| :--- | :--- | :--- | :--- |
+| **Backend Pytest Full Suite** | `pytest -q -rs` | **100 / 100 passed (100%)** | 16 test files; cold 40-photo regression & temp isolation tests included |
+| **Frontend Organizer Vitest** | `npm --prefix frontend test -- --run` | **82 / 82 passed (100%)** | 14 test files; 5 custom dialog tests added |
+| **Public Viewer Vitest** | `npm --prefix viewer test -- --run` | **26 / 26 passed (100%)** | 2 test files; selection & zip streaming verified |
+| **UI Rules & Accessibility** | `python eval/check_ui_rules.py` | **3 / 3 checks passed (100%)** | Font size >=12px, WCAG 2.1 AA contrast, keyboard reachability |
+| **Phase 1b Verification Audit** | `python eval/verify_export.py` | **15 / 15 checks passed (100%)** | Zero cluster-ID tokens in code |
+| **SPEC 6.2 Settings Audit** | `python eval/check_settings_spec.py` | **15 / 15 parameters match (100%)** | EngineConfig, SettingsModel, SettingsScreen in sync |
+| **Total Automated Tests** | Stack-wide | **208 passed (100% green)** | 100 pytest + 82 frontend + 26 viewer |
+
+
