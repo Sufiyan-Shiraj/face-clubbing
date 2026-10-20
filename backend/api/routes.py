@@ -244,6 +244,8 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
         except HTTPException:
             raise
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             raise HTTPException(status_code=500, detail=str(e))
 
     # 5. Re-run Pipeline with Edit Replay

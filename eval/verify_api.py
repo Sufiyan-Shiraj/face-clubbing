@@ -282,7 +282,7 @@ def run_api_verification() -> bool:
         export_res = client.post("/api/export", json={"output_dir": str(export_dir)})
         if export_res.status_code == 200:
             exported_items = sorted([p.name for p in export_dir.iterdir()])
-            allowed_items = {"config.json", "people.json", "faces", "thumbs"}
+            allowed_items = {"config.json", "people.json", "faces", "thumbs", "index.html", "assets", "gallery.html"}
             forbidden_items = {"suggestions.json", "edits.json", "id_map.json", ".cache"}
 
             has_forbidden = any(f in exported_items for f in forbidden_items)

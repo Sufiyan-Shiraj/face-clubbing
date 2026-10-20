@@ -44,6 +44,11 @@ def run_smoke_test(exe_path: str | Path | None = None) -> bool:
         return False
 
     exe_path = Path(exe_path).resolve()
+    if not sys.platform.startswith("win"):
+        try:
+            exe_path.chmod(0o755)
+        except Exception:
+            pass
     print(f"[INFO] Executable: {exe_path} ({exe_path.stat().st_size:,} bytes)")
 
     # Read expected version from VERSION file

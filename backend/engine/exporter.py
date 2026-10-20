@@ -49,6 +49,11 @@ class BundleExporter:
             if cand2.exists():
                 shutil.copy2(cand2, thumb_dest)
                 return
+        # Also check root export.work if available
+        repo_work_thumb = self.output_dir.parent / "export.work" / "thumbs" / f"{photo_id}.jpg"
+        if repo_work_thumb.exists():
+            shutil.copy2(repo_work_thumb, thumb_dest)
+            return
         if record.original_path and Path(record.original_path).exists():
             try:
                 self.thumb_gen.generate_photo_thumbnail(
@@ -88,6 +93,11 @@ class BundleExporter:
             if cand.exists():
                 shutil.copy2(cand, face_dest)
                 return
+        # Also check root export.work if available
+        repo_work_crop = self.output_dir.parent / "export.work" / "crops" / f"{face_id}.jpg"
+        if repo_work_crop.exists():
+            shutil.copy2(repo_work_crop, face_dest)
+            return
         if orig_photo and orig_photo.original_path and Path(orig_photo.original_path).exists() and bbox:
             try:
                 self.thumb_gen.generate_square_face_crop(

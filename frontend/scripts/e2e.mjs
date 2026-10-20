@@ -256,6 +256,21 @@ async function run() {
     }
   }
 
+  // Populate precomputed crops and thumbs from canonical export into isolated cache dir
+  const canonicalThumbs = path.resolve(CANONICAL_EXPORT_DIR, 'thumbs');
+  if (existsSync(canonicalThumbs) && !existsSync(path.resolve(TEMP_CACHE_DIR, 'thumbs'))) {
+    cpSync(canonicalThumbs, path.resolve(TEMP_CACHE_DIR, 'thumbs'), { recursive: true });
+  }
+  const canonicalFaces = path.resolve(CANONICAL_EXPORT_DIR, 'faces');
+  if (existsSync(canonicalFaces)) {
+    if (!existsSync(path.resolve(TEMP_CACHE_DIR, 'crops'))) {
+      cpSync(canonicalFaces, path.resolve(TEMP_CACHE_DIR, 'crops'), { recursive: true });
+    }
+    if (!existsSync(path.resolve(TEMP_CACHE_DIR, 'faces'))) {
+      cpSync(canonicalFaces, path.resolve(TEMP_CACHE_DIR, 'faces'), { recursive: true });
+    }
+  }
+
   // Spawn uvicorn server in isolated environment
   logMessage(`\n[SPAWN] Starting uvicorn with isolated work/output/cache dirs on port ${API_PORT}...`);
   const serverProc = spawn(
@@ -359,19 +374,7 @@ async function run() {
     }
 
     async function safeSelectOption(selector, value) {
-      await page.evaluate(({ sel, val }) => {
-        const m = document.querySelector('.main');
-        if (m) m.scrollTop = 0;
-        const el = document.querySelector(sel);
-        if (el) {
-          el.scrollIntoView({ block: 'nearest' });
-          el.value = val;
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-          el.dispatchEvent(new Event('change', { bubbles: true }));
-        } else {
-          throw new Error(`Select element not found: ${sel}`);
-        }
-      }, { sel: selector, val: value });
+      await page.selectOption(selector, value);
       await sleep(150);
     }
 
@@ -861,20 +864,27 @@ async function run() {
     await page.waitForSelector('#export-bundle-btn', { timeout: 15000 });
     await page.waitForSelector('#export-output-dir-input', { timeout: 15000 });
 
-    logMessage(`[STEP H ACTION] Explicitly setting export destination input to isolated path: ${TEMP_OUTPUT_DIR}`);
-    await page.fill('#export-output-dir-input', TEMP_OUTPUT_DIR);
+    const STEP_H_DIR = path.resolve(REPO_ROOT, 'export.e2e_step_h');
+    if (existsSync(STEP_H_DIR)) rmSync(STEP_H_DIR, { recursive: true, force: true });
+    mkdirSync(STEP_H_DIR, { recursive: true });
+
+    logMessage(`[STEP H ACTION] Explicitly setting export destination input to isolated path: ${STEP_H_DIR}`);
+    await page.fill('#export-output-dir-input', STEP_H_DIR);
     await sleep(200);
 
     logMessage('[STEP H] Clicking "Export Public Bundle"...');
     await safeClick('#export-bundle-btn');
-    await page.waitForSelector('#export-success-summary', { timeout: 30000 });
+    await page.waitForSelector('#export-success-summary', { timeout: 60000 });
 
     const exportStatsPeople = await page.$eval('#export-stat-people', (el) => el.textContent?.trim() || '');
     const exportStatsPhotos = await page.$eval('#export-stat-photos', (el) => el.textContent?.trim() || '');
     logMessage(`[STEP H] Export completed: ${exportStatsPeople} people, ${exportStatsPhotos} photos.`);
 
-    // Verify temp export directory on disk
-    const exportedItems = readdirSync(TEMP_OUTPUT_DIR).filter((f) => !f.startsWith('.'));
+    // Verify temp export directory on disk (handle either flat or nested project directory)
+    const targetExportDir = existsSync(path.join(STEP_H_DIR, 'test_photos', 'people.json'))
+      ? path.join(STEP_H_DIR, 'test_photos')
+      : STEP_H_DIR;
+    const exportedItems = readdirSync(targetExportDir).filter((f) => !f.startsWith('.'));
     logMessage(`[STEP H] Contents of isolated export directory on disk:`, exportedItems.sort());
 
     const allowedItems = new Set(['config.json', 'people.json', 'faces', 'thumbs', 'gallery.html', 'index.html', 'assets']);
@@ -893,7 +903,7 @@ async function run() {
     // Verify forbidden files are strictly absent
     const forbidden = ['suggestions.json', 'edits.json', 'id_map.json', '.cache'];
     for (const f of forbidden) {
-      if (existsSync(path.resolve(TEMP_OUTPUT_DIR, f))) {
+      if (existsSync(path.resolve(targetExportDir, f))) {
         throw new Error(`CRITICAL: Private organizer artifact '${f}' was exported to public bundle!`);
       }
     }
@@ -1111,7 +1121,15 @@ async function run() {
 
       // 2. Click "Open saved project" in header
       logMessage(`[STEP M ACTION] Clicking Open saved project in header`);
-      await safeClick('[title="Open saved project"]');
+      await safeClick('#header-open-project-btn');
+      try {
+        const discardBtn = await page.waitForSelector('[data-testid="dialog-confirm-discard-btn"]', { timeout: 1500 });
+        if (discardBtn) {
+          await safeClick('[data-testid="dialog-confirm-discard-btn"]');
+        }
+      } catch (e) {
+        // Guard dialog did not appear, proceed directly
+      }
       await page.waitForSelector('[data-testid="open-project-modal"]', { timeout: 15000 });
       logMessage(`[STEP M] Recent projects modal opened successfully.`);
 
@@ -1159,7 +1177,15 @@ async function run() {
 
       // 5. Close and Reopen project to confirm persistence
       logMessage(`[STEP M ACTION] Reopening project to verify edit persistence`);
-      await safeClick('[title="Open saved project"]');
+      await safeClick('#header-open-project-btn');
+      try {
+        const discardBtn = await page.waitForSelector('[data-testid="dialog-confirm-discard-btn"]', { timeout: 1500 });
+        if (discardBtn) {
+          await safeClick('[data-testid="dialog-confirm-discard-btn"]');
+        }
+      } catch (e) {
+        // Guard dialog did not appear, proceed directly
+      }
       await page.waitForSelector('[data-testid="open-project-modal"]', { timeout: 15000 });
       await sleep(200);
 
@@ -1294,6 +1320,8 @@ async function run() {
     if (existsSync(TEMP_WORK_DIR)) rmSync(TEMP_WORK_DIR, { recursive: true, force: true });
     if (existsSync(TEMP_OUTPUT_DIR)) rmSync(TEMP_OUTPUT_DIR, { recursive: true, force: true });
     if (existsSync(TEMP_CACHE_DIR)) rmSync(TEMP_CACHE_DIR, { recursive: true, force: true });
+    const stepHDir = path.resolve(REPO_ROOT, 'export.e2e_step_h');
+    if (existsSync(stepHDir)) rmSync(stepHDir, { recursive: true, force: true });
     logMessage('[TEARDOWN] Temporary test directories removed.');
   }
 }

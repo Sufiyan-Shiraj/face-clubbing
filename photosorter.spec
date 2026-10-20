@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, collect_dynamic_libs
 
 block_cipher = None
 
@@ -10,8 +10,9 @@ datas = [
 if os.path.exists('viewer/dist'):
     datas.append(('viewer/dist', 'viewer/dist'))
 
-# Collect any package data files for insightface and onnxruntime
+# Collect package data files for insightface and onnxruntime
 datas += collect_data_files('insightface')
+datas += collect_data_files('onnxruntime')
 
 import insightface
 import os
@@ -19,6 +20,9 @@ insightface_dir = os.path.dirname(insightface.__file__)
 objects_dir = os.path.join(insightface_dir, 'data', 'objects')
 if os.path.exists(objects_dir):
     datas.append((objects_dir, 'objects'))
+
+# Collect dynamic libraries for onnxruntime (essential for Linux/macOS shared objects)
+binaries = collect_dynamic_libs('onnxruntime')
 
 hiddenimports = [
     'uvicorn.logging',
@@ -34,6 +38,9 @@ hiddenimports = [
     'webview',
     'webview.platforms.winforms',
     'webview.platforms.edgechromium',
+    'webview.platforms.cocoa',
+    'webview.platforms.gtk',
+    'webview.platforms.qt',
     'fastapi',
     'fastapi.staticfiles',
     'starlette',
@@ -55,6 +62,7 @@ hiddenimports = [
 # Add submodules
 hiddenimports += collect_submodules('uvicorn')
 hiddenimports += collect_submodules('insightface')
+hiddenimports += collect_submodules('onnxruntime')
 hiddenimports += collect_submodules('webview')
 
 if os.path.exists('VERSION'):
@@ -63,7 +71,7 @@ if os.path.exists('VERSION'):
 a = Analysis(
     ['main.py'],
     pathex=['.'],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],

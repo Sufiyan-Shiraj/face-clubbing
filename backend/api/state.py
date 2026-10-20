@@ -322,6 +322,7 @@ class AppState:
                 f"Edits must be strictly keyed by face IDs and photo IDs."
             )
 
+        self.edits_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.edits_path, "w", encoding="utf-8") as f:
             f.write(json_text)
 
@@ -331,10 +332,12 @@ class AppState:
             self.work_dir = Path(work_dir)
             self.edits_path = self.work_dir / "edits.json"
         elif getattr(result, "temp_dir", None):
-            self.work_dir = Path(result.temp_dir)
-            self.edits_path = self.work_dir / "edits.json"
-            self.settings.work_dir = str(self.work_dir)
-            self.settings.cache_dir = str(self.work_dir)
+            if not self.work_dir or not self.work_dir.exists():
+                self.work_dir = Path(result.temp_dir)
+                self.edits_path = self.work_dir / "edits.json"
+                self.settings.work_dir = str(self.work_dir)
+            if not self.settings.cache_dir:
+                self.settings.cache_dir = str(self.work_dir)
 
         self.photos = result.photos
         self.people = result.people

@@ -44,6 +44,22 @@ def sync_version():
             pkg_path.write_text(pkg_content, encoding="utf-8")
             print(f"Updated {pkg_rel} to version {version_str}")
 
+    # Update package-lock.json files to prevent npm ci mismatch
+    for lock_rel in ["package-lock.json", "frontend/package-lock.json", "viewer/package-lock.json"]:
+        lock_path = REPO_ROOT / lock_rel
+        if lock_path.exists():
+            try:
+                import json
+                data = json.loads(lock_path.read_text(encoding="utf-8"))
+                if "version" in data:
+                    data["version"] = version_str
+                if "packages" in data and "" in data["packages"]:
+                    data["packages"][""]["version"] = version_str
+                lock_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+                print(f"Updated {lock_rel} to version {version_str}")
+            except Exception as e:
+                print(f"Warning: could not update {lock_rel}: {e}")
+
 
 if __name__ == "__main__":
     sync_version()
