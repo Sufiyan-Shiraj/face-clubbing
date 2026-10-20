@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en" class="t-dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CatLog — Engine Activity Log</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <style>
+    :root {
+      --bg: #0e0d0c;
+      --panel: #181614;
+      --input: #12100e;
+      --line: #2a2724;
+      --line-bright: #3d3935;
+      --text: #f4eee6;
+      --muted: #8a837b;
+      --accent: #ff5c5c;
+      --accent-ink: #ff9e9e;
+      --accent-glow: rgba(255, 92, 92, 0.15);
+      --green: #4ade80;
+      --blue: #60a5fa;
+      --amber: #fbbf24;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, 'JetBrains Mono', 'Cascadia Code', 'Segoe UI Mono', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: text;
+    }
+
+    /* Header Bar */
+    header {
+      background: var(--panel);
+      border-bottom: 2px solid var(--line);
+      padding: 12px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1.5px solid var(--line);
+      background: var(--input);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .brand-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: var(--input);
+      color: var(--muted);
+    }
+
+    .badge-accent {
+      border-color: rgba(255, 92, 92, 0.3);
+      background: var(--accent-glow);
+      color: var(--accent-ink);
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.85); }
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    button.btn {
+      background: var(--input);
+      color: var(--text);
+      border: 1.5px solid var(--line);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      box-shadow: 1px 1px 0 var(--line);
+    }
+
+    button.btn:hover {
+      border-color: var(--line-bright);
+      background: var(--panel);
+      transform: translateY(-1px);
+    }
+
+    button.btn:active {
+      transform: translateY(0);
+    }
+
+    /* Progress row */
+    .progress-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: var(--input);
+      border-radius: 4px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #d94b4f, #ff7373);
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .progress-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* Filter & Search Bar */
+    .filter-bar {
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      padding: 8px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--input);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+    }
+
+    .filter-pills {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pill {
+      background: var(--input);
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+
+    .pill:hover {
+      color: var(--text);
+      border-color: var(--line-bright);
+    }
+
+    .pill.active {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Log Stream Body */
+    #log-stream {
+      flex: 1;
+      padding: 14px 18px;
+      overflow-y: auto;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .log-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      line-height: 1.5;
+      transition: background 0.1s ease;
+    }
+
+    .log-line:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .log-num {
+      color: var(--muted);
+      font-size: 11px;
+      min-width: 32px;
+      text-align: right;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .log-time {
+      color: var(--muted);
+      font-size: 11px;
+      min-width: 65px;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .log-stage {
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--accent-ink);
+      flex-shrink: 0;
+    }
+
+    .stage-SCAN, .stage-DOWNLOAD { border-color: rgba(96, 165, 250, 0.4); color: #93c5fd; }
+    .stage-DETECT, .stage-PROCESSING { border-color: rgba(251, 191, 36, 0.4); color: #fde047; }
+    .stage-CLUSTER, .stage-FLIP_AVERAGING { border-color: rgba(168, 85, 247, 0.4); color: #d8b4fe; }
+    .stage-EXPORT { border-color: rgba(74, 222, 128, 0.4); color: #86efac; }
+    .stage-COMPLETE { border-color: rgba(74, 222, 128, 0.6); color: #4ade80; background: rgba(74, 222, 128, 0.1); }
+    .stage-FAILED, .stage-CANCELLED { border-color: rgba(239, 68, 68, 0.6); color: #f87171; background: rgba(239, 68, 68, 0.1); }
+
+    .log-text {
+      flex: 1;
+      word-break: break-word;
+      color: var(--text);
+    }
+
+    .log-pct {
+      font-weight: 700;
+      color: var(--accent-ink);
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* Footer status */
+    footer {
+      background: var(--panel);
+      border-top: 1px solid var(--line);
+      padding: 6px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <div class="brand-wrap">
+        <div class="brand-icon">
+          <img src="/catlog-icon.png" alt="CatLog" onerror="this.style.display='none'" />
+        </div>
+        <div>
+          <span class="brand-title">CatLog</span>
+          <span style="color:var(--muted); font-size:12px; margin-left:6px;">Engine Activity Log</span>
+        </div>
+        <span id="badge-events" class="badge">0 events</span>
+        <span id="badge-live" class="badge badge-accent">
+          <span class="pulse-dot"></span>
+          <span>Live</span>
+        </span>
+        <span id="badge-elapsed" class="badge" title="Elapsed Time">
+          ⏱ <span id="text-elapsed">00:00</span>
+        </span>
+      </div>
+
+      <div class="header-controls">
+        <button id="btn-copy" class="btn" title="Copy all logs to clipboard">
+          <span id="copy-icon">❐</span>
+          <span id="copy-text">Copy All</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div id="progress-fill" class="progress-bar-fill"></div>
+    </div>
+
+    <div class="progress-info">
+      <span id="stage-text">READY — Waiting for scan...</span>
+      <span id="percent-text">0%</span>
+    </div>
+  </header>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <span style="color:var(--muted); font-size:12px;">🔍</span>
+      <input id="search-input" type="text" placeholder="Filter logs by stage or message..." />
+      <button id="btn-clear-search" style="display:none; background:none; border:none; color:var(--muted); cursor:pointer; font-size:11px;">✕</button>
+    </div>
+
+    <div class="filter-pills">
+      <span class="pill active" data-filter="all">ALL</span>
+      <span class="pill" data-filter="SCAN">SCAN</span>
+      <span class="pill" data-filter="DETECT">DETECT</span>
+      <span class="pill" data-filter="CLUSTER">CLUSTER</span>
+      <span class="pill" data-filter="EXPORT">EXPORT</span>
+    </div>
+
+    <label class="toggle-wrap">
+      <input type="checkbox" id="chk-autoscroll" checked />
+      <span>Auto-scroll</span>
+    </label>
+  </div>
+
+  <div id="log-stream">
+    <div class="empty-state">Connecting to CatLog engine activity stream...</div>
+  </div>
+
+  <footer>
+    <span id="footer-count">Showing 0 of 0 events</span>
+    <span>CatLog Desktop • Live Engine Telemetry</span>
+  </footer>
+
+  <script>
+    (function() {
+      const logs = [];
+      let currentFilter = 'all';
+      let searchQuery = '';
+      let startTime = null;
+      let timerInterval = null;
+
+      const logStreamEl = document.getElementById('log-stream');
+      const badgeEventsEl = document.getElementById('badge-events');
+      const textElapsedEl = document.getElementById('text-elapsed');
+      const progressFillEl = document.getElementById('progress-fill');
+      const stageTextEl = document.getElementById('stage-text');
+      const percentTextEl = document.getElementById('percent-text');
+      const searchInputEl = document.getElementById('search-input');
+      const btnClearSearch = document.getElementById('btn-clear-search');
+      const chkAutoScroll = document.getElementById('chk-autoscroll');
+      const footerCountEl = document.getElementById('footer-count');
+      const btnCopy = document.getElementById('btn-copy');
+      const copyTextEl = document.getElementById('copy-text');
+
+      function formatTime(totalSecs) {
+        const s = Math.max(0, Math.floor(totalSecs));
+        const hrs = Math.floor(s / 3600);
+        const mins = Math.floor((s % 3600) / 60);
+        const secs = s % 60;
+        if (hrs > 0) {
+          return `${hrs}h ${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
+        }
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+
+      function updateElapsed() {
+        if (!startTime) return;
+        const elapsed = (Date.now() - startTime) / 1000;
+        const formatted = formatTime(elapsed);
+        textElapsedEl.textContent = formatted;
+        document.title = `[${formatted}] CatLog — Engine Activity Log`;
+      }
+
+      function renderLogs() {
+        const q = searchQuery.toLowerCase().trim();
+        const filtered = logs.filter(item => {
+          if (currentFilter !== 'all') {
+            const stg = (item.stage || '').toUpperCase();
+            if (!stg.includes(currentFilter)) return false;
+          }
+          if (q) {
+            const full = `${item.stage} ${item.message}`.toLowerCase();
+            if (!full.includes(q)) return false;
+          }
+          return true;
+        });
+
+        badgeEventsEl.textContent = `${logs.length} events`;
+        footerCountEl.textContent = `Showing ${filtered.length} of ${logs.length} events`;
+
+        if (filtered.length === 0) {
+          logStreamEl.innerHTML = `<div class="empty-state">${logs.length === 0 ? 'No activity logged yet.' : 'No events match the current filter.'}</div>`;
+          return;
+        }
+
+        logStreamEl.innerHTML = filtered.map((l, idx) => {
+          const stgClass = `stage-${l.stage.replace(/[^A-Za-z0-9_]/g, '')}`;
+          const pctStr = (l.percent !== undefined && l.percent !== null) ? `${Number(l.percent).toFixed(1)}%` : '';
+          return `
+            <div class="log-line">
+              <span class="log-num">${idx + 1}.</span>
+              <span class="log-time">${l.time_str || ''}</span>
+              <span class="log-stage ${stgClass}">[${l.stage}]</span>
+              <span class="log-text">${escapeHtml(l.message)}</span>
+              <span class="log-pct">${pctStr}</span>
+            </div>
+          `;
+        }).join('');
+
+        if (chkAutoScroll.checked) {
+          logStreamEl.scrollTop = logStreamEl.scrollHeight;
+        }
+      }
+
+      function escapeHtml(text) {
+        if (!text) return '';
+        return String(text)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function addLog(stage, message, percent, time_str) {
+        if (!time_str) {
+          const d = new Date();
+          time_str = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+        }
+        logs.push({
+          id: logs.length + 1,
+          stage: (stage || 'INFO').toUpperCase(),
+          message: message || '',
+          percent: percent || 0,
+          time_str: time_str,
+        });
+        renderLogs();
+      }
+
+      function updateProgress(data) {
+        if (!data) return;
+        const pct = Math.min(100, Math.max(0, Number(data.percent || 0)));
+        progressFillEl.style.width = `${pct}%`;
+        percentTextEl.textContent = `${pct.toFixed(1)}%`;
+
+        const stg = (data.stage || data.status || 'RUNNING').toUpperCase();
+        const cur = data.current || 0;
+        const tot = data.total || 0;
+        const countStr = tot > 0 ? ` (${cur}/${tot})` : '';
+        stageTextEl.textContent = `${stg}${countStr} — ${data.message || 'Processing photos...'}`;
+
+        if (data.start_time && !startTime) {
+          startTime = data.start_time * 1000;
+        } else if (!startTime && data.status === 'running') {
+          startTime = Date.now() - (data.elapsed_seconds || 0) * 1000;
+        }
+
+        if (startTime && !timerInterval) {
+          timerInterval = setInterval(updateElapsed, 1000);
+          updateElapsed();
+        }
+
+        if (data.status === 'completed') {
+          document.getElementById('badge-live').classList.remove('badge-accent');
+          document.getElementById('badge-live').innerHTML = '<span>Done</span>';
+        }
+      }
+
+      // Initial Fetch: Load existing logs & status
+      async function fetchInitial() {
+        try {
+          const res = await fetch('/api/jobs/status');
+          if (res.ok) {
+            const data = await res.json();
+            updateProgress(data);
+          }
+        } catch (e) {
+          console.warn('Status fetch error:', e);
+        }
+
+        try {
+          const resLogs = await fetch('/api/jobs/logs');
+          if (resLogs.ok) {
+            const dataLogs = await resLogs.json();
+            if (dataLogs.logs && dataLogs.logs.length > 0) {
+              logs.length = 0;
+              dataLogs.logs.forEach(item => {
+                logs.push({
+                  id: item.id || logs.length + 1,
+                  stage: (item.stage || 'INFO').toUpperCase(),
+                  message: item.message || '',
+                  percent: item.percent || 0,
+                  time_str: item.time_str || '',
+                });
+              });
+              renderLogs();
+            }
+          }
+        } catch (e) {
+          console.warn('Logs fetch error:', e);
+        }
+      }
+
+      // Live SSE Connection
+      function connectSSE() {
+        const es = new EventSource('/api/jobs/progress');
+        es.onmessage = function(e) {
+          try {
+            const data = JSON.parse(e.data);
+            updateProgress(data);
+            if (data.message) {
+              addLog(data.stage, data.message, data.percent);
+            }
+          } catch (err) {
+            console.error('SSE parse error:', err);
+          }
+        };
+
+        es.onerror = function() {
+          // Poll fallback
+          setTimeout(fetchInitial, 2500);
+        };
+      }
+
+      // Search & Filters
+      searchInputEl.addEventListener('input', function(e) {
+        searchQuery = e.target.value;
+        btnClearSearch.style.display = searchQuery ? 'inline' : 'none';
+        renderLogs();
+      });
+
+      btnClearSearch.addEventListener('click', function() {
+        searchInputEl.value = '';
+        searchQuery = '';
+        btnClearSearch.style.display = 'none';
+        renderLogs();
+      });
+
+      document.querySelectorAll('.filter-pills .pill').forEach(pill => {
+        pill.addEventListener('click', function() {
+          document.querySelectorAll('.filter-pills .pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          currentFilter = pill.getAttribute('data-filter') || 'all';
+          renderLogs();
+        });
+      });
+
+      // Copy All
+      btnCopy.addEventListener('click', function() {
+        const text = logs.map((l, i) => `[${(i + 1).toString().padStart(3, '0')}] [${l.time_str || ''}] [${l.stage}] (${l.percent}%) ${l.message}`).join('\n');
+        navigator.clipboard.writeText(text).then(() => {
+          copyTextEl.textContent = 'Copied!';
+          setTimeout(() => { copyTextEl.textContent = 'Copy All'; }, 2000);
+        });
+      });
+
+      // Fallback Polling Loop
+      setInterval(fetchInitial, 4000);
+
+      fetchInitial();
+      connectSSE();
+    })();
+  </script>
+</body>
+</html>

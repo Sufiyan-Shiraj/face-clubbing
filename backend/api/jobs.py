@@ -43,9 +43,10 @@ class JobManager:
 
         # Subscribers for SSE
         self._subscribers: list[asyncio.Queue] = []
+        self._log_history: list[dict] = []
 
-    def _log_event(self, text: str):
-        """Prints live log event to stdout and appends to catlog.log."""
+    def _log_event(self, text: str, stage: str = "INFO", percent: float = 0.0):
+        """Prints live log event to stdout, appends to catlog.log, and buffers in history."""
         t_str = time.strftime("%H:%M:%S")
         formatted = f"[{t_str}] {text}"
         print(formatted, flush=True)
@@ -55,6 +56,22 @@ class JobManager:
                 f.write(formatted + "\n")
         except Exception:
             pass
+
+        with self._lock:
+            self._log_history.append({
+                "id": len(self._log_history) + 1,
+                "timestamp": time.time(),
+                "time_str": t_str,
+                "stage": stage,
+                "percent": percent,
+                "message": text,
+            })
+            if len(self._log_history) > 1000:
+                self._log_history = self._log_history[-1000:]
+
+    def get_logs(self) -> list[dict]:
+        with self._lock:
+            return list(self._log_history)
 
     def get_status(self) -> JobStatusResponse:
         with self._lock:
@@ -150,7 +167,7 @@ class JobManager:
             cur = self.current or 0
             tot = self.total or 0
             count_str = f"({cur}/{tot}) " if tot > 0 else ""
-            self._log_event(f"[{stg:<10}] {pct_val:5.1f}% | {count_str}{msg}")
+            self._log_event(f"[{stg:<10}] {pct_val:5.1f}% | {count_str}{msg}", stage=stg, percent=pct_val)
 
         # Dispatch to async queues safely across threads via call_soon_threadsafe
         for item in list(self._subscribers):
@@ -180,6 +197,8 @@ class JobManager:
             self.result_summary = None
             self.recent_faces = []
             self._cancel_event.clear()
+
+        self._log_event("[START     ]   0.0% | Starting face sorting engine pipeline...", stage="START", percent=0.0)
 
         # Update state settings if requested
         if req.settings:

@@ -251,6 +251,45 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
     });
   };
 
+  // Detach logs window into native OS window or popup
+  const handleDetachWindow = async () => {
+    // 1. If running inside desktop pywebview with native API bridge, open real native desktop window
+    if (typeof window !== 'undefined' && (window as any).pywebview?.api?.open_logs_window) {
+      try {
+        const ok = await (window as any).pywebview.api.open_logs_window();
+        if (ok) {
+          setShowLogsModal(false);
+          return;
+        }
+      } catch (e) {
+        console.warn('Native open_logs_window failed, falling back:', e);
+      }
+    }
+
+    // 2. If running inside WebView2 / pywebview desktop shell without API, open /logs.html directly
+    const isDesktopShell =
+      typeof window !== 'undefined' &&
+      (Boolean((window as any).pywebview) ||
+        Boolean((window as any).chrome?.webview) ||
+        Boolean((window as any).__pywebview__));
+
+    if (isDesktopShell) {
+      try {
+        const pop = window.open('/logs.html', 'CatLogDetachedLogs', 'width=880,height=640,resizable=yes,scrollbars=yes');
+        if (pop) {
+          setShowLogsModal(false);
+          return;
+        }
+      } catch (e) {
+        console.warn('window.open /logs.html failed:', e);
+      }
+    }
+
+    // 3. Fallback to React portal detached window (also used in browser / vitest)
+    setShowLogsModal(false);
+    setIsDetached(true);
+  };
+
   return (
     <div className="main-content-flow" style={{ maxWidth: '960px', width: '100%', textAlign: 'left', alignItems: 'stretch' }}>
       {/* Top Action Header */}
@@ -611,21 +650,7 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
             type="button"
             id="btn-detach-bottom"
             data-testid="btn-detach-bottom"
-            onClick={() => {
-              const isDesktopShell =
-                typeof window !== 'undefined' &&
-                (Boolean((window as any).pywebview) ||
-                  Boolean((window as any).chrome?.webview) ||
-                  Boolean((window as any).__pywebview__));
-              if (isDesktopShell) {
-                // In desktop pywebview / WebView2, open in-page modal and show terminal streaming status
-                setShowLogsModal(true);
-                setShowTerminalNotice(true);
-              } else {
-                setShowLogsModal(false);
-                setIsDetached(true);
-              }
-            }}
+            onClick={handleDetachWindow}
             className="btn sm"
             style={{ height: '36px', padding: '0 14px' }}
             title="Pop out into a separate window you can keep on screen while minimizing the main app"
@@ -695,20 +720,7 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
                   type="button"
                   id="btn-detach-modal"
                   data-testid="btn-detach-modal"
-                  onClick={() => {
-                    const isDesktopShell =
-                      typeof window !== 'undefined' &&
-                      (Boolean((window as any).pywebview) ||
-                        Boolean((window as any).chrome?.webview) ||
-                        Boolean((window as any).__pywebview__));
-                    if (isDesktopShell) {
-                      setShowLogsModal(true);
-                      setShowTerminalNotice(true);
-                    } else {
-                      setShowLogsModal(false);
-                      setIsDetached(true);
-                    }
-                  }}
+                  onClick={handleDetachWindow}
                   className="btn sm"
                   style={{ height: '30px', padding: '0 10px', fontSize: '12px' }}
                   title="Pop out into separate window or check run.bat terminal stream"

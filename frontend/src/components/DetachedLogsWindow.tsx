@@ -66,24 +66,34 @@ export const DetachedLogsWindow: React.FC<DetachedLogsWindowProps> = ({
       return;
     }
 
-    // In pywebview / WebView2 desktop shell, popup windows are not supported
-    // and cause Windows to prompt for an unhandled 'about:' protocol handler.
+    // Dimensions and window features for detached window
+    const width = 880;
+    const height = 640;
+    const left = Math.max(50, Math.floor((window.screen?.availWidth || 1200) / 2 - width / 2));
+    const top = Math.max(50, Math.floor((window.screen?.availHeight || 800) / 2 - height / 2));
+    const windowFeatures = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
+
+    // In pywebview / WebView2 desktop shell, invoke native OS window creation or /logs.html
     const isDesktopShell =
       typeof window !== 'undefined' &&
       (Boolean((window as any).pywebview) ||
         Boolean((window as any).chrome?.webview) ||
         Boolean((window as any).__pywebview__));
     if (isDesktopShell) {
-      onDock();
-      return;
+      if (typeof window !== 'undefined' && (window as any).pywebview?.api?.open_logs_window) {
+        (window as any).pywebview.api.open_logs_window().catch(() => {});
+        onClose();
+        return;
+      }
+      try {
+        window.open('/logs.html', 'CatLogDetachedLogs', windowFeatures);
+        onClose();
+        return;
+      } catch {
+        onDock();
+        return;
+      }
     }
-
-    // Open new native detached window
-    const width = 880;
-    const height = 640;
-    const left = Math.max(50, Math.floor((window.screen?.availWidth || 1200) / 2 - width / 2));
-    const top = Math.max(50, Math.floor((window.screen?.availHeight || 800) / 2 - height / 2));
-    const windowFeatures = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
 
     let popup: Window | null = null;
     try {

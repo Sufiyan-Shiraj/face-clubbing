@@ -56,11 +56,16 @@ def find_free_port() -> int:
 class WebviewApi:
     """JS API exposed to React UI as window.pywebview.api."""
 
-    def __init__(self, window: webview.Window | None = None):
+    def __init__(self, window: webview.Window | None = None, server_url: str = ""):
         self._window = window
+        self._server_url = server_url
+        self._logs_window: webview.Window | None = None
 
     def set_window(self, window: webview.Window) -> None:
         self._window = window
+
+    def set_server_url(self, url: str) -> None:
+        self._server_url = url
 
     def select_folder(self, title: str = "Select Folder") -> str:
         """Opens native OS folder picker dialog and returns selected path."""
@@ -91,6 +96,37 @@ class WebviewApi:
         if result and len(result) > 0:
             return str(result[0])
         return ""
+
+    def open_logs_window(self) -> bool:
+        """Opens a separate native desktop window for activity logs."""
+        try:
+            if self._logs_window is not None:
+                try:
+                    self._logs_window.restore()
+                    self._logs_window.show()
+                    return True
+                except Exception:
+                    self._logs_window = None
+
+            logs_url = f"{self._server_url}/logs.html" if self._server_url else "http://127.0.0.1:8000/logs.html"
+            self._logs_window = webview.create_window(
+                title="CatLog — Activity Log",
+                url=logs_url,
+                width=880,
+                height=620,
+                min_size=(540, 360),
+                background_color="#0a0a0a",
+            )
+            return True
+        except Exception as e:
+            print(f"[LOGS] Could not create native logs window: {e}, falling back to browser", flush=True)
+            try:
+                import webbrowser
+                target_url = f"{self._server_url}/logs.html" if self._server_url else "http://127.0.0.1:8000/logs.html"
+                webbrowser.open(target_url)
+                return True
+            except Exception:
+                return False
 
 
 class ServerThread(threading.Thread):
@@ -174,7 +210,7 @@ def main():
 
     # Attempt native pywebview GUI; fallback to default browser if WebKitGTK/pywebview unavailable
     try:
-        api = WebviewApi()
+        api = WebviewApi(server_url=url)
         window = webview.create_window(
             title="CatLog",
             url=url,

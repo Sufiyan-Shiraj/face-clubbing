@@ -149,7 +149,6 @@ def create_app(
         raise HTTPException(status_code=404, detail="Thumbnail not found")
 
     # Serve static UI at / (BUILD_PLAN Phase 3 / Phase 4)
-    repo_root = Path(__file__).resolve().parent.parent.parent
     frontend_dist = repo_root / "frontend" / "dist"
     viewer_dist = repo_root / "viewer" / "dist"
 

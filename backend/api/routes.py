@@ -70,6 +70,10 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             },
         )
 
+    @router.get("/jobs/logs")
+    def get_job_logs():
+        return {"logs": job_manager.get_logs()}
+
     # 1b. Google Drive Verification Endpoint
     @router.post("/drive/verify", response_model=DriveVerifyResponse)
     def verify_drive_folder(req: DriveVerifyRequest):

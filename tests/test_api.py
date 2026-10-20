@@ -364,6 +364,11 @@ def test_api_cancel_stops_running_job(api_setup, monkeypatch):
     status = client.get("/api/jobs/status").json()
     assert status["status"] == "cancelled"
 
+    # Verify /api/jobs/logs returns structured events
+    logs_data = client.get("/api/jobs/logs").json()
+    assert "logs" in logs_data
+    assert isinstance(logs_data["logs"], list)
+
 
 def test_api_export_public_bundle_hygiene(api_setup):
     """(6) Export contains only public-bundle files (no suggestions.json, edits.json, id_map.json, .cache)."""
@@ -789,6 +794,19 @@ def test_pywebview_api_dialogs():
     windowless_api = WebviewApi(None)
     assert windowless_api.select_folder() == ""
     assert windowless_api.select_file() == ""
+
+    # 5. open_logs_window creates native logs window with webview.create_window
+    from unittest.mock import patch
+    with patch('webview.create_window') as mock_create_window:
+        mock_logs_win = MagicMock()
+        mock_create_window.return_value = mock_logs_win
+        res = api.open_logs_window()
+        assert res is True
+        mock_create_window.assert_called_once()
+        args, kwargs = mock_create_window.call_args
+        assert kwargs['title'] == "CatLog — Activity Log"
+        assert kwargs['width'] == 880
+        assert kwargs['height'] == 620
 
 
 def test_check_edits_api(tmp_path: Path):
