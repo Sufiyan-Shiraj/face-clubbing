@@ -30,39 +30,6 @@ Finally, CatLog exports lightweight static web galleries where attendees can bro
 
 ---
 
-## Interface & Visual Showcase
-
-### Three Risograph Color Themes
-CatLog features a distinct tactile design system inspired by vintage Risograph printing, available in three themes: Dark Slate, Riso Paper, and Deep Navy.
-
-<p align="center">
-  <img src="docs/screenshots/hero_overview.png" alt="CatLog UI Themes" width="850" />
-</p>
-
-### Interactive Attendee Review & Face Clustering
-Inspect detected attendee clusters, browse representative face crops, and accept or reject ranked merge suggestions.
-
-<p align="center">
-  <img src="docs/screenshots/attendee_clusters.png" alt="Attendee Clustering Grid" width="850" />
-</p>
-
-### High-Resolution Lightbox & Detection Inspector
-Inspect photo bounding boxes, view detection confidence scores, and reassign faces to people directly on canvas.
-
-<p align="center">
-  <img src="docs/screenshots/person_lightbox.png" alt="Detection Inspector Lightbox" width="850" />
-</p>
-
-### Public Attendee Web Galleries & Direct Downloads
-Attendees browse person profiles and download original full-resolution files individually or stream-built into a single ZIP.
-
-<p align="center">
-  <img src="docs/screenshots/public_gallery.png" alt="Public Static Gallery" width="420" />
-  <img src="docs/screenshots/person_download.png" alt="Person Photo Downloads" width="420" />
-</p>
-
----
-
 ## Key Capabilities
 
 - **100% Local Processing & Privacy Guarantee**  
@@ -200,7 +167,6 @@ chmod +x run.sh
 │   └── src/                 # Review interface, triage view, suggestions, settings, tour
 ├── viewer/                  # Public static gallery web app for attendees (Vite, React 19)
 │   └── src/                 # Attendee search, responsive grid, ZIP streaming, downloads
-├── docs/screenshots/        # High-resolution screenshots of the desktop app and viewer
 ├── eval/                    # Standalone verification suites, baseline fixtures, recall tables
 ├── tests/                   # Backend pytest suite (100 automated test items)
 ├── scripts/                 # Packaging, release notes, and multiplatform packaging scripts
