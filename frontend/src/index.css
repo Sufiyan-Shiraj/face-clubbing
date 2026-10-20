@@ -299,6 +299,13 @@ html, body {
   gap: 10px;
 }
 
+.sw-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .sw {
   width: 28px;
   height: 28px;
@@ -306,11 +313,11 @@ html, body {
   border: 2px solid var(--line);
   padding: 0;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .sw:hover {
-  transform: scale(1.12);
+  transform: scale(1.15);
 }
 
 .sw.on {
@@ -321,6 +328,60 @@ html, body {
 .s-dark { background: #121110; }
 .s-paper { background: #efe8db; }
 .s-navy { background: #1a3350; }
+
+/* Custom Tactile Riso Theme Tooltip */
+.sw-tooltip {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1.5px solid var(--line);
+  box-shadow: 2px 2px 0px var(--line), 0 4px 12px rgba(0, 0, 0, 0.25);
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.16s ease, transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.16s ease;
+  z-index: 100;
+}
+
+/* Tooltip upward notch */
+.sw-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent var(--line) transparent;
+}
+
+.sw-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: transparent transparent var(--bg-card) transparent;
+}
+
+.sw-wrapper:hover .sw-tooltip,
+.sw:focus-visible + .sw-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
 
 /* ==========================================================================
    Left Vertical Step Rail (Fixed at left)

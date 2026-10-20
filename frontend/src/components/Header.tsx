@@ -50,28 +50,40 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Right Controls: 3 Theme Dots, Open Saved Project, Minimal Settings */}
       <div className="hdr-r">
         {onThemeChange && (
-          <div className="themes" title="Select Theme (Dark, Paper, Navy)">
-            <button
-              type="button"
-              onClick={(e) => onThemeChange('t-dark', e)}
-              className={`sw s-dark ${theme === 't-dark' ? 'on' : ''}`}
-              aria-label="Dark theme"
-              title="Dark theme"
-            />
-            <button
-              type="button"
-              onClick={(e) => onThemeChange('t-paper', e)}
-              className={`sw s-paper ${theme === 't-paper' ? 'on' : ''}`}
-              aria-label="Paper theme"
-              title="Paper theme"
-            />
-            <button
-              type="button"
-              onClick={(e) => onThemeChange('t-navy', e)}
-              className={`sw s-navy ${theme === 't-navy' ? 'on' : ''}`}
-              aria-label="Navy theme"
-              title="Navy theme"
-            />
+          <div className="themes" role="radiogroup" aria-label="Riso Theme Switcher">
+            <div className="sw-wrapper">
+              <button
+                type="button"
+                onClick={(e) => onThemeChange('t-dark', e)}
+                className={`sw s-dark ${theme === 't-dark' ? 'on' : ''}`}
+                aria-label="Riso Dark"
+                aria-checked={theme === 't-dark'}
+                role="radio"
+              />
+              <span className="sw-tooltip" role="tooltip">Riso Dark</span>
+            </div>
+            <div className="sw-wrapper">
+              <button
+                type="button"
+                onClick={(e) => onThemeChange('t-paper', e)}
+                className={`sw s-paper ${theme === 't-paper' ? 'on' : ''}`}
+                aria-label="Riso Paper"
+                aria-checked={theme === 't-paper'}
+                role="radio"
+              />
+              <span className="sw-tooltip" role="tooltip">Riso Paper</span>
+            </div>
+            <div className="sw-wrapper">
+              <button
+                type="button"
+                onClick={(e) => onThemeChange('t-navy', e)}
+                className={`sw s-navy ${theme === 't-navy' ? 'on' : ''}`}
+                aria-label="Riso Navy"
+                aria-checked={theme === 't-navy'}
+                role="radio"
+              />
+              <span className="sw-tooltip" role="tooltip">Riso Navy</span>
+            </div>
           </div>
         )}
 
