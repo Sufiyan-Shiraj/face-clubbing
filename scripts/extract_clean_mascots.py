@@ -163,19 +163,33 @@ def process_branding():
     print("  Saved frontend/public/catlog-logo.png")
     
     # 2. Square Cat Head Icon & Favicon
-    icon_src = cv2.imread('scratch/catlog_icon.png', cv2.IMREAD_UNCHANGED)
-    cv2.imwrite('frontend/public/catlog-icon.png', icon_src)
-    cv2.imwrite('frontend/public/favicon.png', icon_src)
-    # Also copy to frontend/src/assets/ if desired
-    os.makedirs('frontend/src/assets', exist_ok=True)
-    cv2.imwrite('frontend/src/assets/catlog-icon.png', icon_src)
-    cv2.imwrite('frontend/src/assets/catlog-logo.png', logo_src)
-    print("  Saved frontend/public/catlog-icon.png and favicon.png")
+    # Use textless emblem from repo root if present instead of cropping text
+    emblem_path = 'Grainy Cat Camera Emblem.png'
+    if os.path.exists(emblem_path):
+        from PIL import Image
+        emblem = Image.open(emblem_path)
+        icon_512 = emblem.resize((512, 512), Image.Resampling.LANCZOS)
+        favicon_64 = emblem.resize((64, 64), Image.Resampling.LANCZOS)
+        icon_512.save('frontend/public/catlog-icon.png')
+        favicon_64.save('frontend/public/favicon.png')
+        if os.path.exists('viewer/public'):
+            icon_512.save('viewer/public/catlog-icon.png')
+            favicon_64.save('viewer/public/favicon.png')
+        # Also update catlog.ico
+        icon_512.save('catlog.ico', format='ICO', sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+        print("  Saved catlog-icon.png, favicon.png, and catlog.ico from textless emblem")
+    else:
+        icon_src = cv2.imread('scratch/catlog_icon.png', cv2.IMREAD_UNCHANGED)
+        cv2.imwrite('frontend/public/catlog-icon.png', icon_src)
+        cv2.imwrite('frontend/public/favicon.png', icon_src)
+        if os.path.exists('viewer/public'):
+            cv2.imwrite('viewer/public/catlog-icon.png', icon_src)
+            cv2.imwrite('viewer/public/favicon.png', icon_src)
+        print("  Saved frontend/public/catlog-icon.png and favicon.png from fallback")
     
     # 3. Tagline Banner
     tagline_src = cv2.imread('scratch/catlog_tagline.png', cv2.IMREAD_UNCHANGED)
     cv2.imwrite('frontend/public/catlog-tagline.png', tagline_src)
-    cv2.imwrite('frontend/src/assets/catlog-tagline.png', tagline_src)
     print("  Saved frontend/public/catlog-tagline.png")
 
 if __name__ == '__main__':
