@@ -1,7 +1,7 @@
 # CatLog
 
 <p align="center">
-  <img src="frontend/public/catlog-logo.png" alt="CatLog Logo" width="360" />
+  <img src="catlog_poster_4k.png" alt="CatLog — Who was at the event?" width="100%" />
 </p>
 
 <p align="center">
