@@ -38,9 +38,8 @@ test_photos/
 export/
 export.work/
 export.work/edits_test_*.json
-export.api_test/
+export.*/
 export_flip/
-export.e2e_temp*/
 *_temp/
 *_temp
 *.cache

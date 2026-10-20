@@ -3,9 +3,11 @@ import cv2
 import numpy as np
 from PIL import Image
 
+UI_DIR = os.path.join('docs', 'archive', 'UI') if os.path.exists(os.path.join('docs', 'archive', 'UI')) else 'UI'
+
 def process_navy():
     print("=== Extracting NAVY (Native Transparent Die-Cuts) ===")
-    img = Image.open('UI/Blue Camera Cat Mascot Sticker Sheet.png')
+    img = Image.open(os.path.join(UI_DIR, 'Blue Camera Cat Mascot Sticker Sheet.png'))
     out_dir = os.path.join('frontend', 'public', 'mascot', 'navy')
     os.makedirs(out_dir, exist_ok=True)
     
@@ -30,7 +32,7 @@ def process_navy():
 
 def process_dark():
     print("=== Extracting DARK (Transparent Background & Effects) ===")
-    sheet = cv2.imread('UI/Grainy Cat Mascot Tutorial Sheet.png')
+    sheet = cv2.imread(os.path.join(UI_DIR, 'Grainy Cat Mascot Tutorial Sheet.png'))
     out_dir = os.path.join('frontend', 'public', 'mascot', 'dark')
     os.makedirs(out_dir, exist_ok=True)
     
@@ -93,7 +95,7 @@ def process_dark():
 
 def process_paper():
     print("=== Extracting PAPER (Checkerboard Removed & Transparent Die-Cuts) ===")
-    guide = cv2.imread('UI/Camera Cat Mascot Sticker Guide.png')
+    guide = cv2.imread(os.path.join(UI_DIR, 'Camera Cat Mascot Sticker Guide.png'))
     out_dir = os.path.join('frontend', 'public', 'mascot', 'paper')
     os.makedirs(out_dir, exist_ok=True)
     

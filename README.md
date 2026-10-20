@@ -94,37 +94,27 @@ It takes an event's photo collection, detects faces, extracts mathematical embed
 | **Machine Learning** | InsightFace (`buffalo_l`), ONNX Runtime, NumPy, SciPy |
 | **Organizer UI** | React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons |
 | **Gallery Viewers** | Standalone Single-File HTML5 (Vanilla JS) & Static React Viewer |
-| **Testing** | Pytest (99 tests), Vitest (94 tests across 15 suites in Frontend & Viewer) |
+| **Testing** | Pytest (100 tests), Vitest (108 tests across 16 suites in Frontend & Viewer) |
 
 ---
 
-## Repository Structure
+## Repository Layout
 
 ```text
-catlog/
-├── backend/
-│   ├── api/                 # FastAPI backend (endpoints, SSE events, project state, dialogs)
-│   ├── drive/               # Google Drive v3 integration (API client, parser, downloads)
-│   └── engine/              # Face clustering pipeline
-│       ├── detector.py      # InsightFace buffalo_l detection & 512D ArcFace embeddings
-│       ├── clusterer.py     # Two-pass Agglomerative clustering & distance thresholding
-│       ├── thumbnails.py    # Multi-resolution thumbnail and avatar crop generator
-│       ├── exporter.py      # Static web gallery and export bundle generator
-│       ├── standalone_html.py # Self-contained single-file HTML gallery compiler
-│       ├── edits.py         # Organizer edits, merge history, and split operations
-│       ├── cache.py         # Disk embedding cache with facial crop hashes
-│       ├── loader.py        # Photo decoder supporting JPEG, PNG, WebP, HEIC/HEIF
-│       ├── scanner.py       # Local folder and ZIP archive photo discovery
-│       └── pipeline.py      # End-to-end background job execution orchestrator
+├── .github/workflows/       # Automated multi-platform release CI workflow
+├── backend/                 # Core Python backend engine & API
+│   ├── api/                 # FastAPI routes, models, state, and job manager
+│   ├── drive/               # Read-only Google Drive thumbnail streaming & client
+│   └── engine/              # Face detection, embedding, clustering, crops, exporter
 ├── frontend/                # React 19 organizer desktop UI (Vite, TypeScript, Tailwind)
-│   ├── public/              # Camera Cat mascots (8 poses x 3 themes), UI textures, brand icons
+│   ├── public/              # Camera Cat mascots, tactile brand assets, icons
 │   └── src/                 # Review interface, triage view, suggestions, settings, tour
 ├── viewer/                  # Public static gallery web app for attendees (Vite, React 19)
-│   └── src/                 # Attendee search, responsive grid, ZIP streaming, direct downloads
-├── docs/
-│   └── archive/             # Archived benchmarks, evaluation data, and verification screenshots
-├── eval/                    # Standalone verification suites, baseline fixtures, and test runners
-├── tests/                   # Backend unit and integration test suite (86 pytest cases)
+│   └── src/                 # Attendee search, responsive grid, ZIP streaming, downloads
+├── docs/archive/            # Archived benchmarks, evaluation data, screenshots, and UI mockups
+├── eval/                    # Standalone verification suites, baseline fixtures, recall tables
+├── tests/                   # Backend pytest suite (100 automated test items)
+├── scripts/                 # Packaging, release notes, and version synchronization tools
 ├── main.py                  # Desktop application entrypoint (webview + uvicorn server)
 ├── photosorter.spec         # PyInstaller standalone executable specification
 ├── catlog.ico               # Multi-resolution application icon
