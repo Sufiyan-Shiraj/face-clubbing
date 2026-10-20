@@ -44,6 +44,18 @@ class JobManager:
         # Subscribers for SSE
         self._subscribers: list[asyncio.Queue] = []
 
+    def _log_event(self, text: str):
+        """Prints live log event to stdout and appends to catlog.log."""
+        t_str = time.strftime("%H:%M:%S")
+        formatted = f"[{t_str}] {text}"
+        print(formatted, flush=True)
+        try:
+            log_path = Path("catlog.log")
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(formatted + "\n")
+        except Exception:
+            pass
+
     def get_status(self) -> JobStatusResponse:
         with self._lock:
             cur_elapsed = self.elapsed_seconds
@@ -127,6 +139,18 @@ class JobManager:
                 "message": self.message,
                 "recent_faces": list(self.recent_faces),
             }
+
+        # Stream live progress line to terminal and catlog.log
+        msg = payload.get("message")
+        if not msg and "file_name" in payload:
+            msg = f"Scanning {payload['file_name']}"
+        if msg:
+            pct_val = self.percent if self.percent is not None else 0.0
+            stg = (self.stage or "INFO").upper()
+            cur = self.current or 0
+            tot = self.total or 0
+            count_str = f"({cur}/{tot}) " if tot > 0 else ""
+            self._log_event(f"[{stg:<10}] {pct_val:5.1f}% | {count_str}{msg}")
 
         # Dispatch to async queues safely across threads via call_soon_threadsafe
         for item in list(self._subscribers):
@@ -264,6 +288,8 @@ class JobManager:
             cleanup_temp=False,
         )
 
+        self._log_event(f"[START     ] Job {self.job_id} initiated. Input: '{resolved_input}' -> Output: '{out_dir}'")
+
         def worker():
             try:
                 res = run_pipeline(config)
@@ -295,6 +321,7 @@ class JobManager:
                 except Exception as e:
                     print(f"[jobs] Warning: Failed to auto-save recent project: {e}")
 
+                self._log_event(f"[COMPLETE  ] 100.0% | Job finished. Clustered {len(res.people)} people across {len(res.photos)} photos in {self.elapsed_seconds:.1f}s.")
                 self._broadcast_progress({"stage": "complete", "message": self.message})
             except InterruptedError:
                 with self._lock:
@@ -303,6 +330,7 @@ class JobManager:
                     self.status = "cancelled"
                     self.stage = "cancelled"
                     self.message = "Job was cancelled by organizer."
+                self._log_event(f"[CANCEL    ] Job cancelled by organizer after {self.elapsed_seconds:.1f}s.")
                 self._broadcast_progress({"stage": "cancelled", "message": self.message})
             except Exception as e:
                 import traceback
@@ -315,6 +343,7 @@ class JobManager:
                     self.stage = "failed"
                     self.error = f"{e}\n{tb_str}"
                     self.message = f"Error: {e}"
+                self._log_event(f"[ERROR     ] Job failed after {self.elapsed_seconds:.1f}s: {e}")
                 self._broadcast_progress({"stage": "failed", "message": self.message, "error": self.error})
 
         self._thread = threading.Thread(target=worker, daemon=True)

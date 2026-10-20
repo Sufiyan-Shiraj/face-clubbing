@@ -43,6 +43,7 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
 
   // Modal and detached log window state
   const [showLogsModal, setShowLogsModal] = useState<boolean>(false);
+  const [showTerminalNotice, setShowTerminalNotice] = useState<boolean>(false);
   const [isDetached, setIsDetached] = useState<boolean>(false);
   const [logSearchQuery, setLogSearchQuery] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
@@ -617,8 +618,9 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
                   Boolean((window as any).chrome?.webview) ||
                   Boolean((window as any).__pywebview__));
               if (isDesktopShell) {
-                // In desktop pywebview / WebView2, popup windows trigger Windows 'about:' error; use in-page modal
+                // In desktop pywebview / WebView2, open in-page modal and show terminal streaming status
                 setShowLogsModal(true);
+                setShowTerminalNotice(true);
               } else {
                 setShowLogsModal(false);
                 setIsDetached(true);
@@ -701,6 +703,7 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
                         Boolean((window as any).__pywebview__));
                     if (isDesktopShell) {
                       setShowLogsModal(true);
+                      setShowTerminalNotice(true);
                     } else {
                       setShowLogsModal(false);
                       setIsDetached(true);
@@ -708,7 +711,7 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
                   }}
                   className="btn sm"
                   style={{ height: '30px', padding: '0 10px', fontSize: '12px' }}
-                  title="Pop out into separate window so you can minimize the main window"
+                  title="Pop out into separate window or check run.bat terminal stream"
                 >
                   <ExternalLink className="w-3.5 h-3.5 mr-1 text-[var(--accent)]" />
                   <span>Detach Window</span>
@@ -746,6 +749,25 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* Desktop Terminal Streaming Notice */}
+            {showTerminalNotice && (
+              <div className="px-5 py-2.5 bg-[var(--input)] border-b border-[var(--line)] text-xs font-mono text-[var(--accent-ink)] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-3.5 h-3.5 text-[var(--accent)] flex-shrink-0" />
+                  <span>
+                    💡 <strong>run.bat Terminal Active:</strong> Engine logs are streaming live in your Command Prompt and saved to <code>catlog.log</code>.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowTerminalNotice(false)}
+                  className="text-[var(--muted)] hover:text-[var(--text)] ml-2 text-xs hover:underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
 
             {/* Filter Search Bar */}
             <div className="px-5 py-2.5 border-b border-[var(--line)] bg-[var(--panel)] flex items-center gap-2 flex-shrink-0">

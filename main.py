@@ -158,6 +158,8 @@ def main():
     dt_health = time.time() - t0_startup
     url = f"http://{host}:{port}"
     print(f"[STARTUP] Server healthy at {dt_health:.2f}s: {url}")
+    print(f"[LOGS] Live engine activity logs will stream in this terminal.")
+    print(f"[LOGS] All logs are also continuously saved to catlog.log.")
 
     if args.no_gui:
         print(f"CatLog server running at {url} (Ctrl+C to stop)")
