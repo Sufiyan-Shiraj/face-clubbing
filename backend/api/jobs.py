@@ -130,6 +130,10 @@ class JobManager:
                 self.current_file = payload["file_name"]
             if "eta_seconds" in payload:
                 self.eta_seconds = payload["eta_seconds"]
+            if "drive_summary" in payload:
+                if self.result_summary is None:
+                    self.result_summary = {}
+                self.result_summary["drive_summary"] = payload["drive_summary"]
 
             if "new_faces" in payload and isinstance(payload["new_faces"], list):
                 for fid in payload["new_faces"]:
@@ -326,6 +330,7 @@ class JobManager:
                         "unrecognized_faces": len(res.unrecognized.faces),
                         "unrecognized_photos": len(res.unrecognized.photo_ids),
                         "unapplied_edits": getattr(res, "unapplied_edits", []),
+                        "drive_summary": getattr(res, "drive_summary", None) or (self.result_summary.get("drive_summary") if self.result_summary else None),
                     }
 
                 # Auto-save recent project entry

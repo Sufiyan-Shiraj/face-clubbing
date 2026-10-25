@@ -35,7 +35,7 @@ Finally, CatLog exports lightweight static web galleries where attendees can bro
 - **100% Local Processing & Privacy Guarantee**  
   All face detection, facial embedding, and clustering algorithms execute locally on your machine. Zero attendee biometrics, facial crops, or photos are ever sent to external cloud AI services.
 - **Universal Source Ingestion**  
-  Scan photos from local disk folders, compressed ZIP archives, or public Google Drive shared folders via read-only Google Drive API v3 (no OAuth account login required).
+  Scan photos from local disk folders, compressed ZIP archives, or public Google Drive shared folders via read-only Google Drive API v3 (no OAuth account login required). Google Drive ingestion seamlessly traverses nested subfolder hierarchies up to 5 levels deep with queue-based cycle prevention, file ID deduplication, and resilient non-fatal handling of inaccessible subfolders.
 - **Detached Native Telemetry Window**  
   Pop the activity log out into an independent native desktop window or open the dedicated telemetry interface (`/logs.html`) featuring live Server-Sent Events (SSE) streaming, elapsed time clock, stage filters, and full text search.
 - **Visual Review & Smart Assistance**  

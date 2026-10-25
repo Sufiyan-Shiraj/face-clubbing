@@ -126,6 +126,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const [internalApiKeyConfigured, setInternalApiKeyConfigured] = useState<boolean>(false);
   const isApiKeyConfigured = controlledApiKeyConfigured !== undefined ? controlledApiKeyConfigured : internalApiKeyConfigured;
+  const [verifiedSummary, setVerifiedSummary] = useState<Record<string, any> | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -162,6 +163,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setInternalVerifiedFolderId(folderId || null);
     setInternalVerifiedFolderName(folderName || null);
     setInternalVerifiedImageCount(imgCount || 0);
+    if (!verified) {
+      setVerifiedSummary(null);
+    }
     onDriveVerifiedChange?.(verified, folderId || null, folderName || null, imgCount || 0);
   };
 
@@ -359,6 +363,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       const res = await api.verifyDriveFolder(trimmed, apiKeyOverride);
       if (res.valid) {
         setVerifiedState(true, res.folder_id, res.folder_name, res.image_count_preview || 0);
+        setVerifiedSummary(res.summary || null);
         setErrorMsg(null);
         setInternalApiKeyConfigured(true);
         return true;
@@ -567,7 +572,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     </span>
                   </div>
                   {verifiedImageCount > 0 && (
-                    <div className="folder-img-count">{verifiedImageCount}+ images detected</div>
+                    <div className="folder-img-count">
+                      {verifiedSummary?.folders_scanned && verifiedSummary.folders_scanned > 1
+                        ? `Found ${verifiedImageCount}+ images in ${verifiedSummary.folders_scanned} folders`
+                        : `${verifiedImageCount}+ images detected`}
+                    </div>
                   )}
                 </div>
 

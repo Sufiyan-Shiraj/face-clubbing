@@ -47,6 +47,7 @@ class DriveFile:
     modified_time: str
     size: int = 0
     thumbnail_link: Optional[str] = None
+    folder_path: str = ""
     download_url: str = field(init=False)
     drive_url: str = field(init=False)
     share_url: str = field(init=False)
@@ -69,6 +70,20 @@ class DriveListResult:
     skipped_videos_count: int = 0
     scanned_folder_names: List[str] = field(default_factory=list)
     non_image_sample_names: List[str] = field(default_factory=list)
+    folders_scanned: int = 0
+    folders_failed: List[Dict[str, Any]] = field(default_factory=list)
+    shortcuts_skipped: int = 0
+    docs_skipped: int = 0
+    depth_limit_hit: bool = False
+    file_cap_hit: bool = False
+    top_folder_has_images: bool = False
+    root_images_count: int = 0
+    subfolder_images_count: int = 0
+    summary: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def images_found(self) -> int:
+        return self.image_count
 
 
 SUPPORTED_IMAGE_EXTENSIONS = (
@@ -202,30 +217,46 @@ class DriveClient:
         cancel_check: Optional[Callable[[], bool]] = None,
         progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
         recursive: bool = True,
-        max_depth: int = 10,
+        max_depth: int = 5,
+        max_files: int = 20000,
         stop_after_images: Optional[int] = None,
     ) -> DriveListResult:
         """
         List all image files inside a public Google Drive folder with pagination.
-        Recursively traverses subfolders and shortcuts when recursive=True.
-        Skips non-images and explicitly ignores video files, reporting counts.
+        Recursively traverses subfolders using an iterative queue (depth <= max_depth, max 20,000 files).
+        Tracks visited folders to avoid loops.
+        Deduplicates by Drive file ID.
+        Skips shortcuts and Google-native docs, counting them.
+        Captures subfolder failures (403/404) without failing the whole scan.
         """
+        import collections
+
         files: List[DriveFile] = []
         total_items = 0
         skipped_folders = 0
         skipped_videos = 0
         skipped_non_images = 0
+        shortcuts_skipped = 0
+        docs_skipped = 0
         scanned_folder_names: List[str] = []
         non_image_sample_names: List[str] = []
+        folders_failed: List[Dict[str, Any]] = []
+        depth_limit_hit = False
+        file_cap_hit = False
+        root_images_count = 0
+        seen_file_ids: set[str] = set()
 
-        folders_to_visit: List[Tuple[str, int]] = [(folder_id, 0)]
+        # Iterative queue storing (folder_id, folder_name, folder_path, depth)
+        folders_to_visit: collections.deque[Tuple[str, str, str, int]] = collections.deque([(folder_id, "", "", 0)])
         visited_folders: set[str] = {folder_id}
+        folders_scanned = 0
         url = f"{DRIVE_API_BASE}/files"
 
         while folders_to_visit:
-            cur_fid, depth = folders_to_visit.pop(0)
+            cur_fid, cur_name, cur_path, depth = folders_to_visit.popleft()
             page_token: Optional[str] = None
             query = f"'{cur_fid}' in parents and trashed = false"
+            folder_failed = False
 
             while True:
                 if cancel_check and cancel_check():
@@ -242,14 +273,54 @@ class DriveClient:
                 if page_token:
                     params["pageToken"] = page_token
 
-                resp = self._request_with_retry("GET", url, params=params)
-                if resp.status_code != 200:
-                    self._handle_api_error_response(resp)
+                try:
+                    resp = self._request_with_retry("GET", url, params=params)
+                    if resp.status_code != 200:
+                        if depth > 0:
+                            # Subfolder error: record and continue without failing the whole scan
+                            error_msg = f"HTTP {resp.status_code}"
+                            try:
+                                raw_json = resp.json()
+                                if isinstance(raw_json, dict) and "error" in raw_json:
+                                    msg = raw_json["error"].get("message")
+                                    if msg:
+                                        error_msg = str(msg)
+                            except Exception:
+                                pass
+                            sanitized_reason = sanitize_message_for_logs(error_msg)
+                            folders_failed.append({
+                                "folder_id": cur_fid,
+                                "folder_name": cur_name,
+                                "folder_path": cur_path,
+                                "reason": sanitized_reason,
+                                "status_code": resp.status_code,
+                            })
+                            folder_failed = True
+                            break
+                        else:
+                            self._handle_api_error_response(resp)
+                except Exception as e:
+                    if depth > 0:
+                        sanitized_reason = sanitize_message_for_logs(str(e))
+                        folders_failed.append({
+                            "folder_id": cur_fid,
+                            "folder_name": cur_name,
+                            "folder_path": cur_path,
+                            "reason": sanitized_reason,
+                        })
+                        folder_failed = True
+                        break
+                    else:
+                        raise
 
                 data = resp.json()
                 raw_files = data.get("files", [])
 
                 for item in raw_files:
+                    if total_items >= max_files:
+                        file_cap_hit = True
+                        break
+
                     total_items += 1
                     mime_type = item.get("mimeType", "")
                     name = item.get("name", "")
@@ -258,35 +329,42 @@ class DriveClient:
                     # 1. Google Drive subfolder
                     if mime_type == "application/vnd.google-apps.folder":
                         skipped_folders += 1
-                        scanned_folder_names.append(name)
-                        if recursive and depth < max_depth and item_id not in visited_folders:
-                            visited_folders.add(item_id)
-                            folders_to_visit.append((item_id, depth + 1))
+                        if name and name not in scanned_folder_names:
+                            scanned_folder_names.append(name)
+                        next_path = f"{cur_path}/{name}" if cur_path else name
+                        if recursive:
+                            if item_id in visited_folders:
+                                # Loop avoidance
+                                pass
+                            elif depth + 1 > max_depth:
+                                depth_limit_hit = True
+                            else:
+                                visited_folders.add(item_id)
+                                folders_to_visit.append((item_id, name, next_path, depth + 1))
                         continue
 
                     # 2. Google Drive shortcut
                     if mime_type == "application/vnd.google-apps.shortcut":
-                        shortcut_details = item.get("shortcutDetails", {})
-                        target_id = shortcut_details.get("targetId")
-                        target_mime = shortcut_details.get("targetMimeType", "")
-                        if target_mime == "application/vnd.google-apps.folder":
-                            skipped_folders += 1
-                            scanned_folder_names.append(name)
-                            if recursive and target_id and depth < max_depth and target_id not in visited_folders:
-                                visited_folders.add(target_id)
-                                folders_to_visit.append((target_id, depth + 1))
-                            continue
-                        elif target_id and target_mime:
-                            mime_type = target_mime
-                            item_id = target_id
+                        shortcuts_skipped += 1
+                        continue
 
-                    # 3. Video file -> explicitly ignore
+                    # 3. Google-native docs (Docs, Sheets, Slides, Forms, etc.)
+                    if mime_type.startswith("application/vnd.google-apps."):
+                        docs_skipped += 1
+                        skipped_non_images += 1
+                        continue
+
+                    # 4. Video file -> explicitly ignore
                     if is_video_file(name, mime_type):
                         skipped_videos += 1
                         continue
 
-                    # 4. Supported image (JPEG, PNG, HEIC, HEIF, WebP, etc.)
+                    # 5. Supported image (JPEG, PNG, HEIC, HEIF, WebP, etc.)
                     if is_image_file(name, mime_type):
+                        if item_id in seen_file_ids:
+                            # Dedupe by file ID so same file reached twice is processed once
+                            continue
+                        seen_file_ids.add(item_id)
                         df = DriveFile(
                             id=item_id,
                             name=name,
@@ -294,14 +372,20 @@ class DriveClient:
                             modified_time=item.get("modifiedTime", ""),
                             size=int(item.get("size", 0)),
                             thumbnail_link=item.get("thumbnailLink"),
+                            folder_path=cur_path,
                         )
                         files.append(df)
+                        if depth == 0:
+                            root_images_count += 1
                         if stop_after_images and len(files) >= stop_after_images:
                             break
                     else:
                         skipped_non_images += 1
                         if len(non_image_sample_names) < 5:
                             non_image_sample_names.append(name)
+
+                if file_cap_hit:
+                    break
 
                 if stop_after_images and len(files) >= stop_after_images:
                     break
@@ -312,15 +396,43 @@ class DriveClient:
                         "stage": "listing",
                         "current": len(files),
                         "total": total_items,
-                        "message": f"Found {len(files)} photos (scanned {total_items} items across {skipped_folders} folders{video_str})...",
+                        "message": f"Found {len(files)} photos (scanned {total_items} items across {folders_scanned + 1} folders{video_str})...",
                     })
 
                 page_token = data.get("nextPageToken")
                 if not page_token:
                     break
 
-            if stop_after_images and len(files) >= stop_after_images:
+            if not folder_failed:
+                folders_scanned += 1
+
+            if file_cap_hit or (stop_after_images and len(files) >= stop_after_images):
                 break
+
+        top_folder_has_images = (root_images_count > 0)
+        subfolder_images_count = len(files) - root_images_count
+
+        summary_msg = f"Found {len(files)} images in {folders_scanned} folders"
+        if not top_folder_has_images and len(files) > 0:
+            summary_msg += f" (top folder contains no direct images; {subfolder_images_count} images found across subfolders)"
+        elif len(files) == 0 and folders_scanned > 1:
+            summary_msg = f"Top folder contains no images (searched {folders_scanned} folders, 0 images found)"
+
+        summary: Dict[str, Any] = {
+            "images_found": len(files),
+            "folders_scanned": folders_scanned,
+            "folders_failed": folders_failed,
+            "shortcuts_skipped": shortcuts_skipped,
+            "non_images_skipped": skipped_non_images,
+            "videos_skipped": skipped_videos,
+            "docs_skipped": docs_skipped,
+            "depth_limit_hit": depth_limit_hit,
+            "file_cap_hit": file_cap_hit,
+            "top_folder_has_images": top_folder_has_images,
+            "root_images_count": root_images_count,
+            "subfolder_images_count": subfolder_images_count,
+            "message": summary_msg,
+        }
 
         return DriveListResult(
             files=files,
@@ -331,7 +443,18 @@ class DriveClient:
             skipped_videos_count=skipped_videos,
             scanned_folder_names=scanned_folder_names,
             non_image_sample_names=non_image_sample_names,
+            folders_scanned=folders_scanned,
+            folders_failed=folders_failed,
+            shortcuts_skipped=shortcuts_skipped,
+            docs_skipped=docs_skipped,
+            depth_limit_hit=depth_limit_hit,
+            file_cap_hit=file_cap_hit,
+            top_folder_has_images=top_folder_has_images,
+            root_images_count=root_images_count,
+            subfolder_images_count=subfolder_images_count,
+            summary=summary,
         )
+
 
     def _request_with_retry(
         self,

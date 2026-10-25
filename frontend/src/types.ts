@@ -111,6 +111,7 @@ export interface DriveVerifyResult {
   image_count_preview?: number;
   error_type?: string;
   message?: string;
+  summary?: Record<string, any>;
 }
 
 export interface EditResponse {

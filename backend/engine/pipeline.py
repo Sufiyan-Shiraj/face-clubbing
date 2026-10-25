@@ -134,13 +134,31 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             folder_id=folder_id,
             cancel_check=config.cancel_check,
             progress_callback=notify,
+            recursive=True,
         )
+
+        folders_count = max(1, int(getattr(list_res, "folders_scanned", 1) or 1))
+        top_has_imgs = getattr(list_res, "top_folder_has_images", True)
+        found_msg = f"Found {list_res.image_count} images in {folders_count} folders"
+        if not top_has_imgs and folders_count > 1:
+            found_msg += " (top folder contains no direct images)"
+
+        drive_sum = getattr(list_res, "summary", {})
+        notify({
+            "stage": "listing",
+            "current": list_res.image_count,
+            "total": list_res.image_count,
+            "percent": 1.0,
+            "message": found_msg,
+            "drive_summary": drive_sum,
+        })
 
         if list_res.image_count == 0:
             details = []
-            if list_res.skipped_folders_count > 0:
+            if list_res.folders_scanned > 1 or list_res.skipped_folders_count > 0:
+                scanned_count = max(list_res.folders_scanned - 1, list_res.skipped_folders_count)
                 folders_sample = ", ".join(f"'{name}'" for name in list_res.scanned_folder_names[:4])
-                details.append(f"searched {list_res.skipped_folders_count} subfolders ({folders_sample})")
+                details.append(f"top folder contains no direct images; searched {scanned_count} subfolders ({folders_sample})")
             if list_res.skipped_videos_count > 0:
                 details.append(f"ignored {list_res.skipped_videos_count} video files")
             if list_res.skipped_non_images_count > 0:
@@ -158,6 +176,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             "total": list_res.image_count,
             "percent": 1.0,
             "message": f"Downloading {list_res.image_count} photos from Google Drive...",
+            "drive_summary": list_res.summary,
         })
 
         def on_download_progress(p: Dict[str, Any]):
@@ -180,12 +199,13 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         scanned_photos = []
         for df, local_p in downloaded_items:
             photo_id = compute_file_hash(local_p)
+            rel_display_path = f"{df.folder_path}/{df.name}" if getattr(df, "folder_path", "") else df.name
             scanned_photos.append(
                 ScannedPhoto(
                     photo_id=photo_id,
                     file_path=local_p,
                     file_name=df.name,
-                    relative_path=local_p.name,
+                    relative_path=rel_display_path,
                     download_url=df.download_url,
                     drive_file_id=df.id,
                     drive_url=getattr(df, "drive_url", f"https://drive.google.com/file/d/{df.id}/view"),
@@ -269,6 +289,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                     record.drive_url = item.drive_url
                 if getattr(item, "share_url", None):
                     record.share_url = item.share_url
+                if getattr(item, "relative_path", None):
+                    record.relative_path = item.relative_path
                 photos[photo_id] = record
 
                 # Ensure thumbnail and crops are cached for fast exports
@@ -346,6 +368,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                 drive_file_id=getattr(item, "drive_file_id", None),
                 drive_url=getattr(item, "drive_url", None),
                 share_url=getattr(item, "share_url", None),
+                relative_path=getattr(item, "relative_path", item.file_name),
                 faces=faces,
             )
             cache.save(record)
@@ -458,6 +481,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         drive_folder_name=folder_name if is_drive else None,
         source_title=source_title,
         unapplied_edits=unapplied,
+        drive_summary=list_res.summary if is_drive else None,
     )
 
     notify({

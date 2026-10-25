@@ -509,3 +509,405 @@ class TestDrivePipelineIntegration:
             "https://drive.google.com/uc?id=drive_file_abc123&export=download"
         )
 
+    @patch("backend.drive.client.DriveClient.download_thumbnails")
+    @patch("backend.drive.client.DriveClient.list_folder_images")
+    def test_pipeline_same_file_name_in_two_subfolders_unique_cache_and_paths(
+        self, mock_list, mock_download, tmp_path
+    ):
+        """Verify pipeline handles two subfolders with the same file name:
+        relative_path includes folder path, cache file names are unique, no collisions.
+        """
+        from PIL import Image
+        img_path1 = tmp_path / "id1_photo.jpg"
+        img_path2 = tmp_path / "id2_photo.jpg"
+        img1 = Image.new("RGB", (200, 200), color=(100, 100, 100))
+        img2 = Image.new("RGB", (200, 200), color=(200, 200, 200))
+        img1.save(img_path1)
+        img2.save(img_path2)
+
+        file1 = DriveFile(
+            id="drive_id_111",
+            name="photo.jpg",
+            mime_type="image/jpeg",
+            modified_time="2026-10-14T05:00:00Z",
+            folder_path="Morning",
+        )
+        file2 = DriveFile(
+            id="drive_id_222",
+            name="photo.jpg",
+            mime_type="image/jpeg",
+            modified_time="2026-10-14T06:00:00Z",
+            folder_path="Evening",
+        )
+
+        mock_list.return_value = MagicMock(
+            files=[file1, file2],
+            total_files_in_folder=2,
+            image_count=2,
+            skipped_folders_count=2,
+            skipped_non_images_count=0,
+            folders_scanned=3,
+            top_folder_has_images=False,
+            summary={"images_found": 2, "folders_scanned": 3},
+        )
+        mock_download.return_value = [(file1, img_path1), (file2, img_path2)]
+
+        export_dir = tmp_path / "export_subfolders"
+        config = EngineConfig(
+            input_path="https://drive.google.com/drive/folders/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs",
+            output_dir=str(export_dir),
+            drive_api_key="AIzaSyMockKeyForPipeline",
+        )
+
+        with patch("backend.engine.pipeline.FaceDetector") as mock_detector_cls:
+            mock_detector = mock_detector_cls.return_value
+            mock_detector.detect_and_embed.return_value = []
+            mock_detector.detect_faces.return_value = []
+
+            result = run_pipeline(config)
+
+        assert len(result.photos) == 2
+        photo_records = list(result.photos.values())
+        paths = {p.relative_path for p in photo_records}
+        assert paths == {"Morning/photo.jpg", "Evening/photo.jpg"}
+        drive_ids = {p.drive_file_id for p in photo_records}
+        assert drive_ids == {"drive_id_111", "drive_id_222"}
+
+
+# ---------------------------------------------------------------------------
+# 7. Recursive Subfolder Listing (3 Levels, Deduping, Error Resilience, Caps)
+# ---------------------------------------------------------------------------
+
+class TestDriveSubfolderRecursion:
+    @patch.object(requests.Session, "get")
+    def test_nested_3_levels_with_pagination(self, mock_get):
+        """Verify recursive traversal 3 levels deep with pagination."""
+        def route_request(url, params=None, **kwargs):
+            q = (params or {}).get("q", "")
+            token = (params or {}).get("pageToken")
+            resp = MagicMock()
+            resp.status_code = 200
+
+            if "'root_fid' in parents" in q:
+                if not token:
+                    resp.json.return_value = {
+                        "nextPageToken": "page_2_token",
+                        "files": [
+                            {"id": "img_root_1", "name": "root_1.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                        ],
+                    }
+                else:
+                    resp.json.return_value = {
+                        "files": [
+                            {"id": "folder_l1", "name": "Level1", "mimeType": "application/vnd.google-apps.folder"},
+                        ],
+                    }
+            elif "'folder_l1' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_l1_1", "name": "l1_1.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                        {"id": "folder_l2", "name": "Level2", "mimeType": "application/vnd.google-apps.folder"},
+                    ],
+                }
+            elif "'folder_l2' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_l2_1", "name": "l2_1.png", "mimeType": "image/png", "modifiedTime": "2026-10-14T01:00:00Z"},
+                        {"id": "folder_l3", "name": "Level3", "mimeType": "application/vnd.google-apps.folder"},
+                    ],
+                }
+            elif "'folder_l3' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_l3_1", "name": "l3_1.webp", "mimeType": "image/webp", "modifiedTime": "2026-10-14T01:00:00Z"},
+                    ],
+                }
+            else:
+                resp.json.return_value = {"files": []}
+            return resp
+
+        mock_get.side_effect = route_request
+
+        client = DriveClient(api_key="AIzaSyMockKeyForListing123")
+        res = client.list_folder_images("root_fid")
+
+        # 4 images found across root + 3 levels
+        assert len(res.files) == 4
+        assert res.image_count == 4
+        assert res.folders_scanned == 4
+
+        # Check folder paths (names only) for display
+        files_by_id = {f.id: f for f in res.files}
+        assert files_by_id["img_root_1"].folder_path == ""
+        assert files_by_id["img_l1_1"].folder_path == "Level1"
+        assert files_by_id["img_l2_1"].folder_path == "Level1/Level2"
+        assert files_by_id["img_l3_1"].folder_path == "Level1/Level2/Level3"
+
+    @patch.object(requests.Session, "get")
+    def test_same_file_name_in_two_subfolders(self, mock_get):
+        """Verify two subfolders with the same file name are preserved and deduplicated by file ID."""
+        def route_request(url, params=None, **kwargs):
+            q = (params or {}).get("q", "")
+            resp = MagicMock()
+            resp.status_code = 200
+
+            if "'root_fid' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "folder_a", "name": "SubfolderA", "mimeType": "application/vnd.google-apps.folder"},
+                        {"id": "folder_b", "name": "SubfolderB", "mimeType": "application/vnd.google-apps.folder"},
+                    ],
+                }
+            elif "'folder_a' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "file_id_aaa", "name": "photo.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                    ],
+                }
+            elif "'folder_b' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "file_id_bbb", "name": "photo.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:05:00Z"},
+                        # Duplicate of file_id_aaa reached in folder_b
+                        {"id": "file_id_aaa", "name": "photo_copy.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                    ],
+                }
+            else:
+                resp.json.return_value = {"files": []}
+            return resp
+
+        mock_get.side_effect = route_request
+
+        client = DriveClient(api_key="AIzaSyMockKeyForListing123")
+        res = client.list_folder_images("root_fid")
+
+        # 2 files total (file_id_aaa is deduped and processed once)
+        assert len(res.files) == 2
+        assert res.image_count == 2
+        file_ids = [f.id for f in res.files]
+        assert "file_id_aaa" in file_ids
+        assert "file_id_bbb" in file_ids
+
+        f_aaa = next(f for f in res.files if f.id == "file_id_aaa")
+        f_bbb = next(f for f in res.files if f.id == "file_id_bbb")
+        assert f_aaa.folder_path == "SubfolderA"
+        assert f_bbb.folder_path == "SubfolderB"
+
+    @patch.object(requests.Session, "get")
+    def test_failing_subfolder_continues_and_records_summary(self, mock_get):
+        """A subfolder that fails with 403 or 404 does not abort the whole scan."""
+        def route_request(url, params=None, **kwargs):
+            q = (params or {}).get("q", "")
+            resp = MagicMock()
+
+            if "'root_fid' in parents" in q:
+                resp.status_code = 200
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "folder_ok", "name": "GoodFolder", "mimeType": "application/vnd.google-apps.folder"},
+                        {"id": "folder_err403", "name": "SecretFolder", "mimeType": "application/vnd.google-apps.folder"},
+                        {"id": "folder_err404", "name": "MissingFolder", "mimeType": "application/vnd.google-apps.folder"},
+                    ],
+                }
+            elif "'folder_ok' in parents" in q:
+                resp.status_code = 200
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_ok", "name": "image.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                    ],
+                }
+            elif "'folder_err403' in parents" in q:
+                resp.status_code = 403
+                resp.json.return_value = {
+                    "error": {"message": "Access denied for key AIzaSySuperSecretKey123"},
+                }
+            elif "'folder_err404' in parents" in q:
+                resp.status_code = 404
+                resp.json.return_value = {
+                    "error": {"message": "Folder not found"},
+                }
+            else:
+                resp.status_code = 200
+                resp.json.return_value = {"files": []}
+            return resp
+
+        mock_get.side_effect = route_request
+
+        client = DriveClient(api_key="AIzaSyMockKeyForListing123")
+        res = client.list_folder_images("root_fid")
+
+        # Scan completed and returned good image
+        assert len(res.files) == 1
+        assert res.files[0].id == "img_ok"
+
+        # Check failures recorded and sanitized (no raw API key leaked in reason)
+        assert len(res.folders_failed) == 2
+        assert len(res.summary["folders_failed"]) == 2
+        for fail in res.folders_failed:
+            assert "AIzaSySuperSecretKey123" not in fail["reason"]
+
+    @patch.object(requests.Session, "get")
+    def test_shortcuts_and_docs_skipped_and_counted(self, mock_get):
+        """Shortcuts and Google-native docs are skipped and counted."""
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.json.return_value = {
+            "files": [
+                {"id": "img_1", "name": "photo.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                {"id": "sc_1", "name": "ShortcutToFolder", "mimeType": "application/vnd.google-apps.shortcut"},
+                {"id": "doc_1", "name": "Meeting Notes", "mimeType": "application/vnd.google-apps.document"},
+                {"id": "sheet_1", "name": "Roster", "mimeType": "application/vnd.google-apps.spreadsheet"},
+                {"id": "slides_1", "name": "Slides", "mimeType": "application/vnd.google-apps.presentation"},
+            ],
+        }
+        mock_get.return_value = resp
+
+        client = DriveClient(api_key="AIzaSyMockKeyForListing123")
+        res = client.list_folder_images("root_fid")
+
+        assert len(res.files) == 1
+        assert res.files[0].id == "img_1"
+        assert res.shortcuts_skipped == 1
+        assert res.summary["shortcuts_skipped"] == 1
+        assert res.docs_skipped == 3
+        assert res.summary["docs_skipped"] == 3
+        assert res.skipped_non_images_count >= 3
+
+    @patch.object(requests.Session, "get")
+    def test_loop_folder_listing_itself(self, mock_get):
+        """A subfolder loop (e.g. folder listing its parent or itself) is terminated by visited_folders set."""
+        def route_request(url, params=None, **kwargs):
+            q = (params or {}).get("q", "")
+            resp = MagicMock()
+            resp.status_code = 200
+
+            if "'root_fid' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_1", "name": "photo1.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                        # Subfolder references root_fid (loop!)
+                        {"id": "root_fid", "name": "SelfRef", "mimeType": "application/vnd.google-apps.folder"},
+                        {"id": "sub_a", "name": "SubA", "mimeType": "application/vnd.google-apps.folder"},
+                    ],
+                }
+            elif "'sub_a' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        # sub_a references sub_a (loop!)
+                        {"id": "sub_a", "name": "SubALoop", "mimeType": "application/vnd.google-apps.folder"},
+                        {"id": "root_fid", "name": "BackToRoot", "mimeType": "application/vnd.google-apps.folder"},
+                        {"id": "img_2", "name": "photo2.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                    ],
+                }
+            else:
+                resp.json.return_value = {"files": []}
+            return resp
+
+        mock_get.side_effect = route_request
+
+        client = DriveClient(api_key="AIzaSyMockKeyForListing123")
+        res = client.list_folder_images("root_fid")
+
+        # Visited root_fid and sub_a once each without infinite loop
+        assert res.folders_scanned == 2
+        assert len(res.files) == 2
+        assert {f.id for f in res.files} == {"img_1", "img_2"}
+
+    @patch.object(requests.Session, "get")
+    def test_depth_limit(self, mock_get):
+        """Recursion stops at max_depth and flags depth_limit_hit."""
+        def route_request(url, params=None, **kwargs):
+            q = (params or {}).get("q", "")
+            resp = MagicMock()
+            resp.status_code = 200
+            for i in range(7):
+                curr = "root" if i == 0 else f"f_d{i}"
+                if f"'{curr}' in parents" in q:
+                    resp.json.return_value = {
+                        "files": [
+                            {"id": f"img_d{i}", "name": f"img_{i}.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                            {"id": f"f_d{i+1}", "name": f"Folder_d{i+1}", "mimeType": "application/vnd.google-apps.folder"},
+                        ],
+                    }
+                    return resp
+            resp.json.return_value = {"files": []}
+            return resp
+
+        mock_get.side_effect = route_request
+
+        client = DriveClient(api_key="AIzaSyMockKeyForListing123")
+        res = client.list_folder_images("root", max_depth=3)
+
+        assert res.depth_limit_hit is True
+        assert res.summary["depth_limit_hit"] is True
+        # Depth 0 (root), 1 (f_d1), 2 (f_d2), 3 (f_d3) are visited; f_d4 would be depth 4 > max_depth 3 so not visited
+        assert res.folders_scanned == 4
+
+    @patch.object(requests.Session, "get")
+    def test_file_cap(self, mock_get):
+        """Listing stops when max_files is reached and flags file_cap_hit."""
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.json.return_value = {
+            "files": [
+                {"id": f"img_{i}", "name": f"img_{i}.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"}
+                for i in range(10)
+            ],
+        }
+        mock_get.return_value = resp
+
+        client = DriveClient(api_key="AIzaSyMockKeyForListing123")
+        res = client.list_folder_images("root", max_files=4)
+
+        assert res.file_cap_hit is True
+        assert res.summary["file_cap_hit"] is True
+        assert len(res.files) == 4
+
+    @patch.object(requests.Session, "get")
+    def test_top_folder_with_only_subfolders(self, mock_get):
+        """When top folder has 0 images but has subfolders, result finds images and reports folder counts."""
+        def route_request(url, params=None, **kwargs):
+            q = (params or {}).get("q", "")
+            resp = MagicMock()
+            resp.status_code = 200
+
+            if "'root_empty_fid' in parents" in q:
+                # Top folder has NO images directly in it, only 2 subfolders
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "sub_1", "name": "Day1", "mimeType": "application/vnd.google-apps.folder"},
+                        {"id": "sub_2", "name": "Day2", "mimeType": "application/vnd.google-apps.folder"},
+                    ],
+                }
+            elif "'sub_1' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_d1_1", "name": "d1_1.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                        {"id": "img_d1_2", "name": "d1_2.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                    ],
+                }
+            elif "'sub_2' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_d2_1", "name": "d2_1.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                    ],
+                }
+            else:
+                resp.json.return_value = {"files": []}
+            return resp
+
+        mock_get.side_effect = route_request
+
+        client = DriveClient(api_key="AIzaSyMockKeyForListing123")
+        res = client.list_folder_images("root_empty_fid")
+
+        # Never silently returns 0 images: finds all 3 images in subfolders
+        assert len(res.files) == 3
+        assert res.image_count == 3
+        assert res.top_folder_has_images is False
+        assert res.summary["top_folder_has_images"] is False
+        assert res.summary["root_images_count"] == 0
+        assert res.summary["subfolder_images_count"] == 3
+        assert res.folders_scanned == 3
+        assert "top folder contains no direct images" in res.summary["message"]
+

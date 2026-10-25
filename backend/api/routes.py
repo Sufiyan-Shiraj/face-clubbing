@@ -169,8 +169,9 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
 
             if not has_images:
                 details = []
-                if list_res.skipped_folders_count > 0:
-                    details.append(f"searched {list_res.skipped_folders_count} subfolders")
+                if list_res.folders_scanned > 1 or list_res.skipped_folders_count > 0:
+                    scanned_count = max(list_res.folders_scanned - 1, list_res.skipped_folders_count)
+                    details.append(f"top folder has no images; searched {scanned_count} subfolders")
                 if list_res.skipped_videos_count > 0:
                     details.append(f"ignored {list_res.skipped_videos_count} video files")
                 if list_res.skipped_non_images_count > 0:
@@ -182,17 +183,23 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                     folder_name=folder_name,
                     has_images=False,
                     image_count_preview=0,
+                    summary=list_res.summary,
                     error_type="no_images",
                     message=f"Folder '{folder_name}' was found, but it contains no image files{extra_msg}.",
                 )
 
+            extra_info = ""
+            folders_cnt = max(1, list_res.folders_scanned)
+            if not list_res.top_folder_has_images and folders_cnt > 1:
+                extra_info = " (in subfolders; top folder has no direct images)"
             return DriveVerifyResponse(
                 valid=True,
                 folder_id=folder_id,
                 folder_name=folder_name,
                 has_images=True,
                 image_count_preview=list_res.image_count,
-                message=f"Verified: '{folder_name}' ({list_res.image_count}+ images found)",
+                summary=list_res.summary,
+                message=f"Verified: '{folder_name}' ({list_res.image_count}+ images found in {folders_cnt} folders{extra_info})",
             )
         except requests.exceptions.RequestException as e:
             return DriveVerifyResponse(

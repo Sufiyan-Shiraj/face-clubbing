@@ -167,7 +167,15 @@ Automatic clustering is deliberately conservative: it avoids wrong merges and ac
 ### Method 1: Drive link (read-only), NO Google sign-in
 - Folder must be shared "anyone with the link."
 - Use the Drive API with a **free API key** (not a login, not tied to a person). Users paste their own key in Settings; optionally a bundled default can be added later.
-- List files in the folder (paginate), download each photo's **thumbnail/size-limited version** instead of the 20 MB original where possible (the `thumbnailLink` can be resized, e.g. `=s1000`). Fall back to the original if no thumbnail.
+- List files in the folder with recursive subfolder traversal:
+  - Iterative queue (BFS, not deep recursion) traversing child folders (`mimeType = 'application/vnd.google-apps.folder'`).
+  - Limits: max depth 5, max 20,000 files total, visited-folder set to prevent reference cycles/loops.
+  - Skips and counts shortcuts (`application/vnd.google-apps.shortcut`) and Google-native docs (`application/vnd.google-apps.*`).
+  - Non-fatal subfolder error handling: HTTP 403/404 on a child folder records failure in `folders_failed` and continues scanning remaining folders.
+  - Deduplicates photos by Drive file ID to handle multi-parent or re-encountered items.
+  - Retains folder path (names only) for display and diagnostics.
+  - Returns a detailed scan summary: `images_found`, `folders_scanned`, `folders_failed`, `shortcuts_skipped`, `non_images_skipped`, `videos_skipped`, `depth_limit_hit`, `file_cap_hit`.
+- Download each photo's **thumbnail/size-limited version** instead of the 20 MB original where possible (the `thumbnailLink` can be resized, e.g. `=s1000`). Fall back to the original if no thumbnail.
 - Download with bounded parallelism (not hundreds at once) and retry/backoff on rate limits.
 - Output download links per file: `https://drive.google.com/uc?id=<FILE_ID>&export=download`.
 - Nothing sensitive is stored in this method.

@@ -59,6 +59,7 @@ class DriveVerifyResponse(BaseModel):
     image_count_preview: int = 0
     error_type: Optional[str] = None
     message: str
+    summary: Optional[Dict[str, Any]] = None
 
 
 class JobStatusResponse(BaseModel):
