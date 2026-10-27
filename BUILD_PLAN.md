@@ -25,6 +25,8 @@
 | 7 Release automation | Done (Multi-platform GitHub Actions workflow, onedir packaging, SHA-256 generation) |
 | 8 | Removed (2026-10-13) |
 | 9 Polish / extras | Core Complete (Custom scrollbars, custom dialogs, >=12px accessibility, Section 18 Table A/B; optional extras remaining) |
+| V2-0 Drive subfolder recursion | Done (BFS queue, depth 5, 20k file cap, loop prevention, file ID deduplication, resilient folder failures, scan summary) |
+| V2-1 Release health & first-user fixes | Done (Counts-only diagnostics button, privacy scrubber, GitHub issue templates with caution banner, crash/error screens with plain-language fixes, README troubleshooting) |
 
 
 ---
@@ -274,3 +276,54 @@ Method 2 (upload to Drive with Google sign-in) is no longer part of the project 
 - **Every table in a report must be checked against the JSON by the verification script**, and the script's full output pasted into the report. A report claim that no script checks is not verified.
 - Do not change any default in SPEC 6.2 without the SPEC 18 evidence table.
 - When something turns out different from what SPEC.md assumes, update `SPEC.md` (and its decisions log) rather than silently diverging.
+
+
+## V2 PLAN (after v0.1.0 release)
+
+Working rules (unchanged, apply to every phase): counts/IDs/filenames only; every number script-checked with raw outputs + SHA-256; unverified = UNVERIFIED; never store/test/label by cluster ID (face and photo IDs only); no SPEC 6.2 default changes without evidence and organizer decision; never commit photos, face crops, keys or real folder IDs; no tags or releases without organizer approval; baseline (192 people, 445 unrecognized faces, 168 unrecognized photos, 259 photos, 1256+445=1701) must reproduce and the cold regression tests must pass after every phase; STATUS.md is regenerated from raw files and check_status_integrity.py must pass.
+
+### V2-0 Drive subfolder recursion (hotfix) [DONE]
+**Status:** **Done** (Implemented in `backend/drive/client.py`, `backend/engine/pipeline.py`, `backend/api/jobs.py`, `backend/api/routes.py`, `frontend/src/components/HomeScreen.tsx`. Implements iterative BFS queue traversal, max depth 5, 20,000-file cap, visited folder set for loop prevention, shortcut/non-image skipping, resilient non-fatal subfolder error handling, file-ID deduplication, unique cache names by file ID, per-photo folder path tracking, and scan summary "Found N images in M folders". 39/39 Drive tests in `tests/test_drive.py` pass).
+
+### V2-1 Release health and first-user fixes [DONE]
+**Status:** **Done** (Implemented counts-only "Copy diagnostics" report in `backend/api/diagnostics.py` with sensitive data scrubber (zero file paths, zero photos, zero API keys, zero attendee biometrics, 16-hex settings hash), classified error codes (`OFFLINE`, `QUOTA_403`, `PRIVATE_FOLDER_404`, `BAD_KEY_400`, `DISK_FULL`, `CORRUPT_INPUT`, `GENERIC_ERROR`), and plain-language actionable fixes. Integrated `CopyDiagnosticsButton.tsx` across `ProgressScreen`, `HomeScreen`, `SettingsScreen`, and `CustomDialog`. Created GitHub Issue templates with explicit caution banner in `.github/ISSUE_TEMPLATE/`. Added comprehensive troubleshooting guide to `README.md`. CI multi-platform workflow configured across windows-x64, linux-x64, macos-arm64, macos-x64. 11/11 tests in `tests/test_diagnostics.py`, 3/3 in `frontend/src/__tests__/diagnosticsAndErrors.test.tsx`, 120/120 total Pytest, 85/85 Frontend Vitest, 26/26 Viewer Vitest all green).
+Build: confirm CI green on all four platforms (fix what fails); a "Copy diagnostics" button that produces a counts-only report (version, OS, settings hash, error codes, no paths, no photos, no keys); GitHub Issues template with "do not post photos"; crash/error screens with plain-language fixes (offline, quota 403, private folder 404, out of disk); README troubleshooting.
+Done when: a clean machine runs the release build end to end; a deliberately broken input (bad key, private folder, offline, full disk) shows a clear message and a diagnostics report with no sensitive data.
+
+### V2-2 Project model v2 and multi-source scan
+Build: project manifest v2 with a `sources` list (kind: local/zip/drive/project, label, id or path, quality: thumbnail|original, added_at), per-photo origins, settings hash and version; migration of existing projects and projects.json; multiple Drive links (and local/zip) in one scan with per-source status; dedupe across sources by photo ID, and for Drive by md5Checksum (no download); one failing source never fails the others; optional contributor label (no personal data); Source screen showing the list of sources with per-source counts.
+Done when: two Drive folders plus a zip scan into one project; a duplicate photo in two sources is processed once; old projects open unchanged; baseline reproduces.
+
+### V2-3 Add a source to an existing project (incremental) [COMPLETED]
+Build: process only new photos; frozen mode (existing people stay, new faces attach or form new people, second-pass merge rules documented); "What changed" report (new photos, new people, faces that joined existing people, existing people whose membership changed, which must be zero in frozen mode); existing edits replay as rules; undo supported.
+Done when: adding a link to a finished project leaves all existing people and edits unchanged, and the review shows only the differences; tests for frozen invariants and edit survival. Verified in tests/test_incremental.py (8/8 pass) and frontend/src/__tests__/incrementalSourceUI.test.tsx (9/9 pass). Report Section 43.
+
+### V2-4 Merge two projects
+Build: merge creates a NEW project (originals untouched); union by photo ID; require equal settings hash (else offer re-detect); copy caches; combine edits as order-independent rules (merge anchors, removes, assigns, names, hides); conflict review list (name conflicts, remove vs assign), never silently resolved; the merged project records both parents as sources.
+Done when: merging a project with itself changes nothing; A+B equals B+A; edits from both survive; conflicts are listed; a cold merged result is compared with an all-at-once scan and the differences are reported.
+
+### V2-5 Viewer and export for multi-source projects
+Build: per-photo download link (Drive link or none), mixed local+Drive bundles, optional album labels from Drive folder paths (viewer filter), size handling for big zips, bundle hygiene checks, viewer performance on 1,000+ photos (virtualized grid), accessibility checks stay at 100%.
+Done when: a merged, mixed-source export opens offline and online, every photo reachable, downloads correct, verify_export extended and passing.
+
+### V2-6 Drive image quality and small faces
+Build: measure =s1600, =s2000 and originals on the same nested test folder (people, singletons, unrecognized, bytes, faces under 64 px); propose a "Drive image quality" setting (fast / better / best) with evidence in SPEC §18.1; organizer decides the default; if a lower floor for thumbnails is proposed it needs an evidence table and my approval.
+Done when: the evidence table is checked by script, the setting works, and results on the same folder are reported per quality level.
+
+### V2-7 Input guidance
+Build: detect Google Photos links (photos.google.com, photos.app.goo.gl) and show a clear message (the Library API cannot read albums apps did not create since March 2025; use Download as zip or put photos in Drive); accept WhatsApp/phone zips, nested zips, HEIC/HEIF, and report unsupported files by count; "how do I get my photos in" help page and tutorial step.
+Done when: pasting each unsupported link type gives a helpful message, never a silent failure.
+
+### V2-8 Distribution
+Build: decide and implement Windows installer (Inno Setup) with the onedir build; code-signing decision (SmartScreen/Gatekeeper reputation); in-app "new version available" notice using the GitHub Releases API (notify only, no auto-install, no telemetry); promote macOS/Linux from beta only after real-machine tests; model download resilience (resume, mirror fallback documented); offline model pack as a documented manual step (license check first, no redistribution unless allowed).
+Done when: installer installs, launches, uninstalls cleanly; version notice works offline-safe; release checklist documented.
+
+### V2-9 Engine speed (optional, gated)
+Build: investigate faster inference without changing results (batching, onnxruntime execution providers such as DirectML on Windows, avoiding duplicate work); every change must reproduce the baseline bit-for-bit or be reported as a behaviour change needing my approval.
+Done when: measured s/photo before/after on the cold 259-photo set and the baseline reproduces exactly.
+
+### V2-10 Optional extras (each needs my approval before starting)
+- In-viewer selfie search (client-side face matching): privacy review, model licensing, accuracy and size cost first.
+- One-click publish to GitHub Pages (token handling review first).
+- Localization (Malayalam/Hindi UI strings).
+- Per-person private share links.

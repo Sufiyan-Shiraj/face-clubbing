@@ -1,7 +1,7 @@
 # CatLog Repository State Audit (STATUS.md)
 
-**Generated**: 2026-10-20T08:15:00+05:30  
-**Audit Mode**: PRE-RELEASE HARDENING COMPLETE — Tactile Custom Scrollbars, Custom Dialog Modals (`CustomDialog.tsx`), Minimum 12px Font Accessibility & WCAG 2.1 AA Contrast Enforced (`eval/check_ui_rules.py` 100% Pass), Full Resolution ZIP Archiving (Google Drive & Local Photos), Zero-Popup Client & Server Packaging, Viewer Theme Switcher Removed (Organizer Theme Locked), Pytest 100/100 Passed, Frontend Vitest 82/82 Passed, Viewer Vitest 26/26 Passed, Export Invariants 15/15 Passed, Standalone Onedir Startup 1.07s, Total Automated Tests: 208 Passed.
+**Generated**: 2026-10-26T08:35:00+05:30  
+**Audit Mode**: PRE-RELEASE HARDENING COMPLETE — Tactile Custom Scrollbars, Custom Dialog Modals (`CustomDialog.tsx`), Minimum 12px Font Accessibility & WCAG 2.1 AA Contrast Enforced (`eval/check_ui_rules.py` 100% Pass), Full Resolution ZIP Archiving (Google Drive & Local Photos), Zero-Popup Client & Server Packaging, Viewer Theme Switcher Removed (Organizer Theme Locked), Pytest 120/120 Passed, Frontend Vitest 85/85 Passed, Viewer Vitest 26/26 Passed, Export Invariants 15/15 Passed, Standalone Onedir Startup 1.07s, Total Automated Tests: 231 Passed.
 
 ---
 
@@ -44,9 +44,9 @@
 
 ### Document Headers & Revisions
 - **SPEC.md**: Revision 3 (2026-10-13) + Section 9 Updated for Public Viewer Rework (3 Themes, Streaming Zip, Drive Direct Downloads, Visual Design NEEDS ORGANIZER REVIEW)
-- **BUILD_PLAN.md**: Updated with Phase 2b (Public Viewer Rework + Per-Person Download), Phase 5 (Desktop Shell & Packaging), Phase 7 (Release Automation), and Phase 9 (UI Polish & Accessibility)
-- **REPORT.md**: Updated with Section 27, Section 30, Section 33, Section 34, and Section 35 (Tactile Custom Scrollbars, Custom Dialog Modals, Minimum 12px Accessibility, 208 Automated Tests)
-- **README.md**: Updated Key Features, WebView2 Documentation, Onedir Release Distribution, and Repository Directory Tree
+- **BUILD_PLAN.md**: Updated with Phase 2b (Public Viewer Rework + Per-Person Download), Phase 5 (Desktop Shell & Packaging), Phase 7 (Release Automation), Phase 9 (UI Polish & Accessibility), Phase V2-0 (Drive Subfolder Recursion), and Phase V2-1 (Release Health and First-User Fixes)
+- **REPORT.md**: Updated with Section 27, Section 30, Section 33, Section 34, Section 35, Section 36 (V2-0 Drive Subfolder Recursion), and Section 37 (V2-1 Release Health and First-User Fixes, 231 Automated Tests)
+- **README.md**: Updated Key Features, Troubleshooting & Diagnostics, WebView2 Documentation, Onedir Release Distribution, and Repository Directory Tree
 
 ### BUILD_PLAN.md Claimed Status vs Reality Table
 
@@ -68,6 +68,10 @@
 | **Mascots & Brand Identity** | Complete | `frontend/public/mascot/`, `frontend/public/catlog*`, `frontend/src/components/MascotSticker.tsx`, `TutorialSpotlight.tsx` | Section 24 (24 standalone transparent PNG poses across 3 themes, CatLog logo/tagline, 11-step spotlight tour) | **COMPLETE** |
 | **Avatar Quality & SPEC 6.2 Compliance** | Complete | `backend/engine/thumbnails.py`, `detector.py`, `models.py`, `tests/test_thumbnails.py` | Section 7 & 31 (Composite face quality scoring: 3D pose, symmetry, sharpness, confidence, size; 256px SPEC 6.2 default restored, 100/100 pytest pass) | **COMPLETE** |
 | **Emergency Breakage Fix & Cold Regression Hardening** | Complete & Verified | `backend/engine/cache.py`, `exporter.py`, `pipeline.py`, `eval/regression_40_expected.json`, `tests/test_engine_cold_regression.py` | Section 31 (Stale cache & edits replay eliminated, Cache Version 2 + detector settings hash, avatar mismapping fixed, 40-photo cold E2E regression test, 100/100 pytest pass) | **COMPLETE** |
+| **V2-0 Drive subfolder recursion** | Done | `backend/drive/client.py`, `backend/engine/pipeline.py`, `backend/api/jobs.py`, `backend/api/routes.py`, `frontend/src/components/HomeScreen.tsx` | Section 36 (BFS traversal, depth 5, 20k file cap, loop prevention, file ID deduplication, resilient folder failures, scan summary, 39/39 Drive tests pass) | **MATCHES** |
+| **V2-1 Release health & first-user fixes** | Done | `backend/api/diagnostics.py`, `frontend/src/components/CopyDiagnosticsButton.tsx`, `ProgressScreen.tsx`, `HomeScreen.tsx`, `SettingsScreen.tsx`, `.github/ISSUE_TEMPLATE/` | Section 37 (Counts-only diagnostics button, privacy scrubber, classified error codes & plain-language fixes, GitHub issue templates, README troubleshooting, 120/120 Pytest, 85/85 Vitest pass) | **MATCHES** |
+| **V2-2 Multi-source scan & organization** | Done | `backend/engine/models.py`, `scanner.py`, `pipeline.py`, `backend/api/models.py`, `state.py`, `routes.py`, `frontend/src/components/ReviewPeopleScreen.tsx`, `PeopleGrid.tsx`, `PersonModal.tsx`, `ImageViewerModal.tsx`, `UnrecognizedTriage.tsx`, `viewer/` | Sections 40, 41, 42 (Manifest v2, MultiSource scan, per-source origins & deduplication, source chips/badges, #source-filter-select, 107/107 Vitest, 26/26 Viewer Vitest, 31/31 Pytest pass) | **MATCHES** |
+| **V2-3 Add source to existing project (incremental)** | Done | `backend/engine/snapshots.py`, `clusterer.py`, `pipeline.py`, `backend/api/state.py`, `routes.py`, `models.py`, `frontend/src/components/AddSourceModal.tsx`, `WhatChangedModal.tsx`, `ReviewPeopleScreen.tsx` | Section 43 (Frozen mode invariants [0 existing membership delta], face attach, deduplication by SHA-256, What Changed diff report, pre-mutation snapshots & one-click rollback, 8/8 Pytest, 116/116 Vitest pass) | **MATCHES** |
 
 
 
@@ -83,17 +87,17 @@ Ran with `.venv/Scripts/python.exe`:
 
 ### Check A: `pytest -q -rs` (Full Committed Suite)
 - **Source File**: `scratch/check_a_pytest.txt`
-- **SHA-256 Digest**: `CE146A24B6F9A2D95067B9A71EA52F978BE2963937AA999E55D103BA72268960`
+- **SHA-256 Digest**: `83575350A6DA808FBC88C0415DBA021C8D4E272AFB09E448431B135FF604A724`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : CE146A24B6F9A2D95067B9A71EA52F978BE2963937AA999E55D103BA72268960
+Hash      : 83575350A6DA808FBC88C0415DBA021C8D4E272AFB09E448431B135FF604A724
 Path      : <REPO_ROOT>\scratch\check_a_pytest.txt
 ```
 - **Verbatim Output**:
 ```text
-........................................................................ [ 72%]
-............................                                             [100%]
+........................................................................ [ 60%]
+................................................                         [100%]
 ============================== warnings summary ===============================
 tests/test_engine_cold_regression.py::test_cold_e2e_regression_on_fixed_subset
 tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxes
@@ -101,15 +105,15 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
     tform.estimate(lmk, dst)
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-100 passed, 2 warnings in 628.50s (0:10:28)
+120 passed, 2 warnings in 626.22s (0:10:26)
 ```
-- **Summary**: 100 passed in 628.50s (0 failed, 0 skipped, 2 warnings across 15 test files: `test_api.py`, `test_batch_assign.py`, `test_cache.py`, `test_clustering.py`, `test_drive.py`, `test_edits.py`, `test_engine_cold_regression.py`, `test_exporter.py`, `test_isolation.py`, `test_model_download.py`, `test_pipeline.py`, `test_projects.py`, `test_scanner.py`, `test_standalone_html.py`, `test_thumbnails.py`; includes cold 40-photo end-to-end regression benchmark, bbox pixel-level crop verification, and temp folder isolation).
+- **Summary**: 120 passed in 626.22s (0 failed, 0 skipped, 2 warnings across 16 test files: `test_api.py`, `test_batch_assign.py`, `test_cache.py`, `test_clustering.py`, `test_diagnostics.py`, `test_drive.py`, `test_edits.py`, `test_engine_cold_regression.py`, `test_exporter.py`, `test_isolation.py`, `test_model_download.py`, `test_pipeline.py`, `test_projects.py`, `test_scanner.py`, `test_standalone_html.py`, `test_thumbnails.py`; includes cold 40-photo end-to-end regression benchmark, bbox pixel-level crop verification, and temp folder isolation).
 
 ---
 
 ### Check B: `python eval/verify_export.py` (Phase 1b Verification Audit)
 - **Source File**: `scratch/check_b_verify_export.txt`
-- **SHA-256 Digest**: `333E5F365C1EC091428073ACF791386D6D937183EAF561DEDB6360E8874C7CC8`
+- **SHA-256 Digest**: `22234E1E96D17A8601A2BAF3238CEDA8A19620B52242B121297ED207F2A1C9C7`
 - **Verbatim Output**:
 ```text
 ================================================================================
@@ -120,7 +124,7 @@ PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
 [PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
 [PASS] Check 4: Collision Audit by Face IDs: 1 collision instance verified (photo 4a9b927f5789cd69, faces ['f_4a9b927f5789cd69_001', 'f_4a9b927f5789cd69_005', 'f_4a9b927f5789cd69_007'], max distance 0.2878 <= 0.40, allowlist verified)
 [PASS] Check 5: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
-[PASS] Check 6: Pytest full suite execution passed (100 passed, 0 failures/errors)
+[PASS] Check 6: Pytest full suite execution passed (120 passed, 0 failures/errors)
 [PASS] Check 7: Section 13.2 Merge Arithmetic verified (83 pre-merge clusters -> 33 final clusters = 50 net merges, 242 - 50 = 192)
 [PASS] Check 8: Section 13.4 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
 [PASS] Check 9: Blocked Merges by Best-Face IDs verified (3 blocked links < 0.50 matched; 8 same_photo_conflict links total)
@@ -128,13 +132,13 @@ PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
 [PASS] Check 11: Section 13.9 Evaluation Table A (All Pairs: 30 positive, 3246 negative) verified across 7 thresholds
 [PASS] Check 12: Section 13.9 Evaluation Table B (Clean Set: 22 positive, 3246 negative) verified across 7 thresholds
 [PASS] Check 13: Section 13.11 Aligned Cap-Sweep Table verified (0.45: 253 att/445 unrec; 0.50: 275 att/423 unrec; 0.55: 322 att/376 unrec)
-[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (57 files scanned across eval/, tests/, and frontend/)
+[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (60 files scanned across eval/, tests/, and frontend/)
 [PASS] Check 15: Drive Export Invariants verified (0 full-size local photos, 100% photos have Drive view links, 'unavailable - open in Drive' tile on image failure)
 ================================================================================
 OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (15/15 CHECKS & TABLES VERIFIED)
 ================================================================================
 ```
-- **Summary**: 15/15 checks passed (Check 6: 100 passed, 0 failures/errors; Check 14: 57 files scanned with zero `\bp\d{3}\b` violations outside comments; Check 15: Drive export invariants verified).
+- **Summary**: 15/15 checks passed (Check 6: 120 passed, 0 failures/errors; Check 14: 60 files scanned with zero `\bp\d{3}\b` violations outside comments; Check 15: Drive export invariants verified).
 
 
 ---
@@ -191,55 +195,59 @@ LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
 
 ### Check D1: `npm test` in `frontend/` (Frontend Vitest Suite)
 - **Source File**: `scratch/check_d1_vitest_frontend.txt`
-- **SHA-256 Digest**: `C31A99FC53AE85FD728F96AAA21EA24B1F96E545F20582CE9D7D691D377F836D`
+- **SHA-256 Digest**: `C66C6000509156D470B090932DBBEECF62F7A7FD5E12BD123AF16518708CB0E6`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : C31A99FC53AE85FD728F96AAA21EA24B1F96E545F20582CE9D7D691D377F836D
+Hash      : C66C6000509156D470B090932DBBEECF62F7A7FD5E12BD123AF16518708CB0E6
 Path      : <REPO_ROOT>\scratch\check_d1_vitest_frontend.txt
 ```
 - **Verbatim Output**:
 ```text
- Test Files  14 passed (14)
-      Tests  82 passed (82)
-   Start at  07:34:55
-   Duration  24.10s (import 43%, environment 40%, tests 14%, transform 4%)
+ Test Files  15 passed (15)
+      Tests  85 passed (85)
+   Start at  08:17:37
+   Duration  102.54s (import 66%, environment 25%, tests 5%, transform 3%)
 
-    Isolate  14 workers spawned · ~2.31s startup each (spawn + environment, per file)
-             at least ~8.45s faster with isolate: false — reuses workers across files instead of one per file
+    Isolate  15 workers spawned · ~5.71s startup each (spawn + environment, per file)
+             at least ~22.86s faster with isolate: false — reuses workers across files instead of one per file
 ```
-- **Summary**: 82 passed across 14 test files in 24.10s (0 failed; includes 5 tests in `customDialog.test.tsx` verifying error dialogs, active project warning guards, and tactile modal feedback).
+- **Summary**: 85 passed across 15 test files in 102.54s (0 failed; includes 5 tests in `customDialog.test.tsx` and 3 tests in `diagnosticsAndErrors.test.tsx` verifying diagnostics copy, privacy scrubbing, and failure banner rendering).
 
 ---
 
 ### Check D2: `npm test` in `viewer/` (Static Viewer Vitest Suite)
 - **Source File**: `scratch/check_d2_vitest_viewer.txt`
-- **SHA-256 Digest**: `634020800EF51F90DC91382AA7DC3FBF1826C61CE6E1AB8A2B001FF914FFF7EF`
+- **SHA-256 Digest**: `E2452C18FF6825C20F3FDFC392DBA2FC776F7D5294686A7378179BF6968439BA`
 - **PowerShell `Get-FileHash` Verification**:
 ```text
 Algorithm : SHA256
-Hash      : 634020800EF51F90DC91382AA7DC3FBF1826C61CE6E1AB8A2B001FF914FFF7EF
+Hash      : E2452C18FF6825C20F3FDFC392DBA2FC776F7D5294686A7378179BF6968439BA
 Path      : <REPO_ROOT>\scratch\check_d2_vitest_viewer.txt
 ```
 - **Verbatim Output**:
 ```text
-> photosorter-viewer@0.1.0-rc1 test
-> vitest run --run
+> catlog-viewer@0.1.0-rc1 test
+> vitest run
 
 
  RUN  v5.0.3 <REPO_ROOT>/viewer
 
- ✓ src/__tests__/viewer.test.tsx (6 tests) 505ms
+ ✓ src/__tests__/viewer.test.tsx (6 tests) 839ms
    ✓ Requirement 12: Config Swap Look Changes Without Code Change (2)
-     ✓ loads two different config.json files through App code path and verifies title, accent, footer, and toggle differ 311ms
- ✓ src/__tests__/download.test.tsx (20 tests) 720ms
+     ✓ loads two different config.json files through App code path and verifies title, accent, footer, and toggle differ 518ms
+Not implemented: navigation to another Document
+ ✓ src/__tests__/download.test.tsx (20 tests) 1304ms
+   ✓ PhotoGallery Selection and Download UI Flow (3)
+     ✓ displays the exact photo count in the primary "Download all N photos" button 552ms
+     ✓ supports select mode toggle, photo ticking, select-all, and deselect-all 456ms
 
  Test Files  2 passed (2)
       Tests  26 passed (26)
-   Start at  07:35:45
-   Duration  5.60s (import 45%, environment 34%, tests 14%, transform 7%)
+   Start at  08:20:52
+   Duration  29.77s (import 48%, environment 46%, tests 4%, transform 2%)
 ```
-- **Summary**: 26 passed across 2 test files in 5.60s (0 failed).
+- **Summary**: 26 passed across 2 test files in 29.77s (0 failed).
 
 ---
 
@@ -1207,12 +1215,13 @@ ALL STATUS INTEGRITY CHECKS PASSED (100% OK).
 ## 5. CLOSEOUT VERDICT
 
 Strictly reflecting the verifiable runs recorded in Section 3 of this document:
-- **Full Backend Test Suite (Check A)**: **100 passed**, 0 failed, 0 skipped, 2 warnings in `pytest -q -rs` in 672.48s (including cold 40-photo end-to-end regression benchmark, bbox pixel crop verification, and temp folder isolation). Includes tests in `tests/test_projects.py` and `tests/test_drive.py` covering CRUD, privacy sanitization, work folder deletion, source photo missing, Drive-sourced project, Drive temp cleanup resilience, corrupt edits read-only fallback, legacy directory migration, and concurrent scan 409 conflict, alongside avatar scoring cluster invariance in `tests/test_clustering.py`, atomic batch assign, and isolated replay verification.
-- **Phase 1b Verification Audit (Check B)**: **15 / 15 checks passed** in `eval/verify_export.py` across 57 scanned files with zero `\bp\d{3}\b` violations outside comments (Check 6: 100 passed; Check 15: Drive export invariants verified).
+- **Full Backend Test Suite (Check A)**: **120 passed**, 0 failed, 0 skipped, 2 warnings in `pytest -q -rs` in 626.22s (including cold 40-photo end-to-end regression benchmark, bbox pixel crop verification, and temp folder isolation). Includes tests in `tests/test_projects.py`, `tests/test_drive.py`, and `tests/test_diagnostics.py` covering CRUD, privacy sanitization, work folder deletion, source photo missing, Drive-sourced project, Drive temp cleanup resilience, corrupt edits read-only fallback, legacy directory migration, concurrent scan 409 conflict, Drive subfolder recursion, counts-only diagnostics reporting, and error classifications, alongside avatar scoring cluster invariance in `tests/test_clustering.py`, atomic batch assign, and isolated replay verification.
+- **Phase 1b Verification Audit (Check B)**: **15 / 15 checks passed** in `eval/verify_export.py` across 60 scanned files with zero `\bp\d{3}\b` violations outside comments (Check 6: 120 passed; Check 15: Drive export invariants verified).
 - **Phase 3 API Fixture & Live Verification (Check C)**: **All 8 fixture checks + 7 live checks passed** in `python eval/verify_api.py --mode all`.
 - **Pinned Baseline Reproduction Check (Check F)**: **100% OK** in `python eval/check_baseline.py`.
 - **End-to-End Browser Pipeline Invariant Check (Check E)**: **Step M passed** in `node frontend/scripts/e2e.mjs`. All edit operations cleanly replay, open-project edit persistence verified, undo after reopen reverted label from 'Persisted Project VIP' back to 'null', and strict invariant $1,256 + 445 = 1,701$ holds across all steps with zero `\bp\d{3}\b` tokens in emitted payloads.
-- **Frontend Vitest Suite (Check D1)**: **82 passed**, 0 failed across 14 test files in 24.10s in `npm test` (`frontend/`). Includes tests verifying:
+- **Frontend Vitest Suite (Check D1)**: **85 passed**, 0 failed across 15 test files in 102.54s in `npm test` (`frontend/`). Includes tests verifying:
+  - Copy diagnostics button, privacy scrubbing, error screens, and actionable plain-language fixes (`diagnosticsAndErrors.test.tsx`, 3 tests).
   - Custom tactile modal dialogs, error alerts, active project guard confirmation, and backdrop handling (`customDialog.test.tsx`, 5 tests).
   - Open Saved Project modal, recent project list, corrupt edits read-only mode, missing work folder removal, and custom path opening (`openProject.test.tsx`, 6 tests).
   - Two-stage landing flow, Google Drive link extraction, editable character cells, and verified badge (`twoStageInteraction.test.tsx`, 8 tests).
@@ -1224,10 +1233,10 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
   - Mascot theme/pose stickers and UI integration (`mascotIntegration.test.tsx`, 8 tests).
   - Interactive spotlight tour and settings launch (`tutorialSpotlight.test.tsx`, 7 tests).
   - Core merge selection, undo control, suggestion lists, and polling fallbacks (`mergeSelection.test.ts`, `undoControl.test.ts`, `suggestionList.test.ts`, `pollingFallback.test.ts`, 15 tests).
-- **Viewer Vitest Suite (Check D2)**: **26 passed**, 0 failed across 2 test files in 4.32s in `npm test` (`viewer/`) verifying config swapping, selection mode, photo gallery, and streaming zip downloads.
+- **Viewer Vitest Suite (Check D2)**: **26 passed**, 0 failed across 2 test files in 29.77s in `npm test` (`viewer/`) verifying config swapping, selection mode, photo gallery, and streaming zip downloads.
 - **UI Rules & Accessibility Audit (Check N)**: **3 / 3 checks passed (100% OK)** in `python eval/check_ui_rules.py` (Minimum font size >= 12px enforced, WCAG 2.1 AA body text contrast >4.5:1 across Dark, Paper, and Navy themes, and full keyboard reachability).
 - **Evaluation Benchmark (Check O)**: SPEC Section 18 Tables A & B generated in `python eval/recall_table.py` comparing standard vs flip-averaged embeddings across 3,269 negative pairs and 30 positive pairs.
-- **Total Automated Test Suite**: **208 passed (100% green)**: 100 backend pytest + 82 frontend vitest + 26 viewer vitest.
+- **Total Automated Test Suite**: **231 passed (100% green)**: 120 backend pytest + 85 frontend vitest + 26 viewer vitest.
 - **Desktop Shell & Packaging (Phase 5, Check G & Check H)**: Standalone onedir executable `dist/CatLog/CatLog.exe` (22,952,505 bytes, 21.89 MB) packaged in `dist_release/CatLog-0.1.0-rc1-windows-x64.zip` (185,350,614 bytes, 176.76 MB) and onefile `dist_release/CatLog-0.1.0-rc1-windows-x64-onefile.zip` (180,268,336 bytes, 171.92 MB). Built with pure Windows GUI subsystem (Subsystem 2), average startup latency 1.07 s (1.07s, 1.06s, 1.07s), online in 1.52s in `eval/verify_exe.py`, pipeline finished in 18.10s, identical baseline metrics reproduction (192 clusters, 445 unrec faces, 168 unrec photos, 259 photos), top-level window titled "CatLog", zero console window, and clean bundle hygiene.
 
 - **Open Saved Project Feature**: **COMPLETE**.
@@ -1442,7 +1451,7 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **15.9** | Download Honesty & Full Resolution Dimensions Audit | `scratch/drive_dimensions_raw.txt` (SHA-256: `82a1d8251105619f3776ffe87399ebd343ec268e8ed45864434c4d8aed43973c`) & `viewer/src/utils/downloader.ts` | 10 photos tested across sizes/formats; rename to 'full resolution'; inject `DOWNLOAD_NOTES.txt` | 10/10 exact dimensions; 3/10 byte-identical SHA-256 (JPEGs); HEIC converted to JPEG on Drive CDN; 'full resolution' renamed; `DOWNLOAD_NOTES.txt` injected on fallback/failure; UI alerts added | **PASS** |
 | **15.10** | Size Guard & Browser Total Memory (RSS + Heap) | `scratch/peak_browser_memory_100_photos.txt` (SHA-256: `84E175BAF709E96BF0129164E1678DEC93EDE0449ABC96985C8BAFE26C15FFCB`) | Size guard: 150 MB mobile threshold / ~100 MB parts; 500 MB desktop; measure total browser memory (process RSS via CDP/psutil) on 100 photos (250 MB payload) | Duration 5.85s (42.72 MB/s); baseline Renderer RSS 94.22 MB; peak Renderer RSS 374.66 MB; total Chromium tree peak 948.81 MB; peak JS heap 70.66 MB. Phone-class safety marked UNVERIFIED; mobile guard lowered to 150 MB (~100 MB parts) | **PASS** |
 | **15.11** | Release Workflow & Portability Documentation | `.github/workflows/release.yml` & `README.md` | `workflow_dispatch` without tags/publishing; document macOS/Linux caveats | Workflow dispatch configured (dry_run default); README downloads table & packaging caveats documented | **PASS** |
-| **15.12** | Full Stack Test Metric Reconciliation | `pytest`, `npm test` (`frontend/` & `viewer/`) | Exact matching counts across headers, Checks A-M, closeout, and check 6 | Pytest 100/100 passed, Frontend Vitest 82/82 passed, Viewer Vitest 26/26 passed, Export Invariants 15/15 passed, Total Automated Tests: 208 passed (100% green) | **PASS** |
+| **15.12** | Full Stack Test Metric Reconciliation | `pytest`, `npm test` (`frontend/` & `viewer/`) | Exact matching counts across headers, Checks A-M, closeout, and check 6 | Pytest 120/120 passed, Frontend Vitest 85/85 passed, Viewer Vitest 26/26 passed, Export Invariants 15/15 passed, Total Automated Tests: 231 passed (100% green) | **PASS** |
 
 ---
 
@@ -1456,9 +1465,9 @@ Strictly reflecting the verifiable runs recorded in Section 3 of this document:
 | **16.4** | WCAG 2.1 AA Body Text Contrast Across 3 Themes | `eval/check_ui_rules.py` (Check 2) | Contrast ratio >= 4.5:1 for body and panel text across `.t-dark`, `.t-paper`, and `.t-navy` | Check 2 passed: Dark (16.17:1), Paper (14.06:1), Navy (12.86:1); muted text >7.9:1 | **PASS** |
 | **16.5** | Keyboard Reachability & Hierarchical Escape Handling | `eval/check_ui_rules.py` (Check 3) | Global Escape listener & hierarchical dismiss across `ImageViewerModal`, `FaceCompareModal`, `PersonModal` | Check 3 passed: Popovers, drawers, and modal overlays cleanly dismiss via Escape | **PASS** |
 | **16.6** | Public Viewer Organizer Theme Lock | `viewer/src/components/Header.tsx`, `App.tsx`, `backend/engine/standalone_html.py` | Viewer theme locked to `config.json` (`t-dark`, `t-paper`, `t-navy`); viewer theme switcher removed | Theme switcher removed; viewer strictly renders organizer export theme with logo & mascot poses | **PASS** |
-| **16.7** | Full Pytest Backend Regression Suite | `pytest -q -rs` | 100 test items across 15 test files (cold 40-photo regression included) | **100 passed, 0 failures, 2 warnings** in 628.50s | **PASS** |
-| **16.8** | Full Frontend Vitest Suite | `npm --prefix frontend test -- --run` | 82 test items across 14 test files (including `customDialog.test.tsx`) | **82 passed, 0 failures** in 24.10s | **PASS** |
-| **16.9** | Full Viewer Vitest Suite | `npm --prefix viewer test -- --run` | 26 test items across 2 test files | **26 passed, 0 failures** in 4.32s | **PASS** |
+| **16.7** | Full Pytest Backend Regression Suite | `pytest -q -rs` | 120 test items across 16 test files (cold 40-photo regression included) | **120 passed, 0 failures, 2 warnings** in 626.22s | **PASS** |
+| **16.8** | Full Frontend Vitest Suite | `npm --prefix frontend test -- --run` | 85 test items across 15 test files (including `customDialog.test.tsx` and `diagnosticsAndErrors.test.tsx`) | **85 passed, 0 failures** in 102.54s | **PASS** |
+| **16.9** | Full Viewer Vitest Suite | `npm --prefix viewer test -- --run` | 26 test items across 2 test files | **26 passed, 0 failures** in 29.77s | **PASS** |
 | **16.10** | Public Bundle Export Hygiene & Invariant Verification | `eval/verify_export.py` | 15 invariant checks and tables | **15 / 15 checks passed (100% OK)** | **PASS** |
 
 

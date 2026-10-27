@@ -205,6 +205,36 @@ The codebase is continuously validated across 208 automated tests:
 
 ---
 
+## Troubleshooting & Diagnostics
+
+CatLog includes automated error classification and an in-app **Copy diagnostics** button to help diagnose and resolve issues quickly without leaking personal data.
+
+### Standardized Error Codes & Actionable Fixes
+
+| Error Code | Category | Plain-Language Fix Guidance |
+| :--- | :--- | :--- |
+| **`OFFLINE`** | Network / Connectivity | Check your internet connection, Wi-Fi, or proxy settings. If running local files, verify that deep learning model weights were downloaded on first launch. |
+| **`QUOTA_403`** | Google Drive Quota | The Google Drive API rate limit or daily request quota for this key has been reached. Go to **Settings > Google Drive API Key** and enter your own free API key from Google Cloud Console, or wait a few minutes before trying again. |
+| **`PRIVATE_FOLDER_404`** | Inaccessible Folder | CatLog could not find or access the Google Drive folder. Ensure the folder's link sharing is set to **"Anyone with the link"** (Viewer access), and verify that the link or folder ID is correct. |
+| **`BAD_KEY_400`** | Invalid API Key | The configured Google Drive API key is invalid or expired. Check the key in Settings and ensure that the **Google Drive API** service is enabled on the associated project in Google Cloud Console. |
+| **`DISK_FULL`** | Storage Out of Space | Your storage drive ran out of free space during photo processing or bundle export (ENOSPC). Free up space on the drive hosting your project folder or change the Output Directory in Settings to a drive with at least 2 GB of free space. |
+| **`CORRUPT_INPUT`** | Damaged Archive/Photo | The selected ZIP archive or photo file appears damaged, truncated, or in an unsupported format. Try re-downloading or re-compressing the photos as a standard ZIP file. |
+| **`GENERIC_ERROR`** | Unexpected Runtime Error | An unexpected error occurred. Use the **"Copy diagnostics"** button to capture safe system details and report it on GitHub without sharing any private photos. |
+
+### "Copy Diagnostics" Privacy Guarantee
+
+When reporting an issue or asking for help:
+- Click the **"Copy diagnostics"** button directly on any error screen, error dialog, or in the **Settings** screen.
+- **Zero Sensitive Data**: The generated report contains **zero file paths**, **zero URLs**, **zero API keys**, and **zero attendee photos or facial vectors**.
+- It safely outputs:
+  - CatLog Version and platform architecture (e.g. `Windows 11 (AMD64)`, `Linux x86_64`, `macOS arm64`)
+  - Python runtime version
+  - Settings hash (a 16-hex character deterministic fingerprint of detection/clustering parameters)
+  - Processing stage and classified error code
+  - Aggregated counts only (photos ingested, people clusters, unrecognized faces, edits replayed)
+
+---
+
 ## Privacy, Ethics, and Licensing Notice
 
 - **Biometric Vector Safety**: Mathematical embeddings (512-dimensional unit vectors) are used solely for local distance calculations. No biometric identifiers or templates are shared with third parties.

@@ -5868,4 +5868,422 @@ To prevent future regressions from passing undetected, two cold end-to-end regre
 | **SPEC 6.2 Settings Audit** | `python eval/check_settings_spec.py` | **15 / 15 parameters match (100%)** | EngineConfig, SettingsModel, SettingsScreen in sync |
 | **Total Automated Tests** | Stack-wide | **208 passed (100% green)** | 100 pytest + 82 frontend + 26 viewer |
 
+---
 
+## 36. PHASE V2-0: GOOGLE DRIVE SUBFOLDER RECURSION (HOTFIX)
+
+**Date**: 2026-10-25T18:20:00+05:30  
+**Status**: COMPLETE & ACCEPTED — Iterative Breadth-First-Search (BFS) Subfolder Traversal Implemented in `backend/drive/client.py`, Resilient Error Handling for Restricted Subfolders, 20,000 File Cap & Max Depth 5 Enforced, File ID Deduplication Across Folders, Cache Isolation by File ID, Per-Photo Folder Path Tracking, 39/39 Passing Drive Tests in `tests/test_drive.py`.
+
+### 36.1 Problem Statement & Architectural Need
+- Previously, CatLog's Google Drive integration only queried the immediate root folder ID passed by the user. If an event folder contained nested categories (e.g. `Day1/`, `Stage/`, `Crowd/`), all images located inside subfolders were silently missed.
+- Recursive traversal must satisfy strict safety constraints:
+  1. No infinite loops if folders or shortcuts contain circular links.
+  2. Subfolder permission errors or transient failures must not abort the entire scan.
+  3. Duplicate photo filenames across different subfolders must not overwrite each other in cache.
+  4. Memory and API quotas must be protected by explicit depth limits and file count caps.
+
+### 36.2 Iterative BFS Implementation & Safety Invariants
+- Implemented `DriveClient.list_folder_images_recursive()` in `backend/drive/client.py`:
+  - **Queue-based BFS**: Evaluates folders level by level using `collections.deque([(folder_id, folder_name, 0)])`.
+  - **Depth Limit**: Strictly bounded to `max_depth = 5`.
+  - **File Cap**: Bounded to `max_files = 20,000` total images.
+  - **Loop Prevention**: Maintains a `visited_folders: set[str]` tracking processed folder IDs; cyclic shortcuts or circular parent references are skipped.
+  - **Shortcut & Document Filtering**: Non-folder and non-image MIME types (Google Docs, Sheets, shortcuts) are ignored.
+  - **Resilient Folder Failure**: A failing subfolder (`403 Forbidden`, `404 Not Found`) logs a warning, records the folder in `failed_folders`, and allows BFS traversal to continue scanning remaining folders.
+  - **Deduplication**: Images shared or mirrored across multiple folders are deduplicated by Google Drive `file_id`.
+  - **Cache Isolation**: Caches photos by unique file ID (`{file_id}_{stem}.jpg`) to prevent collisions when two different subfolders contain photos with identical names (e.g., `IMG_0001.JPG`).
+  - **Path Attribution**: Photos retain their relative folder path (e.g. `Stage/IMG_0001.JPG`) for organizer review.
+  - **Scan Summary**: Reports exact count metrics: `"Found N images in M folders (scanned K folders)"`.
+
+### 36.3 Test Verification
+- All 39 Google Drive tests in `tests/test_drive.py` pass cleanly (100% OK), covering 3-level deep pagination, identical filenames across folders, loop prevention, file caps, depth limits, and resilient folder error handling.
+
+---
+
+## 37. PHASE V2-1: RELEASE HEALTH AND FIRST-USER FIXES
+
+**Date**: 2026-10-26T08:10:00+05:30  
+**Status**: COMPLETE & VERIFIED — Counts-Only Diagnostics System with Strict Privacy Scrubbing (`backend/api/diagnostics.py`), Classified Error Codes & Actionable Plain-Language Fix Guidance across Frontend UI (`ProgressScreen.tsx`, `HomeScreen.tsx`, `SettingsScreen.tsx`, `CustomDialog.tsx`), GitHub Issue Templates with Explicit Privacy Caution Banner, Multi-Platform CI Release Workflow (`.github/workflows/release.yml`), Comprehensive README Troubleshooting Section, 11/11 Diagnostics Tests & 3/3 Frontend Diagnostics Tests Passed.
+
+### 37.1 Problem Statement & Scope
+- First-time users encountering issues (invalid Google Drive API key, private folder, quota limits, offline startup, or full disk) previously received technical stack traces or generic error dialogs.
+- When seeking support, users often posted screenshots or raw logs that risked exposing sensitive information, attendee face crops, real Google Drive URLs, or secret API keys.
+- **Goals of Phase V2-1**:
+  1. Multi-platform CI assurance across `windows-x64`, `linux-x64`, `macos-arm64`, and `macos-x64`.
+  2. Implement an in-app "Copy diagnostics" button producing a counts-only, fully anonymized diagnostic payload.
+  3. Privacy scrubber ensuring zero file paths, zero photos/crops, zero API keys, and zero attendee biometrics.
+  4. User-friendly error screens mapping machine errors to plain-language, actionable recovery steps.
+  5. GitHub Issue templates enforcing the "DO NOT POST PHOTOS" caution rule.
+  6. Comprehensive troubleshooting section in `README.md`.
+
+### 37.2 Error Classification Subsystem
+Implemented `classify_error()` in `backend/api/diagnostics.py` to categorize errors into structured classifications:
+- `OFFLINE`: Triggered by network disconnects, DNS resolution failures, or offline model download attempts. Actionable fix: Reconnect to the internet or download required models into `models/`.
+- `QUOTA_403`: Triggered by Google Drive API HTTP 403 / `rateLimitExceeded` / `quotaExceeded`. Actionable fix: Verify Google Cloud Console Drive API quotas or configure project API billing.
+- `PRIVATE_FOLDER_404`: Triggered by Google Drive HTTP 404 / 403 permission errors. Actionable fix: Verify the folder sharing permissions are set to "Anyone with the link can view".
+- `BAD_KEY_400`: Triggered by Google Drive API HTTP 400 / `API_KEY_INVALID` / `keyInvalid`. Actionable fix: Check the API key in Settings Screen, ensure Google Drive API is enabled in Google Cloud Console.
+- `DISK_FULL`: Triggered by `ENOSPC`, `No space left on device`, or `Errno 28`. Actionable fix: Free up storage space on the active drive or export target directory.
+- `CORRUPT_INPUT`: Triggered by corrupted zip archives, truncated images, or unreadable file headers. Actionable fix: Verify source files and re-upload uncorrupted images.
+- `GENERIC_ERROR`: Fallback for unrecognized exceptions, providing sanitized error details.
+
+### 37.3 Diagnostics Payload & Privacy Invariants
+- `backend/api/diagnostics.py` defines `DiagnosticsReport` and `sanitize_sensitive_data()`:
+  - **Version & Environment**: App version, Operating System, Architecture, Python version.
+  - **Settings Hash**: 16-character hexadecimal SHA-256 digest of detector/engine settings (never the raw settings payload).
+  - **Counts-Only Metrics**: Count of loaded photos, count of detected faces, count of people clusters, count of unrecognized faces, memory usage (MB), disk free space (GB).
+  - **Sanitization Invariants**:
+    - Zero local file paths (scrubbed via regex matching Windows `C:\...` and POSIX `/...` paths).
+    - Zero Google Drive URLs or folder IDs.
+    - Zero API keys (`AIza...` and 32+ character hex tokens replaced with `[REDACTED_KEY]`).
+    - Zero photo filenames or attendee names/biometrics.
+- Exposes `GET /api/diagnostics` API endpoint for instant export.
+
+### 37.4 Frontend UI Integration & Tactile Error Screens
+- **`CopyDiagnosticsButton.tsx`**: Reusable tactile button supporting clipboard copying with visual confirmation ("Copied!" with green checkmark) and fallback copy mechanisms.
+- **`ProgressScreen.tsx`**: When a scan fails, replaces the generic message with a high-visibility failure banner `#scan-failure-banner`:
+  - Classified error badge (e.g. `Google Drive Quota Exceeded`).
+  - Sanitize error message.
+  - Highlighted actionable fix card explaining exactly how to resolve the issue.
+  - Direct `Copy Diagnostics` button.
+  - "Return to Home" and "Open Settings" action buttons.
+- **`HomeScreen.tsx`**: Drive link verification failures now display the classified error badge, actionable recovery guidance, and the `CopyDiagnosticsButton` directly inside the verification alert box.
+- **`SettingsScreen.tsx`**: Added a "System Diagnostics & Privacy" section allowing organizers to view and copy anonymized system diagnostics on demand.
+- **`CustomDialog.tsx`**: Error dialogs now include an embedded `Copy Diagnostics` button for quick bug reporting.
+
+### 37.5 GitHub Issue Templates & Documentation
+- **`.github/ISSUE_TEMPLATE/bug_report.md`**:
+  - Prominent alert banner: `> **PRIVACY NOTICE: DO NOT POST PHOTOS, CROPS, OR ATTENDEE FACES**`.
+  - Dedicated pre-formatted block for pasting the anonymized output from "Copy Diagnostics".
+- **`.github/ISSUE_TEMPLATE/feature_request.md`** & **`config.yml`**: Added standard community templates and issue contact links.
+- **`README.md`**: Added `## Troubleshooting & Diagnostics` detailing every error code, category, recovery steps, and privacy invariants.
+
+### 37.6 Test Verification Matrix (Phase V2-1)
+- **Backend Pytest**: 11 new tests in `tests/test_diagnostics.py` (privacy scrubbing, classification, report structure, endpoint). Total: 120/120 tests passed across 16 test files.
+- **Frontend Vitest**: 3 new tests in `frontend/src/__tests__/diagnosticsAndErrors.test.tsx` (button copy, fetch, failure banner rendering). Total: 85/85 tests passed across 15 test suites.
+- **Viewer Vitest**: 26/26 tests passed across 2 test suites.
+- **Total Automated Tests**: **231 passed (100% green)**.
+
+---
+
+## 38. Subfolder Traversal Controls & Saved Project Strict Scoping
+
+### 38.1 Recursive Traversal Configuration
+- **User Request**: User required folder recursion to be configurable:
+  - Subfolder recursion toggle: enabled by default (`scan_subfolders: true`).
+  - Maximum subfolder depth: integer selector, default 5 (`max_subfolder_depth: 5`, range 1-20).
+  - Shortcut/alias traversal: disabled by default (`follow_shortcuts: false`).
+- **Backend Architecture**:
+  - `AppSettings` in `backend/api/models.py` updated with `scan_subfolders: bool = True`, `max_subfolder_depth: int = 5`, and `follow_shortcuts: bool = False`.
+  - `ScannerSettings` in `backend/engine/models.py` updated with matching fields.
+  - `LocalScanner.scan_directory` in `backend/engine/scanner.py` enforces maximum folder depth calculation relative to base root directory and ignores nested directories when `scan_subfolders` is false.
+  - `DriveClient` in `backend/drive/client.py` and `backend/api/jobs.py` pass depth limits and shortcut flags during recursive Drive folder queries (`mimeType = 'application/vnd.google-apps.shortcut'`).
+- **Frontend UI & Settings Integration**:
+  - `HomeScreen.tsx`: Added collapsible "Folder & Subfolder Traversal" settings card with intuitive toggle switches and depth slider.
+  - `SettingsScreen.tsx`: Added matching traversal controls in settings view with persistent storage via `PUT /api/settings`.
+  - `types.ts` & `client.ts`: TypeScript contracts updated.
+
+### 38.2 Saved Project Loading & Shared Cache Bleed Prevention
+- **Issue**:
+  - When loading past projects (such as `BOO 26`), photos and face clusters from other events cached in shared directories (`export.work` or `~/.photosorter/work`) were bleeding into the reopened project.
+  - Custom export directory names (such as `export/BOO 26 PM/BOO 26 Images` vs `export/BOO 26 PM/BOO 26`) caused path mismatches when looking for `people.json`.
+  - When `people.json` wasn't found directly at the expected path, the loader fell back to clustering all `.json` files in the shared `export.work` cache, mixing disjoint photo sessions and distorting counts (e.g. 189 people and 406 photos instead of 148 people and 373 photos).
+- **Architecture Fixes**:
+  - **`resolve_project_export_path`**: Recursively inspects subfolders, sibling directories (e.g. `<folder> Images`), and parent folders to locate the exact bundle folder containing `people.json`.
+  - **Auto-Healing `load_recent_projects()`**: Checks and synchronizes actual people and photo counts from `people.json` into `projects.json`, self-healing corrupted historical entries.
+  - **`_find_people_json` Priority**: `export_p` is strictly prioritized over `work_p` so a shared cache file never overrides a project bundle.
+  - **Strict Photo Scoping in `open_saved_project`**: Photo records are strictly scoped to the `photo_ids` declared in the project's `people.json` and unrecognized group. Foreign photos in the shared embedding cache are completely ignored.
+  - **Guarded Clustering Fallback**: Blind re-clustering is blocked if `cached_photos` originates from multiple distinct sessions without a manifest.
+  - **Mirroring & Label Preservation**: `people.json` is mirrored to `work_dir` during bundle export, and re-exporting after edits and undo preserves organizer labels and outputs to the correct project folder.
+
+### 38.3 Verification Matrix
+- **`tests/test_projects.py`**:
+  - `test_saved_project_loads_strictly_project_photos_no_bleeding`: PASS.
+  - `test_resolve_project_export_path_nested_subfolders`: PASS.
+  - `test_drive_project_export_reopen_temp_cleanup_edits_undo_reexport`: PASS.
+  - All 10 project tests: 10/10 PASS.
+- **`tests/test_api.py`**: 13/13 PASS.
+- **`tests/test_drive.py`**: 42/42 PASS.
+- **`tests/test_clustering.py`**: 9/9 PASS.
+- **Frontend Vitest**: 88/88 PASS across 16 test suites (including `traversalOptions.test.tsx`).
+- **Live Local Project Verification**: Verified `BOO 26` auto-heals to `148 people`, `373 photos`, strictly 373 photos loaded, 0 foreign photos, and all 6 edits replayed cleanly.
+
+---
+
+## 39. FACE RECOGNITION MODELS ON-DEMAND DOWNLOAD & UPDATE MANAGEMENT
+
+### 39.1 Requirements & Problem Definition
+- Previously, model weights (`buffalo_l` ~288 MB ONNX bundle: `det_10g.onnx`, `w600k_r50.onnx`, `2d106det.onnx`, `1k3d68.onnx`, `genderage.onnx`) were downloaded lazily only when an event scan job started.
+- Users needed:
+  1. An on-demand download button to pre-download models before organizing photos.
+  2. Dynamic visibility: When models exist and are valid/up-to-date, the download banner becomes blank (hidden). When models are missing or corrupted, the banner is prominently displayed.
+  3. A refresh button (`#check-models-update-btn`) to check for upstream model updates.
+  4. Automatic transition: When an update is detected, the banner surfaces and the button transforms into an "Update Models" button (`#download-models-btn`).
+  5. Live download progress reporting with percentage, byte counter, stage indicators, and error resilience.
+
+### 39.2 Architecture & Backend Implementation
+- **`backend/engine/models_downloader.py`**:
+  - `get_model_status(model_name, model_root, check_fallback)`: Audits model file existence, byte sizes, and `model_meta.json`. Returns `installed`, `version`, `latest_version`, and `update_available`.
+  - `check_model_updates(model_name, model_root, simulate, check_fallback)`: Polls remote repository metadata (with test simulation support) and returns whether a newer version is available.
+  - `ModelDownloadManager`: Thread-safe worker queue managing asynchronous model downloads with real-time byte counters and progress percentages.
+  - `ensure_model_available(force_download=...)`: Extended with `force_download: bool` to allow on-demand downloads and updates.
+- **`backend/api/models.py` & `backend/api/routes.py`**:
+  - `GET /api/models/status`: Returns current installation state, version, and active download progress.
+  - `POST /api/models/check-update`: Triggers an update check against upstream releases.
+  - `POST /api/models/download`: Initiates background downloading/updating without blocking the HTTP server.
+
+### 39.3 Frontend UI & Component Design
+- **`ModelDownloadBanner.tsx`**:
+  - Clean state: Blank when models are installed and up to date, retaining a subtle update refresh icon button.
+  - Missing state: Surfaces warning banner with `#download-models-btn` displaying "Download Models (~288 MB)".
+  - Update state: Surfaces update banner with badge and converts button to "Update Models (~288 MB)".
+  - Active downloading state: Displays animated progress bar, percentage, and MB counter with polling intervals.
+- **Screen Integration**:
+  - Embedded prominently on `HomeScreen.tsx` above event configuration and inside `SettingsScreen.tsx` in a dedicated "Face Recognition Models" card.
+
+### 39.4 Verification Matrix
+- **`tests/test_model_download.py`**:
+  - `test_get_model_status_and_update_check`: PASS.
+  - `test_force_model_download_updates_metadata`: PASS.
+  - `test_download_manager_progress_tracking`: PASS.
+  - `test_api_models_endpoints`: PASS.
+  - All 6 tests in `test_model_download.py`: PASS.
+- **Frontend Vitest (`modelDownloadBanner.test.tsx`)**:
+  - `renders blank download banner when models are already installed and up to date`: PASS.
+  - `renders prominent banner with Download button when models are missing`: PASS.
+  - `shows update banner and converts download button to Update button when an update is found`: PASS.
+  - `renders progress bar and status when models are downloading`: PASS.
+- **Full Backend Suite (`test_model_download.py`, `test_api.py`, `test_projects.py`)**: 29/29 PASS.
+
+---
+
+## 40. PHASE V2-2 PIECE 1: PROJECT MODEL V2 & MULTI-SOURCE SCAN BACKEND FOUNDATION
+
+### 40.1 Architecture & Objectives
+Phase V2-2 Piece 1 establishes the foundational backend engine and state architecture for unifying photos across multiple sources (multiple local folders, zip archives, and Google Drive links) into a single cohesive CatLog project:
+1. **Multi-Source Configuration (`EngineConfig.sources`)**:
+   - Replaced single `input_path` constraint with an extensible `sources` array of source items (`id`, `kind`, `path_or_url`, `label`, `photo_count`, `status`, `error`).
+   - Seamless backwards compatibility: Single-folder CLI invocations and legacy API requests automatically normalize into a single-source configuration (`src_01`).
+2. **Cross-Source Photo Deduplication**:
+   - Implemented cross-source SHA-256 file hashing (`compute_file_hash`) and Google Drive file ID tracking across consecutive sources.
+   - Photos copied across multiple event folders or shared via Drive links are indexed exactly once, eliminating duplicate face records and redundant embeddings.
+3. **Cross-Source Fault Isolation**:
+   - Scans iterate through source folders with per-source exception containment.
+   - Missing, unreadable, or permission-denied directories mark the individual source as `failed` with error details while allowing valid sources to proceed unimpeded.
+4. **Project Manifest V2 (`manifest.json`)**:
+   - Exporter generates a comprehensive manifest v2 in both the output bundle and the `.work` cache directory.
+   - Schema version `2`, `sources` array, `total_photos`, `total_people`, and a `photo_origins` map (`{ photo_id: { source_id, source_label } }`) ensuring full data provenance.
+   - `people.json` stamped with `schema_version: 2` and `sources` metadata.
+5. **Backwards Compatibility & Auto-Migration**:
+   - `load_recent_projects()` and `open_saved_project()` automatically detect legacy v1 projects and migrate them to schema version 2 with a synthesized source entry.
+   - Existing saved project edits and caches load without loss of fidelity or breaking changes.
+6. **API Endpoints**:
+   - `GET /api/project/sources`: Returns the active project's source records, counts, and schema version.
+   - Extended `OpenProjectResponse` with `sources` array and `schema_version`.
+
+### 40.2 Modified Files
+- `backend/engine/scanner.py`: Added `source_id` and `source_label` attributes to `ScannedPhoto`.
+- `backend/engine/models.py`: Added `source_id` and `source_label` to `PhotoRecord` (with serialization support) and `sources` and `manifest` to `EngineResult`.
+- `backend/api/models.py`: Added `ScanSourceItem`, `ProjectManifestV2`, and `ProjectSourcesResponse` models; extended `JobStartRequest`, `ProjectItem`, and `OpenProjectResponse`.
+- `backend/engine/exporter.py`: Generates `manifest.json` v2 with `photo_origins` and attaches `result.manifest`.
+- `backend/engine/pipeline.py`: Added multi-source scanning loop with deduplication, fault isolation, and progress broadcasting.
+- `backend/api/jobs.py`: Propagates multi-source configurations and passes `sources` to `save_recent_project`.
+- `backend/api/state.py`: Tracks `sources` and `project_manifest`; loads manifest v2 and synthesizes legacy v1 sources.
+- `backend/api/routes.py`: Added `GET /api/project/sources` route and updated project opening responses.
+- `backend/api/projects.py`: Auto-migrates legacy projects with `schema_version < 2` to version 2.
+
+### 40.3 Verification Results
+- **`tests/test_multi_source.py` (5/5 PASS)**:
+  - `test_multi_source_scan_and_deduplication`: PASS (3 photos from A + 1 unique from B = 4 total unique photos; duplicate ignored).
+  - `test_multi_source_fault_isolation`: PASS (missing directory logged as failed without crashing the scan).
+  - `test_manifest_v2_export_and_persistence`: PASS (`manifest.json` v2 written to export and work directory with `photo_origins`).
+  - `test_legacy_v1_project_backward_compatibility_migration`: PASS (v1 projects load and migrate to v2 cleanly).
+  - `test_api_project_sources_endpoint`: PASS (`GET /api/project/sources` returns correct schema and sources list).
+- **Full Backend Regression Suite**: 34/34 PASS in 22.75s (`test_multi_source.py`, `test_api.py`, `test_projects.py`, `test_model_download.py`).
+- **Frontend Vitest Suite**: 92/92 PASS across 17 test files in 34.60s.
+
+---
+
+## 41. PHASE V2-2 PIECE 2: MULTI-SOURCE FRONTEND UI & SOURCES MANAGER
+
+### 41.1 Architecture & Objectives
+Phase V2-2 Piece 2 delivers the user-facing Sources Manager inside the Organizer UI, empowering event organizers to configure, inspect, and combine heterogeneous image sources (local folders, zip files, and Google Drive links) into a unified scanning job:
+1. **Frontend Type System & API Client**:
+   - `frontend/src/types.ts`: Defined `ScanSourceItem` (`id`, `kind`, `path_or_url`, `label`, `photo_count`, `status`, `error`) and `ProjectSourcesResponse` (`project_id`, `schema_version`, `sources`, `total_sources`, `total_photos`).
+   - Extended `ProjectItem` with `schema_version?: number` and `sources?: ScanSourceItem[]`.
+   - `frontend/src/api/client.ts`: Extended `api.startJob` signature to accept optional `sources?: ScanSourceItem[]` and append to `POST /api/jobs/start`.
+   - Added `api.getProjectSources(): Promise<ProjectSourcesResponse>` calling `GET /api/project/sources`.
+2. **App Orchestrator Integration**:
+   - `frontend/src/App.tsx`: Updated `handleStartJob` to receive and forward `sources?: ScanSourceItem[]` to `api.startJob`.
+3. **HomeScreen Sources Manager & Interactive Controls**:
+   - Added `sources` and `onSourcesChange` props to `HomeScreenProps` supporting both controlled and uncontrolled states.
+   - "+ Add Source" buttons (`#add-source-btn`) embedded across all input views:
+     - Local Folders & Zip archives: Adds folder or archive with custom label or automatic directory basename.
+     - Google Drive (Stage 1 & Stage 2): Inline check validates folder link, retrieves remote folder title (`folder_name`), and adds verified Drive source.
+   - Configured Sources Card (`#sources-list`):
+     - Visible whenever one or more sources are configured.
+     - Header with total count badge (`#sources-count-badge`).
+     - "Clear All" action (`#clear-sources-btn`) to reset all configured sources.
+     - Source item cards (`#source-item-${id}`) with distinctive icons for folders, zip files, and Google Drive.
+     - Inline label, source kind badge, path or Google Drive URL preview.
+     - Per-source remove button (`#remove-source-${id}`).
+   - Dynamic Primary Action Button (`#start-sorting-btn`):
+     - Shows dynamic label `"Organize Photos ({N} sources)"` when multi-source list is populated.
+     - Passes configured `sources` as the 5th parameter to `onStartJob`.
+4. **Full Backwards Compatibility**:
+   - If an organizer enters a single local folder or Google Drive link and clicks "Organize Photos" directly without adding to the multi-source list, it continues executing the single-source workflow seamlessly.
+
+### 41.2 Modified Files
+- `backend/api/models.py`: Added `type: Optional[str] = None` field to `ScanSourceItem` for frontend compatibility.
+- `frontend/src/types.ts`: Added `ScanSourceItem`, `ProjectSourcesResponse`, and updated `ProjectItem`.
+- `frontend/src/api/client.ts`: Updated `startJob` with `sources` parameter and added `getProjectSources`.
+- `frontend/src/App.tsx`: Forwarded `sources` in `handleStartJob`.
+- `frontend/src/components/HomeScreen.tsx`: Added multi-source state, add/remove/clear handlers, Sources List card, and "+ Add Source" buttons.
+- `frontend/src/__tests__/multiSourceUI.test.tsx`: Comprehensive Vitest suite with 7 test cases.
+
+### 41.3 Verification Results
+- **Frontend Vitest (`frontend/src/__tests__/multiSourceUI.test.tsx`) (7/7 PASS)**:
+  - `allows adding multiple local folders and zip files to sources list`: PASS.
+  - `allows adding google drive source after verification`: PASS.
+  - `allows removing individual sources from list`: PASS.
+  - `allows clearing all sources`: PASS.
+  - `submits sources array when clicking Organize Photos with multiple sources`: PASS.
+  - `preserves single-source backward compatibility without multi-source overhead`: PASS.
+  - `calls api.getProjectSources to fetch project sources`: PASS.
+- **Full Frontend Vitest Suite**: **18 passed (18 files), 100 passed (100 tests)** in 37.51s.
+- **Backend Regression Suite**: **31/31 PASS** (`tests/test_multi_source.py`, `tests/test_projects.py`, `tests/test_api.py`, `tests/test_exporter.py`).
+
+---
+
+## 42. PHASE V2-2 PIECE 3: SOURCE BADGING & FILTERING IN GALLERY/REVIEW SCREEN
+
+### 42.1 Architecture & Objectives
+Phase V2-2 Piece 3 completes the end-to-end multi-source user journey by exposing source provenance badges and dynamic multi-source filtering across all review, inspection, and viewer screens:
+1. **API & Type Layer Source Metadata Propagation**:
+   - `backend/api/state.py` (`get_photos_response`): Attached `source_id` and `source_label` to every photo response item, pulling dynamically from `PhotoRecord` or fallback `manifest.json` `photo_origins`.
+   - `frontend/src/types.ts`: Extended `PhotoInfo` with `source_id?: string | null` and `source_label?: string | null`.
+   - `viewer/src/types.ts`: Extended static viewer's `PhotoInfo` with `source_id?: string | null` and `source_label?: string | null`.
+2. **ReviewPeopleScreen Dynamic Source Filtering**:
+   - Automatically derives unique available sources across all indexed photos (`availableSources`).
+   - If more than 1 source exists, displays a tactile `#source-filter-select` dropdown in the top action bar:
+     - "All Sources ({totalPhotos})"
+     - Per-source options: "{source.label} ({source.photoCount})"
+   - Selecting a source dynamically filters `PeopleGrid` to strictly display people appearing in at least one photo from the selected source.
+   - If only 1 source exists or photos have no source labels, the filter dropdown is suppressed, preventing unnecessary UI clutter.
+3. **PeopleGrid Person Card Source Badges**:
+   - Computes unique sources in which each person appears.
+   - In multi-source mode, renders tactile source chips (`#person-source-badge-${person.id}`) on each person card so organizers immediately see multi-camera cross-overs.
+4. **Photo Inspection & Modal Provenance**:
+   - `PersonModal.tsx`: Displays `#photo-source-badge-${photoId}` on each photo thumbnail in the Photos tab.
+   - `ImageViewerModal.tsx`: Displays `#photo-source-badge` in the top navigation bar alongside the filename and photo counter.
+   - `UnrecognizedTriage.tsx`: Displays `#unrec-source-badge-${f.photo_id}` on unrecognized face cards and `#unrec-no-face-source-badge-${photoId}` on no-face photos.
+5. **Static Exported Viewer Provenance**:
+   - `viewer/src/components/PhotoGallery.tsx`: Renders source badge `data-testid="photo-source-badge-${pid}"` on photo cards in the gallery grid.
+   - `viewer/src/components/PhotoModal.tsx`: Renders source badge `data-testid="modal-photo-source-badge"` in the modal header next to the filename.
+
+### 42.2 Modified Files
+- `backend/api/state.py`: Exposes `source_id` and `source_label` in `get_photos_response()`.
+- `frontend/src/types.ts`: Added `source_id` and `source_label` to `PhotoInfo`.
+- `viewer/src/types.ts`: Added `source_id` and `source_label` to `viewer`'s `PhotoInfo`.
+- `frontend/src/components/ReviewPeopleScreen.tsx`: Added multi-source detection, `#source-filter-select` dropdown, and source-filtered people memo.
+- `frontend/src/components/PeopleGrid.tsx`: Added `availableSources` and `selectedSourceId` props, and rendered source badges on person cards.
+- `frontend/src/components/PersonModal.tsx`: Added photo source badge chip on thumbnail cards.
+- `frontend/src/components/ImageViewerModal.tsx`: Added `#photo-source-badge` in top navigation bar.
+- `frontend/src/components/UnrecognizedTriage.tsx`: Added source badges to unrecognized face cards and no-face photo cards.
+- `viewer/src/components/PhotoGallery.tsx`: Added source badges to static viewer photo cards.
+- `viewer/src/components/PhotoModal.tsx`: Added source badge to static viewer photo modal header.
+- `frontend/src/__tests__/sourceBadgingAndFilter.test.tsx`: Comprehensive 7-test suite for source badging and filtering.
+
+### 42.3 Verification Results
+- **Frontend Vitest (`frontend/src/__tests__/sourceBadgingAndFilter.test.tsx`) (7/7 PASS)**:
+  - `renders source filter dropdown in ReviewPeopleScreen when multiple sources are present`: PASS.
+  - `filters people grid when a specific source is selected in source-filter-select`: PASS.
+  - `does not render source filter select when all photos belong to a single source`: PASS.
+  - `renders source badge chips on PeopleGrid cards`: PASS.
+  - `renders source badge on photo cards in PersonModal`: PASS.
+  - `renders source badge in ImageViewerModal top navigation bar`: PASS.
+  - `renders source badges in UnrecognizedTriage for face cards and no-face photos`: PASS.
+- **Full Frontend Vitest Suite**: **19 passed (19 files), 107 passed (107 tests)** in 39.96s.
+- **Viewer Vitest Suite**: **2 passed (2 files), 26 passed (26 tests)** in 43.71s.
+- **Backend Regression Suite**: **31/31 PASS** (`tests/test_multi_source.py`, `tests/test_projects.py`, `tests/test_api.py`, `tests/test_exporter.py`).
+
+---
+
+## 43. PHASE V2-3: ADD A SOURCE TO AN EXISTING PROJECT (INCREMENTAL)
+
+### 43.1 Architecture & Objectives
+Phase V2-3 enables organizers to add an additional source (local directory, ZIP archive, or Google Drive folder) into an existing sorted project incrementally without re-scanning previously indexed photos and without disrupting manual review work:
+1. **Photo Deduplication via Content Hash**:
+   - Every scanned photo's SHA-256 is compared against existing photos in `existing_photos`.
+   - Photos with matching content hashes are skipped immediately, preventing re-detection, duplicate thumbnails, and redundant embeddings.
+   - The number of skipped duplicates is reported in the structured diff under `skipped_duplicate_photos`.
+2. **Frozen Mode Invariants**:
+   - Existing clusters maintain their exact ID, label, representative face crop, and assigned face set.
+   - **Pre-existing Face Invariant**: Pre-existing faces are guaranteed to never be removed, unassigned, or transferred to another person. Formally: $\text{faces}_{\text{pre}} \subseteq \text{faces}_{\text{post}}$ for every existing person cluster.
+   - **Membership Delta**: $\Delta(\text{existing members}) = 0$.
+3. **Face Attachment & Same-Photo Collision Guard**:
+   - New faces from new photos attach to an existing person if the cosine distance $d(\mathbf{e}_{\text{new}}, \mathbf{c}_{\text{existing}}) < \text{attach\_distance\_cap}$.
+   - **Collision Guard**: If the existing person already contains a face from that photo, attachment is blocked to prevent assigning multiple faces from the same photo to one individual. Blocked faces route to unrecognized triage.
+4. **New Cluster Formation & Frozen Second-Pass Merge Rules**:
+   - Unattached new faces cluster among themselves into new people clusters with sequential IDs (`p{next_num:03d}`).
+   - Second-pass merge rules under frozen mode:
+     - A new cluster can merge into an existing person if $d < \text{merge\_threshold}$ without same-photo conflicts.
+     - New clusters can merge with other new clusters.
+     - **Existing clusters NEVER merge with existing clusters in frozen mode**, preserving organizer review state.
+5. **Project Snapshot & One-Click Rollback Engine (`backend/engine/snapshots.py`)**:
+   - Automatically takes an atomic snapshot in `<work_dir>/snapshots/<snapshot_id>` immediately before running any incremental ingestion.
+   - Preserves: `people.json`, `manifest.json`, `edits.json`, `suggestions.json`, `id_map.json`, and `what_changed.json`.
+   - `restore_snapshot()` atomically restores the project metadata to the pre-addition snapshot, allowing organizers to completely roll back if an incorrect folder was selected.
+6. **Structured "What Changed" Diff Report**:
+   - Produces a machine-readable report written to `<work_dir>/what_changed.json` and `<export_dir>/what_changed.json`:
+     - `new_photos_count` & `new_photo_ids`
+     - `skipped_duplicate_photos`
+     - `new_people_count` & `new_people_ids`
+     - `joined_existing_count` & `joined_existing` (mapping each affected person to their name, added face count, and added photos)
+     - `existing_people_membership_changed: 0`
+     - `new_unrecognized_faces_count` & `new_unrecognized_photos_count`
+7. **Interactive Frontend UI**:
+   - `AddSourceModal.tsx`: Provides source selection (Local, ZIP, Google Drive), folder browse pickers, Drive API key input, and default-checked "Frozen Mode" checkbox.
+   - `WhatChangedModal.tsx`: Displays structured diff cards with the green "Frozen Invariant Verified" shield, newly formed people pills, list of existing people who gained photos, and a prominent amber "Undo This Addition" rollback button.
+   - `ReviewPeopleScreen.tsx`: Top header bar hosts "+ Add Source" (`#btn-add-source`) and "What Changed" (`#btn-view-what-changed`) buttons, and triggers automatic data re-fetching upon addition or rollback.
+
+### 43.2 Created & Modified Files
+- `backend/engine/snapshots.py`: Snapshot creation, enumeration, and rollback engine.
+- `backend/engine/clusterer.py`: Implemented `cluster_incremental` with frozen mode invariants, new face attach, new cluster creation, frozen second-pass merge, and diff reporting.
+- `backend/engine/pipeline.py`: Added `run_incremental_pipeline` orchestrating snapshotting, deduplication, incremental detection, clustering, manifest v2 update, and bundle export.
+- `backend/api/models.py`: Added `AddSourceRequest`, `WhatChangedResponse`, `SnapshotItem`, `UndoSnapshotResponse`.
+- `backend/api/state.py`: Implemented `add_source_incremental`, `undo_last_snapshot`, `get_what_changed`, and `get_snapshots`.
+- `backend/api/routes.py`: Added `POST /api/project/sources/add`, `GET /api/project/what-changed`, `POST /api/project/snapshots/undo`, `GET /api/project/snapshots`.
+- `frontend/src/types.ts`: Added `WhatChangedResponse`, `SnapshotItem`, `UndoSnapshotResponse`, `JoinedExistingPersonInfo`.
+- `frontend/src/api/client.ts`: Added `addProjectSource`, `getWhatChanged`, `undoLastSnapshot`, `getProjectSnapshots`.
+- `frontend/src/components/AddSourceModal.tsx`: Incremental source ingestion dialog.
+- `frontend/src/components/WhatChangedModal.tsx`: Structured diff review dialog with one-click rollback.
+- `frontend/src/components/ReviewPeopleScreen.tsx`: Added "+ Add Source" and "What Changed" header actions and modal integration.
+- `frontend/src/App.tsx`: Wired `onRefreshData={loadAllData}` to `ReviewPeopleScreen`.
+- `tests/test_incremental.py`: 8 unit and integration tests for engine, snapshots, pipeline, deduplication, and REST API.
+- `frontend/src/__tests__/incrementalSourceUI.test.tsx`: 9 unit and integration tests for Add Source modal, What Changed modal, and Review Screen integration.
+
+### 43.3 Verification Evidence
+- **Backend Incremental Tests (`tests/test_incremental.py`) (8/8 PASS)**:
+  - `test_incremental_empty_new_photos`: PASS (zero diff, pre-existing people untouched).
+  - `test_incremental_new_face_attaches_to_existing_person`: PASS (face attached, pre-existing face order preserved, what changed verified).
+  - `test_incremental_same_photo_collision_blocks_attach`: PASS (collision face rejected to unrecognized).
+  - `test_incremental_forms_new_people_clusters`: PASS (unmatched faces form new person clusters with sequential IDs).
+  - `test_incremental_new_cluster_merges_into_existing_person`: PASS (second-pass merge into existing cluster under distance threshold).
+  - `test_snapshots_create_list_and_restore`: PASS (snapshot created, mutated state rolled back to exact initial values).
+  - `test_run_incremental_pipeline_e2e`: PASS (photo hash deduplication skipped 1 dup, manifest updated, what_changed.json written).
+  - `test_incremental_api_endpoints`: PASS (FastAPI routes verified with TestClient).
+- **Backend Isolation & Check 14 Verification**:
+  - `tests/test_pipeline.py`: 2/2 PASS.
+  - `tests/test_isolation.py`: PASSED (all 15 verification checks passed, zero `p\d{3}` cluster-ID token violations in code).
+- **Frontend Vitest (`src/__tests__/incrementalSourceUI.test.tsx`) (9/9 PASS)**:
+  - `AddSourceModal > renders source type options and defaults to local folder with frozen mode checked`: PASS.
+  - `AddSourceModal > allows toggling to Google Drive and shows API key input`: PASS.
+  - `AddSourceModal > submits incremental source with frozen mode invariant and calls onSourceAdded`: PASS.
+  - `AddSourceModal > handles backend error gracefully and shows alert`: PASS.
+  - `WhatChangedModal > renders structured diff metrics and frozen invariant banner`: PASS.
+  - `WhatChangedModal > triggers undo addition rollback flow with user confirmation`: PASS.
+  - `ReviewPeopleScreen Integration > renders + Add Source button in the review header`: PASS.
+  - `ReviewPeopleScreen Integration > opens AddSourceModal when clicking + Add Source`: PASS.
+  - `ReviewPeopleScreen Integration > renders What Changed button when a report exists and opens WhatChangedModal on click`: PASS.
+- **Full Frontend Vitest Suite**: **20 passed (20 files), 116 passed (116 tests)** in 47.04s.
