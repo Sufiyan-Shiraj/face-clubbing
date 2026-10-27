@@ -385,8 +385,8 @@ def test_api_export_public_bundle_hygiene(api_setup):
     # Check files in export_dir
     files_present = sorted([p.name for p in export_dir.iterdir()])
 
-    # Allowed in public bundle: config.json, people.json, faces, thumbs, index.html, gallery.html, assets
-    allowed = {"config.json", "people.json", "faces", "thumbs", "index.html", "gallery.html", "assets"}
+    # Allowed in public bundle: config.json, people.json, manifest.json, faces, thumbs, index.html, gallery.html, assets
+    allowed = {"config.json", "people.json", "manifest.json", "faces", "thumbs", "index.html", "gallery.html", "assets"}
     assert set(files_present).issubset(allowed)
     assert "people.json" in files_present
     assert "config.json" in files_present

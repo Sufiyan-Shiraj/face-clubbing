@@ -10,6 +10,12 @@ import {
   BrowseFolderResult,
   ProjectItem,
   OpenProjectResponse,
+  ModelStatus,
+  ScanSourceItem,
+  ProjectSourcesResponse,
+  WhatChangedResponse,
+  SnapshotItem,
+  UndoSnapshotResponse,
 } from '../types';
 
 const BASE_URL = '/api';
@@ -49,7 +55,9 @@ export const api = {
     driveFolderOrOutputDir?: string,
     driveApiKey?: string,
     outputDir: string = 'export',
-    keepEdits?: boolean
+    keepEdits?: boolean,
+    scanOptions?: { scan_subfolders?: boolean; max_subfolder_depth?: number; follow_shortcuts?: boolean },
+    sources?: ScanSourceItem[]
   ): Promise<JobStatus> {
     let driveFolder: string | undefined = undefined;
     let apiKey: string | undefined = driveApiKey;
@@ -87,6 +95,10 @@ export const api = {
         drive_api_key: apiKey || undefined,
         output_dir: actualOutputDir || 'export',
         keep_edits: !!keepEdits,
+        scan_subfolders: scanOptions?.scan_subfolders,
+        max_subfolder_depth: scanOptions?.max_subfolder_depth,
+        follow_shortcuts: scanOptions?.follow_shortcuts,
+        ...(sources && sources.length > 0 ? { sources } : {}),
       }),
     });
   },
@@ -99,13 +111,17 @@ export const api = {
 
   async verifyDriveFolder(
     driveFolder: string,
-    driveApiKey?: string
+    driveApiKey?: string,
+    scanOptions?: { scan_subfolders?: boolean; max_subfolder_depth?: number; follow_shortcuts?: boolean }
   ): Promise<DriveVerifyResult> {
     return fetchJson(`${BASE_URL}/drive/verify`, {
       method: 'POST',
       body: JSON.stringify({
         drive_folder: driveFolder,
         drive_api_key: driveApiKey || undefined,
+        scan_subfolders: scanOptions?.scan_subfolders,
+        max_subfolder_depth: scanOptions?.max_subfolder_depth,
+        follow_shortcuts: scanOptions?.follow_shortcuts,
       }),
     });
   },
@@ -372,6 +388,53 @@ export const api = {
     return fetchJson(`${BASE_URL}/projects/active`);
   },
 
+  async getProjectSources(): Promise<ProjectSourcesResponse> {
+    return fetchJson(`${BASE_URL}/project/sources`);
+  },
+
+  async addProjectSource(
+    source: ScanSourceItem,
+    driveApiKey?: string,
+    frozenMode: boolean = true
+  ): Promise<WhatChangedResponse> {
+    return fetchJson(`${BASE_URL}/project/sources/add`, {
+      method: 'POST',
+      body: JSON.stringify({
+        source,
+        drive_api_key: driveApiKey,
+        frozen_mode: frozenMode,
+      }),
+    });
+  },
+
+  async getWhatChanged(): Promise<WhatChangedResponse> {
+    return fetchJson(`${BASE_URL}/project/what-changed`);
+  },
+
+  async undoLastSnapshot(): Promise<UndoSnapshotResponse> {
+    return fetchJson(`${BASE_URL}/project/snapshots/undo`, {
+      method: 'POST',
+    });
+  },
+
+  async getProjectSnapshots(): Promise<SnapshotItem[]> {
+    return fetchJson(`${BASE_URL}/project/snapshots`);
+  },
+
+  async selectFolderDialog(title?: string): Promise<{ selected?: string; cancelled: boolean }> {
+    return fetchJson(`${BASE_URL}/fs/select-dialog`, {
+      method: 'POST',
+      body: JSON.stringify({ title }),
+    });
+  },
+
+  async selectFileDialog(title?: string): Promise<{ selected?: string; cancelled: boolean }> {
+    return fetchJson(`${BASE_URL}/fs/select-file-dialog`, {
+      method: 'POST',
+      body: JSON.stringify({ title }),
+    });
+  },
+
   async checkEdits(workDir?: string, inputPath?: string): Promise<{
     has_saved_edits: boolean;
     saved_edits_count: number;
@@ -386,6 +449,30 @@ export const api = {
     if (inputPath) params.append('input_path', inputPath);
     const qs = params.toString() ? `?${params.toString()}` : '';
     return fetchJson(`${BASE_URL}/projects/check-edits${qs}`);
+  },
+
+  async getModelStatus(): Promise<ModelStatus> {
+    return fetchJson(`${BASE_URL}/models/status`);
+  },
+
+  async checkModelUpdates(simulate: boolean = false): Promise<{
+    installed: boolean;
+    update_available: boolean;
+    version?: string;
+    latest_version?: string;
+    message?: string;
+  }> {
+    return fetchJson(`${BASE_URL}/models/check-update`, {
+      method: 'POST',
+      body: JSON.stringify({ simulate }),
+    });
+  },
+
+  async downloadModels(force: boolean = false): Promise<ModelStatus> {
+    return fetchJson(`${BASE_URL}/models/download`, {
+      method: 'POST',
+      body: JSON.stringify({ force }),
+    });
   },
 };
 

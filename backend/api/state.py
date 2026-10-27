@@ -13,6 +13,7 @@ import sys
 import copy
 import json
 import re
+import shutil
 import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
@@ -90,6 +91,8 @@ class AppState:
         self.drive_folder_name: Optional[str] = None
         self.source_folder_name: Optional[str] = None
         self.temp_dirs: List[str] = []
+        self.sources: List[Dict[str, Any]] = []
+        self.project_manifest: Optional[Dict[str, Any]] = None
 
         # Only load existing dataset if explicitly specified (e.g. tests or explicit work_dir/output_dir or env var)
         should_auto_load = bool(work_dir or output_dir or os.environ.get("PHOTOSORTER_LOAD_SAVED"))
@@ -114,18 +117,102 @@ class AppState:
             return self.settings.event_title
         return None
 
+    def _find_people_json(self, work_p: Path, export_p: Optional[Path] = None) -> Optional[Path]:
+        """
+        Locates the exact people.json file belonging to this project.
+        Handles nested export subfolders (e.g. export/EVENT/EVENT Images vs export/EVENT),
+        sibling folders, and project name variations.
+        """
+        # 1. Check export_p first if provided (since export_p points directly to the project or bundle)
+        if export_p:
+            if (export_p / "people.json").is_file():
+                return export_p / "people.json"
+
+            # Check subfolders of export_p
+            if export_p.exists() and export_p.is_dir():
+                matches = [p for p in export_p.glob("**/people.json") if p.is_file()]
+                if len(matches) == 1:
+                    return matches[0]
+                elif len(matches) > 1:
+                    target_hint = work_p.name.removesuffix(".work").lower()
+                    for m in matches:
+                        if target_hint in str(m.parent).lower():
+                            return m
+                    matches.sort(key=lambda p: len(p.parts))
+                    return matches[0]
+
+            # Check siblings in export_p.parent
+            if export_p.parent.exists() and export_p.name.lower() not in ("export", "work", "export.work", ""):
+                cand_img = export_p.parent / f"{export_p.name} Images" / "people.json"
+                if cand_img.is_file():
+                    return cand_img
+                for sibling in export_p.parent.glob(f"*{export_p.name}*"):
+                    cand = sibling / "people.json"
+                    if cand.is_file():
+                        return cand
+                for p in export_p.parent.glob("**/people.json"):
+                    if export_p.name.lower() in str(p).lower() and p.is_file():
+                        return p
+
+        # 2. Direct inside work_p (only if export_p didn't contain people.json)
+        if (work_p / "people.json").is_file():
+            return work_p / "people.json"
+
+        # 3. Sibling of work_p if work_p is *.work
+        if work_p.name.endswith(".work") and work_p.name.lower() not in ("export.work", ".work"):
+            sibling_exp = work_p.parent / work_p.name.removesuffix(".work")
+            if (sibling_exp / "people.json").is_file():
+                return sibling_exp / "people.json"
+            for sub in sibling_exp.glob("**/people.json"):
+                if sub.is_file():
+                    return sub
+
+        # 4. Search repo export folder
+        repo_export = self.repo_root / "export"
+        if repo_export.exists():
+            name_hint = export_p.name if export_p else work_p.name.removesuffix(".work")
+            if name_hint and name_hint.lower() not in ("export", "work", "export.work", ".work", ""):
+                cand1 = repo_export / name_hint / "people.json"
+                if cand1.is_file():
+                    return cand1
+                cand2 = repo_export / f"{name_hint} Images" / "people.json"
+                if cand2.is_file():
+                    return cand2
+                for p in repo_export.glob(f"**/*{name_hint}*/**/people.json"):
+                    if p.is_file():
+                        return p
+
+        # 5. Search work_p subdirectories
+        if work_p.exists() and work_p.is_dir() and work_p.name.lower() not in ("export.work", "work"):
+            for p in work_p.glob("**/people.json"):
+                if p.is_file():
+                    return p
+
+        return None
+
     def _try_load_existing_dataset(self):
         """Attempts to load existing Phase 1/1b export data if present."""
         raw_out = self.settings.output_dir
         if not raw_out or str(raw_out).startswith("http") or "drive.google.com" in str(raw_out):
             raw_out = "export"
             self.settings.output_dir = "export"
-        export_people = Path(raw_out) / "people.json"
-        if not export_people.exists():
-            if Path(raw_out).resolve() == (self.repo_root / "export").resolve():
-                export_people = self.repo_root / "export" / "people.json"
+        is_default_output = Path(raw_out).resolve() == (self.repo_root / "export").resolve()
+        is_default_work = self.work_dir.resolve() == (self.repo_root / "export.work").resolve()
+
+        if is_default_output and not is_default_work:
+            if (self.work_dir / "people.json").exists():
+                export_people = self.work_dir / "people.json"
             else:
                 return
+        else:
+            export_people = Path(raw_out) / "people.json"
+            if not export_people.exists():
+                if is_default_output and is_default_work:
+                    export_people = self.repo_root / "export" / "people.json"
+                elif (self.work_dir / "people.json").exists():
+                    export_people = self.work_dir / "people.json"
+                else:
+                    return
 
         if export_people.exists():
             try:
@@ -272,6 +359,30 @@ class AppState:
                 self.initial_ambiguous_faces_raw = copy.deepcopy(self.ambiguous_faces_raw)
                 self.project_active = True
                 self.active_project_name = Path(raw_out).name
+                if "sources" in data and isinstance(data["sources"], list):
+                    self.sources = data["sources"]
+                else:
+                    self.sources = [{
+                        "id": "src_01",
+                        "source_type": "local",
+                        "path_or_url": str(raw_out),
+                        "label": Path(raw_out).name or "Primary Photos",
+                        "photo_count": len(self.photos),
+                        "status": "ready",
+                    }]
+                m_file = self.work_dir / "manifest.json"
+                if not m_file.exists():
+                    m_file = Path(raw_out) / "manifest.json"
+                if m_file.exists():
+                    try:
+                        with open(m_file, "r", encoding="utf-8") as mf:
+                            m_data = json.load(mf)
+                        if isinstance(m_data, dict):
+                            self.project_manifest = m_data
+                            if m_data.get("sources"):
+                                self.sources = m_data["sources"]
+                    except Exception:
+                        pass
             except RuntimeError:
                 raise
             except Exception as e:
@@ -344,6 +455,8 @@ class AppState:
         self.unrecognized = result.unrecognized
         self.id_map = result.id_map
         self.project_active = True
+        self.sources = getattr(result, "sources", []) or []
+        self.project_manifest = getattr(result, "manifest", None)
 
         if getattr(result, "drive_folder_name", None):
             self.drive_folder_name = result.drive_folder_name
@@ -449,23 +562,34 @@ class AppState:
                 face_lookup[f.face_id] = f
 
         # 3. Locate people.json (strictly within project)
-        people_json_candidates = []
-        if export_p:
-            people_json_candidates.append(export_p / "people.json")
-            proj_name = work_p.name.removesuffix(".work")
-            people_json_candidates.append(export_p / proj_name / "people.json")
-            if export_p.is_dir():
-                for sub in export_p.glob("*/people.json"):
-                    people_json_candidates.append(sub)
-        people_json_candidates.append(work_p / "people.json")
-
-        found_people_json = None
-        for cand in people_json_candidates:
-            if cand.exists() and cand.is_file():
-                found_people_json = cand
-                if export_p and cand.parent != export_p:
-                    self.settings.output_dir = str(cand.parent)
-                break
+        found_people_json = self._find_people_json(work_p, export_p)
+        if found_people_json:
+            if found_people_json.parent != work_p:
+                export_p = found_people_json.parent
+                self.settings.output_dir = str(export_p)
+            proj_name = found_people_json.parent.name
+            if proj_name.lower().endswith(".work"):
+                proj_name = proj_name[:-5]
+            if proj_name.lower() not in ("export", "work", "export.work", ""):
+                self.active_project_name = proj_name
+                self.source_folder_name = proj_name
+            cfg_p = found_people_json.parent / "config.json"
+            if cfg_p.exists():
+                try:
+                    with open(cfg_p, "r", encoding="utf-8") as cf:
+                        cfg_d = json.load(cf)
+                    if cfg_d.get("title") and cfg_d["title"] not in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery"):
+                        self.settings.event_title = cfg_d["title"]
+                        self.active_project_name = cfg_d["title"]
+                        self.source_folder_name = cfg_d["title"]
+                except Exception:
+                    pass
+            # Ensure work folder has a mirror of people.json if different
+            if found_people_json.parent != work_p and work_p.exists():
+                try:
+                    shutil.copy2(found_people_json, work_p / "people.json")
+                except Exception:
+                    pass
 
         if found_people_json:
             with open(found_people_json, "r", encoding="utf-8") as f:
@@ -553,6 +677,44 @@ class AppState:
                     "rejection_reason": f_entry.get("rejection_reason", "unattached"),
                 })
         elif cached_photos:
+            # Check for a project manifest to avoid clustering unrelated sessions from a shared cache
+            manifest_pids = None
+            manifest_file = work_p / "manifest.json"
+            if manifest_file.exists():
+                try:
+                    with open(manifest_file, "r", encoding="utf-8") as mf:
+                        mdata = json.load(mf)
+                    if isinstance(mdata, dict):
+                        manifest_pids = set(mdata.keys())
+                    elif isinstance(mdata, list):
+                        manifest_pids = set(mdata)
+                except Exception:
+                    pass
+
+            if not manifest_pids:
+                drive_dir = work_p / "drive"
+                if drive_dir.exists():
+                    drive_manifests = list(drive_dir.glob("*/manifest.json"))
+                    if len(drive_manifests) == 1:
+                        try:
+                            with open(drive_manifests[0], "r", encoding="utf-8") as mf:
+                                mdata = json.load(mf)
+                            manifest_pids = set(mdata.keys())
+                        except Exception:
+                            pass
+
+            if manifest_pids:
+                scoped_photos = {pid: p for pid, p in cached_photos.items() if pid in manifest_pids}
+            else:
+                # Disallow blind clustering if cached_photos contains photos across multiple distinct source dirs in a shared cache
+                source_dirs = {Path(p.original_path).parent for p in cached_photos.values() if p.original_path}
+                if len(source_dirs) > 1 and work_p.name in ("export.work", "work"):
+                    raise RuntimeError(
+                        f"Cannot load project: people.json was not found, and work directory '{work_p}' contains photos from multiple sessions ({len(cached_photos)} photos). "
+                        f"Refusing to merge unrelated photos into this project."
+                    )
+                scoped_photos = cached_photos
+
             clusterer = FaceClusterer(
                 distance_threshold=self.settings.distance_threshold,
                 seed_min_face_size=self.settings.seed_min_face_size,
@@ -564,8 +726,8 @@ class AppState:
                 same_photo_merge_max=self.settings.same_photo_merge_max,
                 attach_distance_cap=getattr(self.settings, "attach_distance_cap", 0.45),
             )
-            self.people, self.unrecognized = clusterer.cluster(cached_photos)
-            self.photos = cached_photos
+            self.people, self.unrecognized = clusterer.cluster(scoped_photos)
+            self.photos = scoped_photos
             self.id_map = clusterer.id_map
             self.maybe_groups = clusterer.maybe_groups
             self.ambiguous_faces_raw = clusterer.ambiguous_faces
@@ -604,11 +766,47 @@ class AppState:
             self.unrecognized = unrec_replayed
 
         self.project_active = True
-        self.active_project_name = work_p.name.removesuffix(".work")
-        if found_people_json and found_people_json.parent.name.lower() != "export" and found_people_json.parent != work_p:
-            self.active_project_name = found_people_json.parent.name
-        elif export_p and export_p.name.lower() != "export":
-            self.active_project_name = export_p.name
+        if not self.active_project_name or self.active_project_name.lower() in ("export", "work", "export.work", ""):
+            if found_people_json and found_people_json.parent.name.lower() not in ("export", "work", "export.work", "") and found_people_json.parent != work_p:
+                self.active_project_name = found_people_json.parent.name
+            elif export_p and export_p.name.lower() not in ("export", "work", "export.work", ""):
+                self.active_project_name = export_p.name
+            else:
+                self.active_project_name = work_p.name.removesuffix(".work")
+
+        # Load sources from manifest.json or people.json if available, else synthesize v1 source
+        manifest_p = work_p / "manifest.json"
+        if not manifest_p.exists() and export_p:
+            manifest_p = export_p / "manifest.json"
+        if manifest_p.exists():
+            try:
+                with open(manifest_p, "r", encoding="utf-8") as mf:
+                    mdata = json.load(mf)
+                if isinstance(mdata, dict):
+                    self.project_manifest = mdata
+                    if mdata.get("sources"):
+                        self.sources = mdata["sources"]
+            except Exception:
+                pass
+
+        if not self.sources and found_people_json:
+            try:
+                with open(found_people_json, "r", encoding="utf-8") as pf:
+                    p_data = json.load(pf)
+                if isinstance(p_data, dict) and "sources" in p_data and isinstance(p_data["sources"], list):
+                    self.sources = p_data["sources"]
+            except Exception:
+                pass
+
+        if not self.sources:
+            self.sources = [{
+                "id": "src_01",
+                "source_type": "local",
+                "path_or_url": str(export_p or work_p),
+                "label": self.active_project_name or "Primary Photos",
+                "photo_count": len(self.photos),
+                "status": "ready",
+            }]
 
         return {
             "work_dir": str(work_p),
@@ -620,6 +818,7 @@ class AppState:
             "unapplied_edits": unapplied_edits,
             "read_only": self.read_only,
             "edits_error": self.edits_error,
+            "sources": self.sources,
         }
 
     def reset_to_empty(self):
@@ -644,6 +843,8 @@ class AppState:
         self.active_project_name = None
         self.drive_folder_name = None
         self.temp_dirs = []
+        self.sources = []
+        self.project_manifest = None
         self.settings.event_title = "CatLog Gallery"
         self.settings.event_subtitle = "Auto-sorted face albums and photo gallery"
 
@@ -990,6 +1191,15 @@ class AppState:
             generate_html=True,
         )
 
+        self.settings.output_dir = str(out_p)
+        if self.work_dir and self.work_dir.exists():
+            try:
+                src_pj = out_p / "people.json"
+                if src_pj.exists():
+                    shutil.copy2(src_pj, self.work_dir / "people.json")
+            except Exception:
+                pass
+
         # Clean up temporary working dirs
         for t_dir in list(self.temp_dirs):
             try:
@@ -1128,6 +1338,12 @@ class AppState:
             elif getattr(p, "drive_file_id", None):
                 source_exists = True
 
+            origin_info = None
+            if self.project_manifest and isinstance(self.project_manifest, dict):
+                origin_info = self.project_manifest.get("photo_origins", {}).get(pid)
+            source_id = getattr(p, "source_id", None) or (origin_info.get("source_id") if isinstance(origin_info, dict) else None)
+            source_label = getattr(p, "source_label", None) or (origin_info.get("source_label") if isinstance(origin_info, dict) else None)
+
             result[pid] = {
                 "photo_id": pid,
                 "file_name": p.file_name,
@@ -1141,6 +1357,8 @@ class AppState:
                 "share_url": getattr(p, "share_url", None),
                 "source_exists": source_exists,
                 "original_path": p.original_path,
+                "source_id": source_id,
+                "source_label": source_label,
                 "faces": [
                     {
                         "face_id": f.face_id,
@@ -1282,3 +1500,98 @@ class AppState:
             ambiguous_faces_count=len(ambiguous_suggestions),
             ambiguous_faces=ambiguous_suggestions,
         )
+
+    def add_source_incremental(
+        self,
+        new_source: Dict[str, Any],
+        drive_api_key: Optional[str] = None,
+        frozen_mode: bool = True,
+        progress_callback: Optional[Any] = None,
+    ) -> Dict[str, Any]:
+        """Runs incremental ingestion of a new source into the active project."""
+        from backend.engine.pipeline import EngineConfig, run_incremental_pipeline
+        from backend.drive import get_drive_api_key
+
+        if not self.project_active and not (self.work_dir / "people.json").is_file() and not (Path(self.settings.output_dir) / "people.json").is_file():
+            raise RuntimeError("No active project found. Open or create a project before adding sources incrementally.")
+
+        drive_key = drive_api_key or self.settings.drive_api_key or get_drive_api_key()
+
+        config = EngineConfig(
+            input_path=new_source.get("path_or_url", ""),
+            output_dir=self.settings.output_dir,
+            cache_dir=self.settings.cache_dir or self.work_dir,
+            distance_threshold=self.settings.distance_threshold,
+            min_det_score=self.settings.min_det_score,
+            min_face_size=self.settings.min_face_size,
+            max_yaw=self.settings.max_yaw,
+            seed_min_face_size=self.settings.seed_min_face_size,
+            seed_max_yaw=self.settings.seed_max_yaw,
+            seed_min_det_score=self.settings.seed_min_det_score,
+            max_image_dim=self.settings.max_image_dim,
+            thumb_size=self.settings.thumb_size,
+            face_crop_size=self.settings.face_crop_size,
+            second_pass_merge=self.settings.second_pass_merge,
+            merge_threshold=self.settings.merge_threshold,
+            maybe_threshold=self.settings.maybe_threshold,
+            same_photo_merge_max=self.settings.same_photo_merge_max,
+            attach_distance_cap=self.settings.attach_distance_cap,
+            flip_average=self.settings.flip_average,
+            include_maybe=self.settings.include_maybe,
+            replay_edits=True,
+            event_title=self.settings.event_title,
+            event_subtitle=self.settings.event_subtitle,
+            drive_api_key=drive_key,
+            scan_subfolders=getattr(self.settings, "scan_subfolders", True),
+            max_subfolder_depth=getattr(self.settings, "max_subfolder_depth", 5),
+            follow_shortcuts=getattr(self.settings, "follow_shortcuts", False),
+            progress_callback=progress_callback,
+            cleanup_temp=False,
+        )
+
+        res, diff_report = run_incremental_pipeline(
+            config=config,
+            new_source=new_source,
+            work_dir=self.work_dir,
+            export_dir=self.settings.output_dir,
+            frozen_mode=frozen_mode,
+        )
+
+        self.set_result(res, work_dir=self.work_dir)
+        mf_path = self.work_dir / "manifest.json"
+        if mf_path.is_file():
+            try:
+                with open(mf_path, "r", encoding="utf-8") as f:
+                    self.project_manifest = json.load(f)
+            except Exception:
+                pass
+
+        return diff_report
+
+    def undo_last_snapshot(self) -> Dict[str, Any]:
+        """Rolls back the active project to its most recent pre-mutation snapshot."""
+        from backend.engine.snapshots import restore_snapshot
+        if not self.work_dir.exists():
+            raise RuntimeError("No active project working directory to undo.")
+
+        meta = restore_snapshot(work_dir=self.work_dir, export_dir=self.settings.output_dir)
+        self.open_saved_project(self.work_dir, self.settings.output_dir)
+        return meta
+
+    def get_what_changed(self) -> Optional[Dict[str, Any]]:
+        """Returns the latest 'What Changed' diff report for the active project."""
+        candidates = [self.work_dir / "what_changed.json", Path(self.settings.output_dir) / "what_changed.json"]
+        for cand in candidates:
+            if cand.is_file():
+                try:
+                    with open(cand, "r", encoding="utf-8") as f:
+                        return json.load(f)
+                except Exception:
+                    pass
+        return None
+
+    def get_snapshots(self) -> List[Dict[str, Any]]:
+        """Returns the list of available snapshots for the active project."""
+        from backend.engine.snapshots import list_snapshots
+        return list_snapshots(self.work_dir)
+

@@ -56,6 +56,69 @@ def _sanitize_source_description(source: Optional[str]) -> str:
     return s
 
 
+def resolve_project_export_path(work_dir: Path | str, export_path: Optional[Path | str] = None) -> Optional[str]:
+    """
+    Resolves the exact folder containing people.json for a project.
+    Handles nested export subfolders (e.g. export/EVENT/EVENT Images vs export/EVENT),
+    sibling folders, and project name variations.
+    """
+    work_p = Path(work_dir).resolve() if work_dir else None
+
+    if export_path:
+        exp = Path(export_path).resolve()
+        if (exp / "people.json").is_file():
+            return str(exp)
+
+        # 1. Check if export_path contains people.json in any subfolder
+        if exp.exists() and exp.is_dir():
+            for sub in exp.glob("**/people.json"):
+                if sub.is_file():
+                    return str(sub.parent)
+
+        # 2. Check sibling directories in parent folder
+        if exp.parent.exists():
+            cand_img = exp.parent / f"{exp.name} Images"
+            if (cand_img / "people.json").is_file():
+                return str(cand_img)
+
+            for sibling in exp.parent.glob(f"*{exp.name}*"):
+                if (sibling / "people.json").is_file():
+                    return str(sibling)
+
+            for p in exp.parent.glob("**/people.json"):
+                if exp.name.lower() in str(p).lower():
+                    return str(p.parent)
+
+    # 3. Check work_dir
+    if work_p:
+        if (work_p / "people.json").is_file():
+            return str(work_p)
+
+        # 4. Check sibling of work_p if work_p is *.work
+        if work_p.name.endswith(".work") and work_p.name.lower() not in ("export.work", ".work"):
+            sibling_exp = work_p.parent / work_p.name.removesuffix(".work")
+            if (sibling_exp / "people.json").is_file():
+                return str(sibling_exp)
+            for sub in sibling_exp.glob("**/people.json"):
+                if sub.is_file():
+                    return str(sub.parent)
+
+    # 5. Check workspace export directory
+    repo_export = Path.cwd() / "export"
+    if repo_export.exists():
+        name_hint = Path(export_path).name if export_path else (work_p.name.removesuffix(".work") if work_p else "")
+        if name_hint and name_hint.lower() not in ("export", "work", "export.work", ".work", ""):
+            if (repo_export / name_hint / "people.json").is_file():
+                return str(repo_export / name_hint)
+            if (repo_export / f"{name_hint} Images" / "people.json").is_file():
+                return str(repo_export / f"{name_hint} Images")
+            for p in repo_export.glob(f"**/*{name_hint}*/**/people.json"):
+                if p.is_file():
+                    return str(p.parent)
+
+    return str(Path(export_path).resolve()) if export_path else None
+
+
 def load_recent_projects() -> List[Dict[str, Any]]:
     """Loads all recent projects from projects.json sorted by last_opened descending."""
     file_path = get_projects_file()
@@ -72,8 +135,9 @@ def load_recent_projects() -> List[Dict[str, Any]]:
         # Corrupt projects.json is handled safely without crashing
         return []
 
-    # Enrich each entry with current on-disk existence check
+    # Enrich each entry with current on-disk existence check and auto-heal paths/counts
     enriched: List[Dict[str, Any]] = []
+    projects_mutated = False
     for p in projects:
         if not isinstance(p, dict) or "work_dir" not in p:
             continue
@@ -82,7 +146,71 @@ def load_recent_projects() -> List[Dict[str, Any]]:
         entry["exists"] = work_path.exists() and work_path.is_dir()
         if "source_description" in entry:
             entry["source_description"] = _sanitize_source_description(entry["source_description"])
+
+        # Auto-heal export_path if subfolder with people.json exists
+        resolved_exp = resolve_project_export_path(p["work_dir"], p.get("export_path"))
+        if resolved_exp and resolved_exp != p.get("export_path"):
+            entry["export_path"] = resolved_exp
+            projects_mutated = True
+
+        # Sync true counts from people.json if available
+        exp_to_check = entry.get("export_path")
+        if exp_to_check:
+            pj_path = Path(exp_to_check) / "people.json"
+            if pj_path.is_file():
+                try:
+                    with open(pj_path, "r", encoding="utf-8") as f:
+                        pj_data = json.load(f)
+                    p_cnt = len(pj_data.get("people", []))
+                    ph_dict = pj_data.get("photos", {})
+                    ph_cnt = len(ph_dict)
+                    if ph_cnt == 0:
+                        ph_ids = set(pj_data.get("unrecognized", {}).get("photo_ids", []))
+                        for p_item in pj_data.get("people", []):
+                            ph_ids.update(p_item.get("photos") or p_item.get("photo_ids", []))
+                        ph_cnt = len(ph_ids)
+                    curr_counts = entry.get("counts", {})
+                    if curr_counts.get("people") != p_cnt or curr_counts.get("photos") != ph_cnt:
+                        entry["counts"] = {"people": p_cnt, "photos": ph_cnt}
+                        projects_mutated = True
+                except Exception:
+                    pass
+
+        if entry.get("schema_version", 1) < 2:
+            entry["schema_version"] = 2
+            projects_mutated = True
+        if "sources" not in entry or not entry["sources"]:
+            src_desc = entry.get("source_description", "Local Folder")
+            is_drive_src = "Drive" in src_desc or "http" in src_desc
+            entry["sources"] = [
+                {
+                    "id": "src_01",
+                    "kind": "drive" if is_drive_src else "local",
+                    "path_or_url": src_desc,
+                    "label": src_desc,
+                    "photo_count": entry.get("counts", {}).get("photos", 0),
+                    "status": "completed",
+                    "error": None,
+                }
+            ]
+            projects_mutated = True
+
         enriched.append(entry)
+
+    # Persist healed paths and counts back to projects.json so bad historical data is permanently repaired
+    if projects_mutated:
+        try:
+            to_save = []
+            for item in enriched:
+                cleaned = dict(item)
+                cleaned.pop("exists", None)
+                to_save.append(cleaned)
+            tmp_path = file_path.with_suffix(".tmp")
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump({"version": 1, "projects": to_save}, f, indent=2)
+            tmp_path.replace(file_path)
+        except Exception:
+            pass
 
     # Sort descending by last_opened
     enriched.sort(key=lambda x: x.get("last_opened", ""), reverse=True)
@@ -95,6 +223,8 @@ def save_recent_project(
     source_description: Optional[str] = None,
     counts: Optional[Dict[str, int]] = None,
     name: Optional[str] = None,
+    sources: Optional[List[Dict[str, Any]]] = None,
+    schema_version: int = 2,
 ) -> Dict[str, Any]:
     """
     Saves or updates a project entry in projects.json.
@@ -102,7 +232,7 @@ def save_recent_project(
     """
     file_path = get_projects_file()
     resolved_work = str(Path(work_dir).resolve())
-    resolved_export = str(Path(export_path).resolve()) if export_path else None
+    resolved_export = resolve_project_export_path(work_dir, export_path)
 
     # Stable 12-char ID derived from canonical work_dir
     project_id = hashlib.sha256(resolved_work.encode("utf-8")).hexdigest()[:12]
@@ -142,6 +272,8 @@ def save_recent_project(
         "source_description": clean_source,
         "last_opened": now_iso,
         "counts": counts or {"people": 0, "photos": 0},
+        "schema_version": schema_version,
+        "sources": sources or [],
     }
 
     new_list: List[Dict[str, Any]] = []
@@ -154,6 +286,8 @@ def save_recent_project(
                 project_entry["export_path"] = item["export_path"]
             if not source_description and item.get("source_description"):
                 project_entry["source_description"] = item["source_description"]
+            if not sources and item.get("sources"):
+                project_entry["sources"] = item["sources"]
             new_list.append(project_entry)
             updated = True
         else:

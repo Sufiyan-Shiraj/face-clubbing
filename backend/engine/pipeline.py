@@ -57,9 +57,13 @@ class EngineConfig:
     model_root: Optional[str] = None
     suggestions_path: Optional[str | Path] = None
     drive_api_key: Optional[str] = None
+    scan_subfolders: bool = True
+    max_subfolder_depth: int = 5
+    follow_shortcuts: bool = False
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None
     cancel_check: Optional[Callable[[], bool]] = None
     cleanup_temp: bool = True
+    sources: Optional[List[Dict[str, Any]]] = None
 
 
 def run_pipeline(config: EngineConfig) -> EngineResult:
@@ -78,24 +82,52 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         if config.progress_callback:
             config.progress_callback(payload)
 
-    input_str = str(config.input_path) if config.input_path else ""
-    is_drive = is_drive_folder_input(input_str)
+    sources_list: List[Dict[str, Any]] = []
+    if config.sources and len(config.sources) > 0:
+        for s_idx, s in enumerate(config.sources):
+            src_dict = dict(s)
+            p_val = str(src_dict.get("path_or_url") or src_dict.get("path") or "").strip()
+            src_dict["path_or_url"] = p_val
+            k_val = src_dict.get("kind") or src_dict.get("source_type")
+            if not k_val:
+                k_val = "drive" if is_drive_folder_input(p_val) else ("zip" if p_val.lower().endswith(".zip") else "local")
+            src_dict["kind"] = k_val
+            src_dict["id"] = src_dict.get("id") or f"src_{s_idx+1:02d}"
+            src_dict["status"] = "pending"
+            src_dict["photo_count"] = 0
+            src_dict["error"] = None
+            sources_list.append(src_dict)
+    else:
+        input_str = str(config.input_path) if config.input_path else ""
+        is_drive_input = is_drive_folder_input(input_str)
+        s_kind = "drive" if is_drive_input else ("zip" if input_str.lower().endswith(".zip") else "local")
+        sources_list.append({
+            "id": "src_01",
+            "kind": s_kind,
+            "path_or_url": input_str,
+            "label": None,
+            "quality": "original",
+            "status": "pending",
+            "photo_count": 0,
+            "error": None,
+        })
 
     folder_name: Optional[str] = None
-    if is_drive:
-        folder_id = parse_drive_folder_id(input_str)
-        api_key = config.drive_api_key or get_drive_api_key()
-        if not api_key:
-            raise DriveAuthError(
-                "Google Drive API key is required. Please set it in Settings or set the DRIVE_API_KEY environment variable."
-            )
-
-        client = DriveClient(api_key=api_key)
-        folder_name = client.get_folder_name(folder_id)
+    primary_src = sources_list[0]
+    p_str = primary_src.get("path_or_url", "")
+    if primary_src.get("kind") == "drive" or is_drive_folder_input(p_str):
+        try:
+            folder_id = parse_drive_folder_id(p_str)
+            api_key = config.drive_api_key or get_drive_api_key()
+            if api_key:
+                client = DriveClient(api_key=api_key)
+                folder_name = client.get_folder_name(folder_id)
+        except Exception:
+            pass
         if not folder_name:
             folder_name = config.event_title if config.event_title and config.event_title not in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery") else "drive"
-    elif config.input_path:
-        inp_p = Path(config.input_path).resolve()
+    elif p_str:
+        inp_p = Path(p_str).resolve()
         if inp_p.is_file() and inp_p.suffix.lower() == ".zip":
             folder_name = inp_p.stem
         elif config.event_title and config.event_title not in ("CatLog Gallery", "Face Clubbing Gallery", "Event Gallery"):
@@ -118,137 +150,138 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     cache_thumbs_p.mkdir(parents=True, exist_ok=True)
     cache_crops_p.mkdir(parents=True, exist_ok=True)
 
-    if is_drive:
-        drive_cache_p = cache_p / "photos"
-        drive_cache_p.mkdir(parents=True, exist_ok=True)
+    scanned_photos: List[ScannedPhoto] = []
+    seen_photo_ids: set[str] = set()
+    seen_drive_file_ids: set[str] = set()
+    failed_sources_count = 0
+    total_sources = len(sources_list)
+    drive_summary_aggregate = None
+
+    for s_idx, src in enumerate(sources_list):
+        s_id = src.get("id") or f"src_{s_idx+1:02d}"
+        src["id"] = s_id
+        s_path = str(src.get("path_or_url") or src.get("path") or "").strip()
+        src["path_or_url"] = s_path
+        s_kind = src.get("kind") or src.get("source_type") or ("drive" if is_drive_folder_input(s_path) else ("zip" if s_path.lower().endswith(".zip") else "local"))
+        src["kind"] = s_kind
+        s_label = src.get("label") or (Path(s_path).name if s_path else f"Source {s_idx+1}")
+        src["label"] = s_label
 
         notify({
-            "stage": "listing",
-            "current": 0,
-            "total": 0,
-            "percent": 0.5,
-            "message": f"Listing images from Google Drive folder '{folder_name}'...",
+            "stage": "scanning",
+            "current": s_idx,
+            "total": total_sources,
+            "percent": round((s_idx / max(1, total_sources)) * 5.0, 1),
+            "message": f"Scanning source [{s_idx+1}/{total_sources}]: {s_label}...",
         })
 
-        list_res = client.list_folder_images(
-            folder_id=folder_id,
-            cancel_check=config.cancel_check,
-            progress_callback=notify,
-            recursive=True,
-        )
+        if s_kind == "drive" or is_drive_folder_input(s_path):
+            try:
+                folder_id = parse_drive_folder_id(s_path)
+                api_key = config.drive_api_key or get_drive_api_key()
+                if not api_key:
+                    raise DriveAuthError(
+                        "Google Drive API key is required. Please set it in Settings or set the DRIVE_API_KEY environment variable."
+                    )
+                client = DriveClient(api_key=api_key)
+                src_folder_name = client.get_folder_name(folder_id) or s_label
+                drive_cache_p = cache_p / "photos"
+                drive_cache_p.mkdir(parents=True, exist_ok=True)
 
-        folders_count = max(1, int(getattr(list_res, "folders_scanned", 1) or 1))
-        top_has_imgs = getattr(list_res, "top_folder_has_images", True)
-        found_msg = f"Found {list_res.image_count} images in {folders_count} folders"
-        if not top_has_imgs and folders_count > 1:
-            found_msg += " (top folder contains no direct images)"
-
-        drive_sum = getattr(list_res, "summary", {})
-        notify({
-            "stage": "listing",
-            "current": list_res.image_count,
-            "total": list_res.image_count,
-            "percent": 1.0,
-            "message": found_msg,
-            "drive_summary": drive_sum,
-        })
-
-        if list_res.image_count == 0:
-            details = []
-            if list_res.folders_scanned > 1 or list_res.skipped_folders_count > 0:
-                scanned_count = max(list_res.folders_scanned - 1, list_res.skipped_folders_count)
-                folders_sample = ", ".join(f"'{name}'" for name in list_res.scanned_folder_names[:4])
-                details.append(f"top folder contains no direct images; searched {scanned_count} subfolders ({folders_sample})")
-            if list_res.skipped_videos_count > 0:
-                details.append(f"ignored {list_res.skipped_videos_count} video files")
-            if list_res.skipped_non_images_count > 0:
-                files_sample = ", ".join(f"'{name}'" for name in list_res.non_image_sample_names[:3])
-                details.append(f"skipped {list_res.skipped_non_images_count} non-image files like {files_sample}")
-            detail_str = "; ".join(details) if details else "folder is empty"
-            raise ValueError(
-                f"No image files found in Google Drive folder '{folder_id}' ({detail_str}). "
-                "Please verify that you provided the link to the folder containing photos."
-            )
-
-        notify({
-            "stage": "downloading",
-            "current": 0,
-            "total": list_res.image_count,
-            "percent": 1.0,
-            "message": f"Downloading {list_res.image_count} photos from Google Drive...",
-            "drive_summary": list_res.summary,
-        })
-
-        def on_download_progress(p: Dict[str, Any]):
-            # Scale Google Drive photo download to max 5.0% of total pipeline per specification
-            cur = p.get("current", 0)
-            tot = p.get("total", list_res.image_count)
-            pct = round(1.0 + (cur / tot) * 4.0, 1) if tot > 0 else 1.0
-            notify({
-                **p,
-                "percent": min(5.0, pct),
-            })
-
-        downloaded_items = client.download_thumbnails(
-            files=list_res.files,
-            cache_dir=drive_cache_p,
-            progress_callback=on_download_progress,
-            cancel_check=config.cancel_check,
-        )
-
-        scanned_photos = []
-        for df, local_p in downloaded_items:
-            photo_id = compute_file_hash(local_p)
-            rel_display_path = f"{df.folder_path}/{df.name}" if getattr(df, "folder_path", "") else df.name
-            scanned_photos.append(
-                ScannedPhoto(
-                    photo_id=photo_id,
-                    file_path=local_p,
-                    file_name=df.name,
-                    relative_path=rel_display_path,
-                    download_url=df.download_url,
-                    drive_file_id=df.id,
-                    drive_url=getattr(df, "drive_url", f"https://drive.google.com/file/d/{df.id}/view"),
-                    share_url=getattr(df, "share_url", f"https://drive.google.com/file/d/{df.id}/view?usp=sharing"),
+                list_res = client.list_folder_images(
+                    folder_id=folder_id,
+                    cancel_check=config.cancel_check,
+                    progress_callback=notify,
+                    recursive=config.scan_subfolders,
+                    max_depth=config.max_subfolder_depth,
+                    include_shortcuts=config.follow_shortcuts,
                 )
-            )
+                if list_res.image_count == 0 and total_sources == 1:
+                    raise ValueError(f"No image files found in Google Drive folder '{folder_id}'.")
 
-        total_photos = len(scanned_photos)
-        notify({
-            "stage": "scanned",
-            "current": 0,
-            "total": total_photos,
-            "percent": 5.0,
-            "message": f"Downloaded {total_photos} photos ready for face detection.",
-        })
-    else:
-        input_p = Path(config.input_path).resolve()
-        # 1. Scan photos (max 5.0%)
-        notify({"stage": "scanning", "current": 0, "total": 0, "percent": 0.0, "message": f"Scanning input: {input_p}"})
-        with PhotoScanner(input_p, temp_dir=cache_p / "photos") as scanner:
-            def on_scan_progress(cur: int, tot: int, fname: str):
-                pct = round((cur / tot) * 5.0, 1) if tot > 0 else 0.0
-                notify({
-                    "stage": "scanning",
-                    "current": cur,
-                    "total": tot,
-                    "percent": min(5.0, pct),
-                    "file_name": fname,
-                    "message": f"Scanning photos: [{cur}/{tot}] {fname}",
-                })
+                drive_summary_aggregate = list_res.summary
 
-            scanned_photos = scanner.scan(progress_callback=on_scan_progress)
-            total_photos = len(scanned_photos)
-            if total_photos == 0:
-                raise ValueError(f"No supported photos found in: {input_p}")
+                downloaded_items = client.download_thumbnails(
+                    files=list_res.files,
+                    cache_dir=drive_cache_p,
+                    progress_callback=lambda p: notify({**p, "percent": min(5.0, round(1.0 + (p.get("current", 0) / max(1, list_res.image_count)) * 4.0, 1))}),
+                    cancel_check=config.cancel_check,
+                )
 
-            notify({
-                "stage": "scanned",
-                "current": 0,
-                "total": total_photos,
-                "percent": 5.0,
-                "message": f"Found {total_photos} photos to process.",
-            })
+                src_count = 0
+                for df, local_p in downloaded_items:
+                    photo_id = compute_file_hash(local_p)
+                    if photo_id in seen_photo_ids or df.id in seen_drive_file_ids:
+                        continue
+                    seen_photo_ids.add(photo_id)
+                    seen_drive_file_ids.add(df.id)
+                    rel_display_path = f"{df.folder_path}/{df.name}" if getattr(df, "folder_path", "") else df.name
+                    scanned_photos.append(
+                        ScannedPhoto(
+                            photo_id=photo_id,
+                            file_path=local_p,
+                            file_name=df.name,
+                            relative_path=rel_display_path,
+                            download_url=df.download_url,
+                            drive_file_id=df.id,
+                            drive_url=getattr(df, "drive_url", f"https://drive.google.com/file/d/{df.id}/view"),
+                            share_url=getattr(df, "share_url", f"https://drive.google.com/file/d/{df.id}/view?usp=sharing"),
+                            source_id=s_id,
+                            source_label=s_label,
+                        )
+                    )
+                    src_count += 1
+                src["status"] = "completed"
+                src["photo_count"] = src_count
+            except Exception as e:
+                src["status"] = "failed"
+                src["error"] = str(e)
+                failed_sources_count += 1
+                if total_sources == 1:
+                    raise e
+        else:
+            try:
+                if not s_path:
+                    raise ValueError(f"Source '{s_label}' has empty or unspecified path.")
+                input_p = Path(s_path).resolve()
+                if not input_p.exists():
+                    raise FileNotFoundError(f"Input path does not exist: {input_p}")
+                with PhotoScanner(input_p, temp_dir=cache_p / "photos") as scanner:
+                    scanned = scanner.scan(
+                        scan_subfolders=config.scan_subfolders,
+                        max_subfolder_depth=config.max_subfolder_depth,
+                        follow_shortcuts=config.follow_shortcuts,
+                    )
+                    src_count = 0
+                    for item in scanned:
+                        if item.photo_id in seen_photo_ids:
+                            continue
+                        seen_photo_ids.add(item.photo_id)
+                        item.source_id = s_id
+                        item.source_label = s_label
+                        scanned_photos.append(item)
+                        src_count += 1
+                    src["status"] = "completed"
+                    src["photo_count"] = src_count
+            except Exception as e:
+                src["status"] = "failed"
+                src["error"] = str(e)
+                failed_sources_count += 1
+                if total_sources == 1:
+                    raise e
+
+    total_photos = len(scanned_photos)
+    if total_photos == 0:
+        errs = [f"{s.get('label', s.get('path_or_url'))}: {s.get('error', 'no images found')}" for s in sources_list]
+        raise ValueError(f"No valid photos found across {total_sources} source(s): {'; '.join(errs)}")
+
+    notify({
+        "stage": "scanned",
+        "current": 0,
+        "total": total_photos,
+        "percent": 5.0,
+        "message": f"Found {total_photos} photos across {total_sources - failed_sources_count} active source(s).",
+    })
 
     # 2. Setup Cache, Loader, Detector, and Thumb Generator
     from backend.engine.cache import EmbeddingCache, compute_settings_hash
@@ -370,6 +403,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                 share_url=getattr(item, "share_url", None),
                 relative_path=getattr(item, "relative_path", item.file_name),
                 faces=faces,
+                source_id=getattr(item, "source_id", None),
+                source_label=getattr(item, "source_label", None),
             )
             cache.save(record)
             photos[photo_id] = record
@@ -462,6 +497,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         })
 
     source_title = None
+    is_drive = primary_src.get("kind") == "drive" or is_drive_folder_input(primary_src.get("path_or_url", ""))
     if is_drive:
         source_title = folder_name
     elif config.input_path:
@@ -478,10 +514,11 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         distance_threshold=config.distance_threshold,
         id_map=clusterer.id_map,
         temp_dir=str(project_temp_p),
-        drive_folder_name=folder_name if is_drive else None,
+        drive_folder_name=folder_name if (primary_src.get("kind") == "drive" or is_drive_folder_input(primary_src.get("path_or_url", ""))) else None,
         source_title=source_title,
         unapplied_edits=unapplied,
-        drive_summary=list_res.summary if is_drive else None,
+        drive_summary=drive_summary_aggregate,
+        sources=sources_list,
     )
 
     notify({
@@ -506,7 +543,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         thumb_size=config.thumb_size,
         face_crop_size=config.face_crop_size,
     )
-    exporter.export(
+    exported_out = exporter.export(
         result=result,
         title=export_title or "CatLog Gallery",
         subtitle=config.event_subtitle,
@@ -514,6 +551,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         include_maybe=config.include_maybe,
         cleanup_temp=config.cleanup_temp,
     )
+    result.export_dir = str(exported_out)
 
     notify({
         "stage": "complete",
@@ -526,3 +564,481 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     })
 
     return result
+
+
+def run_incremental_pipeline(
+    config: EngineConfig,
+    new_source: Dict[str, Any],
+    work_dir: Optional[Path | str] = None,
+    export_dir: Optional[Path | str] = None,
+    frozen_mode: bool = True,
+    existing_result: Optional[EngineResult] = None,
+) -> Tuple[EngineResult, Dict[str, Any]]:
+    """
+    Executes an incremental ingestion pipeline for a new source into an existing project.
+
+    Workflow:
+    1. Creates an atomic snapshot in work_dir/snapshots for instant undo.
+    2. Loads existing people, unrecognized, photos, manifest, and cached embeddings.
+    3. Scans ONLY the new source, automatically deduplicating against existing photos.
+    4. Detects and embeds faces ONLY for new photos.
+    5. Executes FaceClusterer.cluster_incremental in frozen mode (0 pre-existing membership change).
+    6. Replays existing organizer edits (edits.json) to preserve custom names and manual assignments.
+    7. Updates manifest.json (sources + photo_origins) and writes what_changed.json.
+    8. Exports updated people.json and newly generated thumbnails/crops.
+    9. Returns (updated_result, what_changed_report).
+    """
+    from backend.engine.snapshots import create_snapshot
+    from backend.engine.models import PersonCluster, UnrecognizedGroup, PhotoRecord, FaceDetection
+    from backend.engine.cache import EmbeddingCache, compute_settings_hash
+    from backend.engine.thumbnails import ThumbnailGenerator
+
+    out_p = Path(export_dir or config.output_dir or "export").resolve()
+    work_p = Path(work_dir or config.cache_dir or "export.work").resolve()
+    cache_p = Path(config.cache_dir).resolve() if config.cache_dir else work_p
+    cache_thumbs_p = cache_p / "thumbs"
+    cache_crops_p = cache_p / "crops"
+    cache_thumbs_p.mkdir(parents=True, exist_ok=True)
+    cache_crops_p.mkdir(parents=True, exist_ok=True)
+
+    def notify(payload: Dict[str, Any]):
+        if config.cancel_check and config.cancel_check():
+            raise InterruptedError("Job cancelled by user")
+        if config.progress_callback:
+            config.progress_callback(payload)
+
+    # 1. Snapshot creation for instant rollback
+    notify({"stage": "snapshot", "percent": 2.0, "message": "Creating project snapshot before incremental scan..."})
+    snap_meta = create_snapshot(
+        work_dir=work_p,
+        export_dir=out_p,
+        label=f"Before adding {new_source.get('label') or new_source.get('path_or_url')}",
+    )
+
+    # 2. Load existing state
+    existing_people: List[PersonCluster] = []
+    existing_unrec: UnrecognizedGroup = UnrecognizedGroup(photo_ids=[], faces=[])
+    existing_photos: Dict[str, PhotoRecord] = {}
+    existing_sources: List[Dict[str, Any]] = []
+    existing_origins: Dict[str, str] = {}
+
+    settings_hash = compute_settings_hash(
+        model_name="buffalo_l",
+        det_size=(640, 640),
+        min_det_score=config.min_det_score,
+        min_face_size=config.min_face_size,
+        max_yaw=config.max_yaw,
+        max_image_dim=config.max_image_dim,
+        flip_average=config.flip_average,
+    )
+    cache = EmbeddingCache(cache_p, settings_hash=settings_hash)
+
+    if existing_result:
+        existing_people = [
+            PersonCluster(
+                id=p.id,
+                label=p.label,
+                face_path=p.face_path,
+                rep_face=p.rep_face,
+                photo_ids=list(p.photo_ids),
+                faces=list(p.faces),
+                maybe_photos=list(p.maybe_photos),
+                merged_from=list(p.merged_from),
+                merged_from_numbering=p.merged_from_numbering,
+            )
+            for p in existing_result.people
+        ]
+        existing_unrec = UnrecognizedGroup(
+            photo_ids=list(existing_result.unrecognized.photo_ids),
+            faces=list(existing_result.unrecognized.faces),
+        )
+        existing_photos = dict(existing_result.photos)
+        existing_sources = list(existing_result.sources or [])
+    else:
+        # Load from disk
+        pj_candidates = [work_p / "people.json", out_p / "people.json"]
+        loaded_pj = None
+        for cand in pj_candidates:
+            if cand.is_file():
+                try:
+                    with open(cand, "r", encoding="utf-8") as f:
+                        loaded_pj = json.load(f)
+                    break
+                except Exception:
+                    pass
+
+        if loaded_pj:
+            for p_dict in loaded_pj.get("people", []):
+                p_faces = []
+                # Attempt to retrieve face objects from cache if photo records exist
+                p_pids = p_dict.get("photos") or p_dict.get("photo_ids", [])
+                for pid in p_pids:
+                    rec = cache.get(pid)
+                    if rec:
+                        existing_photos[pid] = rec
+                        p_faces.extend(rec.faces)
+
+                if not p_faces:
+                    for pid in p_pids:
+                        f_dummy = FaceDetection(
+                            face_id=f"f_{pid}_01",
+                            photo_id=pid,
+                            bbox=[10.0, 10.0, 90.0, 90.0],
+                            det_score=0.90,
+                            embedding=np.zeros(512, dtype=np.float32),
+                        )
+                        f_dummy.embedding[0] = 1.0
+                        p_faces.append(f_dummy)
+                        if pid not in existing_photos:
+                            existing_photos[pid] = PhotoRecord(
+                                photo_id=pid,
+                                original_path="",
+                                file_name=f"{pid}.jpg",
+                                width=1000,
+                                height=1000,
+                                faces=[f_dummy],
+                            )
+
+                # Find representative face object if available
+                rep_face_obj = p_faces[0] if p_faces else None
+
+                cluster = PersonCluster(
+                    id=p_dict["id"],
+                    label=p_dict.get("name") or p_dict.get("label"),
+                    face_path=p_dict.get("face", f"faces/{p_dict['id']}.jpg"),
+                    rep_face=rep_face_obj,
+                    photo_ids=list(p_pids),
+                    faces=p_faces,
+                    maybe_photos=p_dict.get("maybe_photos", []),
+                    merged_from=p_dict.get("merged_from", []),
+                    merged_from_numbering=p_dict.get("merged_from_numbering", ""),
+                )
+                existing_people.append(cluster)
+
+            unrec_data = loaded_pj.get("unrecognized", {})
+            existing_unrec = UnrecognizedGroup(
+                photo_ids=unrec_data.get("photo_ids", []),
+                faces=unrec_data.get("faces", []),
+            )
+
+        # Load manifest
+        mf_candidates = [work_p / "manifest.json", out_p / "manifest.json"]
+        for cand in mf_candidates:
+            if cand.is_file():
+                try:
+                    with open(cand, "r", encoding="utf-8") as f:
+                        m_data = json.load(f)
+                    existing_sources = m_data.get("sources", [])
+                    existing_origins = m_data.get("photo_origins", {})
+                    break
+                except Exception:
+                    pass
+
+    # 3. Clean new source parameters
+    s_path = str(new_source.get("path_or_url") or new_source.get("path") or "").strip()
+    s_kind = new_source.get("kind") or ("drive" if is_drive_folder_input(s_path) else ("zip" if s_path.lower().endswith(".zip") else "local"))
+    s_id = new_source.get("id") or f"src_{len(existing_sources)+1:02d}"
+    s_label = new_source.get("label") or (Path(s_path).name if s_path else f"Source {len(existing_sources)+1}")
+
+    new_source_clean = {
+        "id": s_id,
+        "kind": s_kind,
+        "path_or_url": s_path,
+        "label": s_label,
+        "quality": "original",
+        "status": "scanning",
+        "photo_count": 0,
+        "error": None,
+        "added_at": datetime.datetime.now().astimezone().isoformat(),
+    }
+
+    notify({"stage": "scanning", "percent": 5.0, "message": f"Scanning new source '{s_label}'..."})
+
+    # 4. Scan new source & Deduplicate
+    scanned_photos: List[ScannedPhoto] = []
+    seen_new_ids: set[str] = set()
+    skipped_duplicates = 0
+
+    if s_kind == "drive" or is_drive_folder_input(s_path):
+        folder_id = parse_drive_folder_id(s_path)
+        api_key = config.drive_api_key or get_drive_api_key()
+        if not api_key:
+            raise DriveAuthError("Google Drive API key is required to scan Drive folder.")
+        client = DriveClient(api_key=api_key)
+        drive_cache_p = cache_p / "photos"
+        drive_cache_p.mkdir(parents=True, exist_ok=True)
+
+        list_res = client.list_folder_images(
+            folder_id=folder_id,
+            cancel_check=config.cancel_check,
+            progress_callback=notify,
+            recursive=config.scan_subfolders,
+            max_depth=config.max_subfolder_depth,
+            include_shortcuts=config.follow_shortcuts,
+        )
+        downloaded = client.download_thumbnails(
+            files=list_res.files,
+            cache_dir=drive_cache_p,
+            progress_callback=lambda p: notify({**p, "percent": min(15.0, round(5.0 + (p.get("current", 0) / max(1, list_res.image_count)) * 10.0, 1))}),
+            cancel_check=config.cancel_check,
+        )
+        for df, local_p in downloaded:
+            pid = compute_file_hash(local_p)
+            if pid in existing_photos or pid in seen_new_ids:
+                skipped_duplicates += 1
+                continue
+            seen_new_ids.add(pid)
+            rel_display_path = f"{df.folder_path}/{df.name}" if getattr(df, "folder_path", "") else df.name
+            scanned_photos.append(
+                ScannedPhoto(
+                    photo_id=pid,
+                    file_path=local_p,
+                    file_name=df.name,
+                    relative_path=rel_display_path,
+                    download_url=df.download_url,
+                    drive_file_id=df.id,
+                    drive_url=getattr(df, "drive_url", f"https://drive.google.com/file/d/{df.id}/view"),
+                    share_url=getattr(df, "share_url", f"https://drive.google.com/file/d/{df.id}/view?usp=sharing"),
+                    source_id=s_id,
+                    source_label=s_label,
+                )
+            )
+    else:
+        input_p = Path(s_path).resolve()
+        if not input_p.exists():
+            raise FileNotFoundError(f"Source path does not exist: {input_p}")
+        with PhotoScanner(input_p, temp_dir=cache_p / "photos") as scanner:
+            scanned = scanner.scan(
+                scan_subfolders=config.scan_subfolders,
+                max_subfolder_depth=config.max_subfolder_depth,
+                follow_shortcuts=config.follow_shortcuts,
+            )
+            for item in scanned:
+                if item.photo_id in existing_photos or item.photo_id in seen_new_ids:
+                    skipped_duplicates += 1
+                    continue
+                seen_new_ids.add(item.photo_id)
+                item.source_id = s_id
+                item.source_label = s_label
+                scanned_photos.append(item)
+
+    new_source_clean["photo_count"] = len(scanned_photos)
+    new_source_clean["status"] = "completed"
+
+    notify({
+        "stage": "scanned",
+        "percent": 18.0,
+        "message": f"Found {len(scanned_photos)} new photos ({skipped_duplicates} duplicate photos skipped).",
+    })
+
+    # 5. Detect and Embed ONLY New Photos
+    loader = ImageLoader(max_dimension=config.max_image_dim)
+    thumb_gen = ThumbnailGenerator(thumb_size=config.thumb_size, face_crop_size=config.face_crop_size)
+    detector: Optional[FaceDetector] = None
+
+    new_photos: Dict[str, PhotoRecord] = {}
+    total_new = len(scanned_photos)
+    start_time = time.time()
+
+    for idx, item in enumerate(scanned_photos):
+        if config.cancel_check and config.cancel_check():
+            raise InterruptedError("Job cancelled by user")
+        pid = item.photo_id
+
+        if cache.has(pid):
+            record = cache.get(pid)
+            if record:
+                record.original_path = str(item.file_path)
+                record.file_name = item.file_name
+                record.source_id = s_id
+                record.source_label = s_label
+                new_photos[pid] = record
+        else:
+            if detector is None:
+                detector = FaceDetector(
+                    model_name="buffalo_l",
+                    model_root=config.model_root,
+                    min_det_score=config.min_det_score,
+                    min_face_size=config.min_face_size,
+                    max_yaw=config.max_yaw,
+                    max_image_dim=config.max_image_dim,
+                )
+
+            rgb_img, orig_w, orig_h, pil_img = loader.load_image(item.file_path)
+            faces = detector.detect_and_embed(orig_rgb=rgb_img, photo_id=pid)
+
+            # Pre-generate and cache photo thumbnail & crops
+            cached_thumb = cache_thumbs_p / f"{pid}.jpg"
+            if not cached_thumb.exists():
+                thumb_gen.generate_photo_thumbnail_from_image(pil_img, cached_thumb)
+            for f in faces:
+                cached_crop = cache_crops_p / f"{f.face_id}.jpg"
+                if not cached_crop.exists():
+                    thumb_gen.generate_square_face_crop_from_image(pil_img, f.bbox, cached_crop)
+
+            del rgb_img, pil_img
+            gc.collect()
+
+            record = PhotoRecord(
+                photo_id=pid,
+                original_path=str(item.file_path),
+                file_name=item.file_name,
+                width=orig_w,
+                height=orig_h,
+                download_url=getattr(item, "download_url", None),
+                drive_file_id=getattr(item, "drive_file_id", None),
+                drive_url=getattr(item, "drive_url", None),
+                share_url=getattr(item, "share_url", None),
+                relative_path=getattr(item, "relative_path", item.file_name),
+                faces=faces,
+                source_id=s_id,
+                source_label=s_label,
+            )
+            cache.save(record)
+            new_photos[pid] = record
+
+        processed = idx + 1
+        pct = round(20.0 + (processed / max(1, total_new)) * 50.0, 1)
+        notify({
+            "stage": "processing",
+            "current": processed,
+            "total": total_new,
+            "percent": pct,
+            "photo_id": pid,
+            "file_name": item.file_name,
+            "message": f"[{processed}/{total_new}] Ingesting {item.file_name} ({len(new_photos[pid].faces)} faces)",
+        })
+
+    # 6. Incremental Clustering under Frozen Mode
+    notify({"stage": "clustering", "percent": 75.0, "message": "Clustering new faces into project (frozen mode)..."})
+    clusterer = FaceClusterer(
+        distance_threshold=config.distance_threshold,
+        seed_min_face_size=config.seed_min_face_size or config.min_face_size,
+        seed_max_yaw=config.seed_max_yaw,
+        seed_min_det_score=config.seed_min_det_score,
+        second_pass_merge=config.second_pass_merge,
+        merge_threshold=config.merge_threshold,
+        maybe_threshold=config.maybe_threshold,
+        same_photo_merge_max=config.same_photo_merge_max,
+        attach_distance_cap=config.attach_distance_cap,
+    )
+
+    updated_people, updated_unrec, diff_report = clusterer.cluster_incremental(
+        existing_people=existing_people,
+        existing_unrecognized=existing_unrec,
+        existing_photos=existing_photos,
+        new_photos=new_photos,
+        frozen_mode=frozen_mode,
+    )
+
+    diff_report["skipped_duplicate_photos"] = skipped_duplicates
+    diff_report["source_id"] = s_id
+    diff_report["source_label"] = s_label
+
+    # 7. Edit Replay (SPEC 6.3)
+    edits_path = work_p / "edits.json"
+    unapplied = []
+    all_combined_photos = {**existing_photos, **new_photos}
+    if config.replay_edits and edits_path.exists():
+        notify({"stage": "applying_edits", "percent": 82.0, "message": f"Replaying organizer edits from {edits_path}..."})
+        try:
+            with open(edits_path, "r", encoding="utf-8") as f:
+                edits_data = json.load(f)
+            from backend.engine.edits import apply_edits
+            updated_people, updated_unrec, unapplied, edit_stats = apply_edits(
+                updated_people, updated_unrec, edits_data, all_combined_photos
+            )
+        except Exception as e:
+            print(f"[run_incremental_pipeline] Warning: Edit replay failed: {e}")
+
+    # 8. Update Project Manifest v2
+    all_sources = list(existing_sources) + [new_source_clean]
+    for pid in new_photos:
+        existing_origins[pid] = s_id
+
+    manifest_path_work = work_p / "manifest.json"
+    manifest_path_exp = out_p / "manifest.json"
+    manifest_payload = {
+        "schema_version": 2,
+        "project_name": getattr(config, "event_title", None) or "Project",
+        "created_at": datetime.datetime.now().astimezone().isoformat(),
+        "updated_at": datetime.datetime.now().astimezone().isoformat(),
+        "sources": all_sources,
+        "total_photos": len(all_combined_photos),
+        "total_people": len(updated_people),
+        "photo_origins": existing_origins,
+    }
+    for m_path in [manifest_path_work, manifest_path_exp]:
+        try:
+            m_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(m_path, "w", encoding="utf-8") as f:
+                json.dump(manifest_payload, f, indent=2)
+        except Exception:
+            pass
+
+    # 9. Write what_changed.json
+    for wc_p in [work_p / "what_changed.json", out_p / "what_changed.json"]:
+        try:
+            wc_p.parent.mkdir(parents=True, exist_ok=True)
+            with open(wc_p, "w", encoding="utf-8") as f:
+                json.dump(diff_report, f, indent=2)
+        except Exception:
+            pass
+
+    # 10. Bundle Export Update
+    notify({"stage": "exporting", "percent": 88.0, "message": "Updating export bundle and thumbnails..."})
+    result = EngineResult(
+        photos=all_combined_photos,
+        people=updated_people,
+        unrecognized=updated_unrec,
+        distance_threshold=config.distance_threshold,
+        id_map=clusterer.id_map,
+        sources=all_sources,
+        unapplied_edits=unapplied,
+        export_dir=str(out_p),
+    )
+
+    exporter = BundleExporter(
+        output_dir=out_p,
+        cache_dir=cache_p,
+        thumb_size=config.thumb_size,
+        face_crop_size=config.face_crop_size,
+    )
+    exported_out = exporter.export(
+        result=result,
+        title=config.event_title or "CatLog Gallery",
+        subtitle=config.event_subtitle,
+        config_override={"include_maybe": config.include_maybe},
+        include_maybe=config.include_maybe,
+        cleanup_temp=False,
+    )
+    result.export_dir = str(exported_out)
+
+    # Copy people.json to work_p as well
+    if (out_p / "people.json").is_file():
+        try:
+            shutil.copy2(out_p / "people.json", work_p / "people.json")
+        except Exception:
+            pass
+
+    # 11. Auto-save project entry in projects.json
+    try:
+        from backend.api.projects import save_recent_project
+        save_recent_project(
+            work_dir=work_p,
+            export_path=out_p,
+            counts={"people": len(updated_people), "photos": len(all_combined_photos)},
+            sources=all_sources,
+            schema_version=2,
+        )
+    except Exception as e:
+        print(f"[run_incremental_pipeline] Warning: Failed to update recent project: {e}")
+
+    notify({
+        "stage": "complete",
+        "percent": 100.0,
+        "message": f"Incremental addition complete! Added {len(new_photos)} photos, formed {len(diff_report['new_people_ids'])} new people.",
+    })
+
+    return result, diff_report
+

@@ -711,3 +711,462 @@ class FaceClusterer:
                 colliding_clusters += 1
                 total_extra += (len(pids) - len(unique_pids))
         return colliding_clusters, total_extra
+
+    def cluster_incremental(
+        self,
+        existing_people: List[PersonCluster],
+        existing_unrecognized: UnrecognizedGroup,
+        existing_photos: Dict[str, PhotoRecord],
+        new_photos: Dict[str, PhotoRecord],
+        frozen_mode: bool = True,
+    ) -> Tuple[List[PersonCluster], UnrecognizedGroup, Dict[str, Any]]:
+        """
+        Incrementally clusters faces from newly added photos into an existing project.
+
+        Enforces Frozen Mode Invariants:
+        1. Existing people stay intact: their IDs, labels, face crops, and pre-existing face/photo
+           memberships are NEVER removed, re-split, or swapped.
+        2. Existing people NEVER merge with each other.
+        3. Pre-existing membership change is strictly 0.
+        4. New faces can attach to existing people if distance and collision criteria are met.
+        5. Remaining new faces cluster amongst themselves to form new people clusters.
+        6. New clusters can merge into an existing person if centroid distance < merge_threshold
+           and no same-photo collision conflict exists.
+        7. Returns (updated_people, updated_unrecognized, what_changed_report).
+        """
+        import datetime
+        import re
+
+        # Pre-state snapshot for invariant verification
+        pre_faces_by_person = {p.id: set(f.face_id for f in p.faces) for p in existing_people}
+        pre_photos_by_person = {p.id: set(p.photo_ids) for p in existing_people}
+
+        if not new_photos:
+            diff_report = {
+                "generated_at": datetime.datetime.now().astimezone().isoformat(),
+                "new_photos_count": 0,
+                "new_photo_ids": [],
+                "new_people_count": 0,
+                "new_people_ids": [],
+                "joined_existing_count": 0,
+                "joined_existing": {},
+                "existing_people_membership_changed": 0,
+                "new_unrecognized_faces_count": 0,
+                "new_unrecognized_photos_count": 0,
+            }
+            return list(existing_people), existing_unrecognized, diff_report
+
+        # 1. Partition new photos into seeds, non-seeds, and face-less photos
+        new_seeds: List[FaceDetection] = []
+        new_non_seeds: List[Tuple[FaceDetection, str]] = []
+        new_photos_with_no_faces: List[str] = []
+
+        for photo_id, record in new_photos.items():
+            if not record.faces:
+                new_photos_with_no_faces.append(photo_id)
+            else:
+                for face in record.faces:
+                    if face.embedding is None:
+                        continue
+                    w = face.bbox[2] - face.bbox[0]
+                    h = face.bbox[3] - face.bbox[1]
+                    face_dim = min(w, h)
+                    yaw = abs(face.pose[1]) if face.pose and len(face.pose) >= 2 else 0.0
+                    score = face.det_score
+
+                    is_seed = (
+                        face_dim >= self.seed_min_face_size
+                        and yaw <= self.seed_max_yaw
+                        and score >= self.seed_min_det_score
+                    )
+
+                    if is_seed:
+                        new_seeds.append(face)
+                    else:
+                        if face_dim < self.seed_min_face_size:
+                            reason = "unattached_small"
+                        elif yaw > self.seed_max_yaw:
+                            reason = "unattached_profile"
+                        else:
+                            reason = "unattached_lowscore"
+                        new_non_seeds.append((face, reason))
+
+        # 2. Compute centroids for all existing people from top-5 faces
+        existing_centroids: Dict[str, Optional[np.ndarray]] = {}
+        person_photos_map: Dict[str, set[str]] = {}
+        person_new_faces: Dict[str, List[FaceDetection]] = {p.id: [] for p in existing_people}
+
+        for p in existing_people:
+            existing_centroids[p.id] = self.compute_cluster_centroid(p.faces, top_k=5)
+            person_photos_map[p.id] = set(p.photo_ids)
+
+        # 3. Phase A: Attach new faces to existing people
+        unattached_new_seeds: List[FaceDetection] = []
+        for seed in new_seeds:
+            dists = []
+            for p in existing_people:
+                c_emb = existing_centroids[p.id]
+                if c_emb is None:
+                    continue
+                d = float(1.0 - np.dot(c_emb, seed.embedding))
+                dists.append((d, p))
+            dists.sort(key=lambda x: x[0])
+            d1, p1 = dists[0] if len(dists) > 0 else (float("inf"), None)
+            d2, p2 = dists[1] if len(dists) > 1 else (float("inf"), None)
+
+            can_attach = (
+                p1 is not None
+                and d1 < self.distance_threshold
+                and (d2 - d1 >= 0.05 if p2 is not None else True)
+                and (seed.photo_id not in person_photos_map[p1.id])
+            )
+            if can_attach and p1 is not None:
+                seed.is_good_quality = True
+                seed.rejection_reason = None
+                person_new_faces[p1.id].append(seed)
+                person_photos_map[p1.id].add(seed.photo_id)
+            else:
+                unattached_new_seeds.append(seed)
+
+        unattached_new_non_seeds: List[Tuple[FaceDetection, str]] = []
+        for face, reason in new_non_seeds:
+            dists = []
+            for p in existing_people:
+                c_emb = existing_centroids[p.id]
+                if c_emb is None:
+                    continue
+                d = float(1.0 - np.dot(c_emb, face.embedding))
+                dists.append((d, p))
+            dists.sort(key=lambda x: x[0])
+            d1, p1 = dists[0] if len(dists) > 0 else (float("inf"), None)
+            d2, p2 = dists[1] if len(dists) > 1 else (float("inf"), None)
+
+            can_attach = (
+                p1 is not None
+                and d1 < self.attach_distance_cap
+                and (d2 - d1 >= 0.05 if p2 is not None else True)
+                and (face.photo_id not in person_photos_map[p1.id])
+            )
+            if can_attach and p1 is not None:
+                face.is_good_quality = True
+                face.rejection_reason = None
+                person_new_faces[p1.id].append(face)
+                person_photos_map[p1.id].add(face.photo_id)
+            else:
+                unattached_new_non_seeds.append((face, reason))
+
+        # 4. Phase B: Cluster remaining new faces amongst themselves
+        new_cluster_map: Dict[int, List[FaceDetection]] = defaultdict(list)
+        if len(unattached_new_seeds) == 1:
+            new_cluster_map[0].append(unattached_new_seeds[0])
+        elif len(unattached_new_seeds) > 1:
+            X = np.stack([f.embedding for f in unattached_new_seeds])
+            norms = np.linalg.norm(X, axis=1, keepdims=True)
+            norms[norms == 0] = 1.0
+            X = X / norms
+
+            from sklearn.cluster import AgglomerativeClustering
+            try:
+                model = AgglomerativeClustering(
+                    metric="cosine",
+                    linkage="average",
+                    distance_threshold=self.distance_threshold,
+                    n_clusters=None,
+                )
+            except TypeError:
+                model = AgglomerativeClustering(
+                    affinity="cosine",
+                    linkage="average",
+                    distance_threshold=self.distance_threshold,
+                    n_clusters=None,
+                )
+            labels = model.fit_predict(X)
+            for idx, label in enumerate(labels):
+                new_cluster_map[int(label)].append(unattached_new_seeds[idx])
+
+        # Attach remaining non-seeds to newly formed seed clusters
+        final_unattached_new_faces: List[FaceDetection] = []
+        if new_cluster_map:
+            cluster_seed_embs = {
+                cid: np.stack([f.embedding for f in members])
+                for cid, members in new_cluster_map.items()
+            }
+            cluster_photo_ids = {
+                cid: set(f.photo_id for f in members)
+                for cid, members in new_cluster_map.items()
+            }
+            for face, reason in unattached_new_non_seeds:
+                dists = []
+                for cid, embs in cluster_seed_embs.items():
+                    dots = np.dot(embs, face.embedding)
+                    avg_dist = float(1.0 - np.mean(dots))
+                    dists.append((avg_dist, cid))
+                dists.sort(key=lambda x: x[0])
+                d1, c1 = dists[0] if len(dists) > 0 else (float("inf"), None)
+                d2, c2 = dists[1] if len(dists) > 1 else (float("inf"), None)
+
+                can_attach = (
+                    c1 is not None
+                    and d1 < self.attach_distance_cap
+                    and (d2 - d1 >= 0.05)
+                    and (face.photo_id not in cluster_photo_ids[c1])
+                )
+                if can_attach and c1 is not None:
+                    face.is_good_quality = True
+                    face.rejection_reason = None
+                    new_cluster_map[c1].append(face)
+                    cluster_photo_ids[c1].add(face.photo_id)
+                else:
+                    face.is_good_quality = False
+                    face.rejection_reason = "ambiguous" if d1 < self.distance_threshold else reason
+                    final_unattached_new_faces.append(face)
+        else:
+            for face, reason in unattached_new_non_seeds:
+                face.is_good_quality = False
+                face.rejection_reason = reason
+                final_unattached_new_faces.append(face)
+
+        # Build initial candidate new clusters
+        initial_new_clusters: List[Dict[str, Any]] = []
+        for _, faces in new_cluster_map.items():
+            faces.sort(key=lambda f: (-float(f.det_score), f.face_id))
+            photo_ids = list(dict.fromkeys(f.photo_id for f in faces))
+            initial_new_clusters.append({
+                "photo_ids": photo_ids,
+                "faces": faces,
+            })
+
+        # 5. Phase C: Second-Pass Auto-Merge under Frozen Rules
+        # Rule 1: Existing clusters NEVER merge with other existing clusters.
+        # Rule 2: A new cluster can merge INTO an existing cluster if dist < merge_threshold and no collision.
+        # Rule 3: Remaining new clusters can merge with each other if dist < merge_threshold.
+        absorbed_new_indices: set[int] = set()
+
+        if self.second_pass_merge and initial_new_clusters:
+            new_centroids = [
+                self.compute_cluster_centroid(c["faces"], top_k=5)
+                for c in initial_new_clusters
+            ]
+
+            # 5a. Check if any new cluster should merge into an existing person
+            for n_idx, n_cluster in enumerate(initial_new_clusters):
+                n_c = new_centroids[n_idx]
+                if n_c is None:
+                    continue
+
+                best_exist_dist = float("inf")
+                best_exist_person: Optional[PersonCluster] = None
+
+                for p in existing_people:
+                    p_c = existing_centroids.get(p.id)
+                    if p_c is None:
+                        continue
+                    dist = float(1.0 - np.dot(n_c, p_c))
+                    if dist < self.merge_threshold and dist < best_exist_dist:
+                        # Collision guard: check faces from common photos
+                        common_pids = set(n_cluster["photo_ids"]) & person_photos_map[p.id]
+                        conflict = False
+                        if common_pids:
+                            for pid in common_pids:
+                                p_faces = [f for f in p.faces + person_new_faces[p.id] if f.photo_id == pid]
+                                n_faces = [f for f in n_cluster["faces"] if f.photo_id == pid]
+                                for pf in p_faces:
+                                    for nf in n_faces:
+                                        if pf.embedding is not None and nf.embedding is not None:
+                                            sp_d = float(1.0 - np.dot(pf.embedding, nf.embedding))
+                                            if sp_d > self.same_photo_merge_max:
+                                                conflict = True
+                                                break
+                                    if conflict:
+                                        break
+                                if conflict:
+                                    break
+                        if not conflict:
+                            best_exist_dist = dist
+                            best_exist_person = p
+
+                if best_exist_person is not None:
+                    # New cluster merges INTO existing person!
+                    absorbed_new_indices.add(n_idx)
+                    for f in n_cluster["faces"]:
+                        f.is_good_quality = True
+                        f.rejection_reason = None
+                        person_new_faces[best_exist_person.id].append(f)
+                        person_photos_map[best_exist_person.id].add(f.photo_id)
+
+            # 5b. Auto-merge among surviving new clusters
+            surviving_new_indices = [i for i in range(len(initial_new_clusters)) if i not in absorbed_new_indices]
+            n_surv = len(surviving_new_indices)
+
+            if n_surv > 1:
+                new_merge_adj = defaultdict(list)
+                for i_pos, orig_i in enumerate(surviving_new_indices):
+                    ci = new_centroids[orig_i]
+                    if ci is None:
+                        continue
+                    for j_pos in range(i_pos + 1, n_surv):
+                        orig_j = surviving_new_indices[j_pos]
+                        cj = new_centroids[orig_j]
+                        if cj is None:
+                            continue
+                        dist = float(1.0 - np.dot(ci, cj))
+                        if dist < self.merge_threshold:
+                            # Collision guard
+                            pids_i = {f.photo_id: [] for f in initial_new_clusters[orig_i]["faces"]}
+                            for f in initial_new_clusters[orig_i]["faces"]:
+                                pids_i[f.photo_id].append(f)
+                            pids_j = {f.photo_id: [] for f in initial_new_clusters[orig_j]["faces"]}
+                            for f in initial_new_clusters[orig_j]["faces"]:
+                                pids_j[f.photo_id].append(f)
+
+                            conflict = False
+                            common_pids = set(pids_i.keys()) & set(pids_j.keys())
+                            for pid in common_pids:
+                                for fi in pids_i[pid]:
+                                    for fj in pids_j[pid]:
+                                        sp_d = float(1.0 - np.dot(fi.embedding, fj.embedding))
+                                        if sp_d > self.same_photo_merge_max:
+                                            conflict = True
+                                            break
+                                    if conflict:
+                                        break
+                                if conflict:
+                                    break
+                            if not conflict:
+                                new_merge_adj[orig_i].append(orig_j)
+                                new_merge_adj[orig_j].append(orig_i)
+
+                visited_new = set()
+                merged_new_clusters = []
+                for orig_i in surviving_new_indices:
+                    if orig_i not in visited_new:
+                        comp = []
+                        queue = [orig_i]
+                        visited_new.add(orig_i)
+                        while queue:
+                            curr = queue.pop(0)
+                            comp.append(curr)
+                            for neighbor in new_merge_adj[curr]:
+                                if neighbor not in visited_new:
+                                    visited_new.add(neighbor)
+                                    queue.append(neighbor)
+                        comp_faces = []
+                        comp_photos = []
+                        for idx in comp:
+                            comp_faces.extend(initial_new_clusters[idx]["faces"])
+                            for pid in initial_new_clusters[idx]["photo_ids"]:
+                                if pid not in comp_photos:
+                                    comp_photos.append(pid)
+                        comp_faces.sort(key=lambda f: (-float(f.det_score), f.face_id))
+                        merged_new_clusters.append({
+                            "photo_ids": comp_photos,
+                            "faces": comp_faces,
+                        })
+                final_new_clusters = merged_new_clusters
+            else:
+                final_new_clusters = [initial_new_clusters[i] for i in surviving_new_indices]
+        else:
+            final_new_clusters = [c for idx, c in enumerate(initial_new_clusters) if idx not in absorbed_new_indices]
+
+        # 6. Phase D: Assign stable IDs to surviving new people clusters
+        existing_numeric_ids = []
+        for p in existing_people:
+            m = re.search(r'\d+', p.id)
+            if m:
+                try:
+                    existing_numeric_ids.append(int(m.group()))
+                except ValueError:
+                    pass
+        next_pid_num = max(existing_numeric_ids, default=0) + 1
+
+        new_people_clusters: List[PersonCluster] = []
+        for cluster_data in final_new_clusters:
+            new_pid = f"p{next_pid_num:03d}"
+            next_pid_num += 1
+
+            best_fid, best_score = self.get_cluster_best_face(cluster_data["faces"])
+            rep_obj = next((f for f in cluster_data["faces"] if f.face_id == best_fid), cluster_data["faces"][0])
+            new_cluster = PersonCluster(
+                id=new_pid,
+                label=None,
+                face_path=f"faces/{new_pid}.jpg",
+                rep_face=rep_obj,
+                photo_ids=cluster_data["photo_ids"],
+                faces=cluster_data["faces"],
+                maybe_photos=[],
+                merged_from=[],
+                merged_from_numbering="",
+            )
+            new_people_clusters.append(new_cluster)
+
+        # 7. Phase E: Augment existing people with newly attached faces
+        for p in existing_people:
+            added_faces = person_new_faces.get(p.id, [])
+            if added_faces:
+                p.faces.extend(added_faces)
+                for f in added_faces:
+                    if f.photo_id not in p.photo_ids:
+                        p.photo_ids.append(f.photo_id)
+
+        # Invariant Verification (Strict Frozen Mode Guarantee)
+        if frozen_mode:
+            for p in existing_people:
+                pre_faces = pre_faces_by_person[p.id]
+                cur_faces = set(f.face_id for f in p.faces)
+                if not pre_faces.issubset(cur_faces):
+                    missing_faces = pre_faces - cur_faces
+                    raise ValueError(
+                        f"Frozen mode invariant violation for person {p.id}: {len(missing_faces)} "
+                        f"original faces were lost or transferred: {missing_faces}"
+                    )
+
+        # 8. Phase F: Build Updated Unrecognized Group
+        unrec_pids_set = set(existing_unrecognized.photo_ids)
+        unrec_pids_set.update(new_photos_with_no_faces)
+        for uf in final_unattached_new_faces:
+            unrec_pids_set.add(uf.photo_id)
+
+        updated_unrec_faces: List[Dict[str, Any]] = list(existing_unrecognized.faces)
+        base_unrec_idx = len(updated_unrec_faces)
+
+        for u_idx, uface in enumerate(final_unattached_new_faces):
+            crop_path = f"faces/u{base_unrec_idx + u_idx + 1:03d}.jpg"
+            updated_unrec_faces.append({
+                "face_id": uface.face_id,
+                "photo_id": uface.photo_id,
+                "face": crop_path,
+                "rejection_reason": getattr(uface, "rejection_reason", "unattached"),
+                "det_score": round(float(uface.det_score), 4) if getattr(uface, "det_score", None) else None,
+            })
+
+        updated_unrecognized = UnrecognizedGroup(
+            photo_ids=sorted(list(unrec_pids_set)),
+            faces=updated_unrec_faces,
+        )
+
+        # 9. Phase G: What Changed Report
+        joined_summary = {}
+        for p in existing_people:
+            if person_new_faces[p.id]:
+                joined_summary[p.id] = {
+                    "person_name": p.label or p.id,
+                    "added_photos": list(dict.fromkeys(f.photo_id for f in person_new_faces[p.id])),
+                    "added_faces": [f.face_id for f in person_new_faces[p.id]],
+                }
+
+        diff_report = {
+            "generated_at": datetime.datetime.now().astimezone().isoformat(),
+            "new_photos_count": len(new_photos),
+            "new_photo_ids": sorted(list(new_photos.keys())),
+            "new_people_count": len(new_people_clusters),
+            "new_people_ids": [p.id for p in new_people_clusters],
+            "joined_existing_count": sum(len(f_list) for f_list in person_new_faces.values()),
+            "joined_existing": joined_summary,
+            "existing_people_membership_changed": 0,
+            "new_unrecognized_faces_count": len(final_unattached_new_faces),
+            "new_unrecognized_photos_count": len(new_photos_with_no_faces),
+        }
+
+        all_people = list(existing_people) + new_people_clusters
+        return all_people, updated_unrecognized, diff_report
+

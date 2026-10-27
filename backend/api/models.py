@@ -1,7 +1,30 @@
-"""Pydantic models and schemas for PhotoSorter FastAPI layer (SPEC 5, BUILD_PLAN Phase 3)."""
-
+import uuid
 from typing import List, Dict, Optional, Any, Union
 from pydantic import BaseModel, Field
+
+
+class ScanSourceItem(BaseModel):
+    id: str = Field(default_factory=lambda: f"src_{uuid.uuid4().hex[:6]}")
+    kind: str = "local"  # "local" | "zip" | "drive" | "project"
+    type: Optional[str] = None
+    path_or_url: str
+    label: Optional[str] = None
+    quality: Optional[str] = "original"
+    status: str = "pending"  # "pending" | "scanning" | "completed" | "failed"
+    error: Optional[str] = None
+    photo_count: int = 0
+    added_at: Optional[str] = None
+
+
+class ProjectManifestV2(BaseModel):
+    schema_version: int = 2
+    project_name: str
+    created_at: str
+    settings_hash: Optional[str] = None
+    sources: List[ScanSourceItem] = Field(default_factory=list)
+    total_photos: int = 0
+    total_people: int = 0
+    photo_origins: Dict[str, str] = Field(default_factory=dict)
 
 
 class SettingsModel(BaseModel):
@@ -32,6 +55,9 @@ class SettingsModel(BaseModel):
     drive_api_key: Optional[str] = None
     drive_api_key_masked: Optional[str] = None
     drive_api_key_configured: bool = False
+    scan_subfolders: bool = True
+    max_subfolder_depth: int = 5
+    follow_shortcuts: bool = False
 
 
 class JobStartRequest(BaseModel):
@@ -39,16 +65,23 @@ class JobStartRequest(BaseModel):
     source_path: Optional[str] = None
     drive_folder: Optional[str] = None
     drive_api_key: Optional[str] = None
+    sources: Optional[List[ScanSourceItem]] = None
     output_dir: Optional[str] = "export"
     cache_dir: Optional[str] = None
     settings: Optional[SettingsModel] = None
     keep_edits: Optional[bool] = False
     replay_edits: Optional[bool] = False
+    scan_subfolders: Optional[bool] = None
+    max_subfolder_depth: Optional[int] = None
+    follow_shortcuts: Optional[bool] = None
 
 
 class DriveVerifyRequest(BaseModel):
     drive_folder: str
     drive_api_key: Optional[str] = None
+    scan_subfolders: Optional[bool] = None
+    max_subfolder_depth: Optional[int] = None
+    follow_shortcuts: Optional[bool] = None
 
 
 class DriveVerifyResponse(BaseModel):
@@ -58,6 +91,9 @@ class DriveVerifyResponse(BaseModel):
     has_images: bool = False
     image_count_preview: int = 0
     error_type: Optional[str] = None
+    error_code: Optional[str] = None
+    plain_language_fix: Optional[str] = None
+    diagnostics_report: Optional[str] = None
     message: str
     summary: Optional[Dict[str, Any]] = None
 
@@ -76,6 +112,10 @@ class JobStatusResponse(BaseModel):
     start_time: Optional[float] = None
     message: str = ""
     error: Optional[str] = None
+    error_code: Optional[str] = None
+    error_title: Optional[str] = None
+    plain_language_fix: Optional[str] = None
+    diagnostics_report: Optional[str] = None
     result_summary: Optional[Dict[str, Any]] = None
     recent_faces: List[str] = Field(default_factory=list)
 
@@ -254,6 +294,8 @@ class ProjectItem(BaseModel):
     last_opened: str
     counts: Dict[str, int] = Field(default_factory=dict)
     exists: bool = True
+    schema_version: int = 1
+    sources: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class OpenProjectRequest(BaseModel):
@@ -272,6 +314,13 @@ class OpenProjectResponse(BaseModel):
     edits_error: Optional[str] = None
     applied_edits_count: int = 0
     unapplied_edits: List[Dict[str, Any]] = Field(default_factory=list)
+    sources: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class ProjectSourcesResponse(BaseModel):
+    sources: List[Dict[str, Any]] = Field(default_factory=list)
+    total_sources: int = 0
+    schema_version: int = 2
 
 
 class CheckEditsResponse(BaseModel):
@@ -284,3 +333,65 @@ class CheckEditsResponse(BaseModel):
     message: str = ""
 
 
+class ModelCheckUpdateRequest(BaseModel):
+    simulate: bool = False
+
+
+class ModelDownloadRequest(BaseModel):
+    force: bool = False
+
+
+class ModelStatusResponse(BaseModel):
+    model_name: str = "buffalo_l"
+    installed: bool = False
+    valid: bool = False
+    status: str = "missing"
+    target_dir: Optional[str] = None
+    missing_files: List[str] = Field(default_factory=list)
+    installed_files: List[str] = Field(default_factory=list)
+    total_size_bytes: int = 0
+    version: str = "1.0.0"
+    latest_version: str = "1.0.0"
+    update_available: bool = False
+    update_message: Optional[str] = None
+    is_downloading: bool = False
+    stage: str = "idle"
+    percent: float = 0.0
+    current_bytes: int = 0
+    error: Optional[str] = None
+
+
+class AddSourceRequest(BaseModel):
+    source: ScanSourceItem
+    drive_api_key: Optional[str] = None
+    frozen_mode: bool = True
+
+
+class WhatChangedResponse(BaseModel):
+    generated_at: str = ""
+    new_photos_count: int = 0
+    new_photo_ids: List[str] = Field(default_factory=list)
+    skipped_duplicate_photos: int = 0
+    new_people_count: int = 0
+    new_people_ids: List[str] = Field(default_factory=list)
+    joined_existing_count: int = 0
+    joined_existing: Dict[str, Any] = Field(default_factory=dict)
+    existing_people_membership_changed: int = 0
+    new_unrecognized_faces_count: int = 0
+    new_unrecognized_photos_count: int = 0
+
+
+class SnapshotItem(BaseModel):
+    snapshot_id: str
+    created_at: str
+    label: Optional[str] = None
+    work_dir: Optional[str] = None
+    export_dir: Optional[str] = None
+    files_saved: List[str] = Field(default_factory=list)
+    counts: Dict[str, int] = Field(default_factory=dict)
+
+
+class UndoSnapshotResponse(BaseModel):
+    success: bool
+    restored_snapshot: Dict[str, Any] = Field(default_factory=dict)
+    message: str

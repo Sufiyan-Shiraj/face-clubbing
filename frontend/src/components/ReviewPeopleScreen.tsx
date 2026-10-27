@@ -1,16 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   PersonCluster,
   PhotoInfo,
   UnrecognizedData,
   SuggestionsData,
+  WhatChangedResponse,
 } from '../types';
+import { api } from '../api/client';
 import { PeopleGrid } from './PeopleGrid';
 import { SuggestionReview } from './SuggestionReview';
 import { UnrecognizedTriage } from './UnrecognizedTriage';
 import { PersonModal } from './PersonModal';
 import { ImageViewerModal } from './ImageViewerModal';
-import { Users, Sparkles, HelpCircle, Undo2, CheckCircle, ShieldAlert } from 'lucide-react';
+import { AddSourceModal } from './AddSourceModal';
+import { WhatChangedModal } from './WhatChangedModal';
+import { Users, Sparkles, HelpCircle, Undo2, CheckCircle, ShieldAlert, Plus, Check } from 'lucide-react';
 
 interface ReviewPeopleScreenProps {
   people: PersonCluster[];
@@ -38,6 +42,9 @@ interface ReviewPeopleScreenProps {
   activeSubTab?: 'people' | 'suggestions' | 'unrecognized';
   onSubTabChange?: (tab: 'people' | 'suggestions' | 'unrecognized') => void;
   theme?: string;
+  selectedSourceId?: string;
+  onSourceFilterChange?: (sourceId: string) => void;
+  onRefreshData?: () => void;
 }
 
 export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
@@ -66,6 +73,9 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
   activeSubTab: controlledSubTab,
   onSubTabChange,
   theme = 't-dark',
+  selectedSourceId: controlledSourceId,
+  onSourceFilterChange,
+  onRefreshData,
 }) => {
   const [internalSubTab, setInternalSubTab] = useState<'people' | 'suggestions' | 'unrecognized'>('people');
   const activeSubTab = controlledSubTab !== undefined ? controlledSubTab : internalSubTab;
@@ -76,6 +86,78 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
   const [inspectingPerson, setInspectingPerson] = useState<PersonCluster | null>(null);
   const [viewingPhotoId, setViewingPhotoId] = useState<string | null>(null);
   const [viewingContextPhotoIds, setViewingContextPhotoIds] = useState<string[] | undefined>(undefined);
+
+  // Incremental Source Ingestion & What Changed states
+  const [isAddSourceOpen, setIsAddSourceOpen] = useState<boolean>(false);
+  const [isWhatChangedOpen, setIsWhatChangedOpen] = useState<boolean>(false);
+  const [whatChangedReport, setWhatChangedReport] = useState<WhatChangedResponse | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.getWhatChanged()
+      .then((diff) => {
+        if (diff && (diff.new_photos_count > 0 || (diff.new_photo_ids && diff.new_photo_ids.length > 0) || diff.generated_at)) {
+          setWhatChangedReport(diff);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSourceAdded = (diff: WhatChangedResponse) => {
+    setWhatChangedReport(diff);
+    setIsWhatChangedOpen(true);
+    onRefreshData?.();
+    setToastMessage(`Added ${diff.new_photos_count} new photos successfully.`);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const handleUndoAddition = async () => {
+    await api.undoLastSnapshot();
+    setWhatChangedReport(null);
+    setIsWhatChangedOpen(false);
+    onRefreshData?.();
+    setToastMessage('Project successfully rolled back to pre-addition state.');
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  // Derive available sources across all photos
+  const availableSources = useMemo(() => {
+    const map = new Map<string, { id: string; label: string; photoCount: number }>();
+    for (const p of Object.values(photos)) {
+      if (p.source_id || p.source_label) {
+        const sId = p.source_id || p.source_label || 'unknown';
+        const sLabel = p.source_label || p.source_id || 'Source';
+        const existing = map.get(sId);
+        if (existing) {
+          existing.photoCount += 1;
+        } else {
+          map.set(sId, { id: sId, label: sLabel, photoCount: 1 });
+        }
+      }
+    }
+    return Array.from(map.values());
+  }, [photos]);
+
+  const [internalSourceFilter, setInternalSourceFilter] = useState<string>('all');
+  const activeSourceFilter = controlledSourceId !== undefined ? controlledSourceId : internalSourceFilter;
+  const handleSourceFilterChange = (val: string) => {
+    setInternalSourceFilter(val);
+    onSourceFilterChange?.(val);
+  };
+
+  const filteredPeopleBySource = useMemo(() => {
+    if (activeSourceFilter === 'all') return people;
+    return people.filter((p) => {
+      const pPhotoIds = p.photo_ids || p.photos || [];
+      return pPhotoIds.some((pid) => {
+        const photo = photos[pid];
+        return (
+          photo &&
+          (photo.source_id === activeSourceFilter || photo.source_label === activeSourceFilter)
+        );
+      });
+    });
+  }, [people, photos, activeSourceFilter]);
 
   // Map for quick person lookup
   const peopleMap = useMemo(() => {
@@ -164,8 +246,66 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
           </button>
         </div>
 
-        {/* Quick Undo & Review Stats */}
-        <div className="flex items-center gap-3">
+        {/* Quick Undo, Source Filter & Review Stats */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {availableSources.length > 1 && (
+            <div className="flex items-center gap-2" id="source-filter-container">
+              <span className="text-xs font-mono font-bold uppercase text-[var(--muted)]">Source:</span>
+              <select
+                id="source-filter-select"
+                data-testid="source-filter-select"
+                aria-label="Filter people by source"
+                value={activeSourceFilter}
+                onChange={(e) => handleSourceFilterChange(e.target.value)}
+                className="riso-input text-xs font-mono font-bold px-2.5 py-1 rounded cursor-pointer"
+                style={{
+                  height: '34px',
+                  background: 'var(--card-bg)',
+                  border: '1.5px solid var(--line)',
+                  color: 'var(--text)',
+                }}
+              >
+                <option value="all">All Sources ({Object.keys(photos).length})</option>
+                {availableSources.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label} ({s.photoCount})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Add Source Button */}
+          <button
+            id="btn-add-source"
+            data-testid="btn-add-source"
+            type="button"
+            onClick={() => setIsAddSourceOpen(true)}
+            className="riso-btn-sec"
+            title="Add an additional folder, ZIP, or Google Drive source to this project"
+          >
+            <Plus className="w-4 h-4 text-[var(--accent)]" />
+            <span>+ Add Source</span>
+          </button>
+
+          {/* What Changed Button */}
+          {whatChangedReport && (
+            <button
+              id="btn-view-what-changed"
+              data-testid="btn-view-what-changed"
+              type="button"
+              onClick={() => setIsWhatChangedOpen(true)}
+              className="riso-btn-sec"
+              title="View What Changed in the latest addition"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>What Changed</span>
+              <span className="riso-tab-badge ml-1 text-emerald-400">
+                +{whatChangedReport.new_photos_count}
+              </span>
+            </button>
+          )}
+
           {appliedEditsCount > 0 && onUndo && (
             <button
               onClick={onUndo}
@@ -199,10 +339,36 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
         </div>
       </div>
 
+      {/* Incremental Notification Toast Banner */}
+      {toastMessage && (
+        <div
+          id="review-toast-banner"
+          data-testid="review-toast-banner"
+          className="p-3 rounded-lg flex items-center justify-between text-xs font-mono animate-fadeIn"
+          style={{
+            background: 'rgba(16, 185, 129, 0.15)',
+            border: '1.5px solid #10b981',
+            color: '#34d399',
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            <span>{toastMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            className="opacity-70 hover:opacity-100"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Sub-tab Contents */}
       {activeSubTab === 'people' && (
         <PeopleGrid
-          people={people}
+          people={filteredPeopleBySource}
           photos={photos}
           selectedIds={selectedIds}
           onToggleSelect={onToggleSelect}
@@ -212,6 +378,8 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
           onSelectPerson={(p) => setInspectingPerson(p)}
           isMerging={isMerging}
           theme={theme}
+          selectedSourceId={activeSourceFilter}
+          availableSources={availableSources}
         />
       )}
 
@@ -274,6 +442,31 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
           onInspectPerson={(p) => {
             setViewingPhotoId(null);
             setInspectingPerson(p);
+          }}
+        />
+      )}
+
+      {/* Incremental Add Source Modal */}
+      {isAddSourceOpen && (
+        <AddSourceModal
+          theme={theme}
+          onClose={() => setIsAddSourceOpen(false)}
+          onSourceAdded={handleSourceAdded}
+        />
+      )}
+
+      {/* Incremental What Changed Diff & Rollback Modal */}
+      {isWhatChangedOpen && whatChangedReport && (
+        <WhatChangedModal
+          theme={theme}
+          diff={whatChangedReport}
+          onClose={() => setIsWhatChangedOpen(false)}
+          onUndoAddition={handleUndoAddition}
+          onViewPerson={(pid) => {
+            const found = peopleMap[pid];
+            if (found) {
+              setInspectingPerson(found);
+            }
           }}
         />
       )}

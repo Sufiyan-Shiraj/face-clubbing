@@ -16,12 +16,15 @@ import {
 } from 'lucide-react';
 import { DetachedLogsWindow } from './DetachedLogsWindow';
 import { MascotSticker } from './MascotSticker';
+import { CopyDiagnosticsButton } from './CopyDiagnosticsButton';
 
 export interface ProgressScreenProps {
   status: JobStatus;
   progressHistory: JobStatus[];
   onCancelJob: () => void;
   onGoToReview: () => void;
+  onNavigateHome?: () => void;
+  onNavigateSettings?: () => void;
   isCancelling?: boolean;
   discoveredFaceCrops?: string[];
   theme?: string;
@@ -32,6 +35,8 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
   progressHistory,
   onCancelJob,
   onGoToReview,
+  onNavigateHome,
+  onNavigateSettings,
   isCancelling,
   discoveredFaceCrops = [],
   theme = 't-dark',
@@ -391,6 +396,83 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
             <span style={{ color: 'inherit' }}>Review People</span>
             <ArrowRight className="w-4 h-4 ml-1" style={{ color: 'inherit' }} />
           </button>
+        </div>
+      )}
+
+      {/* Failure / Crash Screen Banner */}
+      {isFailed && (
+        <div
+          id="scan-failure-banner"
+          data-testid="scan-failure-banner"
+          className="mt-6 p-5 sm:p-6 rounded-lg border-2 border-red-500 bg-red-950/20 flex flex-col gap-4 shadow-[3px_3px_0px_rgba(239,68,68,0.4)] animate-fadeIn text-left"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-lg bg-red-900/40 border border-red-600/50 flex items-center justify-center flex-shrink-0 text-red-400">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-extrabold text-base sm:text-lg text-red-200 m-0">
+                    {status.error_title || 'Scan Interrupted By An Error'}
+                  </h3>
+                  <span className="text-xs px-2 py-0.5 rounded font-mono bg-red-900/80 text-red-200 font-bold border border-red-500/60">
+                    [{status.error_code || 'GENERIC_ERROR'}]
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-red-300/90 mt-1 m-0">
+                  {status.error || status.message || 'An error occurred while processing photos.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-start">
+              <CopyDiagnosticsButton
+                reportText={status.diagnostics_report}
+                variant="danger"
+                showPrivacyHint={false}
+              />
+            </div>
+          </div>
+
+          {/* Actionable Plain-Language Fix Guidance */}
+          <div className="p-3.5 rounded bg-black/40 border border-red-500/30 text-xs text-gray-200">
+            <span className="font-bold text-red-400 block mb-1">Recommended Fix:</span>
+            <span>
+              {status.plain_language_fix ||
+                'Check your settings, free disk space, and network connection, then try scanning again.'}
+            </span>
+          </div>
+
+          {/* Navigation Action Buttons */}
+          <div className="flex items-center justify-between pt-1 border-t border-red-500/20 text-xs">
+            <span className="text-gray-400 text-[11px]">
+              Privacy Notice: &quot;Copy diagnostics&quot; captures only counts, OS, and settings hash (no photos or keys).
+            </span>
+            <div className="flex items-center gap-2">
+              {onNavigateSettings && (status.error_code === 'BAD_KEY_400' || status.error_code === 'QUOTA_403') && (
+                <button
+                  type="button"
+                  id="error-open-settings-btn"
+                  onClick={onNavigateSettings}
+                  className="btn sm"
+                  style={{ borderColor: 'var(--accent)', color: 'var(--accent-ink)' }}
+                >
+                  Open Settings
+                </button>
+              )}
+              {onNavigateHome && (
+                <button
+                  type="button"
+                  id="error-return-home-btn"
+                  onClick={onNavigateHome}
+                  className="btn sec sm"
+                >
+                  Return to Home
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

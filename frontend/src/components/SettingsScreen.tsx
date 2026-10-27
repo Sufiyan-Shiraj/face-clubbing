@@ -19,8 +19,11 @@ import {
   ChevronUp,
   Cpu,
   Compass,
+  FolderTree,
 } from 'lucide-react';
 import { MascotSticker } from './MascotSticker';
+import { CopyDiagnosticsButton } from './CopyDiagnosticsButton';
+import { ModelDownloadBanner } from './ModelDownloadBanner';
 import {
   OrbitalClusterVisualizer,
   MergeFusionVisualizer,
@@ -57,6 +60,9 @@ const SPEC_6_2_DEFAULTS: Partial<Settings> = {
   flip_average: false,
   thumb_size: 400,
   face_crop_size: 256,
+  scan_subfolders: true,
+  max_subfolder_depth: 5,
+  follow_shortcuts: false,
 };
 
 const THUMB_OPTIONS: DropdownOption[] = [
@@ -70,6 +76,17 @@ const FACE_CROP_OPTIONS: DropdownOption[] = [
   { value: 192, label: '192 px', desc: 'Compact', badge: 'FAST' },
   { value: 256, label: '256 px', desc: 'Standard', badge: 'DEFAULT' },
   { value: 320, label: '320 px', desc: 'High Detail', badge: 'CRISP' },
+];
+
+const SUBFOLDER_DEPTH_OPTIONS: DropdownOption[] = [
+  { value: 1, label: '1 Level', desc: 'Direct children only' },
+  { value: 2, label: '2 Levels', desc: 'Shallow' },
+  { value: 3, label: '3 Levels', desc: 'Moderate' },
+  { value: 4, label: '4 Levels', desc: 'Deep' },
+  { value: 5, label: '5 Levels', desc: 'Standard', badge: 'DEFAULT' },
+  { value: 6, label: '6 Levels', desc: 'Very deep' },
+  { value: 8, label: '8 Levels', desc: 'Extra deep' },
+  { value: 10, label: '10 Levels', desc: 'Maximum' },
 ];
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
@@ -99,6 +116,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     include_maybe: false,
     event_title: 'CatLog Gallery',
     event_subtitle: 'Auto-sorted face albums and photo gallery',
+    scan_subfolders: true,
+    max_subfolder_depth: 5,
+    follow_shortcuts: false,
   });
 
   const [driveKeyInput, setDriveKeyInput] = useState('');
@@ -699,6 +719,62 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 )}
               </div>
             </div>
+
+            {/* Folder & Cloud Traversal Options */}
+            <div id="card-settings-subfolders" className="settings-panel p-5 space-y-4">
+              <div className="flex items-center justify-between border-b-2 border-[var(--line)] pb-2.5">
+                <span className="text-sm md:text-base font-extrabold uppercase tracking-wider text-[var(--text)] flex items-center gap-2">
+                  <FolderTree className="w-4 h-4 text-[var(--accent)]" />
+                  Folder &amp; Cloud Traversal
+                </span>
+                <span className="text-xs font-mono text-[var(--muted)]">Recursion Options</span>
+              </div>
+
+              <div className="space-y-3.5">
+                <CustomCheckbox
+                  id="setting-scan-subfolders"
+                  checked={settings.scan_subfolders ?? true}
+                  onChange={(checked) => {
+                    const updated = { ...settings, scan_subfolders: checked };
+                    setSettings(updated);
+                    api.updateSettings({ scan_subfolders: checked }).catch(console.error);
+                  }}
+                  title="Scan Subfolders"
+                  subtitle="Recursively traverse nested subfolders to discover photos (default: enabled)."
+                />
+
+                {(settings.scan_subfolders ?? true) && (
+                  <div className="pl-6 border-l-2 border-[var(--line)] space-y-2">
+                    <CustomDropdown
+                      id="setting-subfolder-depth"
+                      label="Recursive Subfolder Depth Limit"
+                      value={settings.max_subfolder_depth ?? 5}
+                      onChange={(val) => {
+                        const updated = { ...settings, max_subfolder_depth: val };
+                        setSettings(updated);
+                        api.updateSettings({ max_subfolder_depth: val }).catch(console.error);
+                      }}
+                      options={SUBFOLDER_DEPTH_OPTIONS}
+                    />
+                    <p className="text-xs text-[var(--muted)]">
+                      Maximum levels of nested folders to search down. Default is 5 levels.
+                    </p>
+                  </div>
+                )}
+
+                <CustomCheckbox
+                  id="setting-follow-shortcuts"
+                  checked={settings.follow_shortcuts ?? false}
+                  onChange={(checked) => {
+                    const updated = { ...settings, follow_shortcuts: checked };
+                    setSettings(updated);
+                    api.updateSettings({ follow_shortcuts: checked }).catch(console.error);
+                  }}
+                  title="Include Shortcut Folders"
+                  subtitle="Follow Google Drive shortcuts to other folders (default: disabled)."
+                />
+              </div>
+            </div>
           </div>
 
           {/* Right Side: Asset Dimensions & Clustering Telemetry (6 Cols) */}
@@ -794,6 +870,53 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   )}
                 </div>
               )}
+            </div>
+
+            {/* AI Face Recognition Models */}
+            <div className="settings-panel p-5 space-y-3.5">
+              <div className="flex items-center justify-between border-b-2 border-[var(--line)] pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-[var(--accent)]" />
+                  <span className="text-sm md:text-base font-extrabold uppercase tracking-wider text-[var(--text)]">
+                    Face Recognition Models
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs text-[var(--muted)] m-0 leading-relaxed">
+                CatLog uses InsightFace deep learning models (<code className="text-[var(--accent)]">buffalo_l</code>: SCRFD detector + ResNet50 ArcFace) to detect faces and compute normalized 512-d embeddings.
+              </p>
+
+              <ModelDownloadBanner />
+            </div>
+
+            {/* System Diagnostics & Privacy */}
+            <div className="settings-panel p-5 space-y-3.5">
+              <div className="flex items-center justify-between border-b-2 border-[var(--line)] pb-2.5">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[var(--accent)]" />
+                  <span className="text-sm md:text-base font-extrabold uppercase tracking-wider text-[var(--text)]">
+                    System Diagnostics & Privacy
+                  </span>
+                </div>
+                <CopyDiagnosticsButton variant="secondary" showPrivacyHint={false} />
+              </div>
+
+              <p className="text-xs text-[var(--muted)] m-0 leading-relaxed">
+                Generate a privacy-safe diagnostic report for bug reporting on GitHub.
+                The report strictly contains system details (OS, Python version, CatLog build, settings hash)
+                and counts of photos and clusters.
+              </p>
+
+              <div className="p-3 rounded bg-[var(--input)] border border-[var(--panel-border)] text-[11px] text-[var(--muted)] space-y-1">
+                <span className="font-bold text-[var(--text)] block">Privacy Guarantee:</span>
+                <ul className="list-disc list-inside space-y-0.5 font-mono text-[10px]">
+                  <li>ZERO personal photos or facial crops</li>
+                  <li>ZERO local folder or file paths</li>
+                  <li>ZERO Google Drive URLs or API keys</li>
+                  <li>ZERO attendee names or biometrics</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

@@ -8,6 +8,7 @@ import {
   SuggestionsData,
   JobStatus,
   OpenProjectResponse,
+  ScanSourceItem,
 } from './types';
 import { Header, RisoTheme } from './components/Header';
 import { HomeScreen } from './components/HomeScreen';
@@ -817,15 +818,24 @@ export const App: React.FC = () => {
   };
 
   // Start job
-  const handleStartJob = async (inputPath?: string, driveFolder?: string, driveApiKey?: string) => {
+  const handleStartJob = async (
+    inputPath?: string,
+    driveFolder?: string,
+    driveApiKey?: string,
+    scanOptions?: { scan_subfolders?: boolean; max_subfolder_depth?: number; follow_shortcuts?: boolean },
+    sources?: ScanSourceItem[]
+  ) => {
     try {
       let keepEdits = false;
+      const targetSourcePath = (sources && sources.length > 0)
+        ? sources[0].path_or_url
+        : (inputPath || driveFolder);
       try {
-        const check = await api.checkEdits(undefined, inputPath || driveFolder);
+        const check = await api.checkEdits(undefined, targetSourcePath);
         if (check && check.has_saved_edits) {
           const promptMsg = `${check.saved_edits_count} saved edits will be re-applied.\n\n` +
             (check.is_different_source
-              ? `Source folder is different from the previous scan (${inputPath || driveFolder} vs ${check.previous_source || 'previous'}). Default: Start fresh.\n\n`
+              ? `Source folder is different from the previous scan (${targetSourcePath} vs ${check.previous_source || 'previous'}). Default: Start fresh.\n\n`
               : '') +
             `Would you like to keep saved edits or start fresh with empty edits?`;
 
@@ -863,7 +873,7 @@ export const App: React.FC = () => {
         console.warn('Failed to check edits prior to scan:', checkErr);
       }
 
-      const st = await api.startJob(inputPath, driveFolder, driveApiKey, 'export', keepEdits);
+      const st = await api.startJob(inputPath, driveFolder, driveApiKey, 'export', keepEdits, scanOptions, sources);
       setJobStatus(st);
       setProgressHistory([st]);
       setActiveTab('progress');
@@ -1130,6 +1140,8 @@ export const App: React.FC = () => {
               setActiveTab('people');
               loadAllData();
             }}
+            onNavigateHome={() => handleTabChange('home')}
+            onNavigateSettings={() => handleTabChange('settings')}
             isCancelling={isCancelling}
             discoveredFaceCrops={
               isTutorialOpen && allDiscoveredFaces.length === 0
@@ -1167,6 +1179,7 @@ export const App: React.FC = () => {
             activeSubTab={reviewSubTab}
             onSubTabChange={setReviewSubTab}
             theme={theme}
+            onRefreshData={loadAllData}
           />
         )}
 

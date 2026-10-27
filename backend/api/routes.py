@@ -31,14 +31,45 @@ from backend.api.models import (
     ProjectItem,
     OpenProjectRequest,
     OpenProjectResponse,
+    ProjectSourcesResponse,
     CheckEditsResponse,
+    ModelCheckUpdateRequest,
+    ModelDownloadRequest,
+    ModelStatusResponse,
+    AddSourceRequest,
+    WhatChangedResponse,
+    SnapshotItem,
+    UndoSnapshotResponse,
 )
+from backend.api.diagnostics import DiagnosticsReport, classify_error, generate_diagnostics_report
+from backend.engine.models_downloader import model_download_manager
 from backend.api.state import AppState
 from backend.api.jobs import JobManager
 
 
 def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
     router = APIRouter(prefix="/api")
+
+    # 0. Diagnostics Endpoint (V2-1)
+    @router.get("/diagnostics", response_model=DiagnosticsReport)
+    def get_diagnostics():
+        return generate_diagnostics_report(state=state, job_manager=job_manager)
+
+    # 0.1 Model Weights Management Endpoints
+    @router.get("/models/status", response_model=ModelStatusResponse)
+    def get_models_status():
+        model_root = getattr(state.settings, "model_root", None)
+        return model_download_manager.get_status(model_root=model_root)
+
+    @router.post("/models/check-update")
+    def check_models_update(req: ModelCheckUpdateRequest = ModelCheckUpdateRequest()):
+        model_root = getattr(state.settings, "model_root", None)
+        return model_download_manager.check_updates(model_root=model_root, simulate=req.simulate)
+
+    @router.post("/models/download", response_model=ModelStatusResponse)
+    def download_models(req: ModelDownloadRequest = ModelDownloadRequest()):
+        model_root = getattr(state.settings, "model_root", None)
+        return model_download_manager.start_download(model_root=model_root, force=req.force)
 
     # 1. Job Management Endpoints
     @router.post("/jobs/start", response_model=JobStatusResponse)
@@ -81,24 +112,43 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
         from backend.drive.parser import parse_drive_folder_id
         from backend.drive.config import get_drive_api_key
 
+        def _make_error_response(err_val: Any, default_code: str, fix: str, msg: str, fid: Optional[str] = None, err_type: str = "other") -> DriveVerifyResponse:
+            classification = classify_error(err_val)
+            code = classification.error_code if classification.error_code != "GENERIC_ERROR" else default_code
+            plain_fix = classification.plain_language_fix or fix
+            report = generate_diagnostics_report(state, job_manager, error_override=err_val)
+            return DriveVerifyResponse(
+                valid=False,
+                folder_id=fid,
+                error_type=err_type,
+                error_code=code,
+                plain_language_fix=plain_fix,
+                diagnostics_report=report.formatted_report,
+                message=msg,
+            )
+
         # 1. Parse folder ID from link or raw ID
         try:
             folder_id = parse_drive_folder_id(req.drive_folder)
         except ValueError as e:
-            return DriveVerifyResponse(
-                valid=False,
-                error_type="invalid_link",
-                message=str(e),
+            return _make_error_response(
+                e,
+                default_code="CORRUPT_INPUT",
+                fix="Make sure you copied a valid Google Drive folder link or folder ID.",
+                msg=str(e),
+                err_type="invalid_link",
             )
 
         # 2. Check API key presence
         api_key = (req.drive_api_key or "").strip() or get_drive_api_key()
         if not api_key:
-            return DriveVerifyResponse(
-                valid=False,
-                folder_id=folder_id,
-                error_type="api_key_missing",
-                message="Google Drive API key is missing. Please provide your API key to check Google Drive.",
+            return _make_error_response(
+                "api_key_missing",
+                default_code="BAD_KEY_400",
+                fix="Google Drive requires an API key for public folders. Open Settings to configure your free Google Drive API key.",
+                msg="Google Drive API key is missing. Please provide your API key to check Google Drive.",
+                fid=folder_id,
+                err_type="api_key_missing",
             )
 
         # 3. Check folder existence and metadata via Drive API v3
@@ -115,48 +165,67 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             )
 
             if meta_resp.status_code == 400 or "API key not valid" in meta_resp.text:
-                return DriveVerifyResponse(
-                    valid=False,
-                    folder_id=folder_id,
-                    error_type="api_key_invalid",
-                    message="Invalid Google Drive API key. Please check and re-enter your API key.",
+                return _make_error_response(
+                    "api key not valid 400",
+                    default_code="BAD_KEY_400",
+                    fix="The Google Drive API key is invalid or expired. Check your API key in Settings and ensure Google Drive API is enabled in Google Cloud Console.",
+                    msg="Invalid Google Drive API key. Please check and re-enter your API key.",
+                    fid=folder_id,
+                    err_type="api_key_invalid",
                 )
             if meta_resp.status_code == 404:
-                return DriveVerifyResponse(
-                    valid=False,
-                    folder_id=folder_id,
-                    error_type="folder_not_found",
-                    message=f"Google Drive folder '{folder_id}' was not found. Please verify the link.",
+                return _make_error_response(
+                    "404 not found",
+                    default_code="PRIVATE_FOLDER_404",
+                    fix="CatLog could not find this Google Drive folder. Check if the link is correct, or if the folder was deleted or moved.",
+                    msg=f"Google Drive folder '{folder_id}' was not found. Please verify the link.",
+                    fid=folder_id,
+                    err_type="folder_not_found",
                 )
             if meta_resp.status_code == 403:
-                return DriveVerifyResponse(
-                    valid=False,
-                    folder_id=folder_id,
-                    error_type="folder_permission_denied",
-                    message="Google Drive folder is private or inaccessible. Ensure the folder is shared with 'Anyone with the link' (Viewer access).",
+                is_quota = "quota" in meta_resp.text.lower() or "ratelimit" in meta_resp.text.lower()
+                code = "QUOTA_403" if is_quota else "PRIVATE_FOLDER_404"
+                fix = (
+                    "The Google Drive API rate limit or daily quota has been exceeded. Please wait a few minutes or enter your own free API key in Settings."
+                    if is_quota else
+                    "CatLog could not access this Google Drive folder. Ensure the Google Drive folder link sharing is set to 'Anyone with the link' (Viewer access)."
+                )
+                return _make_error_response(
+                    meta_resp.text or ("quota 403" if is_quota else "403 permission"),
+                    default_code=code,
+                    fix=fix,
+                    msg="Google Drive API quota exceeded." if is_quota else "Google Drive folder is private or inaccessible. Ensure the folder is shared with 'Anyone with the link' (Viewer access).",
+                    fid=folder_id,
+                    err_type="quota_exceeded" if is_quota else "folder_permission_denied",
                 )
             if meta_resp.status_code != 200:
-                return DriveVerifyResponse(
-                    valid=False,
-                    folder_id=folder_id,
-                    error_type="other",
-                    message=f"Google Drive API error (HTTP {meta_resp.status_code}).",
+                return _make_error_response(
+                    f"HTTP {meta_resp.status_code}: {meta_resp.text}",
+                    default_code="GENERIC_ERROR",
+                    fix="Check your internet connection and Google Drive link, or verify your API key in Settings.",
+                    msg=f"Google Drive API error (HTTP {meta_resp.status_code}).",
+                    fid=folder_id,
+                    err_type="other",
                 )
 
             meta_data = meta_resp.json()
             if meta_data.get("trashed"):
-                return DriveVerifyResponse(
-                    valid=False,
-                    folder_id=folder_id,
-                    error_type="folder_not_found",
-                    message="This Google Drive folder is in trash.",
+                return _make_error_response(
+                    "trash folder",
+                    default_code="PRIVATE_FOLDER_404",
+                    fix="The target Google Drive folder is in the Trash. Restore the folder or use an active folder link.",
+                    msg="This Google Drive folder is in trash.",
+                    fid=folder_id,
+                    err_type="folder_not_found",
                 )
             if meta_data.get("mimeType") != "application/vnd.google-apps.folder":
-                return DriveVerifyResponse(
-                    valid=False,
-                    folder_id=folder_id,
-                    error_type="invalid_link",
-                    message="The provided link is for a file, not a Google Drive folder.",
+                return _make_error_response(
+                    "file not folder",
+                    default_code="CORRUPT_INPUT",
+                    fix="CatLog expects a Google Drive folder link, but a file link was provided. Please provide a folder link.",
+                    msg="The provided link is for a file, not a Google Drive folder.",
+                    fid=folder_id,
+                    err_type="invalid_link",
                 )
 
             folder_name = meta_data.get("name", "Google Drive Folder")
@@ -164,7 +233,17 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             # 4. Check if there are images in the folder (including subfolders, ignoring videos)
             from backend.drive import DriveClient
             client = DriveClient(api_key=api_key)
-            list_res = client.list_folder_images(folder_id=folder_id, recursive=True, stop_after_images=10)
+            rec = req.scan_subfolders if req.scan_subfolders is not None else getattr(state.settings, "scan_subfolders", True)
+            depth = req.max_subfolder_depth if req.max_subfolder_depth is not None else getattr(state.settings, "max_subfolder_depth", 5)
+            shortcuts = req.follow_shortcuts if req.follow_shortcuts is not None else getattr(state.settings, "follow_shortcuts", False)
+
+            list_res = client.list_folder_images(
+                folder_id=folder_id,
+                recursive=rec,
+                max_depth=depth,
+                include_shortcuts=shortcuts,
+                stop_after_images=10,
+            )
             has_images = list_res.image_count > 0
 
             if not has_images:
@@ -177,6 +256,7 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                 if list_res.skipped_non_images_count > 0:
                     details.append(f"found non-image files like {', '.join(repr(n) for n in list_res.non_image_sample_names[:3])}")
                 extra_msg = f" ({'; '.join(details)})" if details else ""
+                diag_rep = generate_diagnostics_report(state, job_manager)
                 return DriveVerifyResponse(
                     valid=False,
                     folder_id=folder_id,
@@ -185,6 +265,9 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                     image_count_preview=0,
                     summary=list_res.summary,
                     error_type="no_images",
+                    error_code="CORRUPT_INPUT",
+                    plain_language_fix="Upload JPEG or PNG photos to the Google Drive folder or its subfolders, and verify sharing permissions.",
+                    diagnostics_report=diag_rep.formatted_report,
                     message=f"Folder '{folder_name}' was found, but it contains no image files{extra_msg}.",
                 )
 
@@ -202,18 +285,22 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                 message=f"Verified: '{folder_name}' ({list_res.image_count}+ images found in {folders_cnt} folders{extra_info})",
             )
         except requests.exceptions.RequestException as e:
-            return DriveVerifyResponse(
-                valid=False,
-                folder_id=folder_id,
-                error_type="other",
-                message=f"Network error connecting to Google Drive API: {e}",
+            return _make_error_response(
+                e,
+                default_code="OFFLINE",
+                fix="CatLog was unable to connect to Google Drive. Check your internet connection or proxy settings.",
+                msg=f"Network error connecting to Google Drive API: {e}",
+                fid=folder_id,
+                err_type="other",
             )
         except Exception as e:
-            return DriveVerifyResponse(
-                valid=False,
-                folder_id=folder_id,
-                error_type="other",
-                message=f"Verification failed: {e}",
+            return _make_error_response(
+                e,
+                default_code="GENERIC_ERROR",
+                fix="An unexpected error occurred during verification. Check your settings and network connection.",
+                msg=f"Verification failed: {e}",
+                fid=folder_id,
+                err_type="other",
             )
 
     # 2. People & Unrecognized Endpoints
@@ -454,6 +541,27 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
 
             title = (req and req.title) or "Select Public Export Directory"
             selected = open_folder_dialog(initial_dir=initial_dir, title=title)
+            if selected:
+                return SelectDialogResponse(selected=str(Path(selected).resolve()), cancelled=False)
+            return SelectDialogResponse(selected=None, cancelled=True)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return SelectDialogResponse(selected=None, cancelled=True)
+
+    @router.post("/fs/select-file-dialog", response_model=SelectDialogResponse)
+    def open_select_file_dialog(req: Optional[SelectDialogRequest] = None):
+        try:
+            from pathlib import Path
+            from backend.api.dialog import open_file_dialog
+            initial_dir = ""
+            if req and req.initial_dir and Path(req.initial_dir).exists():
+                initial_dir = str(Path(req.initial_dir).resolve())
+            else:
+                initial_dir = str(state.repo_root.resolve())
+
+            title = (req and req.title) or "Select Photo File or ZIP Archive"
+            selected = open_file_dialog(initial_dir=initial_dir, title=title)
             if selected:
                 return SelectDialogResponse(selected=str(Path(selected).resolve()), cancelled=False)
             return SelectDialogResponse(selected=None, cancelled=True)
@@ -764,10 +872,12 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
         # Update last_opened and counts in projects.json
         updated = save_recent_project(
             work_dir=proj["work_dir"],
-            export_path=proj.get("export_path"),
+            export_path=state.settings.output_dir or proj.get("export_path"),
             source_description=proj.get("source_description"),
             counts={"people": res["people_count"], "photos": res["photos_count"]},
             name=proj.get("name"),
+            sources=res.get("sources", []) or proj.get("sources", []),
+            schema_version=proj.get("schema_version", 2),
         )
 
         return OpenProjectResponse(
@@ -780,7 +890,64 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             edits_error=res["edits_error"],
             applied_edits_count=res["applied_edits_count"],
             unapplied_edits=res.get("unapplied_edits", []),
+            sources=res.get("sources", []),
         )
+
+    @router.get("/project/sources", response_model=ProjectSourcesResponse)
+    def get_project_sources():
+        """Returns the list of indexed sources for the current active project."""
+        sources = getattr(state, "sources", []) or []
+        schema_version = 2 if getattr(state, "project_manifest", None) else 1
+        return ProjectSourcesResponse(
+            sources=sources,
+            total_sources=len(sources),
+            schema_version=schema_version,
+        )
+
+    @router.post("/project/sources/add", response_model=WhatChangedResponse)
+    def add_project_source(req: AddSourceRequest):
+        """Adds a source incrementally to the active project in frozen mode."""
+        try:
+            diff_report = state.add_source_incremental(
+                new_source=req.source.model_dump(),
+                drive_api_key=req.drive_api_key,
+                frozen_mode=req.frozen_mode,
+            )
+            return WhatChangedResponse(**diff_report)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.get("/project/what-changed", response_model=WhatChangedResponse)
+    def get_what_changed():
+        """Returns the latest 'What Changed' diff report for the active project."""
+        diff = state.get_what_changed()
+        if not diff:
+            return WhatChangedResponse()
+        return WhatChangedResponse(**diff)
+
+    @router.post("/project/snapshots/undo", response_model=UndoSnapshotResponse)
+    def undo_last_snapshot():
+        """Rolls back the active project to its previous snapshot."""
+        try:
+            meta = state.undo_last_snapshot()
+            return UndoSnapshotResponse(
+                success=True,
+                restored_snapshot=meta,
+                message=f"Successfully rolled back to snapshot {meta.get('snapshot_id')}.",
+            )
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.get("/project/snapshots", response_model=List[SnapshotItem])
+    def get_snapshots():
+        """Lists all available snapshots for the active project."""
+        try:
+            snaps = state.get_snapshots()
+            return [SnapshotItem(**s) for s in snaps]
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
     @router.get("/projects/check-edits", response_model=CheckEditsResponse)
     def check_edits(work_dir: Optional[str] = None, input_path: Optional[str] = None):

@@ -632,3 +632,125 @@ def test_drive_project_export_reopen_temp_cleanup_edits_undo_reexport(temp_env):
     assert out_pj["people"][0]["label"] == "Graduate Alice"
 
 
+def test_saved_project_loads_strictly_project_photos_no_bleeding(temp_env):
+    """
+    Verifies that when multiple projects share a cache/work directory (e.g. export.work),
+    opening one project strictly loads ONLY that project's photos, without any bleeding
+    from other projects into photos, people, or unrecognized groups.
+    """
+    from backend.api.state import AppState
+    work_dir = temp_env["work_dir"]
+    export_base = temp_env["export_dir"]
+    cache = EmbeddingCache(work_dir)
+
+    # Project A has 2 photos: pa_1, pa_2
+    pa_faces = []
+    for i, pid in enumerate(["pa_1", "pa_2"]):
+        emb = np.zeros(512, dtype=np.float32)
+        emb[0] = 1.0 + i
+        fid = f"f_{pid}_001"
+        f = FaceDetection(face_id=fid, photo_id=pid, bbox=[0, 0, 50, 50], det_score=0.95, embedding=emb)
+        pa_faces.append(f)
+        prec = PhotoRecord(photo_id=pid, original_path=f"photos/proj_a/{pid}.jpg", file_name=f"{pid}.jpg", width=100, height=100, faces=[f])
+        cache.save(prec)
+
+    # Project B has 3 photos: pb_1, pb_2, pb_3 (in same shared cache!)
+    for i, pid in enumerate(["pb_1", "pb_2", "pb_3"]):
+        emb = np.zeros(512, dtype=np.float32)
+        emb[10] = 2.0 + i
+        fid = f"f_{pid}_001"
+        f = FaceDetection(face_id=fid, photo_id=pid, bbox=[0, 0, 50, 50], det_score=0.95, embedding=emb)
+        prec = PhotoRecord(photo_id=pid, original_path=f"photos/proj_b/{pid}.jpg", file_name=f"{pid}.jpg", width=100, height=100, faces=[f])
+        cache.save(prec)
+
+    # Export Project A into nested folder 'export/EventA/EventA Images'
+    proj_a_export = export_base / "EventA" / "EventA Images"
+    proj_a_export.mkdir(parents=True, exist_ok=True)
+    pj_payload = {
+        "version": 1,
+        "photos": {
+            "pa_1": {"name": "pa_1.jpg", "thumb": "thumbs/pa_1.jpg"},
+            "pa_2": {"name": "pa_2.jpg", "thumb": "thumbs/pa_2.jpg"},
+        },
+        "people": [
+            {
+                "id": "person_a",
+                "label": "Person A",
+                "face": "faces/person_a.jpg",
+                "photo_ids": ["pa_1"],
+                "faces": [{"face_id": "f_pa_1_001", "photo_id": "pa_1", "bbox": [0, 0, 50, 50], "det_score": 0.95}],
+            },
+            {
+                "id": "person_b",
+                "label": "Person B",
+                "face": "faces/person_b.jpg",
+                "photo_ids": ["pa_2"],
+                "faces": [{"face_id": "f_pa_2_001", "photo_id": "pa_2", "bbox": [0, 0, 50, 50], "det_score": 0.95}],
+            },
+        ],
+        "unrecognized": {"photo_ids": [], "faces": []},
+    }
+    (proj_a_export / "people.json").write_text(json.dumps(pj_payload), encoding="utf-8")
+
+    # Now open saved project passing export_path as 'export/EventA/EventA' (without 'Images' suffix)
+    # This precisely mimics the user's issue with BOO 26 PM/BOO 26
+    state = AppState(work_dir=work_dir)
+    res = state.open_saved_project(
+        work_dir=work_dir,
+        export_path=export_base / "EventA" / "EventA",
+    )
+
+    # Assert Project A was cleanly loaded
+    assert res["people_count"] == 2
+    assert res["photos_count"] == 2
+    assert len(state.photos) == 2
+    assert set(state.photos.keys()) == {"pa_1", "pa_2"}
+    # Verify NONE of Project B's photos bleed into Project A
+    for b_pid in ["pb_1", "pb_2", "pb_3"]:
+        assert b_pid not in state.photos
+    # Verify output_dir auto-healed to the actual export folder
+    assert Path(state.settings.output_dir).resolve() == proj_a_export.resolve()
+
+
+def test_resolve_project_export_path_nested_subfolders(temp_env):
+    """
+    Verifies that resolve_project_export_path and load_recent_projects auto-heal
+    nested subfolders and update counts accurately.
+    """
+    from backend.api.projects import resolve_project_export_path, load_recent_projects, save_recent_project
+    work_dir = temp_env["work_dir"]
+    export_dir = temp_env["export_dir"]
+
+    nested_export = export_dir / "Event26" / "Event26 Images"
+    nested_export.mkdir(parents=True, exist_ok=True)
+    pj_payload = {
+        "version": 1,
+        "photos": {"p1": {}, "p2": {}, "p3": {}},
+        "people": [{"id": "p01", "photos": ["p1", "p2"], "faces": []}],
+        "unrecognized": {"photo_ids": ["p3"], "faces": []},
+    }
+    (nested_export / "people.json").write_text(json.dumps(pj_payload), encoding="utf-8")
+
+    # Initial export_path passed with missing 'Images'
+    broken_export = export_dir / "Event26" / "Event26"
+    resolved = resolve_project_export_path(work_dir, broken_export)
+    assert resolved == str(nested_export)
+
+    # Save with wrong counts and broken path
+    save_recent_project(
+        work_dir=work_dir,
+        export_path=broken_export,
+        counts={"people": 99, "photos": 999},
+        name="Event26",
+    )
+
+    # Load should auto-heal path and counts
+    projects = load_recent_projects()
+    assert len(projects) == 1
+    p_entry = projects[0]
+    assert p_entry["export_path"] == str(nested_export)
+    assert p_entry["counts"]["people"] == 1
+    assert p_entry["counts"]["photos"] == 3
+
+
+
