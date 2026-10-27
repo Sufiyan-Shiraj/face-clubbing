@@ -911,3 +911,139 @@ class TestDriveSubfolderRecursion:
         assert res.folders_scanned == 3
         assert "top folder contains no direct images" in res.summary["message"]
 
+    @patch.object(requests.Session, "get")
+    def test_subfolders_option_disabled_only_scans_top_level(self, mock_get):
+        """When recursive=False (subfolders option turned off), subfolders are not entered."""
+        def route_request(url, params=None, **kwargs):
+            q = (params or {}).get("q", "")
+            resp = MagicMock()
+            resp.status_code = 200
+
+            if "'root_fid' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_top", "name": "top.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                        {"id": "sub_folder", "name": "Sub", "mimeType": "application/vnd.google-apps.folder"},
+                    ],
+                }
+            elif "'sub_folder' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_sub", "name": "sub.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                    ],
+                }
+            else:
+                resp.json.return_value = {"files": []}
+            return resp
+
+        mock_get.side_effect = route_request
+
+        client = DriveClient(api_key="AIzaSyMockKeyForListing123")
+        res = client.list_folder_images("root_fid", recursive=False)
+
+        assert len(res.files) == 1
+        assert res.files[0].id == "img_top"
+        assert res.folders_scanned == 1
+        assert res.summary["scan_subfolders"] is False
+
+    @patch.object(requests.Session, "get")
+    def test_subfolder_depth_option_limits_recursion(self, mock_get):
+        """When max_depth=1 is configured, recursion stops after level 1 and sets depth_limit_hit."""
+        def route_request(url, params=None, **kwargs):
+            q = (params or {}).get("q", "")
+            resp = MagicMock()
+            resp.status_code = 200
+
+            if "'root_fid' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_l0", "name": "root.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                        {"id": "folder_l1", "name": "Level1", "mimeType": "application/vnd.google-apps.folder"},
+                    ],
+                }
+            elif "'folder_l1' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_l1", "name": "level1.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                        {"id": "folder_l2", "name": "Level2", "mimeType": "application/vnd.google-apps.folder"},
+                    ],
+                }
+            elif "'folder_l2' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_l2", "name": "level2.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                    ],
+                }
+            else:
+                resp.json.return_value = {"files": []}
+            return resp
+
+        mock_get.side_effect = route_request
+
+        client = DriveClient(api_key="AIzaSyMockKeyForListing123")
+        # max_depth=1: traverses root (0) and folder_l1 (1), but does NOT queue folder_l2 (depth 2 > 1)
+        res = client.list_folder_images("root_fid", recursive=True, max_depth=1)
+
+        assert len(res.files) == 2
+        file_ids = [f.id for f in res.files]
+        assert "img_l0" in file_ids
+        assert "img_l1" in file_ids
+        assert "img_l2" not in file_ids
+        assert res.depth_limit_hit is True
+        assert res.summary["depth_limit_hit"] is True
+        assert res.summary["max_subfolder_depth"] == 1
+
+    @patch.object(requests.Session, "get")
+    def test_shortcut_folders_option_skipped_by_default_and_followed_when_enabled(self, mock_get):
+        """Shortcut folders are skipped by default (default False) and followed when enabled."""
+        def route_request(url, params=None, **kwargs):
+            q = (params or {}).get("q", "")
+            resp = MagicMock()
+            resp.status_code = 200
+
+            if "'root_fid' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_root", "name": "root.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                        {
+                            "id": "sc_folder_id",
+                            "name": "ShortcutToSharedAlbum",
+                            "mimeType": "application/vnd.google-apps.shortcut",
+                            "shortcutDetails": {
+                                "targetId": "target_folder_123",
+                                "targetMimeType": "application/vnd.google-apps.folder",
+                            },
+                        },
+                    ],
+                }
+            elif "'target_folder_123' in parents" in q:
+                resp.json.return_value = {
+                    "files": [
+                        {"id": "img_target", "name": "from_shortcut.jpg", "mimeType": "image/jpeg", "modifiedTime": "2026-10-14T01:00:00Z"},
+                    ],
+                }
+            else:
+                resp.json.return_value = {"files": []}
+            return resp
+
+        mock_get.side_effect = route_request
+
+        client = DriveClient(api_key="AIzaSyMockKeyForListing123")
+
+        # 1. Default (include_shortcuts=False): shortcut folder is skipped
+        res_default = client.list_folder_images("root_fid")
+        assert len(res_default.files) == 1
+        assert res_default.files[0].id == "img_root"
+        assert res_default.shortcuts_skipped == 1
+        assert res_default.summary["shortcuts_skipped"] == 1
+
+        # 2. Enabled (include_shortcuts=True): shortcut folder is followed and images found
+        res_enabled = client.list_folder_images("root_fid", include_shortcuts=True)
+        assert len(res_enabled.files) == 2
+        file_ids = [f.id for f in res_enabled.files]
+        assert "img_root" in file_ids
+        assert "img_target" in file_ids
+        assert res_enabled.shortcuts_skipped == 0
+        assert res_enabled.summary["follow_shortcuts"] is True
+
+

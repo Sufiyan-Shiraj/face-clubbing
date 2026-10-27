@@ -218,18 +218,26 @@ class DriveClient:
         progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
         recursive: bool = True,
         max_depth: int = 5,
+        include_shortcuts: bool = False,
+        shortcut_folders: Optional[bool] = None,
+        follow_shortcuts: Optional[bool] = None,
         max_files: int = 20000,
         stop_after_images: Optional[int] = None,
     ) -> DriveListResult:
         """
         List all image files inside a public Google Drive folder with pagination.
-        Recursively traverses subfolders using an iterative queue (depth <= max_depth, max 20,000 files).
+        Recursively traverses subfolders if recursive is True (depth <= max_depth, max 20,000 files).
+        Can optionally follow shortcut folders when include_shortcuts/shortcut_folders is True.
         Tracks visited folders to avoid loops.
         Deduplicates by Drive file ID.
-        Skips shortcuts and Google-native docs, counting them.
         Captures subfolder failures (403/404) without failing the whole scan.
         """
         import collections
+
+        if shortcut_folders is not None:
+            include_shortcuts = shortcut_folders
+        if follow_shortcuts is not None:
+            include_shortcuts = follow_shortcuts
 
         files: List[DriveFile] = []
         total_items = 0
@@ -345,6 +353,49 @@ class DriveClient:
 
                     # 2. Google Drive shortcut
                     if mime_type == "application/vnd.google-apps.shortcut":
+                        shortcut_details = item.get("shortcutDetails") or {}
+                        target_id = shortcut_details.get("targetId")
+                        target_mime = shortcut_details.get("targetMimeType", "")
+
+                        # Shortcut to folder: traverse as subfolder if shortcuts option is enabled
+                        if target_mime == "application/vnd.google-apps.folder":
+                            if include_shortcuts and recursive:
+                                if target_id in visited_folders:
+                                    # Loop avoidance
+                                    pass
+                                elif depth + 1 > max_depth:
+                                    depth_limit_hit = True
+                                else:
+                                    visited_folders.add(target_id)
+                                    next_path = f"{cur_path}/{name}" if cur_path else name
+                                    folders_to_visit.append((target_id, name, next_path, depth + 1))
+                                    if name and name not in scanned_folder_names:
+                                        scanned_folder_names.append(name)
+                                    continue
+                            shortcuts_skipped += 1
+                            continue
+
+                        # Shortcut to image: include image if shortcuts option is enabled
+                        if include_shortcuts and is_image_file(name, target_mime):
+                            if target_id in seen_file_ids:
+                                continue
+                            seen_file_ids.add(target_id)
+                            df = DriveFile(
+                                id=target_id,
+                                name=name,
+                                mime_type=target_mime or "image/jpeg",
+                                modified_time=item.get("modifiedTime", ""),
+                                size=int(item.get("size", 0)),
+                                thumbnail_link=item.get("thumbnailLink"),
+                                folder_path=cur_path,
+                            )
+                            files.append(df)
+                            if depth == 0:
+                                root_images_count += 1
+                            if stop_after_images and len(files) >= stop_after_images:
+                                break
+                            continue
+
                         shortcuts_skipped += 1
                         continue
 
@@ -432,6 +483,9 @@ class DriveClient:
             "root_images_count": root_images_count,
             "subfolder_images_count": subfolder_images_count,
             "message": summary_msg,
+            "scan_subfolders": recursive,
+            "max_subfolder_depth": max_depth,
+            "follow_shortcuts": include_shortcuts,
         }
 
         return DriveListResult(

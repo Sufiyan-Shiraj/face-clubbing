@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: CatLog Troubleshooting Guide
+    url: https://github.com/Sufiyan-Shiraj/face-clubbing#troubleshooting
+    about: Please consult our troubleshooting guide for common fixes (Drive quota, network issues, permissions).
+  - name: Privacy Policy & Invariants
+    url: https://github.com/Sufiyan-Shiraj/face-clubbing#privacy--data-safety
+    about: Read about CatLog's privacy-first design (zero remote face processing, zero telemetry).

@@ -11,6 +11,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { MascotSticker } from './MascotSticker';
+import { CopyDiagnosticsButton } from './CopyDiagnosticsButton';
 
 export type DialogType = 'error' | 'confirm' | 'active-project' | 'saved-edits';
 
@@ -336,7 +337,8 @@ export const CustomDialog: React.FC<DialogOptions> = ({
             </div>
           ) : (
             /* Error / Alert Dismiss */
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between w-full gap-3">
+              <CopyDiagnosticsButton variant="danger" showPrivacyHint={false} />
               <button
                 type="button"
                 data-testid="dialog-ok-btn"
