@@ -92,8 +92,8 @@ def test_pipeline_organizer_and_public_bundle(tmp_path: Path):
     result = run_pipeline(config)
     assert len(result.people) == 2
 
-    # Verify public bundle has exactly the 4 required entries
-    allowed_public = {"config.json", "people.json", "faces", "thumbs"}
+    # Verify public bundle has required entries
+    allowed_public = {"config.json", "people.json", "faces", "thumbs", "manifest.json"}
     actual_public = {p.name for p in out_dir.iterdir()}
     assert actual_public == allowed_public
 

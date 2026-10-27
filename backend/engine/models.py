@@ -76,6 +76,8 @@ class PhotoRecord:
     share_url: Optional[str] = None
     relative_path: Optional[str] = None
     faces: List[FaceDetection] = field(default_factory=list)
+    source_id: Optional[str] = None
+    source_label: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -89,6 +91,8 @@ class PhotoRecord:
             "drive_url": self.drive_url,
             "share_url": self.share_url,
             "relative_path": self.relative_path,
+            "source_id": self.source_id,
+            "source_label": self.source_label,
             "faces": [f.to_dict() for f in self.faces],
         }
 
@@ -106,6 +110,8 @@ class PhotoRecord:
             drive_url=data.get("drive_url"),
             share_url=data.get("share_url"),
             relative_path=data.get("relative_path"),
+            source_id=data.get("source_id"),
+            source_label=data.get("source_label"),
             faces=faces,
         )
 
@@ -148,4 +154,7 @@ class EngineResult:
     source_title: Optional[str] = None
     unapplied_edits: List[Dict[str, Any]] = field(default_factory=list)
     drive_summary: Optional[Dict[str, Any]] = None
+    export_dir: Optional[str] = None
+    sources: List[Dict[str, Any]] = field(default_factory=list)
+    manifest: Optional[Dict[str, Any]] = None
 

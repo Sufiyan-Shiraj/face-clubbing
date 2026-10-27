@@ -256,15 +256,32 @@ export const PersonModal: React.FC<PersonModalProps> = ({
                       }}
                     />
                     <div
-                      className="relative z-10 p-2 flex items-center justify-between"
+                      className="relative z-10 p-2 flex items-center justify-between gap-1"
                       style={{ background: 'var(--card-bg)', borderTop: '1px solid var(--line)' }}
                     >
-                      <span className="text-xs font-mono font-bold truncate max-w-[120px]" style={{ color: 'var(--text)' }} title={fileName}>
-                        {fileName}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-xs font-mono font-bold truncate max-w-[120px]" style={{ color: 'var(--text)' }} title={fileName}>
+                          {fileName}
+                        </span>
+                        {pInfo?.source_label && (
+                          <span
+                            id={`photo-source-badge-${photoId}`}
+                            data-testid={`photo-source-badge-${photoId}`}
+                            className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+                            style={{
+                              background: 'rgba(0,0,0,0.65)',
+                              color: 'var(--accent)',
+                              border: '1px solid var(--accent)',
+                            }}
+                            title={`Source: ${pInfo.source_label}`}
+                          >
+                            {pInfo.source_label}
+                          </span>
+                        )}
+                      </div>
                       <button
                         onClick={() => onRemovePhoto(person.id, photoId)}
-                        className="p-1 rounded text-red-400 hover:text-red-300 transition-colors"
+                        className="p-1 rounded text-red-400 hover:text-red-300 transition-colors flex-shrink-0"
                         style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
                         title="Remove photo from person"
                       >

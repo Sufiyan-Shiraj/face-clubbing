@@ -14,6 +14,8 @@ interface PeopleGridProps {
   onSelectPerson: (person: PersonCluster) => void;
   isMerging?: boolean;
   theme?: string;
+  selectedSourceId?: string;
+  availableSources?: Array<{ id: string; label: string; photoCount: number }>;
 }
 
 export const PeopleGrid: React.FC<PeopleGridProps> = ({
@@ -27,6 +29,8 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
   onSelectPerson,
   isMerging = false,
   theme = 't-dark',
+  selectedSourceId,
+  availableSources,
 }) => {
   const [search, setSearch] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'multiple' | 'single'>('all');
@@ -312,6 +316,38 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
                       </p>
                     )}
                   </div>
+                  {/* Source Chips if multi-source */}
+                  {(() => {
+                    const pPhotoIds = person.photo_ids || person.photos || [];
+                    const sourceLabels = Array.from(
+                      new Set(
+                        pPhotoIds
+                          .map((pid) => photos[pid]?.source_label)
+                          .filter((l): l is string => Boolean(l))
+                      )
+                    );
+                    if (sourceLabels.length === 0) return null;
+                    return (
+                      <div className="flex flex-wrap gap-1 mt-1.5" data-testid={`person-sources-${person.id}`}>
+                        {sourceLabels.map((sLabel) => (
+                          <span
+                            key={sLabel}
+                            id={`person-source-badge-${person.id}`}
+                            data-testid={`person-source-badge-${person.id}`}
+                            className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded truncate max-w-full"
+                            style={{
+                              background: 'var(--input)',
+                              border: '1px solid var(--accent)',
+                              color: 'var(--accent)',
+                            }}
+                            title={`Appears in source: ${sLabel}`}
+                          >
+                            {sLabel}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
                   <div className="flex items-center justify-between mt-2 pt-1 border-t border-[var(--line)]">
                     <p className="text-xs font-medium" style={{ color: 'var(--muted)' }}>
                       {person.faces?.length || photoCount} detected face{person.faces?.length === 1 ? '' : 's'}

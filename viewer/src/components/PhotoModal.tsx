@@ -54,9 +54,20 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({
       {/* Top action bar */}
       <div className="absolute top-0 inset-x-0 p-3.5 sm:p-5 flex items-center justify-between z-10 bg-gradient-to-b from-black/90 via-black/50 to-transparent">
         <div className="text-white min-w-0 pr-2">
-          <p className="text-xs sm:text-sm font-bold truncate max-w-[180px] sm:max-w-md font-mono">
-            {photo.name}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs sm:text-sm font-bold truncate max-w-[180px] sm:max-w-md font-mono">
+              {photo.name}
+            </p>
+            {photo.source_label && (
+              <span
+                data-testid="modal-photo-source-badge"
+                className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-white/10 border border-white/20 text-[var(--accent)]"
+                title={`Source: ${photo.source_label}`}
+              >
+                {photo.source_label}
+              </span>
+            )}
+          </div>
           {photo.width && photo.height && (
             <p className="text-[10px] sm:text-xs text-neutral-400">
               {photo.width} × {photo.height} px

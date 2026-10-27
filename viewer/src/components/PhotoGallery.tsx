@@ -545,9 +545,20 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                     </div>
 
                     <div className="flex items-center justify-between gap-1 pointer-events-auto">
-                      <span className="text-[11px] text-white font-mono truncate">
-                        {photo.name}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-[11px] text-white font-mono truncate">
+                          {photo.name}
+                        </span>
+                        {photo.source_label && (
+                          <span
+                            data-testid={`photo-source-badge-${pid}`}
+                            className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-black/70 border border-white/20 text-[var(--color-accent)] flex-shrink-0"
+                            title={`Source: ${photo.source_label}`}
+                          >
+                            {photo.source_label}
+                          </span>
+                        )}
+                      </div>
 
                       {/* Per-Photo Download */}
                       {(photo.download || photo.download_url || photo.drive_file_id) && (

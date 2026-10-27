@@ -21,6 +21,8 @@ export interface PhotoInfo {
   drive_file_id?: string | null;
   width?: number;
   height?: number;
+  source_id?: string | null;
+  source_label?: string | null;
 }
 
 export interface FaceRef {

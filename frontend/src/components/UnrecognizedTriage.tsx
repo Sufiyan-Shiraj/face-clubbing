@@ -710,17 +710,34 @@ export const UnrecognizedTriage: React.FC<UnrecognizedTriageProps> = ({
 
                   {/* Metadata below face */}
                   <div className="mt-1 flex items-center justify-between gap-1.5 text-xs">
-                    <span
-                      className="text-xs font-mono hover:underline cursor-pointer truncate font-bold"
-                      style={{ color: 'var(--text)' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenPhotoViewer(f.photo_id);
-                      }}
-                      title={`View photo: ${fileName}`}
-                    >
-                      {fileName}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span
+                        className="text-xs font-mono hover:underline cursor-pointer truncate font-bold"
+                        style={{ color: 'var(--text)' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenPhotoViewer(f.photo_id);
+                        }}
+                        title={`View photo: ${fileName}`}
+                      >
+                        {fileName}
+                      </span>
+                      {pInfo?.source_label && (
+                        <span
+                          id={`unrec-source-badge-${f.photo_id}`}
+                          data-testid={`unrec-source-badge-${f.photo_id}`}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold flex-shrink-0"
+                          style={{
+                            background: 'var(--input)',
+                            border: '1px solid var(--accent)',
+                            color: 'var(--accent)',
+                          }}
+                          title={`Source: ${pInfo.source_label}`}
+                        >
+                          {pInfo.source_label}
+                        </span>
+                      )}
+                    </div>
 
                     {f.det_score !== undefined && f.det_score !== null && (
                       <span className="text-xs font-mono font-medium flex-shrink-0" style={{ color: 'var(--muted)' }}>
@@ -1050,7 +1067,7 @@ export const UnrecognizedTriage: React.FC<UnrecognizedTriageProps> = ({
                 </div>
 
                 <div
-                  className="p-2.5 truncate"
+                  className="p-2.5 flex items-center justify-between gap-1"
                   style={{
                     background: 'var(--card-bg)',
                     borderTop: '1px solid var(--line)',
@@ -1058,9 +1075,23 @@ export const UnrecognizedTriage: React.FC<UnrecognizedTriageProps> = ({
                     fontFamily: "'JetBrains Mono', monospace",
                     color: 'var(--text)',
                   }}
-                  title={fileName}
                 >
-                  {fileName}
+                  <span className="truncate" title={fileName}>{fileName}</span>
+                  {pInfo?.source_label && (
+                    <span
+                      id={`unrec-no-face-source-badge-${photoId}`}
+                      data-testid={`unrec-no-face-source-badge-${photoId}`}
+                      className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold flex-shrink-0"
+                      style={{
+                        background: 'var(--input)',
+                        border: '1px solid var(--accent)',
+                        color: 'var(--accent)',
+                      }}
+                      title={`Source: ${pInfo.source_label}`}
+                    >
+                      {pInfo.source_label}
+                    </span>
+                  )}
                 </div>
               </div>
             );

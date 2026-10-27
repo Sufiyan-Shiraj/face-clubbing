@@ -26,6 +26,8 @@ class ScannedPhoto:
     drive_file_id: Optional[str] = None
     drive_url: Optional[str] = None
     share_url: Optional[str] = None
+    source_id: Optional[str] = None
+    source_label: Optional[str] = None
 
 
 def compute_file_hash(path: Path | str, chunk_size: int = 65536) -> str:
@@ -62,7 +64,13 @@ class PhotoScanner:
                 pass
             self.temp_dir = None
 
-    def scan(self, progress_callback: Optional[Callable[[int, int, str], None]] = None) -> List[ScannedPhoto]:
+    def scan(
+        self,
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+        scan_subfolders: bool = True,
+        max_subfolder_depth: int = 5,
+        follow_shortcuts: bool = False,
+    ) -> List[ScannedPhoto]:
         """Scan input path (folder or zip) and return list of ScannedPhoto objects."""
         if not self.input_path.exists():
             raise FileNotFoundError(f"Input path does not exist: {self.input_path}")
@@ -99,11 +107,30 @@ class PhotoScanner:
                     raise ValueError(f"File {self.input_path} is neither a zip file nor a supported image.")
 
         candidate_files = []
-        for root, _, files in os.walk(source_dir):
-            for file in files:
-                ext = Path(file).suffix.lower()
-                if ext in SUPPORTED_EXTENSIONS:
-                    candidate_files.append((Path(root) / file, file))
+        if not scan_subfolders:
+            try:
+                for entry in os.scandir(source_dir):
+                    if entry.is_file():
+                        ext = Path(entry.name).suffix.lower()
+                        if ext in SUPPORTED_EXTENSIONS:
+                            candidate_files.append((Path(entry.path), entry.name))
+            except Exception:
+                pass
+        else:
+            for root, dirs, files in os.walk(source_dir, followlinks=follow_shortcuts):
+                try:
+                    rel = Path(root).relative_to(source_dir)
+                    depth = len(rel.parts)
+                except ValueError:
+                    depth = 0
+
+                if depth >= max_subfolder_depth:
+                    dirs.clear()
+
+                for file in files:
+                    ext = Path(file).suffix.lower()
+                    if ext in SUPPORTED_EXTENSIONS:
+                        candidate_files.append((Path(root) / file, file))
 
         total_candidates = len(candidate_files)
         scanned: List[ScannedPhoto] = []

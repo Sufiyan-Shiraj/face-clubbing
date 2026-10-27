@@ -59,6 +59,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       {/* Hidden native select for test and form automation compatibility */}
       <select
         id={id}
+        data-testid={id}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value, 10))}
         className="sr-only"
@@ -176,6 +177,7 @@ interface CustomCheckboxProps {
   onChange: (checked: boolean) => void;
   title: string;
   subtitle: string;
+  'data-testid'?: string;
 }
 
 export const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
@@ -184,6 +186,7 @@ export const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
   onChange,
   title,
   subtitle,
+  'data-testid': dataTestId,
 }) => {
   return (
     <label
@@ -194,6 +197,7 @@ export const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
       {/* Hidden input for automation and native behavior */}
       <input
         id={id}
+        data-testid={dataTestId || id}
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}

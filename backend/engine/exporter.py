@@ -162,6 +162,8 @@ class BundleExporter:
                 "drive_file_id": getattr(record, "drive_file_id", None),
                 "width": record.width,
                 "height": record.height,
+                "source_id": getattr(record, "source_id", None),
+                "source_label": getattr(record, "source_label", None),
             }
 
         # 2. Process People Clusters and generate representative square face crops
@@ -169,7 +171,16 @@ class BundleExporter:
         for person in result.people:
             # Pick representative face if not assigned
             if person.rep_face is None:
-                person.rep_face = select_representative_face(person.faces)
+                if person.faces:
+                    person.rep_face = select_representative_face(person.faces)
+                else:
+                    person.rep_face = FaceDetection(
+                        face_id=f"f_{person.id}_rep",
+                        photo_id=person.photo_ids[0] if person.photo_ids else "unknown",
+                        bbox=[0.0, 0.0, 100.0, 100.0],
+                        det_score=1.0,
+                        embedding=None,
+                    )
 
             face_rel = f"faces/{person.id}.jpg"
             face_dest = self.output_dir / face_rel
@@ -246,9 +257,12 @@ class BundleExporter:
 
         # 4. Generate people.json
         now_iso = datetime.datetime.now().astimezone().isoformat()
+        sources_list = getattr(result, "sources", [])
         people_payload = {
             "version": 1,
+            "schema_version": 2,
             "generated_at": now_iso,
+            "sources": sources_list,
             "photos": photos_json,
             "people": people_json,
             "unrecognized": {
@@ -294,6 +308,46 @@ class BundleExporter:
         people_path = self.output_dir / "people.json"
         with open(people_path, "w", encoding="utf-8") as f:
             json.dump(people_payload, f, indent=2)
+
+        # Also mirror people.json to cache_dir / work_dir so the work directory is completely self-contained
+        if self.cache_dir and self.cache_dir.exists():
+            try:
+                work_people = self.cache_dir / "people.json"
+                with open(work_people, "w", encoding="utf-8") as f:
+                    json.dump(people_payload, f, indent=2)
+            except Exception:
+                pass
+
+        # Generate manifest.json (v2 project manifest)
+        photo_origins = {
+            photo_id: {
+                "source_id": getattr(rec, "source_id", None),
+                "source_label": getattr(rec, "source_label", None),
+            }
+            for photo_id, rec in result.photos.items()
+            if getattr(rec, "source_id", None)
+        }
+        manifest_payload = {
+            "schema_version": 2,
+            "project_name": title,
+            "generated_at": now_iso,
+            "sources": sources_list,
+            "total_photos": len(result.photos),
+            "total_people": len(result.people),
+            "photo_origins": photo_origins,
+        }
+        result.manifest = manifest_payload
+        manifest_path = self.output_dir / "manifest.json"
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest_payload, f, indent=2)
+
+        if self.cache_dir and self.cache_dir.exists():
+            try:
+                work_manifest = self.cache_dir / "manifest.json"
+                with open(work_manifest, "w", encoding="utf-8") as f:
+                    json.dump(manifest_payload, f, indent=2)
+            except Exception:
+                pass
 
         # 5. Generate config.json (preserve existing if present and not overridden)
         config_path = self.output_dir / "config.json"

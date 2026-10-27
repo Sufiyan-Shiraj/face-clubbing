@@ -38,6 +38,10 @@ class JobManager:
         self.elapsed_seconds: Optional[float] = None
         self.message: str = "Engine is idle."
         self.error: Optional[str] = None
+        self.error_code: Optional[str] = None
+        self.error_title: Optional[str] = None
+        self.plain_language_fix: Optional[str] = None
+        self.diagnostics_report: Optional[str] = None
         self.result_summary: Optional[Dict[str, Any]] = None
         self.recent_faces: list[str] = []
 
@@ -92,6 +96,10 @@ class JobManager:
                 start_time=self.start_time,
                 message=self.message,
                 error=self.error,
+                error_code=self.error_code,
+                error_title=self.error_title,
+                plain_language_fix=self.plain_language_fix,
+                diagnostics_report=self.diagnostics_report,
                 result_summary=self.result_summary,
                 recent_faces=list(self.recent_faces),
             )
@@ -105,6 +113,14 @@ class JobManager:
                 self.current = payload["current"]
             if "total" in payload:
                 self.total = payload["total"]
+            if "error_code" in payload:
+                self.error_code = payload["error_code"]
+            if "error_title" in payload:
+                self.error_title = payload["error_title"]
+            if "plain_language_fix" in payload:
+                self.plain_language_fix = payload["plain_language_fix"]
+            if "diagnostics_report" in payload:
+                self.diagnostics_report = payload["diagnostics_report"]
 
             if self.stage == "complete":
                 self.percent = 100.0
@@ -158,6 +174,11 @@ class JobManager:
                 "elapsed_seconds": cur_elapsed,
                 "start_time": self.start_time,
                 "message": self.message,
+                "error": self.error,
+                "error_code": self.error_code,
+                "error_title": self.error_title,
+                "plain_language_fix": self.plain_language_fix,
+                "diagnostics_report": self.diagnostics_report,
                 "recent_faces": list(self.recent_faces),
             }
 
@@ -198,6 +219,10 @@ class JobManager:
             self.eta_seconds = None
             self.message = "Initializing job..."
             self.error = None
+            self.error_code = None
+            self.error_title = None
+            self.plain_language_fix = None
+            self.diagnostics_report = None
             self.result_summary = None
             self.recent_faces = []
             self._cancel_event.clear()
@@ -209,6 +234,12 @@ class JobManager:
             for k, v in req.settings.model_dump(exclude_unset=True).items():
                 if hasattr(self.state.settings, k) and v is not None:
                     setattr(self.state.settings, k, v)
+        if req.scan_subfolders is not None:
+            self.state.settings.scan_subfolders = req.scan_subfolders
+        if req.max_subfolder_depth is not None:
+            self.state.settings.max_subfolder_depth = req.max_subfolder_depth
+        if req.follow_shortcuts is not None:
+            self.state.settings.follow_shortcuts = req.follow_shortcuts
         chosen_input = req.drive_folder or req.input_path or req.source_path
 
         # Defensively sanitize drive/URL confusion in output_dir
@@ -241,8 +272,29 @@ class JobManager:
         if req.cache_dir:
             self.state.settings.cache_dir = req.cache_dir
 
-        raw_input = self.state.settings.input_path or "test_photos"
         from backend.drive import is_drive_folder_input, get_drive_api_key
+
+        config_sources: Optional[List[Dict[str, Any]]] = None
+        if req.sources and len(req.sources) > 0:
+            config_sources = []
+            for s_idx, src_item in enumerate(req.sources):
+                s_dict = src_item.model_dump()
+                p_val = str(s_dict.get("path_or_url") or "").strip()
+                if not is_drive_folder_input(p_val):
+                    p_cand = Path(p_val)
+                    if not p_cand.is_absolute():
+                        if (Path.cwd() / p_cand).exists():
+                            p_val = str((Path.cwd() / p_cand).resolve())
+                        elif (self.state.repo_root / p_cand).exists():
+                            p_val = str((self.state.repo_root / p_cand).resolve())
+                        else:
+                            p_val = str(p_cand.resolve())
+                    s_dict["path_or_url"] = p_val
+                config_sources.append(s_dict)
+            if not chosen_input and len(config_sources) > 0:
+                chosen_input = config_sources[0]["path_or_url"]
+
+        raw_input = chosen_input or self.state.settings.input_path or "test_photos"
         if is_drive_folder_input(raw_input):
             resolved_input = raw_input
         else:
@@ -306,9 +358,13 @@ class JobManager:
             event_title=self.state.settings.event_title,
             event_subtitle=self.state.settings.event_subtitle,
             drive_api_key=drive_key,
+            scan_subfolders=getattr(self.state.settings, "scan_subfolders", True),
+            max_subfolder_depth=getattr(self.state.settings, "max_subfolder_depth", 5),
+            follow_shortcuts=getattr(self.state.settings, "follow_shortcuts", False),
             progress_callback=self._broadcast_progress,
             cancel_check=lambda: self._cancel_event.is_set(),
             cleanup_temp=False,
+            sources=config_sources,
         )
 
         self._log_event(f"[START     ] Job {self.job_id} initiated. Input: '{resolved_input}' -> Output: '{out_dir}'")
@@ -333,14 +389,27 @@ class JobManager:
                         "drive_summary": getattr(res, "drive_summary", None) or (self.result_summary.get("drive_summary") if self.result_summary else None),
                     }
 
+                export_folder = getattr(res, "export_dir", None) or self.state.settings.output_dir
+                if export_folder:
+                    self.state.settings.output_dir = str(export_folder)
+                    src_pj = Path(export_folder) / "people.json"
+                    if src_pj.exists() and self.state.work_dir.exists():
+                        try:
+                            import shutil
+                            shutil.copy2(src_pj, self.state.work_dir / "people.json")
+                        except Exception:
+                            pass
+
                 # Auto-save recent project entry
                 try:
                     from backend.api.projects import save_recent_project
                     save_recent_project(
                         work_dir=self.state.work_dir,
-                        export_path=self.state.settings.output_dir,
+                        export_path=export_folder,
                         source_description=self.state.settings.input_path,
                         counts={"people": len(res.people), "photos": len(res.photos)},
+                        sources=getattr(res, "sources", []) or self.state.sources,
+                        schema_version=2,
                     )
                 except Exception as e:
                     print(f"[jobs] Warning: Failed to auto-save recent project: {e}")
@@ -358,17 +427,31 @@ class JobManager:
                 self._broadcast_progress({"stage": "cancelled", "message": self.message})
             except Exception as e:
                 import traceback
-                tb_str = traceback.format_exc()
                 traceback.print_exc()
+                from backend.api.diagnostics import classify_error, generate_diagnostics_report
+                classification = classify_error(e)
+                diag = generate_diagnostics_report(self.state, self, error_override=e)
                 with self._lock:
                     if self.start_time:
                         self.elapsed_seconds = round(time.time() - self.start_time, 1)
                     self.status = "failed"
                     self.stage = "failed"
-                    self.error = f"{e}\n{tb_str}"
-                    self.message = f"Error: {e}"
-                self._log_event(f"[ERROR     ] Job failed after {self.elapsed_seconds:.1f}s: {e}")
-                self._broadcast_progress({"stage": "failed", "message": self.message, "error": self.error})
+                    self.error = classification.sanitized_message
+                    self.error_code = classification.error_code
+                    self.error_title = classification.title
+                    self.plain_language_fix = classification.plain_language_fix
+                    self.diagnostics_report = diag.formatted_report
+                    self.message = f"{classification.title}: {classification.sanitized_message}"
+                self._log_event(f"[ERROR     ] Job failed [{classification.error_code}] after {self.elapsed_seconds:.1f}s: {classification.sanitized_message}")
+                self._broadcast_progress({
+                    "stage": "failed",
+                    "message": self.message,
+                    "error": self.error,
+                    "error_code": self.error_code,
+                    "error_title": self.error_title,
+                    "plain_language_fix": self.plain_language_fix,
+                    "diagnostics_report": self.diagnostics_report,
+                })
 
         self._thread = threading.Thread(target=worker, daemon=True)
         self._thread.start()

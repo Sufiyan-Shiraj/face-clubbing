@@ -172,14 +172,14 @@ def test_public_bundle_hygiene(tmp_path: Path):
     exporter = BundleExporter(output_dir=export_dir)
     exporter.export(result)
 
-    # Public bundle definition: config.json, people.json, faces/, thumbs/, optional viewer build (index.html, assets/), and gallery.html
-    allowed_public_entries = {"config.json", "people.json", "faces", "thumbs", "index.html", "assets", "gallery.html"}
+    # Public bundle definition: config.json, people.json, manifest.json, faces/, thumbs/, optional viewer build (index.html, assets/), and gallery.html
+    allowed_public_entries = {"config.json", "people.json", "manifest.json", "faces", "thumbs", "index.html", "assets", "gallery.html"}
     organizer_only = {"suggestions.json", "edits.json", "id_map.json", ".cache"}
 
     # 1. Base exporter produces core bundle
     actual_entries = {p.name for p in export_dir.iterdir()}
     assert actual_entries.issubset(allowed_public_entries), f"Export contains disallowed files: {actual_entries - allowed_public_entries}"
-    assert actual_entries == {"config.json", "people.json", "faces", "thumbs"}
+    assert actual_entries == {"config.json", "people.json", "manifest.json", "faces", "thumbs"}
 
     # 2. Add optional viewer build files and standalone gallery.html -> all allowed
     (export_dir / "index.html").write_text("<!doctype html><html></html>", encoding="utf-8")

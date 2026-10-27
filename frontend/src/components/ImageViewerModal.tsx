@@ -484,6 +484,21 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
               <span className="riso-tab-badge">
                 {currentIndex >= 0 ? `${currentIndex + 1} / ${allIds.length}` : ''}
               </span>
+              {currentPhoto.source_label && (
+                <span
+                  id="photo-source-badge"
+                  data-testid="photo-source-badge"
+                  className="px-2 py-0.5 rounded text-xs font-mono font-bold flex items-center gap-1"
+                  style={{
+                    background: 'var(--input)',
+                    border: '1px solid var(--accent)',
+                    color: 'var(--accent)',
+                  }}
+                  title={`Source: ${currentPhoto.source_label}`}
+                >
+                  {currentPhoto.source_label}
+                </span>
+              )}
               {(currentPhoto.source_exists === false || imgFailed) && (
                 <span
                   data-testid="source-missing-badge"
