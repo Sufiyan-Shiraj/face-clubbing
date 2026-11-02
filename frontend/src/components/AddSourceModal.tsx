@@ -9,9 +9,12 @@ import {
   Loader2,
   Plus,
   FolderOpen,
+  HelpCircle,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { ScanSourceItem, WhatChangedResponse } from '../types';
+import { detectUnsupportedCloudLink } from './HomeScreen';
+import { InputGuidanceModal } from './InputGuidanceModal';
 
 export interface AddSourceModalProps {
   onClose: () => void;
@@ -32,6 +35,8 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = ({
   const [frozenMode, setFrozenMode] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isGuidanceOpen, setIsGuidanceOpen] = useState(false);
+  const [guidanceTab, setGuidanceTab] = useState<'photos' | 'drive' | 'phone' | 'formats'>('photos');
 
   const handleBrowseFolder = async () => {
     try {
@@ -93,6 +98,12 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = ({
     const cleanPath = pathOrUrl.trim();
     if (!cleanPath) {
       setErrorMsg('Please enter a folder path, ZIP path, or Google Drive URL.');
+      return;
+    }
+
+    const cloudInfo = detectUnsupportedCloudLink(cleanPath);
+    if (cloudInfo) {
+      setErrorMsg(cloudInfo.message);
       return;
     }
 
@@ -185,15 +196,34 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = ({
             <div
               id="add-source-error-alert"
               data-testid="add-source-error-alert"
-              className="p-3 rounded-lg flex items-start gap-2.5 text-xs font-mono"
+              className="p-3 rounded-lg flex flex-col gap-2 text-xs font-mono"
               style={{
                 background: 'rgba(239, 68, 68, 0.12)',
                 border: '1.5px solid #ef4444',
                 color: '#f87171',
               }}
             >
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>{errorMsg}</span>
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
+              </div>
+              {errorMsg.includes('Google Photos') && (
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    id="btn-add-source-photos-guide"
+                    data-testid="btn-add-source-photos-guide"
+                    onClick={() => {
+                      setGuidanceTab('photos');
+                      setIsGuidanceOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/20 border border-amber-500/40 text-amber-200 hover:bg-amber-500/30 font-medium text-xs transition-colors"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>View 3-Step Google Photos Export Guide</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -404,6 +434,21 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = ({
             style={{ borderTop: '1.5px solid var(--line)' }}
           >
             <button
+              id="btn-add-source-guidance"
+              data-testid="btn-add-source-guidance"
+              type="button"
+              onClick={() => {
+                setGuidanceTab('photos');
+                setIsGuidanceOpen(true);
+              }}
+              className="px-3 py-2 rounded-lg text-xs font-mono border border-[var(--line)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--line)] transition-colors flex items-center gap-1.5 mr-auto"
+              title="How do I import photos from Google Photos, Drive or WhatsApp?"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <span>Import Guide</span>
+            </button>
+
+            <button
               id="btn-cancel-add-source"
               data-testid="btn-cancel-add-source"
               type="button"
@@ -440,6 +485,14 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Input Guidance Modal */}
+      <InputGuidanceModal
+        isOpen={isGuidanceOpen}
+        onClose={() => setIsGuidanceOpen(false)}
+        defaultTab={guidanceTab}
+        theme={theme as any}
+      />
     </div>
   );
 };

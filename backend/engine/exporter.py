@@ -341,6 +341,8 @@ class BundleExporter:
             for photo_id, rec in result.photos.items()
             if getattr(rec, "source_id", None)
         }
+        unsupported_files = getattr(result, "unsupported_files", {})
+        unsupported_count = getattr(result, "unsupported_count", 0)
         manifest_payload = {
             "schema_version": 2,
             "project_name": title,
@@ -349,6 +351,8 @@ class BundleExporter:
             "total_photos": len(result.photos),
             "total_people": len(result.people),
             "photo_origins": photo_origins,
+            "unsupported_files": unsupported_files,
+            "unsupported_count": unsupported_count,
         }
         result.manifest = manifest_payload
         manifest_path = self.output_dir / "manifest.json"

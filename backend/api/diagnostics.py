@@ -109,6 +109,68 @@ def classify_error(err: Any) -> ErrorClassification:
     err_type_name = type(err).__name__ if isinstance(err, Exception) else ""
     combined = f"{err_type_name} {err_str}".lower()
 
+    # 0a. GOOGLE_PHOTOS_LINK
+    if "photos.google.com" in combined or "photos.app.goo.gl" in combined or "google photos" in combined:
+        return ErrorClassification(
+            error_code="GOOGLE_PHOTOS_LINK",
+            title="Google Photos Link Not Supported Directly",
+            plain_language_fix=(
+                "Google Photos albums cannot be scanned directly because Google's Photos Library API "
+                "restricts third-party access to albums not created by the application (effective March 2025). "
+                "To import these photos: in Google Photos, open the album, click More options (⋮) -> 'Download all' "
+                "to download a ZIP file (or export to Google Drive), then select it in CatLog."
+            ),
+            sanitized_message="Google Photos album links cannot be read directly due to Google API restrictions.",
+        )
+
+    # 0b. DROPBOX_LINK
+    if "dropbox.com" in combined or "dropbox" in combined:
+        return ErrorClassification(
+            error_code="DROPBOX_LINK",
+            title="Dropbox Link Not Supported Directly",
+            plain_language_fix=(
+                "Dropbox links cannot be accessed directly via URL. Please download or sync the folder "
+                "to your computer, or export the photos to Google Drive, then choose 'Folder or Zip' in CatLog."
+            ),
+            sanitized_message="Dropbox links are not supported directly via URL.",
+        )
+
+    # 0c. ONEDRIVE_LINK
+    if "onedrive.live.com" in combined or "1drv.ms" in combined or "sharepoint.com" in combined or "onedrive" in combined or "sharepoint" in combined:
+        return ErrorClassification(
+            error_code="ONEDRIVE_LINK",
+            title="OneDrive Link Not Supported Directly",
+            plain_language_fix=(
+                "OneDrive / SharePoint links cannot be accessed directly via URL. Please sync or download the folder "
+                "to your computer, or export the photos to Google Drive, then choose 'Folder or Zip' in CatLog."
+            ),
+            sanitized_message="OneDrive links are not supported directly via URL.",
+        )
+
+    # 0d. ICLOUD_LINK
+    if "icloud.com" in combined or "icloud" in combined:
+        return ErrorClassification(
+            error_code="ICLOUD_LINK",
+            title="iCloud Link Not Supported Directly",
+            plain_language_fix=(
+                "iCloud Shared Album links cannot be accessed directly via URL. Please download the photos "
+                "to your computer or export them into a ZIP file, then choose 'Folder or Zip' in CatLog."
+            ),
+            sanitized_message="iCloud links are not supported directly via URL.",
+        )
+
+    # 0e. BOX_LINK
+    if "box.com" in combined or "box.net" in combined:
+        return ErrorClassification(
+            error_code="BOX_LINK",
+            title="Box Link Not Supported Directly",
+            plain_language_fix=(
+                "Box links cannot be accessed directly via URL. Please download or sync the folder "
+                "to your computer, then choose 'Folder or Zip' in CatLog."
+            ),
+            sanitized_message="Box links are not supported directly via URL.",
+        )
+
     # 1. DISK_FULL / ENOSPC
     if (
         "no space left on device" in combined

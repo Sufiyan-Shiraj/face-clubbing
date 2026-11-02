@@ -15,12 +15,14 @@ import {
   ChevronUp,
   Sliders,
   FolderTree,
+  HelpCircle,
 } from 'lucide-react';
 import { RisoTheme } from './Header';
 import { api } from '../api/client';
 import { CopyDiagnosticsButton } from './CopyDiagnosticsButton';
 import { ModelDownloadBanner } from './ModelDownloadBanner';
 import { ScanSourceItem } from '../types';
+import { InputGuidanceModal } from './InputGuidanceModal';
 
 export interface HomeScreenProps {
   onStartJob: (
@@ -94,6 +96,75 @@ export function extractDriveFolderId(input: string): string | null {
     return trimmed;
   }
 
+  return null;
+}
+
+export interface CloudLinkDetection {
+  service: string;
+  code: string;
+  title: string;
+  message: string;
+  howToFix: string;
+}
+
+export function detectUnsupportedCloudLink(input: string): CloudLinkDetection | null {
+  if (!input || typeof input !== 'string') return null;
+  const s = input.trim().toLowerCase();
+  if (s.includes('photos.google.com') || s.includes('photos.app.goo.gl')) {
+    return {
+      service: 'Google Photos',
+      code: 'GOOGLE_PHOTOS_LINK',
+      title: 'Google Photos Album Link Not Supported Directly',
+      message:
+        "Google Photos album links cannot be scanned directly because Google's Photos Library API restricts third-party access to albums not created by the application (effective March 2025). Please download your album as a ZIP file (or export to Google Drive) and select it in CatLog.",
+      howToFix:
+        "In Google Photos, open the album, click More options (⋮) -> 'Download all' to download a ZIP file (or export to Google Drive), then choose 'Folder or Zip' in CatLog.",
+    };
+  }
+  if (s.includes('dropbox.com')) {
+    return {
+      service: 'Dropbox',
+      code: 'DROPBOX_LINK',
+      title: 'Dropbox Link Not Supported Directly',
+      message:
+        'Dropbox links cannot be accessed directly via URL. Please download or sync the folder to your computer, or export the photos to Google Drive.',
+      howToFix:
+        "Download the Dropbox folder as a ZIP file or sync locally, then choose 'Folder or Zip' in CatLog.",
+    };
+  }
+  if (s.includes('onedrive.live.com') || s.includes('1drv.ms') || s.includes('sharepoint.com')) {
+    return {
+      service: 'OneDrive',
+      code: 'ONEDRIVE_LINK',
+      title: 'OneDrive Link Not Supported Directly',
+      message:
+        'OneDrive / SharePoint links cannot be accessed directly via URL. Please sync or download the folder to your computer, or export the photos to Google Drive.',
+      howToFix:
+        "Download the OneDrive folder as a ZIP file or sync locally, then choose 'Folder or Zip' in CatLog.",
+    };
+  }
+  if (s.includes('icloud.com')) {
+    return {
+      service: 'iCloud',
+      code: 'ICLOUD_LINK',
+      title: 'iCloud Link Not Supported Directly',
+      message:
+        'iCloud Shared Album links cannot be accessed directly via URL. Please download the photos to your computer or export them into a ZIP file.',
+      howToFix:
+        "In the Photos app or iCloud.com, select the photos and download or export them to a local folder or ZIP file, then choose 'Folder or Zip' in CatLog.",
+    };
+  }
+  if (s.includes('box.com') || s.includes('box.net')) {
+    return {
+      service: 'Box',
+      code: 'BOX_LINK',
+      title: 'Box Link Not Supported Directly',
+      message:
+        'Box links cannot be accessed directly via URL. Please download or sync the folder to your computer.',
+      howToFix:
+        "Download the Box folder as a ZIP file or sync locally, then choose 'Folder or Zip' in CatLog.",
+    };
+  }
   return null;
 }
 
@@ -178,6 +249,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [maxSubfolderDepth, setMaxSubfolderDepth] = useState<number>(5);
   const [followShortcuts, setFollowShortcuts] = useState<boolean>(false);
   const [showScanOptions, setShowScanOptions] = useState<boolean>(false);
+  const [isGuidanceOpen, setIsGuidanceOpen] = useState<boolean>(false);
+  const [guidanceTab, setGuidanceTab] = useState<'photos' | 'drive' | 'phone' | 'formats'>('photos');
 
   useEffect(() => {
     let mounted = true;
@@ -394,6 +467,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     if (!trimmed) {
       return 'Please specify a Google Drive folder link or folder ID.';
     }
+    const cloudInfo = detectUnsupportedCloudLink(trimmed);
+    if (cloudInfo) {
+      return cloudInfo.message;
+    }
     if (trimmed.includes('/file/d/')) {
       return 'You entered a Google Drive file link, but a folder link or folder ID is required.';
     }
@@ -413,6 +490,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     apiKeyOverride?: string
   ): Promise<{ valid: boolean; folder_name?: string | null; folder_id?: string | null }> => {
     const trimmed = driveLink.trim();
+    const cloudInfo = detectUnsupportedCloudLink(trimmed);
+    if (cloudInfo) {
+      setErrorMsg(cloudInfo.message);
+      setDriveErrorInfo({
+        code: cloudInfo.code,
+        fix: cloudInfo.howToFix,
+        report: undefined,
+      });
+      setVerifiedState(false, null, null, 0);
+      return { valid: false };
+    }
+
     const validationError = validateDriveInput(trimmed);
     if (validationError) {
       setErrorMsg(validationError);
@@ -663,8 +752,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             />
           </h1>
           <p className="sub-headline">Sort your event photos by person using face clustering.</p>
-          {onOpenTutorial && (
-            <div className="flex items-center justify-center mt-2.5 mb-1">
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-2.5 mb-1">
+            {onOpenTutorial && (
               <button
                 type="button"
                 id="home-start-tutorial-btn"
@@ -682,8 +771,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <span>New to CatLog? Take the 2-minute interactive tour</span>
                 <ChevronRight className="w-3.5 h-3.5 opacity-60" />
               </button>
-            </div>
-          )}
+            )}
+            <button
+              type="button"
+              id="btn-open-input-guidance"
+              data-testid="btn-open-input-guidance"
+              onClick={() => {
+                setGuidanceTab('photos');
+                setIsGuidanceOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all hover:scale-105"
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--line)',
+                color: 'var(--text)',
+              }}
+              title="How do I get my photos in? View guide for Google Photos, Drive & phone exports"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <span>How do I get my photos in?</span>
+            </button>
+          </div>
         </div>
 
         {/* Face Model Download / Update Banner (Blank when installed & up to date) */}
@@ -1383,7 +1491,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400 mt-0.5" />
                   <div>
                     {driveErrorInfo?.code && (
-                      <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-900/60 text-red-200 border border-red-700/60 mr-2">
+                      <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-red-900/60 text-red-200 border border-red-700/60 mr-2">
                         [{driveErrorInfo.code}]
                       </span>
                     )}
@@ -1393,9 +1501,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <CopyDiagnosticsButton reportText={driveErrorInfo?.report} variant="danger" showPrivacyHint={false} />
               </div>
               {driveErrorInfo?.fix && (
-                <div className="text-[11px] text-gray-300 pl-6 border-l-2 border-red-500/30">
+                <div className="text-xs text-gray-300 pl-6 border-l-2 border-red-500/30">
                   <span className="font-semibold text-gray-200">How to fix: </span>
                   <span>{driveErrorInfo.fix}</span>
+                </div>
+              )}
+              {(driveErrorInfo?.code === 'GOOGLE_PHOTOS_LINK' || errorMsg.includes('Google Photos')) && (
+                <div className="pt-1 pl-6">
+                  <button
+                    type="button"
+                    id="btn-open-photos-guide"
+                    data-testid="btn-open-photos-guide"
+                    onClick={() => {
+                      setGuidanceTab('photos');
+                      setIsGuidanceOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-200 hover:bg-amber-500/30 font-medium text-xs transition-colors"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>View 3-Step Google Photos Export Guide</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -1515,6 +1640,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
         </div>
       )}
+
+      {/* Input Guidance Modal */}
+      <InputGuidanceModal
+        isOpen={isGuidanceOpen}
+        onClose={() => setIsGuidanceOpen(false)}
+        defaultTab={guidanceTab}
+        theme={theme}
+      />
     </div>
   );
 };

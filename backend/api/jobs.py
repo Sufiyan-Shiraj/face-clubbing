@@ -272,7 +272,7 @@ class JobManager:
         if req.cache_dir:
             self.state.settings.cache_dir = req.cache_dir
 
-        from backend.drive import is_drive_folder_input, get_drive_api_key
+        from backend.drive import is_drive_folder_input, get_drive_api_key, detect_unsupported_cloud_link
 
         config_sources: Optional[List[Dict[str, Any]]] = None
         if req.sources and len(req.sources) > 0:
@@ -280,6 +280,9 @@ class JobManager:
             for s_idx, src_item in enumerate(req.sources):
                 s_dict = src_item.model_dump()
                 p_val = str(s_dict.get("path_or_url") or "").strip()
+                cloud_info = detect_unsupported_cloud_link(p_val)
+                if cloud_info:
+                    raise ValueError(cloud_info["message"])
                 if not is_drive_folder_input(p_val):
                     p_cand = Path(p_val)
                     if not p_cand.is_absolute():
@@ -295,6 +298,9 @@ class JobManager:
                 chosen_input = config_sources[0]["path_or_url"]
 
         raw_input = chosen_input or self.state.settings.input_path or "test_photos"
+        cloud_info = detect_unsupported_cloud_link(raw_input)
+        if cloud_info:
+            raise ValueError(cloud_info["message"])
         if is_drive_folder_input(raw_input):
             resolved_input = raw_input
         else:

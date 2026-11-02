@@ -23,6 +23,7 @@ from backend.engine.exporter import BundleExporter
 from backend.drive import (
     is_drive_folder_input,
     parse_drive_folder_id,
+    detect_unsupported_cloud_link,
     get_drive_api_key,
     DriveClient,
     DriveAuthError,
@@ -89,6 +90,9 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         for s_idx, s in enumerate(config.sources):
             src_dict = dict(s)
             p_val = str(src_dict.get("path_or_url") or src_dict.get("path") or "").strip()
+            cloud_info = detect_unsupported_cloud_link(p_val)
+            if cloud_info:
+                raise ValueError(cloud_info["message"])
             src_dict["path_or_url"] = p_val
             k_val = src_dict.get("kind") or src_dict.get("source_type")
             if not k_val:
@@ -101,6 +105,9 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
             sources_list.append(src_dict)
     else:
         input_str = str(config.input_path) if config.input_path else ""
+        cloud_info = detect_unsupported_cloud_link(input_str)
+        if cloud_info:
+            raise ValueError(cloud_info["message"])
         is_drive_input = is_drive_folder_input(input_str)
         s_kind = "drive" if is_drive_input else ("zip" if input_str.lower().endswith(".zip") else "local")
         sources_list.append({
@@ -155,6 +162,9 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     scanned_photos: List[ScannedPhoto] = []
     seen_photo_ids: set[str] = set()
     seen_drive_file_ids: set[str] = set()
+    aggregate_unsupported_files: Dict[str, int] = {}
+    aggregate_unsupported_count: int = 0
+    aggregate_extracted_nested_zips: List[str] = []
     failed_sources_count = 0
     total_sources = len(sources_list)
     drive_summary_aggregate = None
@@ -260,6 +270,11 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                         max_subfolder_depth=config.max_subfolder_depth,
                         follow_shortcuts=config.follow_shortcuts,
                     )
+                    for ext, count in scanner.unsupported_files.items():
+                        aggregate_unsupported_files[ext] = aggregate_unsupported_files.get(ext, 0) + count
+                    aggregate_unsupported_count += scanner.unsupported_count
+                    aggregate_extracted_nested_zips.extend(scanner.extracted_nested_zips)
+
                     src_count = 0
                     for item in scanned:
                         if item.photo_id in seen_photo_ids:
@@ -281,14 +296,25 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
     total_photos = len(scanned_photos)
     if total_photos == 0:
         errs = [f"{s.get('label', s.get('path_or_url'))}: {s.get('error', 'no images found')}" for s in sources_list]
-        raise ValueError(f"No valid photos found across {total_sources} source(s): {'; '.join(errs)}")
+        msg = f"No valid photos found across {total_sources} source(s): {'; '.join(errs)}"
+        if aggregate_unsupported_count > 0:
+            top_exts = ", ".join(f"{ext} ({cnt})" for ext, cnt in sorted(aggregate_unsupported_files.items(), key=lambda x: -x[1]))
+            msg += f" (Found {aggregate_unsupported_count} non-image/unsupported files: [{top_exts}]. Supported formats: .jpg, .png, .webp, .heic, .bmp, .tiff)"
+        raise ValueError(msg)
+
+    scan_msg = f"Found {total_photos} photos across {total_sources - failed_sources_count} active source(s)."
+    if aggregate_unsupported_count > 0:
+        top_exts = ", ".join(f"{ext} ({cnt})" for ext, cnt in sorted(aggregate_unsupported_files.items(), key=lambda x: -x[1])[:3])
+        scan_msg += f" Skipped {aggregate_unsupported_count} non-image file(s) [{top_exts}]."
 
     notify({
         "stage": "scanned",
         "current": 0,
         "total": total_photos,
         "percent": 5.0,
-        "message": f"Found {total_photos} photos across {total_sources - failed_sources_count} active source(s).",
+        "message": scan_msg,
+        "unsupported_files": aggregate_unsupported_files,
+        "unsupported_count": aggregate_unsupported_count,
     })
 
     # 2. Setup Cache, Loader, Detector, and Thumb Generator
@@ -529,6 +555,9 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
         unapplied_edits=unapplied,
         drive_summary=drive_summary_aggregate,
         sources=sources_list,
+        unsupported_files=aggregate_unsupported_files,
+        unsupported_count=aggregate_unsupported_count,
+        extracted_nested_zips=aggregate_extracted_nested_zips,
     )
 
     notify({
@@ -732,6 +761,7 @@ def run_incremental_pipeline(
             )
 
         # Load manifest
+        existing_unsupported = {}
         mf_candidates = [work_p / "manifest.json", out_p / "manifest.json"]
         for cand in mf_candidates:
             if cand.is_file():
@@ -740,12 +770,16 @@ def run_incremental_pipeline(
                         m_data = json.load(f)
                     existing_sources = m_data.get("sources", [])
                     existing_origins = m_data.get("photo_origins", {})
+                    existing_unsupported = m_data.get("unsupported_files", {})
                     break
                 except Exception:
                     pass
 
     # 3. Clean new source parameters
     s_path = str(new_source.get("path_or_url") or new_source.get("path") or "").strip()
+    cloud_info = detect_unsupported_cloud_link(s_path)
+    if cloud_info:
+        raise ValueError(cloud_info["message"])
     s_kind = new_source.get("kind") or ("drive" if is_drive_folder_input(s_path) else ("zip" if s_path.lower().endswith(".zip") else "local"))
     s_id = new_source.get("id") or f"src_{len(existing_sources)+1:02d}"
     s_label = new_source.get("label") or (Path(s_path).name if s_path else f"Source {len(existing_sources)+1}")
@@ -768,6 +802,9 @@ def run_incremental_pipeline(
     scanned_photos: List[ScannedPhoto] = []
     seen_new_ids: set[str] = set()
     skipped_duplicates = 0
+    incremental_unsupported_files: Dict[str, int] = {}
+    incremental_unsupported_count: int = 0
+    incremental_extracted_nested_zips: List[str] = []
 
     if s_kind == "drive" or is_drive_folder_input(s_path):
         folder_id = parse_drive_folder_id(s_path)
@@ -829,6 +866,11 @@ def run_incremental_pipeline(
                 max_subfolder_depth=config.max_subfolder_depth,
                 follow_shortcuts=config.follow_shortcuts,
             )
+            for ext, count in scanner.unsupported_files.items():
+                incremental_unsupported_files[ext] = incremental_unsupported_files.get(ext, 0) + count
+            incremental_unsupported_count += scanner.unsupported_count
+            incremental_extracted_nested_zips.extend(scanner.extracted_nested_zips)
+
             for item in scanned:
                 if item.photo_id in existing_photos or item.photo_id in seen_new_ids:
                     skipped_duplicates += 1
@@ -841,10 +883,17 @@ def run_incremental_pipeline(
     new_source_clean["photo_count"] = len(scanned_photos)
     new_source_clean["status"] = "completed"
 
+    scan_msg = f"Found {len(scanned_photos)} new photos ({skipped_duplicates} duplicate photos skipped)."
+    if incremental_unsupported_count > 0:
+        top_exts = ", ".join(f"{ext} ({cnt})" for ext, cnt in sorted(incremental_unsupported_files.items(), key=lambda x: -x[1])[:3])
+        scan_msg += f" Skipped {incremental_unsupported_count} non-image file(s) [{top_exts}]."
+
     notify({
         "stage": "scanned",
         "percent": 18.0,
-        "message": f"Found {len(scanned_photos)} new photos ({skipped_duplicates} duplicate photos skipped).",
+        "message": scan_msg,
+        "unsupported_files": incremental_unsupported_files,
+        "unsupported_count": incremental_unsupported_count,
     })
 
     # 5. Detect and Embed ONLY New Photos
@@ -974,6 +1023,11 @@ def run_incremental_pipeline(
     for pid in new_photos:
         existing_origins[pid] = s_id
 
+    combined_unsupported = dict(existing_unsupported) if isinstance(existing_unsupported, dict) else {}
+    for ext, cnt in incremental_unsupported_files.items():
+        combined_unsupported[ext] = combined_unsupported.get(ext, 0) + cnt
+    combined_unsupported_count = sum(combined_unsupported.values())
+
     manifest_path_work = work_p / "manifest.json"
     manifest_path_exp = out_p / "manifest.json"
     manifest_payload = {
@@ -985,6 +1039,8 @@ def run_incremental_pipeline(
         "total_photos": len(all_combined_photos),
         "total_people": len(updated_people),
         "photo_origins": existing_origins,
+        "unsupported_files": combined_unsupported,
+        "unsupported_count": combined_unsupported_count,
     }
     for m_path in [manifest_path_work, manifest_path_exp]:
         try:
@@ -1014,6 +1070,10 @@ def run_incremental_pipeline(
         sources=all_sources,
         unapplied_edits=unapplied,
         export_dir=str(out_p),
+        manifest=manifest_payload,
+        unsupported_files=combined_unsupported,
+        unsupported_count=combined_unsupported_count,
+        extracted_nested_zips=incremental_extracted_nested_zips,
     )
 
     exporter = BundleExporter(

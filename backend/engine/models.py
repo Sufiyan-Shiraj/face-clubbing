@@ -163,4 +163,7 @@ class EngineResult:
     export_dir: Optional[str] = None
     sources: List[Dict[str, Any]] = field(default_factory=list)
     manifest: Optional[Dict[str, Any]] = None
+    unsupported_files: Dict[str, int] = field(default_factory=dict)
+    unsupported_count: int = 0
+    extracted_nested_zips: List[str] = field(default_factory=list)
 

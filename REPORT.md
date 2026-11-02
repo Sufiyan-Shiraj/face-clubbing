@@ -6512,4 +6512,85 @@ Evaluated across 15 representative group and portrait images from test Google Dr
 4. **Settings Spec Checker (`eval/check_settings_spec.py`)**: 100% PASS (All 15 SPEC 6.2 defaults preserved across `SettingsModel`, `EngineConfig`, and `SettingsScreen.tsx`).
 5. **Export Invariants Audit (`eval/verify_export.py`)**: **17/17 PASS** including Check 17: Drive Image Quality Presets and SPEC §18.1 Evidence Reproduction.
 
+---
+
+## 47. PHASE V2-7: INPUT GUIDANCE, CLOUD LINK DETECTION, NESTED ARCHIVES, AND UNSUPPORTED FILE REPORTING
+
+### 47.1 Problem Statement & Background
+Event photo organizers frequently receive photo collections from multiple contributors using various sharing mechanisms:
+1. **Google Photos Albums**: Attendees often paste public Google Photos album links (e.g., `photos.google.com/share/...` or `photos.app.goo.gl/...`). Prior to Phase V2-7, these links could either fail silently or fail downstream with confusing errors (such as treating the URL as a local file and reporting `FileNotFoundError: Input path does not exist`). Crucially, since March 2025, Google's Photos Library API strictly prohibits third-party applications from reading user albums not created by the application itself. Direct album URL reading is impossible by API design; organizers must download their album as a ZIP file (or export to Google Drive) to sort it with CatLog.
+2. **Unsupported Cloud Link Providers**: Links from Dropbox, OneDrive / SharePoint, iCloud Shared Albums, and Box cannot be scraped directly without authenticated provider-specific SDK flows. Clear, actionable guidance instructing organizers to sync or download as ZIP is required.
+3. **Nested Archives in WhatsApp & Phone Exports**: WhatsApp chat exports (`WhatsApp Chat - Group.zip`) bundle media inside nested archives (e.g., `Media.zip`). Google Takeout archives and phone backup utilities also produce archives containing internal ZIP files. If scanner only extracted top-level archives, internal photos remained hidden.
+4. **Unsupported File Types & Media**: Phone folders frequently contain non-image artifacts (`.mp4`, `.mov`, `.pdf`, `.txt`, audio, and system files like `.DS_Store`, `Thumbs.db`). Rather than halting execution or silently dropping files without accounting, the scanner must safely skip non-image files, ignore system metadata, and report exact counts and file-type breakdowns in the project manifest and progress logs.
+5. **In-App Guidance**: Organizers need an accessible, comprehensive, multi-tab modal explaining how to import photos from Google Photos, Google Drive, WhatsApp, and phones, with supported format specifications.
+
+### 47.2 Architecture & Changes
+1. **Unsupported Cloud Link Detection (`backend/drive/parser.py`)**:
+   - Implemented `detect_unsupported_cloud_link(url_or_id: str) -> Optional[Dict[str, str]]`.
+   - Recognizes:
+     - Google Photos: `photos.google.com`, `photos.app.goo.gl`.
+     - Dropbox: `dropbox.com`.
+     - OneDrive / SharePoint: `onedrive.live.com`, `1drv.ms`, `sharepoint.com`.
+     - iCloud: `icloud.com`.
+     - Box: `box.com`, `box.net`.
+   - Returns structured dict with `service`, `code`, `title`, `message`, `how_to_fix`.
+   - Integrated into `parse_drive_folder_id(value: str)`: checks `detect_unsupported_cloud_link()` first and raises informative `ValueError` before attempting Drive folder ID parsing.
+2. **Diagnostics Error Classification (`backend/api/diagnostics.py`)**:
+   - Added error codes `GOOGLE_PHOTOS_LINK`, `DROPBOX_LINK`, `ONEDRIVE_LINK`, `ICLOUD_LINK`, `BOX_LINK`.
+   - Provides plain-language explanations and actionable fixes (e.g. Google Photos album 3-step export: More options ⋮ -> Download all).
+3. **Recursive Nested Archive Extraction (`backend/engine/scanner.py`)**:
+   - Added `_extract_nested_archives(base_dir: Path, max_depth: int = 3)`:
+     - Recursively inspects extracted directories for nested `.zip` archives.
+     - Safely unpacks inner ZIPs into dedicated subdirectories.
+     - Removes nested zip archives after extraction to prevent duplicate processing.
+     - Records extracted nested zip paths in `scanner.extracted_nested_zips`.
+4. **Unsupported File Tracking & Reporting (`backend/engine/scanner.py`, `models.py`, `exporter.py`, `pipeline.py`)**:
+   - `PhotoScanner` tracks `unsupported_files: Dict[str, int]` and `unsupported_count: int`.
+   - System metadata files (`.DS_Store`, `Thumbs.db`, `desktop.ini`, `._*`) are silently skipped without incrementing unsupported counts.
+   - Non-image files (`.mp4`, `.mov`, `.pdf`, `.txt`, `.mp3`) are safely skipped, and counts are aggregated by lowercased extension.
+   - Calling scanner on a single unsupported file immediately raises a descriptive `ValueError` listing all supported image formats.
+   - Scanner exposes `get_unsupported_summary()` returning total skipped count, extension breakdown, and nested archives.
+   - `EngineResult` and `manifest.json` schema v2 include `unsupported_files` and `unsupported_count`.
+   - Pipeline notifications report skipped unsupported files during scanning and when zero photos are found.
+5. **Frontend Help Modal & Validation (`frontend/src/`)**:
+   - `InputGuidanceModal.tsx`: Complete accessible modal with 4 tabs:
+     - `photos`: Explains Google Photos API policy (March 2025) and 3-step "Download all" export workflow.
+     - `drive`: Google Drive link sharing ("Anyone with the link can view") and image quality presets.
+     - `phone`: WhatsApp chat export with media, nested archives, iPhone AirDrop/cable, and Android USB file transfer.
+     - `formats`: Grid of supported image formats (JPG, PNG, WEBP, HEIC/HEIF, BMP, TIFF) and non-image skipping rules.
+     - Keyboard reachability: Escape key dismisses modal; full focus management; minimum 12px font size.
+   - `HomeScreen.tsx`:
+     - Added `(?) How do I get my photos in?` button (`#btn-open-input-guidance`) in the header action group.
+     - Added client-side `detectUnsupportedCloudLink` validation in `validateDriveInput` and `handleCheckDrive`.
+     - Displays `View 3-Step Google Photos Export Guide` button (`#btn-open-photos-guide`) when Google Photos link is entered.
+     - Renders `InputGuidanceModal`.
+   - `AddSourceModal.tsx`:
+     - Intercepts unsupported cloud links in `handleSubmit`.
+     - Displays `#btn-add-source-photos-guide` on Google Photos error.
+     - Provides `#btn-add-source-guidance` (`Import Guide`) in footer.
+     - Renders `InputGuidanceModal`.
+
+### 47.3 Automated Test Suites & Verification
+1. **Backend Input Guidance Test Suite (`tests/test_input_guidance.py`) (9/9 PASS in 2.98s)**:
+   - `test_detect_unsupported_cloud_link_google_photos`: Verifies detection of `photos.google.com` and `photos.app.goo.gl` with March 2025 API explanation and ZIP guidance.
+   - `test_detect_unsupported_cloud_links_other_providers`: Verifies Dropbox, OneDrive, SharePoint, iCloud, and Box detection.
+   - `test_detect_unsupported_cloud_link_allows_valid_drive`: Confirms valid Drive folder IDs and links return None.
+   - `test_parse_drive_folder_id_rejects_unsupported_cloud_links`: Confirms `parse_drive_folder_id` raises descriptive `ValueError`.
+   - `test_diagnostics_classifies_cloud_links`: Verifies `classify_error` maps errors to `GOOGLE_PHOTOS_LINK`, `DROPBOX_LINK`, `ONEDRIVE_LINK`, `ICLOUD_LINK`.
+   - `test_nested_zip_extraction`: Simulates WhatsApp export with internal `Media.zip` and verifies all photos are extracted and scanned.
+   - `test_scanner_unsupported_file_tracking`: Verifies non-image files (`.mp4`, `.mp3`, `.pdf`, `.txt`) are tracked by extension while system metadata (`.DS_Store`, `Thumbs.db`) is ignored.
+   - `test_single_unsupported_file_raises_clear_error`: Verifies single invalid file input raises `ValueError` with supported format list.
+   - `test_exporter_manifest_includes_unsupported_summary`: Verifies exported `manifest.json` includes `unsupported_files` and `unsupported_count`.
+2. **Frontend UI Guidance Test Suite (`frontend/src/__tests__/inputGuidanceUI.test.tsx`) (9/9 PASS in 6.76s)**:
+   - `detectUnsupportedCloudLink utility`: Verifies detection of Google Photos, Dropbox, OneDrive, iCloud, Box, and Drive allowance.
+   - `HomeScreen Guidance & Cloud Link Validation`: Verifies `#btn-open-input-guidance` opens modal, and Google Photos input displays warning and `#btn-open-photos-guide`.
+   - `InputGuidanceModal Tab Navigation & Dismissal`: Verifies switching across all 4 tabs (`photos`, `drive`, `phone`, `formats`), Escape key listener, and Got It button.
+   - `AddSourceModal Cloud Link Detection & Guidance`: Verifies cloud link blocking, photos guide button, and footer import guide button.
+3. **Accessibility Audit (`eval/check_ui_rules.py`)**: **100% PASS** (Check 1: Zero sub-12px font sizes, Check 2: Contrast >= 4.5:1 across Dark, Paper, Navy themes, Check 3: Keyboard reachability).
+4. **Settings Spec Invariance (`eval/check_settings_spec.py`)**: **100% PASS** (All 15 clustering settings defaults preserved across SettingsModel, EngineConfig, and SettingsScreen.tsx).
+5. **STATUS Integrity Audit (`eval/check_status_integrity.py`)**: **100% PASS** (22 test files verified).
+6. **Full Backend Test Suite (`pytest -q`)**: **166/166 PASS in 664.69s**.
+7. **Full Frontend Test Suite (`npm test`)**: **133/133 PASS across 23 test files in 68.31s**.
+
+
 

@@ -1,6 +1,6 @@
 """Drive integration package for PhotoSorter."""
 
-from backend.drive.parser import parse_drive_folder_id, is_drive_folder_input
+from backend.drive.parser import parse_drive_folder_id, is_drive_folder_input, detect_unsupported_cloud_link
 from backend.drive.config import (
     get_drive_api_key,
     set_drive_api_key,
@@ -24,6 +24,7 @@ from backend.drive.client import (
 __all__ = [
     "parse_drive_folder_id",
     "is_drive_folder_input",
+    "detect_unsupported_cloud_link",
     "get_drive_api_key",
     "set_drive_api_key",
     "mask_api_key",

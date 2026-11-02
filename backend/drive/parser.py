@@ -4,8 +4,101 @@ from __future__ import annotations
 import re
 from urllib.parse import urlparse, parse_qs
 
+from typing import Optional, Dict
+
 # Drive folder IDs are typically 25 to 55 alphanumeric characters (with _ and -)
 DRIVE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{20,60}$")
+
+
+def detect_unsupported_cloud_link(url_or_id: str) -> Optional[Dict[str, str]]:
+    """
+    Detect unsupported cloud service links (Google Photos, Dropbox, OneDrive, iCloud, Box)
+    and return structured guidance detailing why it cannot be read and how to import photos.
+    """
+    if not url_or_id or not isinstance(url_or_id, str):
+        return None
+
+    s = url_or_id.strip().lower()
+
+    # 1. Google Photos (photos.google.com, photos.app.goo.gl)
+    if "photos.google.com" in s or "photos.app.goo.gl" in s:
+        return {
+            "service": "Google Photos",
+            "code": "GOOGLE_PHOTOS_LINK",
+            "title": "Google Photos Album Link Not Supported Directly",
+            "message": (
+                "Google Photos album links cannot be scanned directly because Google's Photos Library API "
+                "restricts third-party access to albums not created by the application (effective March 2025). "
+                "Please download your album as a ZIP file (or export to Google Drive) and select it as a "
+                "local ZIP or Google Drive source in CatLog."
+            ),
+            "how_to_fix": (
+                "In Google Photos, open the album, click More options (⋮) -> 'Download all' to download a ZIP file "
+                "(or export to Google Drive), then choose 'Folder or Zip' here."
+            ),
+        }
+
+    # 2. Dropbox (dropbox.com)
+    if "dropbox.com" in s:
+        return {
+            "service": "Dropbox",
+            "code": "DROPBOX_LINK",
+            "title": "Dropbox Link Not Supported Directly",
+            "message": (
+                "Dropbox links cannot be accessed directly via URL. Please download or sync the folder "
+                "to your computer, or export the photos to Google Drive."
+            ),
+            "how_to_fix": (
+                "Download the Dropbox folder as a ZIP file or sync locally, then choose 'Folder or Zip' in CatLog."
+            ),
+        }
+
+    # 3. OneDrive / SharePoint (onedrive.live.com, 1drv.ms, sharepoint.com)
+    if "onedrive.live.com" in s or "1drv.ms" in s or "sharepoint.com" in s:
+        return {
+            "service": "OneDrive",
+            "code": "ONEDRIVE_LINK",
+            "title": "OneDrive Link Not Supported Directly",
+            "message": (
+                "OneDrive / SharePoint links cannot be accessed directly via URL. Please sync or download the folder "
+                "to your computer, or export the photos to Google Drive."
+            ),
+            "how_to_fix": (
+                "Download the OneDrive folder as a ZIP file or sync locally, then choose 'Folder or Zip' in CatLog."
+            ),
+        }
+
+    # 4. Apple iCloud (icloud.com)
+    if "icloud.com" in s:
+        return {
+            "service": "iCloud",
+            "code": "ICLOUD_LINK",
+            "title": "iCloud Link Not Supported Directly",
+            "message": (
+                "iCloud Shared Album links cannot be accessed directly via URL. Please download the photos "
+                "to your computer or export them into a ZIP file."
+            ),
+            "how_to_fix": (
+                "In the Photos app or iCloud.com, select the photos and download or export them to a local "
+                "folder or ZIP file, then choose 'Folder or Zip' in CatLog."
+            ),
+        }
+
+    # 5. Box (box.com)
+    if "box.com" in s or "box.net" in s:
+        return {
+            "service": "Box",
+            "code": "BOX_LINK",
+            "title": "Box Link Not Supported Directly",
+            "message": (
+                "Box links cannot be accessed directly via URL. Please download or sync the folder to your computer."
+            ),
+            "how_to_fix": (
+                "Download the Box folder as a ZIP file or sync locally, then choose 'Folder or Zip' in CatLog."
+            ),
+        }
+
+    return None
 
 
 def is_drive_folder_input(input_str: str) -> bool:
@@ -40,6 +133,11 @@ def parse_drive_folder_id(url_or_id: str) -> str:
     s = url_or_id.strip()
     if not s:
         raise ValueError("Google Drive link or ID cannot be empty.")
+
+    # 0. Check for known unsupported cloud service links first (Google Photos, Dropbox, etc.)
+    cloud_info = detect_unsupported_cloud_link(s)
+    if cloud_info:
+        raise ValueError(cloud_info["message"])
 
     # 1. Reject Drive file links with clear guidance
     if "drive.google.com/file/d/" in s:

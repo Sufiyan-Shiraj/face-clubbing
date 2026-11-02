@@ -1511,15 +1511,20 @@ class AppState:
     ) -> Dict[str, Any]:
         """Runs incremental ingestion of a new source into the active project."""
         from backend.engine.pipeline import EngineConfig, run_incremental_pipeline
-        from backend.drive import get_drive_api_key
+        from backend.drive import get_drive_api_key, detect_unsupported_cloud_link
 
         if not self.project_active and not (self.work_dir / "people.json").is_file() and not (Path(self.settings.output_dir) / "people.json").is_file():
             raise RuntimeError("No active project found. Open or create a project before adding sources incrementally.")
 
+        src_path = str(new_source.get("path_or_url", "")).strip()
+        cloud_info = detect_unsupported_cloud_link(src_path)
+        if cloud_info:
+            raise ValueError(cloud_info["message"])
+
         drive_key = drive_api_key or self.settings.drive_api_key or get_drive_api_key()
 
         config = EngineConfig(
-            input_path=new_source.get("path_or_url", ""),
+            input_path=src_path,
             output_dir=self.settings.output_dir,
             cache_dir=self.settings.cache_dir or self.work_dir,
             distance_threshold=self.settings.distance_threshold,
