@@ -421,6 +421,20 @@ export const api = {
     return fetchJson(`${BASE_URL}/project/snapshots`);
   },
 
+  async mergeProjects(req: {
+    project_a_work_dir: string;
+    project_b_work_dir: string;
+    target_work_dir?: string;
+    target_export_dir?: string;
+    new_project_name?: string;
+    distance_threshold?: number;
+  }): Promise<any> {
+    return fetchJson(`${BASE_URL}/projects/merge`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
   async selectFolderDialog(title?: string): Promise<{ selected?: string; cancelled: boolean }> {
     return fetchJson(`${BASE_URL}/fs/select-dialog`, {
       method: 'POST',

@@ -1595,3 +1595,54 @@ class AppState:
         from backend.engine.snapshots import list_snapshots
         return list_snapshots(self.work_dir)
 
+    def merge_two_projects(
+        self,
+        project_a_work_dir: str,
+        project_b_work_dir: str,
+        target_work_dir: Optional[str] = None,
+        target_export_dir: Optional[str] = None,
+        new_project_name: Optional[str] = None,
+        distance_threshold: float = 0.50,
+    ) -> Dict[str, Any]:
+        """Merges two projects into a new project and opens the merged result as the active project."""
+        from backend.engine.merger import merge_projects
+        from backend.api.projects import save_recent_project
+
+        wa = Path(project_a_work_dir).resolve()
+        wb = Path(project_b_work_dir).resolve()
+
+        if not target_work_dir:
+            # Deterministic combined name
+            base_a = wa.name.removesuffix(".work")
+            base_b = wb.name.removesuffix(".work")
+            combined_name = f"{base_a}_{base_b}_merged"
+            target_work = self.repo_root / f"{combined_name}.work"
+            target_export = self.repo_root / "export" / combined_name
+        else:
+            target_work = Path(target_work_dir).resolve()
+            target_export = Path(target_export_dir).resolve() if target_export_dir else (target_work.parent / target_work.name.removesuffix(".work"))
+
+        res = merge_projects(
+            proj_a_work=wa,
+            proj_b_work=wb,
+            target_work=target_work,
+            target_export=target_export,
+            new_project_name=new_project_name,
+            distance_threshold=distance_threshold,
+        )
+
+        # Open the merged project in AppState
+        self.open_saved_project(target_work, target_export)
+
+        # Record in recent projects
+        save_recent_project(
+            work_dir=target_work,
+            export_path=target_export,
+            name=res["project_name"],
+            source_description=f"Merged: {wa.name} + {wb.name}",
+            counts={"photos": res["total_photos"], "people": res["people_count"]},
+        )
+
+        return res
+
+

@@ -27,6 +27,9 @@
 | 9 Polish / extras | Core Complete (Custom scrollbars, custom dialogs, >=12px accessibility, Section 18 Table A/B; optional extras remaining) |
 | V2-0 Drive subfolder recursion | Done (BFS queue, depth 5, 20k file cap, loop prevention, file ID deduplication, resilient folder failures, scan summary) |
 | V2-1 Release health & first-user fixes | Done (Counts-only diagnostics button, privacy scrubber, GitHub issue templates with caution banner, crash/error screens with plain-language fixes, README troubleshooting) |
+| V2-2 Multi-source scan & organization | Done (Manifest v2, MultiSource scan, per-source origins & deduplication, source chips/badges, #source-filter-select) |
+| V2-3 Add source to existing project (incremental) | Done (Frozen mode invariants [0 existing membership delta], face attach, deduplication by SHA-256, What Changed diff report, snapshots & rollback) |
+| V2-4 Merge two projects | Done (New project creation, parent immutability, settings hash verification, photo union, DisjointSet anchor merge, conflict detection [names & remove-vs-assign], modal UI & review) |
 
 
 ---
@@ -298,9 +301,9 @@ Done when: two Drive folders plus a zip scan into one project; a duplicate photo
 Build: process only new photos; frozen mode (existing people stay, new faces attach or form new people, second-pass merge rules documented); "What changed" report (new photos, new people, faces that joined existing people, existing people whose membership changed, which must be zero in frozen mode); existing edits replay as rules; undo supported.
 Done when: adding a link to a finished project leaves all existing people and edits unchanged, and the review shows only the differences; tests for frozen invariants and edit survival. Verified in tests/test_incremental.py (8/8 pass) and frontend/src/__tests__/incrementalSourceUI.test.tsx (9/9 pass). Report Section 43.
 
-### V2-4 Merge two projects
+### V2-4 Merge two projects [COMPLETED]
 Build: merge creates a NEW project (originals untouched); union by photo ID; require equal settings hash (else offer re-detect); copy caches; combine edits as order-independent rules (merge anchors, removes, assigns, names, hides); conflict review list (name conflicts, remove vs assign), never silently resolved; the merged project records both parents as sources.
-Done when: merging a project with itself changes nothing; A+B equals B+A; edits from both survive; conflicts are listed; a cold merged result is compared with an all-at-once scan and the differences are reported.
+Done when: merging a project with itself changes nothing; A+B equals B+A; edits from both survive; conflicts are listed; a cold merged result is compared with an all-at-once scan and the differences are reported. Verified in `backend/engine/merger.py`, `tests/test_merge_projects.py` (6/6 pass), and `frontend/src/__tests__/mergeProjectsUI.test.tsx` (5/5 pass). Report Section 44.
 
 ### V2-5 Viewer and export for multi-source projects
 Build: per-photo download link (Drive link or none), mixed local+Drive bundles, optional album labels from Drive folder paths (viewer filter), size handling for big zips, bundle hygiene checks, viewer performance on 1,000+ photos (virtualized grid), accessibility checks stay at 100%.

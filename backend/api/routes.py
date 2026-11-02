@@ -40,6 +40,8 @@ from backend.api.models import (
     WhatChangedResponse,
     SnapshotItem,
     UndoSnapshotResponse,
+    MergeProjectsRequest,
+    MergeProjectsResponse,
 )
 from backend.api.diagnostics import DiagnosticsReport, classify_error, generate_diagnostics_report
 from backend.engine.models_downloader import model_download_manager
@@ -1040,4 +1042,25 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
             "photos_count": len(state.photos),
         }
 
+    # 10. Merge Two Projects Endpoint (BUILD_PLAN Phase V2-4)
+    @router.post("/projects/merge", response_model=MergeProjectsResponse)
+    def merge_two_projects_endpoint(req: MergeProjectsRequest):
+        try:
+            res = state.merge_two_projects(
+                project_a_work_dir=req.project_a_work_dir,
+                project_b_work_dir=req.project_b_work_dir,
+                target_work_dir=req.target_work_dir,
+                target_export_dir=req.target_export_dir,
+                new_project_name=req.new_project_name,
+                distance_threshold=req.distance_threshold,
+            )
+            return res
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
     return router
+

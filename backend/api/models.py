@@ -395,3 +395,38 @@ class UndoSnapshotResponse(BaseModel):
     success: bool
     restored_snapshot: Dict[str, Any] = Field(default_factory=dict)
     message: str
+
+
+class MergeConflictItem(BaseModel):
+    conflict_type: str
+    description: str
+    entity_id: str
+    val_a: Any
+    val_b: Any
+    resolution_strategy: str = "review_needed"
+
+
+class MergeProjectsRequest(BaseModel):
+    project_a_work_dir: str
+    project_b_work_dir: str
+    target_work_dir: Optional[str] = None
+    target_export_dir: Optional[str] = None
+    new_project_name: Optional[str] = None
+    distance_threshold: float = 0.50
+
+
+class MergeProjectsResponse(BaseModel):
+    success: bool
+    project_name: str
+    work_dir: str
+    export_dir: str
+    total_photos: int
+    shared_photos: int
+    people_count: int
+    unrecognized_faces: int
+    unrecognized_photos: int
+    edits_applied: int
+    unapplied_edits: int
+    conflicts_count: int
+    conflicts: List[MergeConflictItem] = Field(default_factory=list)
+

@@ -6287,3 +6287,71 @@ Phase V2-3 enables organizers to add an additional source (local directory, ZIP 
   - `ReviewPeopleScreen Integration > opens AddSourceModal when clicking + Add Source`: PASS.
   - `ReviewPeopleScreen Integration > renders What Changed button when a report exists and opens WhatChangedModal on click`: PASS.
 - **Full Frontend Vitest Suite**: **20 passed (20 files), 116 passed (116 tests)** in 47.04s.
+
+---
+
+## 44. PHASE V2-4: MERGE TWO PROJECTS
+
+### 44.1 Architecture & Objectives
+Phase V2-4 implements the project merger engine allowing organizers to combine two independent projects into a single unified project without re-scanning or modifying either parent project:
+1. **Parent Project Immutability & Complete Isolation**:
+   - Merging reads from `project_a_dir` and `project_b_dir` purely in read-only mode.
+   - The merge target is written to a distinct directory `<work_dir>/<merged_name>` (and exported to `<export_dir>/<merged_name>`).
+   - Parents' manifests, `edits.json`, caches, photos, and bundle directories remain 100% untouched and unmutated.
+2. **Settings Hash Compatibility Guard**:
+   - `verify_settings_compatibility()` verifies that both parent projects were scanned using compatible detection and clustering configurations (comparing the 16-hex detector settings hash).
+   - If settings differ, the merge aborts with a clear, actionable error message detailing the hash difference and recommending re-detection.
+3. **Union by Photo ID**:
+   - Scanned photo records are unified by stable `photo_id`.
+   - If a photo exists in both parent projects, it is deduplicated: detection results and face crops are preserved without duplicate entries.
+   - Embeddings and thumbnail caches from both projects are copied/merged into the new project's cache without loss.
+4. **Order-Independent Edit Combination & Anchor Unification**:
+   - Edits in CatLog are anchored by face IDs (`f_<photo_id>_<idx>`) rather than transient cluster IDs.
+   - Merges between clusters are represented as anchor face-pair equivalence relations.
+   - A `DisjointSet` (Union-Find with path compression and union-by-rank) computes the connected components across both projects' merge edits:
+     - Commutative property: $\text{Merge}(A, B) \equiv \text{Merge}(B, A)$.
+     - Idempotent property: $\text{Merge}(A, A) \equiv A$.
+   - Face removals and assignments are unified by face ID.
+   - Person names and hidden states are combined with conflict detection.
+5. **Conflict Review Without Silent Resolution (`merge_conflicts.json`)**:
+   - The engine explicitly detects conflicts:
+     - `name_conflict`: Both projects assigned differing non-empty names to the same person/anchor.
+     - `remove_vs_assign`: One project marked a face as removed (`is_removed: true`) while the other assigned it to a person (`assigned_to: target_person`).
+   - Conflicts are recorded in `<work_dir>/merge_conflicts.json` and presented in the UI conflict review drawer; neither edit is silently clobbered or discarded.
+6. **Manifest v2 Source Attribution**:
+   - The resulting `manifest.json` combines sources from both parent projects with `kind: "project"` or preserving their original underlying sources (e.g. Local folder, Google Drive), recording both parent projects in `sources`.
+7. **FastAPI & React UI Integration**:
+   - Endpoint: `POST /api/projects/merge` accepting `{ project_a_path, project_b_path, new_project_name }`.
+   - UI: `MergeProjectsModal.tsx` accessible via `#modal-open-merge-btn` in `OpenProjectModal.tsx`. Provides dropdown selection of existing projects, custom naming, conflict badges, and direct navigation to review the merged project.
+
+### 44.2 Created & Modified Files
+- `backend/engine/merger.py`: Merge engine with `DisjointSet`, `read_project_data`, `verify_settings_compatibility`, `combine_edits`, `MergeConflict`, and `merge_projects`.
+- `backend/api/models.py`: Added `MergeConflictItem`, `MergeProjectsRequest`, `MergeProjectsResponse`.
+- `backend/api/state.py`: Implemented `merge_two_projects` in `AppState`.
+- `backend/api/routes.py`: Added `POST /api/projects/merge`.
+- `frontend/src/types.ts`: Added `MergeConflictItem`, `MergeProjectsRequest`, `MergeProjectsResponse`.
+- `frontend/src/api/client.ts`: Added `mergeProjects`.
+- `frontend/src/components/MergeProjectsModal.tsx`: Interactive merge dialog with project selectors, conflict review list, and merge executor.
+- `frontend/src/components/OpenProjectModal.tsx`: Added `#modal-open-merge-btn` and `onOpenMergeProjects` wiring.
+- `frontend/src/App.tsx`: Wired `isMergeModalOpen`, `MergeProjectsModal`, and project switching.
+- `tests/test_merge_projects.py`: 6 tests for idempotence, commutativity, isolation, settings hash check, edit combination & conflict detection, and FastAPI route.
+- `frontend/src/__tests__/mergeProjectsUI.test.tsx`: 5 tests for modal rendering, merge execution, conflict rendering, error alert on mismatched settings, and OpenProjectModal header trigger.
+
+### 44.3 Verification Evidence
+- **Backend Merger Suite (`tests/test_merge_projects.py`) (6/6 PASS in 13.60s)**:
+  - `test_merge_projects_idempotence`: PASS (A + A leaves people count and photo count unchanged).
+  - `test_merge_projects_commutativity`: PASS (A + B and B + A produce identical photo counts, people sets, and edit rules).
+  - `test_merge_projects_isolation_leaves_parents_untouched`: PASS (parent directories and files remain identical byte-for-byte).
+  - `test_merge_projects_incompatible_settings_hash_rejected`: PASS (mismatched detector settings raise ValueError with clear message).
+  - `test_merge_projects_edit_combination_and_conflicts`: PASS (DisjointSet unifies anchors, name conflict & remove-vs-assign recorded in merge_conflicts.json).
+  - `test_merge_projects_api_endpoint`: PASS (FastAPI POST /api/projects/merge succeeds with 200 OK and registers new project).
+- **Full Backend Pytest Regression**: **146 passed, 2 warnings in 922.56s (0:15:22)** across 19 test files.
+- **Frontend Vitest (`frontend/src/__tests__/mergeProjectsUI.test.tsx`) (5/5 PASS in 7.37s)**:
+  - `MergeProjectsModal > renders modal with project dropdowns and merge button`: PASS.
+  - `MergeProjectsModal > executes project merge and shows success summary`: PASS.
+  - `MergeProjectsModal > renders conflict warning and conflict items when conflicts are returned`: PASS.
+  - `MergeProjectsModal > displays error banner when backend fails with incompatible settings`: PASS.
+  - `OpenProjectModal Integration > renders Merge Projects button in header and invokes onOpenMergeProjects`: PASS.
+- **Full Frontend Vitest Suite**: **21 passed (21 files), 121 passed (121 tests) in 78.95s**.
+- **Viewer Vitest Suite**: **2 passed (2 files), 26 passed (26 tests) in 16.42s**.
+- **Export Verification (`eval/verify_export.py`)**: **15/15 checks passed** (all invariants hold, zero cluster ID token violations).

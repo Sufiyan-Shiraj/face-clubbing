@@ -340,6 +340,40 @@ export interface ModelStatus {
   error?: string | null;
 }
 
+export interface MergeConflictItem {
+  conflict_type: 'name_conflict' | 'assign_vs_remove' | string;
+  description: string;
+  entity_id: string;
+  val_a: any;
+  val_b: any;
+  resolution_strategy: string;
+}
+
+export interface MergeProjectsRequest {
+  project_a_work_dir: string;
+  project_b_work_dir: string;
+  target_work_dir?: string;
+  target_export_dir?: string;
+  new_project_name?: string;
+  distance_threshold?: number;
+}
+
+export interface MergeProjectsResponse {
+  success: boolean;
+  project_name: string;
+  work_dir: string;
+  export_dir: string;
+  total_photos: number;
+  shared_photos: number;
+  people_count: number;
+  unrecognized_faces: number;
+  unrecognized_photos: number;
+  edits_applied: number;
+  unapplied_edits: number;
+  conflicts_count: number;
+  conflicts: MergeConflictItem[];
+}
+
 declare global {
   interface Window {
     pywebview?: {

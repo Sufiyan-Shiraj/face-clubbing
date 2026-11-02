@@ -20,6 +20,7 @@ import {
   Search,
   Check,
   ExternalLink,
+  GitMerge,
 } from 'lucide-react';
 
 interface OpenProjectModalProps {
@@ -28,6 +29,7 @@ interface OpenProjectModalProps {
   theme?: string;
   hasUnexportedWork?: boolean;
   onNavigateToExport?: () => void;
+  onOpenMergeProjects?: () => void;
 }
 
 export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
@@ -36,6 +38,7 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
   theme = 't-dark',
   hasUnexportedWork = false,
   onNavigateToExport,
+  onOpenMergeProjects,
 }) => {
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -378,6 +381,28 @@ export const OpenProjectModal: React.FC<OpenProjectModalProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {onOpenMergeProjects && (
+              <button
+                type="button"
+                id="modal-open-merge-btn"
+                data-testid="modal-open-merge-btn"
+                onClick={() => {
+                  onClose();
+                  onOpenMergeProjects();
+                }}
+                className="riso-btn-sec text-xs flex items-center gap-1.5"
+                style={{
+                  height: '32px',
+                  padding: '0 12px',
+                  borderColor: 'var(--accent)',
+                  color: 'var(--accent)',
+                }}
+                title="Merge two saved projects into a new project"
+              >
+                <GitMerge className="w-3.5 h-3.5" />
+                <span>Merge Projects</span>
+              </button>
+            )}
             {missingCount > 0 && (
               <button
                 type="button"

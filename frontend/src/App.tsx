@@ -9,6 +9,7 @@ import {
   JobStatus,
   OpenProjectResponse,
   ScanSourceItem,
+  MergeProjectsResponse,
 } from './types';
 import { Header, RisoTheme } from './components/Header';
 import { HomeScreen } from './components/HomeScreen';
@@ -20,6 +21,7 @@ const ReviewPeopleScreen = React.lazy(() => import('./components/ReviewPeopleScr
 const ExportScreen = React.lazy(() => import('./components/ExportScreen').then(m => ({ default: m.ExportScreen })));
 const SettingsScreen = React.lazy(() => import('./components/SettingsScreen').then(m => ({ default: m.SettingsScreen })));
 const OpenProjectModal = React.lazy(() => import('./components/OpenProjectModal').then(m => ({ default: m.OpenProjectModal })));
+const MergeProjectsModal = React.lazy(() => import('./components/MergeProjectsModal').then(m => ({ default: m.MergeProjectsModal })));
 const TutorialSpotlight = React.lazy(() => import('./components/TutorialSpotlight').then(m => ({ default: m.TutorialSpotlight })));
 
 const DEMO_TUTORIAL_PEOPLE: PersonCluster[] = [
@@ -212,6 +214,7 @@ export const App: React.FC = () => {
   const [people, setPeople] = useState<PersonCluster[]>([]);
   const [photos, setPhotos] = useState<Record<string, PhotoInfo>>({});
   const [isOpenProjectModalOpen, setIsOpenProjectModalOpen] = useState<boolean>(false);
+  const [isMergeModalOpen, setIsMergeModalOpen] = useState<boolean>(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
 
   const handleTabChange = (t: ActiveTab) => {
@@ -1217,6 +1220,30 @@ export const App: React.FC = () => {
               setIsOpenProjectModalOpen(false);
               handleTabChange('export');
             }}
+            onOpenMergeProjects={() => setIsMergeModalOpen(true)}
+          />
+        )}
+
+        {/* Merge Two Projects Modal (BUILD_PLAN Phase V2-4) */}
+        {isMergeModalOpen && (
+          <MergeProjectsModal
+            onClose={() => setIsMergeModalOpen(false)}
+            onMergedSuccess={(res) => {
+              handleProjectOpened({
+                success: true,
+                project_name: res.project_name,
+                work_dir: res.work_dir,
+                export_path: res.export_dir,
+                counts: {
+                  people: res.people_count,
+                  photos: res.total_photos,
+                  unrecognized_photos: res.unrecognized_photos,
+                  unrecognized_faces: res.unrecognized_faces,
+                },
+                message: "Merged project opened",
+              });
+            }}
+            theme={theme}
           />
         )}
 
