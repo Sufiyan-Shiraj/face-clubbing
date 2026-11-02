@@ -28,6 +28,8 @@ class ScannedPhoto:
     share_url: Optional[str] = None
     source_id: Optional[str] = None
     source_label: Optional[str] = None
+    folder_path: Optional[str] = None
+    album: Optional[str] = None
 
 
 def compute_file_hash(path: Path | str, chunk_size: int = 65536) -> str:
@@ -140,6 +142,9 @@ class PhotoScanner:
             except ValueError:
                 rel_path = file_path.name
 
+            folder_p = Path(rel_path).parent.as_posix()
+            folder_path = folder_p if folder_p and folder_p != "." else None
+
             photo_id = compute_file_hash(file_path)
             scanned.append(
                 ScannedPhoto(
@@ -147,6 +152,8 @@ class PhotoScanner:
                     file_path=file_path,
                     file_name=file,
                     relative_path=rel_path,
+                    folder_path=folder_path,
+                    album=folder_path,
                 )
             )
             if progress_callback:

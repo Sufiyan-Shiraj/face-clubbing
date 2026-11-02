@@ -152,11 +152,23 @@ class BundleExporter:
             if not share_url and getattr(record, "drive_file_id", None):
                 share_url = f"https://drive.google.com/file/d/{record.drive_file_id}/view?usp=sharing"
 
+            download_url = getattr(record, "download_url", None)
+            if not download_url and getattr(record, "drive_file_id", None):
+                download_url = f"https://drive.google.com/uc?id={record.drive_file_id}&export=download"
+
+            album = getattr(record, "album", None) or getattr(record, "folder_path", None)
+            if not album and getattr(record, "relative_path", None):
+                rel_parent = Path(record.relative_path).parent.as_posix()
+                if rel_parent and rel_parent != ".":
+                    album = rel_parent
+            if not album and getattr(record, "source_label", None):
+                album = record.source_label
+
             photos_json[photo_id] = {
                 "name": record.file_name,
                 "thumb": thumb_rel,
-                "download": record.download_url,
-                "download_url": record.download_url,
+                "download": download_url,
+                "download_url": download_url,
                 "drive_url": drive_url,
                 "share_url": share_url,
                 "drive_file_id": getattr(record, "drive_file_id", None),
@@ -164,6 +176,8 @@ class BundleExporter:
                 "height": record.height,
                 "source_id": getattr(record, "source_id", None),
                 "source_label": getattr(record, "source_label", None),
+                "folder_path": getattr(record, "folder_path", None) or album,
+                "album": album,
             }
 
         # 2. Process People Clusters and generate representative square face crops

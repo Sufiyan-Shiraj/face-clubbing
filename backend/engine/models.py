@@ -78,6 +78,8 @@ class PhotoRecord:
     faces: List[FaceDetection] = field(default_factory=list)
     source_id: Optional[str] = None
     source_label: Optional[str] = None
+    folder_path: Optional[str] = None
+    album: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -93,6 +95,8 @@ class PhotoRecord:
             "relative_path": self.relative_path,
             "source_id": self.source_id,
             "source_label": self.source_label,
+            "folder_path": self.folder_path,
+            "album": self.album,
             "faces": [f.to_dict() for f in self.faces],
         }
 
@@ -112,6 +116,8 @@ class PhotoRecord:
             relative_path=data.get("relative_path"),
             source_id=data.get("source_id"),
             source_label=data.get("source_label"),
+            folder_path=data.get("folder_path"),
+            album=data.get("album"),
             faces=faces,
         )
 

@@ -30,6 +30,7 @@
 | V2-2 Multi-source scan & organization | Done (Manifest v2, MultiSource scan, per-source origins & deduplication, source chips/badges, #source-filter-select) |
 | V2-3 Add source to existing project (incremental) | Done (Frozen mode invariants [0 existing membership delta], face attach, deduplication by SHA-256, What Changed diff report, snapshots & rollback) |
 | V2-4 Merge two projects | Done (New project creation, parent immutability, settings hash verification, photo union, DisjointSet anchor merge, conflict detection [names & remove-vs-assign], modal UI & review) |
+| V2-5 Viewer and export for multi-source projects | Done (Per-photo Drive download link synthesis, mixed local+Drive bundles with public bundle hygiene, album labels from folder paths/subdirectories, album filtering in viewer and standalone gallery, virtualized grid rendering for 1,000+ photos, WCAG 2.1 AA >=12px font compliance, Check 16 multi-source verification) |
 
 
 ---
@@ -305,9 +306,9 @@ Done when: adding a link to a finished project leaves all existing people and ed
 Build: merge creates a NEW project (originals untouched); union by photo ID; require equal settings hash (else offer re-detect); copy caches; combine edits as order-independent rules (merge anchors, removes, assigns, names, hides); conflict review list (name conflicts, remove vs assign), never silently resolved; the merged project records both parents as sources.
 Done when: merging a project with itself changes nothing; A+B equals B+A; edits from both survive; conflicts are listed; a cold merged result is compared with an all-at-once scan and the differences are reported. Verified in `backend/engine/merger.py`, `tests/test_merge_projects.py` (6/6 pass), and `frontend/src/__tests__/mergeProjectsUI.test.tsx` (5/5 pass). Report Section 44.
 
-### V2-5 Viewer and export for multi-source projects
-Build: per-photo download link (Drive link or none), mixed local+Drive bundles, optional album labels from Drive folder paths (viewer filter), size handling for big zips, bundle hygiene checks, viewer performance on 1,000+ photos (virtualized grid), accessibility checks stay at 100%.
-Done when: a merged, mixed-source export opens offline and online, every photo reachable, downloads correct, verify_export extended and passing.
+### V2-5 Viewer and export for multi-source projects [COMPLETED]
+Build: per-photo download link (Drive direct export URL `https://drive.google.com/uc?id=<id>&export=download` or null for local in static bundle), mixed local+Drive bundles with strict public bundle hygiene, album labels from folder paths/subdirectories in `people.json` and standalone HTML gallery, album filter dropdown (`#gallery-album-filter-select`, `#album-filter-select`, `#album-select`), size handling for big zips, bundle hygiene checks (Check 16 in `eval/verify_export.py`), viewer performance on 1,000+ photos (windowed batch rendering: initial batch 60, increment 48, with Load More button and intersection sentinel), accessibility checks stay at 100% (minimum 12px text size across all components).
+Done when: a merged, mixed-source export opens offline and online, every photo reachable, downloads correct, verify_export extended (Check 16 added, 16/16 pass), 31/31 Vitest viewer tests pass, 3/3 backend pytest multi-source export tests pass. Verified in `eval/verify_export.py` and Report Section 45.
 
 ### V2-6 Drive image quality and small faces
 Build: measure =s1600, =s2000 and originals on the same nested test folder (people, singletons, unrecognized, bytes, faces under 64 px); propose a "Drive image quality" setting (fast / better / best) with evidence in SPEC §18.1; organizer decides the default; if a lower floor for thumbnails is proposed it needs an evidence table and my approval.

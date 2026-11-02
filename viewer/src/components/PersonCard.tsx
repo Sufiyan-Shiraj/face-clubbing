@@ -115,7 +115,7 @@ export const PersonCard: React.FC<PersonCardProps> = ({
         {imageError ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-[var(--muted)] bg-[var(--panel)]">
             <ImageIcon className="w-8 h-8 mb-1 opacity-50 text-[var(--muted)]" />
-            <span className="text-[10px] font-mono font-bold">No Preview</span>
+            <span className="text-xs font-mono font-bold">No Preview</span>
           </div>
         ) : (
           <img
@@ -132,7 +132,7 @@ export const PersonCard: React.FC<PersonCardProps> = ({
 
         {/* Photo Count Badge (Overlay in corner) */}
         <div
-          className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[11px] font-mono font-bold border border-[var(--line)] shadow-sm"
+          className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-xs font-mono font-bold border border-[var(--line)] shadow-sm"
           style={{
             background: 'var(--panel)',
             color: 'var(--text)',
@@ -165,7 +165,7 @@ export const PersonCard: React.FC<PersonCardProps> = ({
           style={{
             width: '100%',
             padding: '6px 8px',
-            fontSize: '11px',
+            fontSize: '12px',
             backgroundColor: isDownloaded ? 'var(--accent)' : 'var(--panel)',
             color: isDownloaded ? 'var(--on-accent)' : 'var(--text)',
           }}

@@ -216,6 +216,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                     seen_photo_ids.add(photo_id)
                     seen_drive_file_ids.add(df.id)
                     rel_display_path = f"{df.folder_path}/{df.name}" if getattr(df, "folder_path", "") else df.name
+                    folder_path_val = getattr(df, "folder_path", "") or None
+                    album_val = folder_path_val or s_label
                     scanned_photos.append(
                         ScannedPhoto(
                             photo_id=photo_id,
@@ -228,6 +230,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                             share_url=getattr(df, "share_url", f"https://drive.google.com/file/d/{df.id}/view?usp=sharing"),
                             source_id=s_id,
                             source_label=s_label,
+                            folder_path=folder_path_val,
+                            album=album_val,
                         )
                     )
                     src_count += 1
@@ -405,6 +409,8 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
                 faces=faces,
                 source_id=getattr(item, "source_id", None),
                 source_label=getattr(item, "source_label", None),
+                folder_path=getattr(item, "folder_path", None),
+                album=getattr(item, "album", None) or getattr(item, "folder_path", None) or getattr(item, "source_label", None),
             )
             cache.save(record)
             photos[photo_id] = record
@@ -789,6 +795,8 @@ def run_incremental_pipeline(
                 continue
             seen_new_ids.add(pid)
             rel_display_path = f"{df.folder_path}/{df.name}" if getattr(df, "folder_path", "") else df.name
+            folder_path_val = getattr(df, "folder_path", "") or None
+            album_val = folder_path_val or s_label
             scanned_photos.append(
                 ScannedPhoto(
                     photo_id=pid,
@@ -801,6 +809,8 @@ def run_incremental_pipeline(
                     share_url=getattr(df, "share_url", f"https://drive.google.com/file/d/{df.id}/view?usp=sharing"),
                     source_id=s_id,
                     source_label=s_label,
+                    folder_path=folder_path_val,
+                    album=album_val,
                 )
             )
     else:
@@ -893,6 +903,8 @@ def run_incremental_pipeline(
                 faces=faces,
                 source_id=s_id,
                 source_label=s_label,
+                folder_path=getattr(item, "folder_path", None),
+                album=getattr(item, "album", None) or getattr(item, "folder_path", None) or s_label,
             )
             cache.save(record)
             new_photos[pid] = record

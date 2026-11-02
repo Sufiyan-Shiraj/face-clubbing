@@ -678,11 +678,154 @@ def run_verification(
             all_passed = False
 
         # -------------------------------------------------------------------------
+        # CHECK 16: Multi-Source Mixed Export Invariants (Phase V2-5 Deliverable)
+        # -------------------------------------------------------------------------
+        multi_export_test_dir = t_path / "multi_source_export_test"
+        multi_cache_dir = t_path / "multi_source_cache_test"
+        multi_export_test_dir.mkdir(parents=True, exist_ok=True)
+        multi_cache_dir.mkdir(parents=True, exist_ok=True)
+
+        (multi_cache_dir / "thumbs").mkdir(parents=True, exist_ok=True)
+        (multi_cache_dir / "crops").mkdir(parents=True, exist_ok=True)
+
+        dummy_img.save(multi_cache_dir / "thumbs" / "p_multi_local_01.jpg")
+        dummy_img.save(multi_cache_dir / "thumbs" / "p_multi_drive_02.jpg")
+        dummy_img.save(multi_cache_dir / "crops" / "f_multi_loc_01.jpg")
+        dummy_img.save(multi_cache_dir / "crops" / "f_multi_drv_02.jpg")
+
+        face_local = FaceDetection(
+            face_id="f_multi_loc_01",
+            photo_id="p_multi_local_01",
+            bbox=[100.0, 100.0, 200.0, 200.0],
+            det_score=0.92,
+            embedding=np.zeros(512, dtype=np.float32),
+            is_good_quality=True,
+        )
+        face_drive = FaceDetection(
+            face_id="f_multi_drv_02",
+            photo_id="p_multi_drive_02",
+            bbox=[150.0, 150.0, 250.0, 250.0],
+            det_score=0.94,
+            embedding=np.zeros(512, dtype=np.float32),
+            is_good_quality=True,
+        )
+
+        photo_local = PhotoRecord(
+            photo_id="p_multi_local_01",
+            original_path="/tmp/non_existent_local.jpg",
+            file_name="local_camera_01.jpg",
+            relative_path="Morning/local_camera_01.jpg",
+            folder_path="Morning",
+            album="Morning",
+            source_id="src_local_01",
+            source_label="SD Card",
+            width=2000,
+            height=1500,
+            faces=[face_local],
+        )
+
+        photo_drive = PhotoRecord(
+            photo_id="p_multi_drive_02",
+            original_path="/tmp/non_existent_drive.jpg",
+            file_name="drive_cloud_02.jpg",
+            folder_path="Reception",
+            album="Reception",
+            source_id="src_drive_02",
+            source_label="Google Drive",
+            width=1920,
+            height=1080,
+            drive_file_id="1DriveMultiFileIdXyz789",
+            drive_url="https://drive.google.com/file/d/1DriveMultiFileIdXyz789/view",
+            faces=[face_drive],
+        )
+
+        person_multi = PersonCluster(
+            id="p_multi_person_01",
+            label="Multi Source Person",
+            face_path="faces/p_multi_person_01.jpg",
+            photo_ids=["p_multi_local_01", "p_multi_drive_02"],
+            faces=[face_local, face_drive],
+        )
+
+        engine_res_multi = EngineResult(
+            photos={
+                "p_multi_local_01": photo_local,
+                "p_multi_drive_02": photo_drive,
+            },
+            people=[person_multi],
+            unrecognized=UnrecognizedGroup(photo_ids=[], faces=[]),
+            distance_threshold=0.50,
+            id_map={},
+        )
+
+        exporter_multi = BundleExporter(
+            output_dir=multi_export_test_dir,
+            cache_dir=multi_cache_dir,
+        )
+        exporter_multi.export(
+            result=engine_res_multi,
+            title="Multi-Source Export Test",
+            generate_html=True,
+        )
+
+        multi_people_json_path = multi_export_test_dir / "people.json"
+        with open(multi_people_json_path, "r", encoding="utf-8") as mpjf:
+            mp_data = json.load(mpjf)
+
+        mp_photos = mp_data.get("photos", {})
+        loc_entry = mp_photos.get("p_multi_local_01", {})
+        drv_entry = mp_photos.get("p_multi_drive_02", {})
+
+        has_correct_dl_urls = (
+            loc_entry.get("download") is None and
+            drv_entry.get("download") == "https://drive.google.com/uc?id=1DriveMultiFileIdXyz789&export=download"
+        )
+
+        has_albums = (
+            loc_entry.get("album") == "Morning" and
+            drv_entry.get("album") == "Reception"
+        )
+
+        has_source_labels = (
+            loc_entry.get("source_label") == "SD Card" and
+            drv_entry.get("source_label") == "Google Drive"
+        )
+
+        forbidden_files = {"edits.json", "suggestions.json", "id_map.json", ".state.json"}
+        found_forbidden = []
+        for root, _, files in os.walk(multi_export_test_dir):
+            for f in files:
+                if f in forbidden_files:
+                    found_forbidden.append(f)
+
+        is_hygiene_clean = (len(found_forbidden) == 0)
+
+        gallery_html_p = multi_export_test_dir / "gallery.html"
+        has_gallery_html = gallery_html_p.exists()
+        gallery_text = gallery_html_p.read_text(encoding="utf-8") if has_gallery_html else ""
+        has_gallery_album_controls = "album-select" in gallery_text and "selectedAlbum" in gallery_text
+
+        check16_pass = (
+            has_correct_dl_urls and
+            has_albums and
+            has_source_labels and
+            is_hygiene_clean and
+            has_gallery_html and
+            has_gallery_album_controls
+        )
+
+        if check16_pass:
+            print("[PASS] Check 16: Multi-Source Mixed Export Invariants verified (Drive photo download link present, local photo download link null, album labels extracted into people.json, zero organizer files in public bundle)")
+        else:
+            print(f"[FAIL] Check 16: Multi-Source Mixed Export Invariants failed: dl_urls={has_correct_dl_urls}, albums={has_albums}, source_labels={has_source_labels}, hygiene={is_hygiene_clean} (forbidden: {found_forbidden}), gallery_html={has_gallery_html}, gallery_album_controls={has_gallery_album_controls}")
+            all_passed = False
+
+        # -------------------------------------------------------------------------
         # FINAL SUMMARY
         # -------------------------------------------------------------------------
         print("=" * 80)
         if all_passed:
-            print("OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (15/15 CHECKS & TABLES VERIFIED)")
+            print("OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (16/16 CHECKS & TABLES VERIFIED)")
         else:
             print("OVERALL VERIFICATION STATUS: FAILURES DETECTED")
         print("=" * 80)

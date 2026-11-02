@@ -23,6 +23,8 @@ export interface PhotoInfo {
   height?: number;
   source_id?: string | null;
   source_label?: string | null;
+  album?: string | null;
+  folder_path?: string | null;
 }
 
 export interface FaceRef {

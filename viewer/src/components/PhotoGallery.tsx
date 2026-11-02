@@ -72,6 +72,49 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   const photoIds = person.photos || person.photo_ids || [];
   const maybePhotos = person.maybe_photos || [];
 
+  // Album filtering
+  const [selectedAlbum, setSelectedAlbum] = useState<string>('all');
+  const availableAlbums = React.useMemo(() => {
+    const set = new Set<string>();
+    for (const pid of photoIds) {
+      const alb = photos[pid]?.album;
+      if (alb) set.add(alb);
+    }
+    return Array.from(set).sort();
+  }, [photoIds, photos]);
+
+  const filteredPhotoIds = React.useMemo(() => {
+    if (selectedAlbum === 'all') return photoIds;
+    return photoIds.filter((pid) => photos[pid]?.album === selectedAlbum);
+  }, [photoIds, photos, selectedAlbum]);
+
+  // Windowed virtualized rendering for 1,000+ photos
+  const INITIAL_BATCH = 60;
+  const BATCH_INCREMENT = 48;
+  const [visibleCount, setVisibleCount] = useState<number>(INITIAL_BATCH);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    setVisibleCount(INITIAL_BATCH);
+  }, [person.id, selectedAlbum]);
+
+  React.useEffect(() => {
+    if (!sentinelRef.current || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0] && entries[0].isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + BATCH_INCREMENT, filteredPhotoIds.length));
+        }
+      },
+      { rootMargin: '300px' }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [filteredPhotoIds.length]);
+
+  const visiblePhotoIds = filteredPhotoIds.slice(0, visibleCount);
+  const hasMorePhotos = visibleCount < filteredPhotoIds.length;
+
   // Determine if this person's photos are sourced from Google Drive
   const hasDrivePhotos = photoIds.some((pid) => {
     const p = photos[pid];
@@ -117,10 +160,20 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   };
 
   const handleSelectAll = () => {
-    if (selectedPhotoIds.size === photoIds.length) {
-      setSelectedPhotoIds(new Set());
+    const currentPool = filteredPhotoIds;
+    const allSelected = currentPool.every((pid) => selectedPhotoIds.has(pid));
+    if (allSelected) {
+      setSelectedPhotoIds((prev) => {
+        const next = new Set(prev);
+        currentPool.forEach((pid) => next.delete(pid));
+        return next;
+      });
     } else {
-      setSelectedPhotoIds(new Set(photoIds));
+      setSelectedPhotoIds((prev) => {
+        const next = new Set(prev);
+        currentPool.forEach((pid) => next.add(pid));
+        return next;
+      });
     }
   };
 
@@ -224,7 +277,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     setShowDriveNoteModal(false);
     const targetIds = isSelectMode && selectedPhotoIds.size > 0
       ? Array.from(selectedPhotoIds)
-      : photoIds;
+      : filteredPhotoIds;
     handleDownloadClick(targetIds);
   };
 
@@ -320,22 +373,22 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
         {/* Action Buttons: Download all N photos, Select Mode, Drive Fallback */}
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           {/* Primary: Download all N photos (shows person's photo count) */}
-          {photoIds.length > 0 && (
+          {filteredPhotoIds.length > 0 && (
             <button
-              onClick={() => handleDownloadClick(photoIds)}
+              onClick={() => handleDownloadClick(filteredPhotoIds)}
               disabled={isDownloading}
               className="btn-tactile btn-accent"
               style={{
                 padding: '10px 20px',
                 fontSize: '14px',
               }}
-              title={`Download all ${photoIds.length} photos for ${displayName}`}
+              title={`Download all ${filteredPhotoIds.length} photos for ${displayName}`}
             >
               <Download className="w-4 h-4" />
               <span className="font-mono font-bold">
-                {photoIds.length === 1
+                {filteredPhotoIds.length === 1
                   ? 'Download 1 photo'
-                  : `Download all ${photoIds.length} photos`}
+                  : `Download all ${filteredPhotoIds.length} photos`}
               </span>
             </button>
           )}
@@ -450,17 +503,44 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
 
       {/* Confirmed Photos Section */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            Confirmed Photos ({photoIds.length})
-          </h3>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              Confirmed Photos ({filteredPhotoIds.length}{selectedAlbum !== 'all' ? ` of ${photoIds.length}` : ''})
+            </h3>
+            {availableAlbums.length > 1 && (
+              <div className="flex items-center gap-2">
+                <label htmlFor="gallery-album-filter-select" className="text-xs font-mono text-[var(--text-muted)]">
+                  Album:
+                </label>
+                <select
+                  id="gallery-album-filter-select"
+                  data-testid="gallery-album-filter-select"
+                  value={selectedAlbum}
+                  onChange={(e) => setSelectedAlbum(e.target.value)}
+                  className="px-2.5 py-1 text-xs rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] font-mono focus:outline-none focus-visible:ring-2"
+                >
+                  <option value="all">All Albums ({photoIds.length})</option>
+                  {availableAlbums.map((alb) => {
+                    const count = photoIds.filter((pid) => photos[pid]?.album === alb).length;
+                    return (
+                      <option key={alb} value={alb}>
+                        {alb} ({count})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-          {photoIds.map((pid, idx) => {
+          {visiblePhotoIds.map((pid) => {
             const photo = photos[pid];
             if (!photo) return null;
 
+            const idx = filteredPhotoIds.indexOf(pid);
             const isSelected = selectedPhotoIds.has(pid);
             const hasError = imageErrorMap[pid];
 
@@ -471,7 +551,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                   if (isSelectMode) {
                     toggleSelectPhoto(pid);
                   } else {
-                    handleOpenModal(photoIds, idx);
+                    handleOpenModal(filteredPhotoIds, idx >= 0 ? idx : 0);
                   }
                 }}
                 className={`group relative rounded-xl overflow-hidden glass-card aspect-[4/3] bg-[var(--bg-main)] cursor-pointer select-none transition-all duration-200 ${
@@ -489,7 +569,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="touch-target px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-sm inline-flex items-center gap-1"
+                        className="touch-target px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-sm inline-flex items-center gap-1"
                         title="Open photo in Google Drive"
                       >
                         <span>unavailable - open in Drive ↗</span>
@@ -497,7 +577,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                     ) : (
                       <div className="text-[var(--text-dim)] flex flex-col items-center">
                         <ImageOff className="w-6 h-6 mb-1 opacity-50" />
-                        <span className="text-[11px]">Image unavailable</span>
+                        <span className="text-xs">Image unavailable</span>
                       </div>
                     )}
                   </div>
@@ -535,7 +615,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleOpenModal(photoIds, idx);
+                          handleOpenModal(filteredPhotoIds, idx >= 0 ? idx : 0);
                         }}
                         className="touch-target p-1.5 rounded-lg bg-black/60 text-white hover:bg-[var(--color-accent)] transition-colors focus:outline-none focus-visible:ring-2"
                         title="Zoom preview"
@@ -545,17 +625,26 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                     </div>
 
                     <div className="flex items-center justify-between gap-1 pointer-events-auto">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-[11px] text-white font-mono truncate">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                        <span className="text-xs text-white font-mono truncate">
                           {photo.name}
                         </span>
                         {photo.source_label && (
                           <span
                             data-testid={`photo-source-badge-${pid}`}
-                            className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-black/70 border border-white/20 text-[var(--color-accent)] flex-shrink-0"
+                            className="px-1.5 py-0.5 rounded text-xs font-mono font-bold bg-black/70 border border-white/20 text-[var(--color-accent)] flex-shrink-0"
                             title={`Source: ${photo.source_label}`}
                           >
                             {photo.source_label}
+                          </span>
+                        )}
+                        {photo.album && (
+                          <span
+                            data-testid={`photo-album-badge-${pid}`}
+                            className="px-1.5 py-0.5 rounded text-xs font-mono font-bold bg-black/70 border border-white/20 text-emerald-400 flex-shrink-0"
+                            title={`Album: ${photo.album}`}
+                          >
+                            {photo.album}
                           </span>
                         )}
                       </div>
@@ -564,7 +653,7 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                       {(photo.download || photo.download_url || photo.drive_file_id) && (
                         <a
                           href={getOriginalPhotoUrl(photo) || photo.download || photo.download_url || undefined}
-                          download={getCleanDownloadName(displayName, idx, photo.name)}
+                          download={getCleanDownloadName(displayName, idx >= 0 ? idx : 0, photo.name)}
                           target={isDrivePhoto(photo) ? '_blank' : undefined}
                           rel={isDrivePhoto(photo) ? 'noopener noreferrer' : undefined}
                           onClick={(e) => e.stopPropagation()}
@@ -582,6 +671,20 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
             );
           })}
         </div>
+
+        {/* Load more button & intersection observer sentinel for windowed grid */}
+        {hasMorePhotos && (
+          <div className="mt-6 flex flex-col items-center justify-center gap-2">
+            <button
+              onClick={() => setVisibleCount((prev) => Math.min(prev + BATCH_INCREMENT, filteredPhotoIds.length))}
+              data-testid="btn-load-more-photos"
+              className="btn-tactile text-xs px-4 py-2 font-mono font-bold"
+            >
+              Load more photos ({visibleCount} of {filteredPhotoIds.length})
+            </button>
+            <div ref={sentinelRef} className="h-4 w-full pointer-events-none" aria-hidden="true" />
+          </div>
+        )}
       </div>
 
       {/* Sticky Bottom Bar in Select Mode */}
@@ -590,13 +693,15 @@ export const PhotoGallery: React.FC<PhotoGalleryProps> = ({
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-xs sm:text-sm font-semibold text-[var(--text-main)]">
-                {selectedPhotoIds.size} of {photoIds.length} selected
+                {selectedPhotoIds.size} of {filteredPhotoIds.length} selected
               </span>
               <button
                 onClick={handleSelectAll}
                 className="touch-target px-2.5 py-1 text-xs font-semibold text-[var(--color-accent)] hover:underline focus:outline-none focus-visible:ring-2"
               >
-                {selectedPhotoIds.size === photoIds.length ? 'Deselect all' : 'Select all'}
+                {filteredPhotoIds.length > 0 && filteredPhotoIds.every((pid) => selectedPhotoIds.has(pid))
+                  ? 'Deselect all'
+                  : 'Select all'}
               </button>
             </div>
 

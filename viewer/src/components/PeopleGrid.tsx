@@ -30,8 +30,25 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
   onDownloadPersonPhotos,
 }) => {
   const [hideSinglePhoto, setHideSinglePhoto] = useState(hideSinglePhotoDefault);
+  const [selectedAlbum, setSelectedAlbum] = useState<string>('all');
 
-  const searchFiltered = people.filter((p) => {
+  const availableAlbums = React.useMemo(() => {
+    const set = new Set<string>();
+    Object.values(photos).forEach((p) => {
+      if (p.album) set.add(p.album);
+    });
+    return Array.from(set).sort();
+  }, [photos]);
+
+  const albumFiltered = React.useMemo(() => {
+    if (selectedAlbum === 'all') return people;
+    return people.filter((p) => {
+      const pids = p.photos || p.photo_ids || [];
+      return pids.some((pid) => photos[pid]?.album === selectedAlbum);
+    });
+  }, [people, photos, selectedAlbum]);
+
+  const searchFiltered = albumFiltered.filter((p) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     const idMatch = p.id.toLowerCase().includes(q);
@@ -66,8 +83,36 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
           )}
         </div>
 
-        {/* Toggle: Hide single-photo people */}
-        <div className="flex items-center gap-3">
+        {/* Controls: Album Filter and Hide single-photo people */}
+        <div className="flex flex-wrap items-center gap-3">
+          {availableAlbums.length > 1 && (
+            <div className="flex items-center gap-2">
+              <label htmlFor="album-filter-select" className="text-xs font-mono text-[var(--muted)] font-bold">
+                Album:
+              </label>
+              <select
+                id="album-filter-select"
+                data-testid="album-filter-select"
+                value={selectedAlbum}
+                onChange={(e) => setSelectedAlbum(e.target.value)}
+                className="px-2.5 py-1 text-xs rounded-lg border-2 border-[var(--line)] bg-[var(--panel)] text-[var(--text)] font-mono font-bold focus:outline-none focus-visible:ring-2"
+              >
+                <option value="all">All Albums ({people.length})</option>
+                {availableAlbums.map((alb) => {
+                  const count = people.filter((p) => {
+                    const pids = p.photos || p.photo_ids || [];
+                    return pids.some((pid) => photos[pid]?.album === alb);
+                  }).length;
+                  return (
+                    <option key={alb} value={alb}>
+                      {alb} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
+
           <label className="touch-target flex items-center gap-3 cursor-pointer select-none group min-h-[44px]">
             <span className="text-xs sm:text-sm font-mono text-[var(--muted)] group-hover:text-[var(--text)] font-bold transition-colors flex items-center gap-1.5">
               <Filter className="w-4 h-4 text-[var(--accent)]" />
@@ -142,7 +187,7 @@ export const PeopleGrid: React.FC<PeopleGridProps> = ({
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--text)]">
                   Unrecognized
                 </span>
-                <span className="text-[11px] font-mono text-[var(--muted)] mt-1 font-bold">
+                <span className="text-xs font-mono text-[var(--muted)] mt-1 font-bold">
                   {unrecognizedFaceCount} faces
                 </span>
               </div>

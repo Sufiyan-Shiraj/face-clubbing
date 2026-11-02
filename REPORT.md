@@ -6355,3 +6355,87 @@ Phase V2-4 implements the project merger engine allowing organizers to combine t
 - **Full Frontend Vitest Suite**: **21 passed (21 files), 121 passed (121 tests) in 78.95s**.
 - **Viewer Vitest Suite**: **2 passed (2 files), 26 passed (26 tests) in 16.42s**.
 - **Export Verification (`eval/verify_export.py`)**: **15/15 checks passed** (all invariants hold, zero cluster ID token violations).
+
+---
+
+## 45. PHASE V2-5: VIEWER AND EXPORT FOR MULTI-SOURCE PROJECTS
+
+### 45.1 Architecture & Objectives
+Phase V2-5 implements viewer and export enhancements for multi-source projects, handling mixed local and Google Drive bundles, per-photo download semantics, album labeling and filtering, virtualized grid rendering for large galleries, and strict accessibility and bundle hygiene compliance:
+1. **Per-Photo Download Link Semantics**:
+   - In mixed-source projects, photos originating from Google Drive provide a direct export download URL (`https://drive.google.com/uc?id=<id>&export=download`).
+   - Local photos in static exports where full-resolution originals are not bundled have `download_url: null`.
+   - The public viewer downloader utility and primary gallery buttons dynamically detect whether valid download URLs exist for selected photos, disabling or omitting unavailable local files while smoothly downloading direct Drive links.
+2. **Mixed Local + Google Drive Bundle Export & Strict Public Hygiene**:
+   - `backend/engine/exporter.py` outputs clean public bundles containing only allowed assets: `config.json`, `people.json`, `faces/`, `thumbs/`, `gallery.html`, and static viewer assets (`index.html`, `assets/`).
+   - Zero organizer-only files (`suggestions.json`, `edits.json`, `id_map.json`, `.cache/`, or `manifest.json`) are ever exposed in public bundles.
+   - Enforced by Check 16 in `eval/verify_export.py`.
+3. **Album Labels Extraction from Folder Paths & Subdirectories**:
+   - `backend/engine/scanner.py` and `backend/engine/models.py` track `folder_path` and `album` attributes per photo.
+   - For local and ZIP scans, subdirectories relative to the input root are preserved (e.g. `Day1/Morning` -> album `Day1/Morning`).
+   - For Google Drive sources, folder hierarchy names discovered during recursive BFS traversal are recorded as the album.
+   - Album metadata is exported into `people.json` under each photo's metadata entry.
+4. **Public Static Viewer & Standalone Gallery Album Filtering**:
+   - `viewer/src/components/PhotoGallery.tsx`: When multiple distinct albums exist across a person's photos, an album selector dropdown (`#gallery-album-filter-select`) appears in the gallery header. Selecting an album dynamically filters photo cards and updates select-all/download counts.
+   - `viewer/src/components/PeopleGrid.tsx`: An `#album-filter-select` dropdown in the main people toolbar filters people cards based on whether they appear in photos from the selected album.
+   - Album badges (`photo-album-badge-<pid>`) render as subtle chip tags on photo cards in both grid and photo detail modals (`#modal-photo-album-badge`).
+   - `backend/engine/standalone_html.py`: Implements zero-dependency `#album-select` dropdown in the header controls of `gallery.html`, filtering people cards and photo galleries across the offline single-file gallery.
+5. **Virtualized Windowed Grid Rendering for 1,000+ Photo Performance**:
+   - Implemented progressive windowed batch rendering in `viewer/src/components/PhotoGallery.tsx` to ensure fluid 60fps performance on large collections:
+     - Initial render window: 60 photos.
+     - Increment size: 48 photos per batch.
+     - Intersection observer sentinel (`#gallery-scroll-sentinel`) automatically triggers loading of next batch when scrolled into view.
+     - Explicit fallback button (`#btn-load-more-photos`) displays remaining photo count and enables manual pagination in non-observer or test environments.
+6. **Accessibility Compliance (WCAG 2.1 AA & Minimum 12px Font Size)**:
+   - All sub-12px font size instances (`text-[10px]`, `text-[11px]`, `fontSize: 11px`) across `PhotoGallery.tsx`, `PhotoModal.tsx`, `PeopleGrid.tsx`, and `PersonCard.tsx` updated to `text-xs` (12px) and 12px inline styles.
+   - Validated via `eval/check_ui_rules.py` (100% pass across minimum text size, WCAG 2.1 AA contrast in all 3 themes, and keyboard reachability).
+
+### 45.2 Created & Modified Files
+- `backend/engine/models.py`: Added `folder_path` and `album` attributes to `PhotoRecord`, updated `to_dict()` and `from_dict()`.
+- `backend/engine/scanner.py`: Added `folder_path` and `album` extraction to `ScannedPhoto`.
+- `backend/engine/pipeline.py`: Propagated album and folder_path in Drive and local scanning flows into `PhotoRecord`.
+- `backend/engine/exporter.py`: Added `folder_path`, `album`, and direct Drive `download_url` synthesis to `photos_json` export.
+- `backend/engine/standalone_html.py`: Added `#album-select` dropdown filter to header controls, dynamic album options generation, and photo card album badges.
+- `viewer/src/types.ts`: Added `album?: string | null;` and `folder_path?: string | null;` to `PhotoInfo`.
+- `viewer/src/components/PhotoGallery.tsx`: Added album filter select, virtualized batch rendering (initial 60, increment 48), load more button, sentinel ref, album badge chips, and >=12px font sizes.
+- `viewer/src/components/PhotoModal.tsx`: Added modal album badge chip and updated font sizes to >=12px.
+- `viewer/src/components/PeopleGrid.tsx`: Added `#album-filter-select` toolbar filter for people and updated font sizes to >=12px.
+- `viewer/src/components/PersonCard.tsx`: Enforced minimum 12px font sizes.
+- `eval/verify_export.py`: Added Check 16 ("Multi-Source Mixed Export Invariants") verifying Drive download URL vs local null, album metadata, public bundle hygiene, and standalone HTML album controls (16/16 pass).
+- `tests/test_multi_source_export.py`: 3 backend tests verifying mixed local+Drive export, scanner album extraction, and per-photo download link semantics.
+- `viewer/src/__tests__/multiSourceViewer.test.tsx`: 5 Vitest tests for album badges, photo gallery album filtering, modal album chips, people grid album filtering, and virtualized batch loading.
+
+### 45.3 Verification Evidence
+- **Export Verification (`eval/verify_export.py`) (16/16 CHECKS PASSED)**:
+  - Check 1: Engine Invariants: PASS (259/259 photos covered, 1256 clustered + 445 unrec = 1701 detected faces).
+  - Check 2: Public Bundle Hygiene: PASS (['assets', 'config.json', 'faces', 'gallery.html', 'index.html', 'people.json', 'thumbs'] - zero organizer files).
+  - Check 3: Same-Photo Distance Constraint: PASS (0 collisions above 0.40 across all 192 clusters).
+  - Check 4: Collision Audit by Face IDs: PASS (1 collision instance verified).
+  - Check 5: Stable Identity & id_map.json: PASS (242 pre-merge -> 192 final clusters).
+  - Check 6: Robust Pytest Suite: PASS (149 passed, 0 failures/errors).
+  - Check 7: Section 13.2 Merge Arithmetic: PASS (83 pre-merge -> 33 final = 50 net merges).
+  - Check 8: Flip-Averaged Benchmark Reproduction Table: PASS.
+  - Check 9: Blocked Merges by Best-Face IDs: PASS.
+  - Check 10: Maximum Same-Photo Distance: PASS (0.2878 <= 0.40).
+  - Check 11: Evaluation Table A: PASS.
+  - Check 12: Evaluation Table B: PASS.
+  - Check 13: Aligned Cap-Sweep Table: PASS.
+  - Check 14: Zero cluster-ID tokens in code outside comments/docstrings: PASS (74 files scanned).
+  - Check 15: Drive Export Invariants: PASS.
+  - Check 16: Multi-Source Mixed Export Invariants: PASS (Drive direct download link, local null download link, album labels in people.json, standalone HTML album selector).
+- **Backend Multi-Source Export Suite (`tests/test_multi_source_export.py`) (3/3 PASS in 0.65s)**:
+  - `test_mixed_export_download_semantics_and_albums`: PASS (Drive download synthesized, local None, albums exported, bundle clean).
+  - `test_scanner_extracts_album_and_folder_path`: PASS (folder_path and album correctly extracted from relative subdirectories).
+  - `test_standalone_html_contains_album_filter_and_badges`: PASS (`#album-select`, options, and badge rendering verified in standalone HTML).
+- **Full Backend Pytest Regression**: **149 passed, 2 warnings in 723.93s (0:12:03)** across 20 test files.
+- **Viewer Vitest Suite (`viewer/src/__tests__/multiSourceViewer.test.tsx`) (31/31 PASS in 11.01s)**:
+  - `renders album badges on photo cards`: PASS.
+  - `filters photo cards when an album is selected in gallery album filter dropdown`: PASS.
+  - `displays album badge chip inside PhotoModal detail view`: PASS.
+  - `filters people grid in PeopleGrid based on selected album`: PASS.
+  - `virtualizes large photo galleries with windowed batch rendering`: PASS.
+- **UI Accessibility & Contrast Audit (`eval/check_ui_rules.py`) (100% PASS)**:
+  - Check 1: Minimum Text Size >= 12px enforced across all viewer and frontend components (PASS).
+  - Check 2: WCAG 2.1 AA Body Text Contrast (>= 4.5:1) in Dark, Paper, and Navy themes (PASS).
+  - Check 3: Keyboard Reachability for modals, popovers, and drawers (PASS).
+

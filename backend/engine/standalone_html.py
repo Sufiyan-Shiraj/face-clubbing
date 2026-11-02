@@ -852,6 +852,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <input type="text" id="search-input" placeholder="Search people or photos..." />
         </div>
 
+        <select id="album-select" style="display:none; padding: 0.45rem 0.8rem; border-radius: 9999px; border: 2px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; outline: none; cursor: pointer;">
+          <option value="all">All Albums</option>
+        </select>
+
         <div class="nav-tabs">
           <button class="nav-tab active" data-tab="people">People</button>
           <button class="nav-tab" data-tab="photos">All Photos</button>
@@ -993,13 +997,40 @@ __CONFIG_JSON__
       }
       document.getElementById('stat-faces').textContent = totalFaces;
 
+      // Setup Albums
+      const albumSelect = document.getElementById('album-select');
+      let selectedAlbum = 'all';
+      const albumSet = new Set();
+      Object.values(data.photos || {}).forEach(p => {
+        if (p.album) albumSet.add(p.album);
+      });
+      const albumList = Array.from(albumSet).sort();
+      if (albumList.length > 1 && albumSelect) {
+        albumSelect.style.display = 'inline-block';
+        albumList.forEach(alb => {
+          const opt = document.createElement('option');
+          opt.value = alb;
+          opt.textContent = alb;
+          albumSelect.appendChild(opt);
+        });
+        albumSelect.addEventListener('change', (e) => {
+          selectedAlbum = e.target.value;
+          renderPeople();
+          renderPhotos();
+        });
+      }
+
       // Render People
       function renderPeople() {
         peopleGrid.innerHTML = '';
         const query = searchQuery.toLowerCase().trim();
         const filtered = (data.people || []).filter(p => {
           const name = p.label || ('Person ' + p.id.replace(/^p0*/, ''));
-          return name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query);
+          const matchesQuery = name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query);
+          if (!matchesQuery) return false;
+          if (selectedAlbum === 'all') return true;
+          const photoIds = p.photo_ids || p.photos || [];
+          return photoIds.some(pid => (data.photos[pid] && data.photos[pid].album === selectedAlbum));
         });
 
         if (filtered.length === 0) {
@@ -1052,7 +1083,10 @@ __CONFIG_JSON__
         const query = searchQuery.toLowerCase().trim();
         const photoEntries = Object.entries(data.photos || {});
         const filtered = photoEntries.filter(([pid, p]) => {
-          return p.name.toLowerCase().includes(query) || pid.toLowerCase().includes(query);
+          const matchesQuery = p.name.toLowerCase().includes(query) || pid.toLowerCase().includes(query);
+          if (!matchesQuery) return false;
+          if (selectedAlbum === 'all') return true;
+          return p.album === selectedAlbum;
         });
 
         if (filtered.length === 0) {
@@ -1080,6 +1114,7 @@ __CONFIG_JSON__
             </div>
             <div class="photo-card-info">
               <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;">${photo.name}</span>
+              ${photo.album ? `<span style="font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; padding: 1px 5px; border-radius: 4px; background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="Album: ${photo.album}">${photo.album}</span>` : ''}
               ${driveLink ? `
                 <a href="${driveLink}" target="_blank" rel="noopener noreferrer" style="color: #38bdf8; font-size: 0.75rem; text-decoration: none; font-weight: 500;" onclick="event.stopPropagation();">
                   View full ↗
