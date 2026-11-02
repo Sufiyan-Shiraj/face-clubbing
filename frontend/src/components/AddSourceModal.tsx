@@ -28,6 +28,7 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = ({
   const [pathOrUrl, setPathOrUrl] = useState('');
   const [label, setLabel] = useState('');
   const [driveApiKey, setDriveApiKey] = useState('');
+  const [driveQuality, setDriveQuality] = useState<'fast' | 'better' | 'best'>('fast');
   const [frozenMode, setFrozenMode] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -104,6 +105,7 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = ({
       type: sourceType,
       path_or_url: cleanPath,
       label: label.trim() || cleanPath.replace(/\\/g, '/').split('/').filter(Boolean).pop() || 'Additional Source',
+      quality: sourceType === 'drive' ? driveQuality : undefined,
     };
 
     try {
@@ -327,23 +329,46 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = ({
 
           {/* Optional Drive API Key */}
           {sourceType === 'drive' && (
-            <div>
-              <label
-                htmlFor="input-drive-api-key"
-                className="block text-xs font-mono font-bold uppercase tracking-wider text-[var(--muted)] mb-1.5"
-              >
-                Google Drive API Key (Optional if already configured)
-              </label>
-              <input
-                id="input-drive-api-key"
-                data-testid="input-drive-api-key"
-                type="password"
-                disabled={isSubmitting}
-                value={driveApiKey}
-                onChange={(e) => setDriveApiKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full px-3 py-2 rounded-lg text-xs font-mono bg-[var(--bg)] border border-[var(--line)] focus:outline-none focus:border-[var(--accent)]"
-              />
+            <div className="space-y-3">
+              <div>
+                <label
+                  htmlFor="input-drive-api-key"
+                  className="block text-xs font-mono font-bold uppercase tracking-wider text-[var(--muted)] mb-1.5"
+                >
+                  Google Drive API Key (Optional if already configured)
+                </label>
+                <input
+                  id="input-drive-api-key"
+                  data-testid="input-drive-api-key"
+                  type="password"
+                  disabled={isSubmitting}
+                  value={driveApiKey}
+                  onChange={(e) => setDriveApiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full px-3 py-2 rounded-lg text-xs font-mono bg-[var(--bg)] border border-[var(--line)] focus:outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="select-source-drive-quality"
+                  className="block text-xs font-mono font-bold uppercase tracking-wider text-[var(--muted)] mb-1.5"
+                >
+                  Drive Image Quality
+                </label>
+                <select
+                  id="select-source-drive-quality"
+                  data-testid="select-source-drive-quality"
+                  disabled={isSubmitting}
+                  value={driveQuality}
+                  onChange={(e) => setDriveQuality(e.target.value as 'fast' | 'better' | 'best')}
+                  className="w-full px-3 py-2 rounded-lg text-xs font-mono bg-[var(--bg)] border border-[var(--line)] focus:outline-none focus:border-[var(--accent)] text-[var(--text)]"
+                >
+                  <option value="fast">Fast (1000 px) - 95% bandwidth reduction (Default)</option>
+                  <option value="better">Better (1600 px) - Higher face recall &amp; detail</option>
+                  <option value="best">Best (2000 px) - Maximum resolution from Drive CDN</option>
+                </select>
+              </div>
             </div>
           )}
 

@@ -445,7 +445,9 @@ Quality changes are judged against data, not impressions.
 - **Cross-photo negatives** (organizer-labelled different people in different photos) are still missing and are needed before loosening any auto-merge or attach threshold.
 - Gate to enable `flip_average` by default: 15+ labelled sets, recall gain confirmed, no increase in false pairs at or below 0.65.
 
-### 18.1 Phase 6 Live Evaluation: Face-Size Floor on Drive Thumbnails (=s1000) vs Originals
+### 18.1 Drive Image Quality, Small Faces, and Empirical Evaluation
+
+#### 18.1.1 Phase 6 Baseline Sweep: Face-Size Floor on Drive Thumbnails (=s1000)
 
 During Phase 6 live verification on a real Google Drive folder (83 photos, 127.7 MB originals), the engine was evaluated on both Drive thumbnails (=s1000) and camera originals (downscaled to max 1600 px per SPEC 6.1).
 
@@ -463,5 +465,40 @@ During Phase 6 live verification on a real Google Drive folder (83 photos, 127.7
 | 32 | 195 | 114 | 309 | 26 | 135 | 181 | 2 | Recovers 91 additional faces into people |
 | 24 | 266 | 73 | 339 | 36 | 91 | 151 | 2 | Lower floor |
 
-**Proposal for Organizer Decision**:
-SPEC 6.2 defaults remain strictly **unchanged** (`min_face_size = 64`, `seed_min_face_size = 64`). If the organizer desires to align Drive thumbnail face yields with camera originals, an adaptive floor of **40 px** (or **32 px**) for Google Drive inputs is proposed based on the proportional coordinate space (1000 px vs 1600 px). This decision is pending organizer review.
+#### 18.1.2 Phase V2-6 Quality Preset Benchmark: =s1000 vs =s1600 vs =s2000 vs Originals
+
+During Phase 6 and Phase V2-6 live verification on Google Drive test folder (`1hrKfZacNX7T9H6pNLegJVpPev1PG-khG`), the engine was evaluated across all four image quality tiers (`=s1000`, `=s1600`, `=s2000`, and `originals`):
+
+**Empirical Finding**:
+- **On Originals (unscaled camera files)**: Face sizes range up to 733.4 px. Over 94% of detected faces qualify as seeds (>= 64 px). 52 faces clustered into 36 people clusters.
+- **On Fast Thumbnails (=s1000)**: 94.9% bandwidth reduction (2.36 MB vs 46.29 MB). However, 90.0% of detected faces fall below the 64 px floor, leaving only 10% eligible as seeds and yielding 2 people clusters.
+- **On Better Thumbnails (=s1600)**: 88.2% bandwidth reduction (5.48 MB). Yields 17 seed-eligible faces and 4 people clusters.
+- **On Best Thumbnails (=s2000)**: 83.3% bandwidth reduction (7.73 MB). Detected faces >= 64 px jump to 31 (over 3x vs fast), yielding 21 clustered faces (7x vs fast) and 12 people clusters (6x vs fast), capturing significant small-face detail while still saving >83% of bandwidth.
+
+**Drive Quality Tiers Evidence Table (`eval/drive_quality_evidence.json`)**:
+
+| Metric | Fast (=s1000) | Better (=s1600) | Best (=s2000) | Originals |
+|---|:---:|:---:|:---:|:---:|
+| Target Resolution (px) | 1000 px | 1600 px | 2000 px | Full (unscaled) |
+| Bytes Downloaded | 2,357,971 | 5,484,335 | 7,730,635 | 46,293,482 |
+| Bandwidth Reduction % | 94.9% | 88.2% | 83.3% | 0.0% |
+| Total Detected Faces | 100 | 98 | 96 | 97 |
+| Faces < 64 px (Non-Seed) | 90 (90.0%) | 81 (82.7%) | 65 (67.7%) | 5 (5.2%) |
+| Faces >= 64 px (Seed Eligible) | 10 (10.0%) | 17 (17.3%) | 31 (32.3%) | 92 (94.8%) |
+| Clustered Faces | 3 | 5 | 21 | 52 |
+| People Clusters | 2 | 4 | 12 | 36 |
+| Singletons | 1 | 3 | 8 | 28 |
+| Unrecognized Faces | 97 | 93 | 75 | 45 |
+| Invariant (Clustered + Unrec == Total) | PASS (Exact) | PASS (Exact) | PASS (Exact) | PASS (Exact) |
+
+**Formal Proposal & Implementation (Phase V2-6)**:
+1. **Drive Image Quality Setting**:
+   - `fast` (default): `=s1000` (1000 px, 95% bandwidth reduction, fastest scan).
+   - `better`: `=s1600` (1600 px, 88% bandwidth reduction, higher face detail).
+   - `best`: `=s2000` (2000 px, 83% bandwidth reduction, maximum face recall from Drive CDN).
+2. **Strict Floor Invariant**:
+   - SPEC 6.2 defaults remain strictly **unchanged** (`min_face_size = 64`, `seed_min_face_size = 64`).
+   - Non-seed faces (< 64 px) continue to be safely attached to seed clusters via second-pass attachment without relaxing seed quality.
+3. **Resumable Cache Invalidation**:
+   - Downloaded Drive images are cached by file ID, modifiedTime, and effective target size.
+   - Switching quality tier invalidates and re-downloads thumbnails at the new resolution; re-running on the same tier uses 100% cache hits.

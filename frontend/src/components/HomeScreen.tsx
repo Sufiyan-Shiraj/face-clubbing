@@ -173,6 +173,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const isApiKeyConfigured = controlledApiKeyConfigured !== undefined ? controlledApiKeyConfigured : internalApiKeyConfigured;
   const [verifiedSummary, setVerifiedSummary] = useState<Record<string, any> | null>(null);
 
+  const [driveQuality, setDriveQuality] = useState<'fast' | 'better' | 'best'>('fast');
   const [scanSubfolders, setScanSubfolders] = useState<boolean>(true);
   const [maxSubfolderDepth, setMaxSubfolderDepth] = useState<number>(5);
   const [followShortcuts, setFollowShortcuts] = useState<boolean>(false);
@@ -187,6 +188,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           p.then((s) => {
             if (mounted && s) {
               setInternalApiKeyConfigured(Boolean(s.drive_api_key_configured));
+              if (s.drive_image_quality) setDriveQuality(s.drive_image_quality);
               if (s.scan_subfolders !== undefined) setScanSubfolders(Boolean(s.scan_subfolders));
               if (s.max_subfolder_depth !== undefined) setMaxSubfolderDepth(Number(s.max_subfolder_depth));
               if (s.follow_shortcuts !== undefined) setFollowShortcuts(Boolean(s.follow_shortcuts));
@@ -509,6 +511,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         type: 'drive',
         path_or_url: trimmed,
         label: driveLabel || 'Google Drive Folder',
+        quality: driveQuality,
         drive_api_key: sessionStorage.getItem('drive_api_key_ephemeral') || undefined,
       };
       handleClearDriveLink();
@@ -599,6 +602,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           type: 'drive',
           path_or_url: driveLink.trim(),
           label: verifiedFolderName || 'Google Drive Folder',
+          quality: driveQuality,
         });
       }
       setErrorMsg(null);
@@ -826,6 +830,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <span className="drive-detected-id">{verifiedFolderName || activeFolderId}</span>
                   </div>
                   <div className="drive-detected-actions">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <label htmlFor="select-home-drive-quality" style={{ fontSize: '12px', color: 'var(--muted)', fontFamily: 'inherit' }}>
+                        Quality:
+                      </label>
+                      <select
+                        id="select-home-drive-quality"
+                        data-testid="select-home-drive-quality"
+                        value={driveQuality}
+                        onChange={(e) => setDriveQuality(e.target.value as 'fast' | 'better' | 'best')}
+                        style={{
+                          fontSize: '12px',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          background: 'var(--bg)',
+                          border: '1px solid var(--line)',
+                          color: 'var(--text)',
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        <option value="fast">Fast (1000px)</option>
+                        <option value="better">Better (1600px)</option>
+                        <option value="best">Best (2000px)</option>
+                      </select>
+                    </div>
                     <button
                       type="button"
                       onClick={handleClearDriveLink}
@@ -919,6 +947,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     Click &apos;Check link&apos; to verify Google Drive folder. Folder must be shared as &apos;Anyone with the link&apos;.
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <label htmlFor="select-home-drive-quality-initial" style={{ fontSize: '12px', color: 'var(--muted)', fontFamily: 'inherit' }}>
+                        Quality:
+                      </label>
+                      <select
+                        id="select-home-drive-quality-initial"
+                        data-testid="select-home-drive-quality"
+                        value={driveQuality}
+                        onChange={(e) => setDriveQuality(e.target.value as 'fast' | 'better' | 'best')}
+                        style={{
+                          fontSize: '12px',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          background: 'var(--bg)',
+                          border: '1px solid var(--line)',
+                          color: 'var(--text)',
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        <option value="fast">Fast (1000px)</option>
+                        <option value="better">Better (1600px)</option>
+                        <option value="best">Best (2000px)</option>
+                      </select>
+                    </div>
                     <button
                       type="button"
                       id="add-source-btn"

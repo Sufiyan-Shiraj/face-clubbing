@@ -188,6 +188,7 @@ export interface Settings {
   drive_api_key?: string | null;
   drive_api_key_masked?: string | null;
   drive_api_key_configured?: boolean;
+  drive_image_quality?: 'fast' | 'better' | 'best';
   scan_subfolders?: boolean;
   max_subfolder_depth?: number;
   follow_shortcuts?: boolean;

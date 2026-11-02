@@ -57,6 +57,7 @@ class EngineConfig:
     model_root: Optional[str] = None
     suggestions_path: Optional[str | Path] = None
     drive_api_key: Optional[str] = None
+    drive_image_quality: str = "fast"
     scan_subfolders: bool = True
     max_subfolder_depth: int = 5
     follow_shortcuts: bool = False
@@ -64,6 +65,7 @@ class EngineConfig:
     cancel_check: Optional[Callable[[], bool]] = None
     cleanup_temp: bool = True
     sources: Optional[List[Dict[str, Any]]] = None
+
 
 
 def run_pipeline(config: EngineConfig) -> EngineResult:
@@ -201,11 +203,13 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
 
                 drive_summary_aggregate = list_res.summary
 
+                eff_quality = src.get("quality") or config.drive_image_quality or "fast"
                 downloaded_items = client.download_thumbnails(
                     files=list_res.files,
                     cache_dir=drive_cache_p,
                     progress_callback=lambda p: notify({**p, "percent": min(5.0, round(1.0 + (p.get("current", 0) / max(1, list_res.image_count)) * 4.0, 1))}),
                     cancel_check=config.cancel_check,
+                    quality=eff_quality,
                 )
 
                 src_count = 0
@@ -782,11 +786,13 @@ def run_incremental_pipeline(
             max_depth=config.max_subfolder_depth,
             include_shortcuts=config.follow_shortcuts,
         )
+        eff_quality = new_source.get("quality") or config.drive_image_quality or "fast"
         downloaded = client.download_thumbnails(
             files=list_res.files,
             cache_dir=drive_cache_p,
             progress_callback=lambda p: notify({**p, "percent": min(15.0, round(5.0 + (p.get("current", 0) / max(1, list_res.image_count)) * 10.0, 1))}),
             cancel_check=config.cancel_check,
+            quality=eff_quality,
         )
         for df, local_p in downloaded:
             pid = compute_file_hash(local_p)

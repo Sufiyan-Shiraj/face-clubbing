@@ -55,6 +55,7 @@ class SettingsModel(BaseModel):
     drive_api_key: Optional[str] = None
     drive_api_key_masked: Optional[str] = None
     drive_api_key_configured: bool = False
+    drive_image_quality: str = "fast"
     scan_subfolders: bool = True
     max_subfolder_depth: int = 5
     follow_shortcuts: bool = False
@@ -65,6 +66,7 @@ class JobStartRequest(BaseModel):
     source_path: Optional[str] = None
     drive_folder: Optional[str] = None
     drive_api_key: Optional[str] = None
+    drive_image_quality: Optional[str] = None
     sources: Optional[List[ScanSourceItem]] = None
     output_dir: Optional[str] = "export"
     cache_dir: Optional[str] = None

@@ -358,6 +358,7 @@ class JobManager:
             event_title=self.state.settings.event_title,
             event_subtitle=self.state.settings.event_subtitle,
             drive_api_key=drive_key,
+            drive_image_quality=getattr(req, "drive_image_quality", None) or getattr(self.state.settings, "drive_image_quality", "fast"),
             scan_subfolders=getattr(self.state.settings, "scan_subfolders", True),
             max_subfolder_depth=getattr(self.state.settings, "max_subfolder_depth", 5),
             follow_shortcuts=getattr(self.state.settings, "follow_shortcuts", False),

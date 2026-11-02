@@ -44,8 +44,8 @@
 
 ### Document Headers & Revisions
 - **SPEC.md**: Revision 3 (2026-10-13) + Section 9 Updated for Public Viewer Rework (3 Themes, Streaming Zip, Drive Direct Downloads, Visual Design NEEDS ORGANIZER REVIEW)
-- **BUILD_PLAN.md**: Updated with Phase 2b (Public Viewer Rework + Per-Person Download), Phase 5 (Desktop Shell & Packaging), Phase 7 (Release Automation), Phase 9 (UI Polish & Accessibility), Phase V2-0 (Drive Subfolder Recursion), and Phase V2-1 (Release Health and First-User Fixes)
-- **REPORT.md**: Updated with Section 27, Section 30, Section 33, Section 34, Section 35, Section 36 (V2-0 Drive Subfolder Recursion), and Section 37 (V2-1 Release Health and First-User Fixes, 231 Automated Tests)
+- **BUILD_PLAN.md**: Updated with Phase 2b (Public Viewer Rework + Per-Person Download), Phase 5 (Desktop Shell & Packaging), Phase 7 (Release Automation), Phase 9 (UI Polish & Accessibility), Phase V2-0 (Drive Subfolder Recursion), Phase V2-1 (Release Health and First-User Fixes), and Phase V2-6 (Drive Image Quality and Small Faces)
+- **REPORT.md**: Updated with Section 27, Section 30, Section 33, Section 34, Section 35, Section 36 (V2-0 Drive Subfolder Recursion), Section 37 (V2-1 Release Health and First-User Fixes, 231 Automated Tests), and Section 46 (V2-6 Drive Image Quality and Small Faces)
 - **README.md**: Updated Key Features, Troubleshooting & Diagnostics, WebView2 Documentation, Onedir Release Distribution, and Repository Directory Tree
 
 ### BUILD_PLAN.md Claimed Status vs Reality Table
@@ -74,6 +74,7 @@
 | **V2-3 Add source to existing project (incremental)** | Done | `backend/engine/snapshots.py`, `clusterer.py`, `pipeline.py`, `backend/api/state.py`, `routes.py`, `models.py`, `frontend/src/components/AddSourceModal.tsx`, `WhatChangedModal.tsx`, `ReviewPeopleScreen.tsx` | Section 43 (Frozen mode invariants [0 existing membership delta], face attach, deduplication by SHA-256, What Changed diff report, pre-mutation snapshots & one-click rollback, 8/8 Pytest, 116/116 Vitest pass) | **MATCHES** |
 | **V2-4 Merge two projects** | Done | `backend/engine/merger.py`, `backend/api/state.py`, `routes.py`, `models.py`, `frontend/src/components/MergeProjectsModal.tsx`, `OpenProjectModal.tsx`, `App.tsx` | Section 44 (New project creation, parent immutability, settings hash verification, photo union, DisjointSet anchor merge, conflict detection, 6/6 Pytest, 5/5 Vitest pass) | **MATCHES** |
 | **V2-5 Viewer and export for multi-source projects** | Done | `backend/engine/models.py`, `scanner.py`, `pipeline.py`, `exporter.py`, `standalone_html.py`, `viewer/src/types.ts`, `viewer/src/components/PhotoGallery.tsx`, `PhotoModal.tsx`, `PeopleGrid.tsx`, `PersonCard.tsx`, `eval/verify_export.py`, `tests/test_multi_source_export.py`, `viewer/src/__tests__/multiSourceViewer.test.tsx` | Section 45 (Per-photo download links, mixed local+Drive bundle export, album extraction & filtering in static viewer and standalone HTML, virtualized windowed grid rendering for 1000+ photos, WCAG 2.1 AA >=12px font size, 16/16 Export Invariants, 31/31 Viewer Vitest, 3/3 Pytest pass) | **MATCHES** |
+| **V2-6 Drive image quality and small faces** | Done | `backend/drive/client.py`, `backend/engine/pipeline.py`, `backend/api/models.py`, `backend/api/jobs.py`, `backend/api/state.py`, `frontend/src/types.ts`, `frontend/src/components/HomeScreen.tsx`, `SettingsScreen.tsx`, `AddSourceModal.tsx`, `eval/measure_drive_quality.py`, `tests/test_quality_tiers.py`, `frontend/src/__tests__/driveQualityUI.test.tsx` | Section 46 (Drive quality presets [fast=1000, better=1600, best=2000, original=0], SPEC 6.2 defaults preserved, manifest cache invalidation by target_size, 4-tier benchmark evidence, 8/8 Pytest, 3/3 Vitest, 17/17 Export Checks pass) | **MATCHES** |
 
 
 
@@ -109,7 +110,7 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 120 passed, 2 warnings in 626.22s (0:10:26)
 ```
-- **Summary**: 120 passed in 626.22s (0 failed, 0 skipped, 2 warnings across 20 test files: `test_api.py`, `test_batch_assign.py`, `test_cache.py`, `test_clustering.py`, `test_diagnostics.py`, `test_drive.py`, `test_edits.py`, `test_engine_cold_regression.py`, `test_exporter.py`, `test_incremental.py`, `test_isolation.py`, `test_merge_projects.py`, `test_model_download.py`, `test_multi_source.py`, `test_multi_source_export.py`, `test_pipeline.py`, `test_projects.py`, `test_scanner.py`, `test_standalone_html.py`, `test_thumbnails.py`; includes cold 40-photo end-to-end regression benchmark, bbox pixel-level crop verification, and temp folder isolation).
+- **Summary**: 120 passed in 626.22s (0 failed, 0 skipped, 2 warnings across 21 test files: `test_api.py`, `test_batch_assign.py`, `test_cache.py`, `test_clustering.py`, `test_diagnostics.py`, `test_drive.py`, `test_edits.py`, `test_engine_cold_regression.py`, `test_exporter.py`, `test_incremental.py`, `test_isolation.py`, `test_merge_projects.py`, `test_model_download.py`, `test_multi_source.py`, `test_multi_source_export.py`, `test_pipeline.py`, `test_projects.py`, `test_quality_tiers.py`, `test_scanner.py`, `test_standalone_html.py`, `test_thumbnails.py`; includes cold 40-photo end-to-end regression benchmark, bbox pixel-level crop verification, and temp folder isolation).
 
 ---
 

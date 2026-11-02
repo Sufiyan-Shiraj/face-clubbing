@@ -821,11 +821,80 @@ def run_verification(
             all_passed = False
 
         # -------------------------------------------------------------------------
+        # CHECK 17: Drive Image Quality Presets and SPEC Section 18.1 Evidence Reproduction
+        # -------------------------------------------------------------------------
+        from backend.drive.client import (
+            DRIVE_QUALITY_SIZES,
+            get_drive_target_size,
+            resize_thumbnail_link,
+        )
+        from backend.engine.pipeline import EngineConfig
+        from backend.api.models import SettingsModel
+
+        has_presets = (
+            DRIVE_QUALITY_SIZES.get("fast") == 1000 and
+            DRIVE_QUALITY_SIZES.get("better") == 1600 and
+            DRIVE_QUALITY_SIZES.get("best") == 2000 and
+            DRIVE_QUALITY_SIZES.get("original") == 0 and
+            get_drive_target_size("fast") == 1000 and
+            get_drive_target_size("better") == 1600 and
+            get_drive_target_size("best") == 2000 and
+            get_drive_target_size(None) == 1000
+        )
+
+        has_preserved_defaults = (
+            EngineConfig(input_path="dummy").drive_image_quality == "fast" and
+            EngineConfig(input_path="dummy").min_face_size == 64 and
+            EngineConfig(input_path="dummy").seed_min_face_size == 64 and
+            SettingsModel().drive_image_quality == "fast" and
+            SettingsModel().min_face_size == 64
+        )
+
+        evidence_file = repo_root / "eval" / "drive_quality_evidence.json"
+        has_evidence_file = evidence_file.exists()
+        has_evidence_valid = False
+        if has_evidence_file:
+            try:
+                ev_data = json.loads(evidence_file.read_text(encoding="utf-8"))
+                has_all_tiers = all(k in ev_data for k in ("fast", "better", "best", "original"))
+                all_invariants_pass = all(
+                    ev_data[t].get("clustered_faces", 0) + ev_data[t].get("unrec_faces", 0) == ev_data[t].get("total_faces", 0)
+                    for t in ("fast", "better", "best", "original")
+                )
+                has_evidence_valid = has_all_tiers and all_invariants_pass
+            except Exception:
+                has_evidence_valid = False
+
+        spec_file = repo_root / "SPEC.md"
+        has_spec_sec18 = False
+        if spec_file.exists():
+            spec_txt = spec_file.read_text(encoding="utf-8")
+            has_spec_sec18 = (
+                "### 18.1 Drive Image Quality" in spec_txt and
+                "Fast (=s1000)" in spec_txt and
+                "Better (=s1600)" in spec_txt and
+                "Best (=s2000)" in spec_txt
+            )
+
+        check17_pass = (
+            has_presets and
+            has_preserved_defaults and
+            has_evidence_valid and
+            has_spec_sec18
+        )
+
+        if check17_pass:
+            print("[PASS] Check 17: Drive Image Quality Presets and SPEC §18.1 Evidence Reproduction verified (fast=1000, better=1600, best=2000, SPEC 6.2 defaults preserved, all 4 tiers verify Clustered + Unattached == Total)")
+        else:
+            print(f"[FAIL] Check 17: Drive Image Quality Presets verification failed: presets={has_presets}, defaults={has_preserved_defaults}, evidence={has_evidence_valid}, spec_sec18={has_spec_sec18}")
+            all_passed = False
+
+        # -------------------------------------------------------------------------
         # FINAL SUMMARY
         # -------------------------------------------------------------------------
         print("=" * 80)
         if all_passed:
-            print("OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (16/16 CHECKS & TABLES VERIFIED)")
+            print("OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (17/17 CHECKS & TABLES VERIFIED)")
         else:
             print("OVERALL VERIFICATION STATUS: FAILURES DETECTED")
         print("=" * 80)

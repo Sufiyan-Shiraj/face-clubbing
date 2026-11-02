@@ -120,6 +120,31 @@ def is_image_file(name: str, mime_type: str) -> bool:
     return name.lower().endswith(SUPPORTED_IMAGE_EXTENSIONS)
 
 
+DRIVE_QUALITY_SIZES: Dict[str, int] = {
+    "fast": 1000,
+    "better": 1600,
+    "best": 2000,
+    "original": 0,
+}
+
+
+def get_drive_target_size(quality: Optional[str] = None, target_size: Optional[int] = None) -> int:
+    """
+    Resolve a Drive quality setting ('fast', 'better', 'best', 'original')
+    or explicit target_size integer to effective dimension.
+    Defaults to 1000 (fast) per SPEC 18.1 proposal.
+    """
+    if target_size is not None:
+        return target_size
+    if quality:
+        q_norm = str(quality).strip().lower()
+        if q_norm in DRIVE_QUALITY_SIZES:
+            return DRIVE_QUALITY_SIZES[q_norm]
+        if q_norm.isdigit():
+            return int(q_norm)
+    return 1000
+
+
 def resize_thumbnail_link(link: str, target_size: int = 1000) -> str:
     """
     Adjust Google Drive thumbnailLink dimension parameter to target size (default =s1000).
@@ -132,6 +157,7 @@ def resize_thumbnail_link(link: str, target_size: int = 1000) -> str:
     # If ends in slash or raw URL, append size parameter
     sep = "&" if "?" in link else "?"
     return f"{link}{sep}sz=s{target_size}"
+
 
 
 class DriveClient:
@@ -570,11 +596,14 @@ class DriveClient:
         cancel_check: Optional[Callable[[], bool]] = None,
         max_workers: int = 4,
         dest_dir: Optional[Path | str] = None,
+        quality: str = "fast",
+        target_size: Optional[int] = None,
     ) -> List[Tuple[DriveFile, Path]]:
         """
-        Download size-limited thumbnails (=s1000) for all photos with bounded parallelism.
+        Download size-limited thumbnails (=s1000 for fast, =s1600 for better, =s2000 for best, or alt=media for original)
+        for all photos with bounded parallelism.
         Falls back to alt=media if no thumbnailLink or if thumbnail download fails.
-        Resumable: skips files already present with identical file ID and modifiedTime.
+        Resumable: skips files already present with identical file ID, modifiedTime, and matching target_size.
         """
         actual_dir = cache_dir or dest_dir
         if not actual_dir:
@@ -582,6 +611,8 @@ class DriveClient:
         cache_path = Path(actual_dir).resolve()
         cache_path.mkdir(parents=True, exist_ok=True)
         manifest_file = cache_path / "manifest.json"
+
+        eff_size = get_drive_target_size(quality=quality, target_size=target_size)
 
         # Load manifest
         manifest: Dict[str, Dict[str, Any]] = {}
@@ -607,24 +638,26 @@ class DriveClient:
             safe_name = re.sub(r'[^\w\.-]', '_', df.name)
             target_path = cache_path / f"{df.id}_{safe_name}"
 
-            # Resumable check: if file exists and manifest entry matches modified_time
+            # Resumable check: if file exists and manifest entry matches modified_time and target_size
             with manifest_lock:
                 entry = manifest.get(df.id)
+                entry_size = entry.get("target_size", 1000) if entry else None
                 if (
                     entry
                     and entry.get("modified_time") == df.modified_time
+                    and entry_size == eff_size
                     and target_path.exists()
                     and target_path.stat().st_size > 0
                 ):
                     completed_count += 1
                     return df, target_path
 
-            # Attempt 1: Download resized thumbnail if link is available
+            # Attempt 1: Download resized thumbnail if link is available and eff_size > 0
             downloaded = False
             content = None
 
-            if df.thumbnail_link:
-                resized_url = resize_thumbnail_link(df.thumbnail_link, target_size=1000)
+            if df.thumbnail_link and eff_size > 0:
+                resized_url = resize_thumbnail_link(df.thumbnail_link, target_size=eff_size)
                 try:
                     resp = self._request_with_retry("GET", resized_url, timeout=20)
                     if resp.status_code == 200 and len(resp.content) > 100:
@@ -659,6 +692,7 @@ class DriveClient:
                     "modified_time": df.modified_time,
                     "size": len(content),
                     "local_path": target_path.name,
+                    "target_size": eff_size,
                 }
                 completed_count += 1
                 cur = completed_count

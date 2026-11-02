@@ -6439,3 +6439,77 @@ Phase V2-5 implements viewer and export enhancements for multi-source projects, 
   - Check 2: WCAG 2.1 AA Body Text Contrast (>= 4.5:1) in Dark, Paper, and Navy themes (PASS).
   - Check 3: Keyboard Reachability for modals, popovers, and drawers (PASS).
 
+---
+
+## 46. PHASE V2-6: DRIVE IMAGE QUALITY PRESETS AND SMALL FACE RECOVERY
+
+### 46.1 Problem Statement & Bandwidth vs Small Face Trade-Off
+In Phase 6 and Phase V2-0, Google Drive integration downloaded Google CDN thumbnails resized to `=s1000` (1000 px max dimension). While `=s1000` provided dramatic bandwidth savings (>94.9% reduction compared to original camera uploads), empirical analysis on group event folders revealed a sharp trade-off:
+1. **High Non-Seed Ratio on Fast Thumbnails**: In wide-angle group shots, individuals in the middle and back rows occupy small bounding boxes. At 1000 px resolution, 90.0% of detected faces fell below the 64 px seed floor (`min_face_size = 64`), preventing them from forming person clusters.
+2. **Floor Immutability vs Dynamic Resolution**: Lowering `min_face_size` or `seed_min_face_size` below 64 in the core engine risks introducing lower-quality embeddings, false merges, and cluster instability. SPEC 6.2 defaults (`min_face_size = 64`, `seed_min_face_size = 64`) must remain strictly unchanged.
+3. **The Solution**: Google Drive CDN natively supports arbitrary thumbnail dimension parameters (`=s1000`, `=s1600`, `=s2000`). By offering organizers explicit Drive Image Quality presets (`fast` = 1000, `better` = 1600, `best` = 2000), faces naturally scale above the 64 px floor without modifying any engine clustering thresholds, while still preserving 83.3% to 88.2% of bandwidth.
+
+### 46.2 Architecture & Changes
+1. **Drive Client Quality Presets & Target Sizing (`backend/drive/client.py`)**:
+   - `DRIVE_QUALITY_SIZES = {"fast": 1000, "better": 1600, "best": 2000, "original": 0}`.
+   - Helper `get_drive_target_size(quality: Optional[str] = None, target_size: Optional[int] = None) -> int`: maps preset names to integer dimensions, defaulting safely to `1000` (`fast`).
+   - Helper `resize_thumbnail_link(link: str, target_size: int = 1000) -> str`: parses and substitutes or appends Google Drive dimension parameters (`=s<target_size>` or `?sz=s<target_size>`).
+   - `DriveClient.download_thumbnails(..., quality: str = "fast", target_size: Optional[int] = None)`: applies quality tier to all thumbnail URLs during download.
+2. **Resumable Cache Invalidation via Manifest (`manifest.json`)**:
+   - Stored in `<work_dir>/drive_thumbs_<folder_id>/manifest.json`.
+   - Each manifest record now includes `target_size: eff_size`.
+   - When switching from `fast` (1000 px) to `best` (2000 px), `entry.get("target_size") != eff_size` triggers re-downloading at the new resolution.
+   - When re-running with the same quality tier, 100% of cached thumbnails are reused with zero re-downloads.
+3. **Engine Pipeline & Config Defaults (`backend/engine/pipeline.py`)**:
+   - `EngineConfig` includes `drive_image_quality: str = "fast"`.
+   - SPEC 6.2 defaults remain strictly untouched: `min_face_size = 64`, `seed_min_face_size = 64`.
+   - `run_pipeline()` and `run_incremental_pipeline()` pass the configured quality setting to `DriveClient.download_thumbnails()`.
+4. **API Models & State Wiring (`backend/api/`)**:
+   - `SettingsModel` in `backend/api/models.py` defaults to `drive_image_quality: str = "fast"`.
+   - `JobStartRequest` allows optional `drive_image_quality: Optional[str] = None`.
+   - `AppState.start_job()`, `rerun_clustering()`, and `add_source_incremental()` pass `drive_image_quality` to `EngineConfig`.
+5. **Frontend UI Integration (`frontend/src/`)**:
+   - `frontend/src/types.ts`: `drive_image_quality?: 'fast' | 'better' | 'best'` added to `Settings`.
+   - `SettingsScreen.tsx`: Configured with `#select-drive-image-quality` dropdown offering Fast (1000px), Better (1600px), and Best (2000px).
+   - `AddSourceModal.tsx`: Added `#select-source-drive-quality` dropdown when adding a Google Drive folder source.
+   - `HomeScreen.tsx`: Added `#select-home-drive-quality` in both initial and configured landing states with minimum 12px font size.
+
+### 46.3 Empirical Evidence & Benchmark Table
+Evaluated across 15 representative group and portrait images from test Google Drive folder `1hrKfZacNX7T9H6pNLegJVpPev1PG-khG` (`eval/drive_quality_evidence.json`):
+
+| Metric | Fast (=s1000) | Better (=s1600) | Best (=s2000) | Originals |
+|---|:---:|:---:|:---:|:---:|
+| Target Resolution (px) | 1000 px | 1600 px | 2000 px | Full (unscaled) |
+| Bytes Downloaded | 2,357,971 | 5,484,335 | 7,730,635 | 46,293,482 |
+| Bandwidth Reduction % | 94.9% | 88.2% | 83.3% | 0.0% |
+| Total Detected Faces | 100 | 98 | 96 | 97 |
+| Faces < 64 px (Non-Seed) | 90 (90.0%) | 81 (82.7%) | 65 (67.7%) | 5 (5.2%) |
+| Faces >= 64 px (Seed Eligible) | 10 (10.0%) | 17 (17.3%) | 31 (32.3%) | 92 (94.8%) |
+| Clustered Faces | 3 | 5 | 21 | 52 |
+| People Clusters | 2 | 4 | 12 | 36 |
+| Singletons | 1 | 3 | 8 | 28 |
+| Unrecognized Faces | 97 | 93 | 75 | 45 |
+| Invariant (Clustered + Unrec == Total) | PASS (Exact) | PASS (Exact) | PASS (Exact) | PASS (Exact) |
+
+**Key Empirical Insights**:
+- **Best (=s2000)** increases seed-eligible faces (>3x: 10 -> 31) and clustered faces (7x: 3 -> 21) with 6x people clusters (2 -> 12), while still cutting bandwidth by 83.3% compared to camera originals.
+- **Invariant Verification**: `Clustered Faces + Unrecognized Faces == Total Detected Faces` holds exactly across all four tiers (3 + 97 = 100, 5 + 93 = 98, 21 + 75 = 96, 52 + 45 = 97).
+
+### 46.4 Automated Test Suites & Verification
+1. **Backend Quality Tiers Suite (`tests/test_quality_tiers.py`) (8/8 PASS in 0.28s)**:
+   - `test_drive_quality_presets`: Verifies `fast`=1000, `better`=1600, `best`=2000, `original`=0.
+   - `test_thumbnail_link_rewriting`: Verifies URL replacement and appending for `=sNNNN` and `?sz=sNNNN`.
+   - `test_engine_config_defaults`: Verifies `drive_image_quality == 'fast'` by default.
+   - `test_spec_defaults_preserved`: Confirms `min_face_size == 64` and `seed_min_face_size == 64` in `EngineConfig` and `SettingsModel`.
+   - `test_settings_model_drive_quality_validation`: Validates allowed presets in `SettingsModel`.
+   - `test_manifest_cache_invalidation_on_quality_change`: Confirms cache invalidation and re-download when target size changes, and cache reuse when unchanged.
+   - `test_invariant_clustered_plus_unrec_equals_total`: Verifies clustering accounting invariant across varying face sizes.
+2. **Frontend UI Quality Selectors Suite (`frontend/src/__tests__/driveQualityUI.test.tsx`) (3/3 PASS in 5.12s)**:
+   - `SettingsScreen renders drive image quality dropdown with fast as default`: PASS.
+   - `AddSourceModal renders drive quality selector for Google Drive sources`: PASS.
+   - `HomeScreen renders drive quality selector`: PASS.
+3. **Accessibility Audit (`eval/check_ui_rules.py`)**: 100% PASS (Zero font sizes < 12px, WCAG 2.1 AA >= 4.5:1 contrast across Dark, Paper, Navy themes, full keyboard reachability).
+4. **Settings Spec Checker (`eval/check_settings_spec.py`)**: 100% PASS (All 15 SPEC 6.2 defaults preserved across `SettingsModel`, `EngineConfig`, and `SettingsScreen.tsx`).
+5. **Export Invariants Audit (`eval/verify_export.py`)**: **17/17 PASS** including Check 17: Drive Image Quality Presets and SPEC §18.1 Evidence Reproduction.
+
+

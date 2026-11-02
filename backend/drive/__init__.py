@@ -17,6 +17,8 @@ from backend.drive.client import (
     DriveAuthError,
     DrivePermissionError,
     DriveQuotaError,
+    DRIVE_QUALITY_SIZES,
+    get_drive_target_size,
 )
 
 __all__ = [
@@ -33,4 +35,7 @@ __all__ = [
     "DriveAuthError",
     "DrivePermissionError",
     "DriveQuotaError",
+    "DRIVE_QUALITY_SIZES",
+    "get_drive_target_size",
 ]
+

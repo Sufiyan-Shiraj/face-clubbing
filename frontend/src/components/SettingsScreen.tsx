@@ -89,6 +89,12 @@ const SUBFOLDER_DEPTH_OPTIONS: DropdownOption[] = [
   { value: 10, label: '10 Levels', desc: 'Maximum' },
 ];
 
+const DRIVE_QUALITY_OPTIONS: DropdownOption[] = [
+  { value: 'fast', label: 'Fast (1000 px)', desc: '95% bandwidth reduction, best for speed', badge: 'DEFAULT' },
+  { value: 'better', label: 'Better (1600 px)', desc: 'Balanced face detail and download speed', badge: 'RECOMMENDED' },
+  { value: 'best', label: 'Best (2000 px)', desc: 'Maximum face resolution from Drive CDN', badge: 'HD' },
+];
+
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onRerunComplete,
   onOpenProject,
@@ -116,6 +122,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     include_maybe: false,
     event_title: 'CatLog Gallery',
     event_subtitle: 'Auto-sorted face albums and photo gallery',
+    drive_image_quality: 'fast',
     scan_subfolders: true,
     max_subfolder_depth: 5,
     follow_shortcuts: false,
@@ -668,6 +675,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     </button>
                   )}
                 </div>
+              </div>
+
+              {/* Drive Image Quality Preset Selector */}
+              <div className="pt-1 border-t border-[var(--line)]">
+                <CustomDropdown
+                  id="select-drive-image-quality"
+                  label="Drive Image Quality"
+                  value={settings.drive_image_quality || 'fast'}
+                  onChange={(val) => {
+                    const updated = { ...settings, drive_image_quality: val as 'fast' | 'better' | 'best' };
+                    setSettings(updated);
+                    api.updateSettings({ drive_image_quality: val }).catch(console.error);
+                  }}
+                  options={DRIVE_QUALITY_OPTIONS}
+                />
+                <p className="text-xs text-[var(--muted)] mt-1.5 leading-relaxed">
+                  Controls image resolution downloaded from Google Drive CDN (Fast: =s1000, Better: =s1600, Best: =s2000). Higher tiers retain distant/small faces without modifying SPEC 6.2 clustering floors.
+                </p>
               </div>
 
               {/* Security Guarantee Note */}
