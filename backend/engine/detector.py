@@ -63,6 +63,8 @@ class FaceDetector:
                 kwargs["providers"] = self.providers
 
             try:
+                if "allowed_modules" not in kwargs:
+                    kwargs["allowed_modules"] = ["detection", "recognition", "landmark_3d_68"]
                 app = FaceAnalysis(**kwargs)
                 app.prepare(ctx_id=0, det_size=self.det_size)
                 self._app = app

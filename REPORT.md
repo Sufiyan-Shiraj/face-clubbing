@@ -6642,3 +6642,28 @@ Phase V2-8 establishes comprehensive production distribution infrastructure for 
    - `eval/check_settings_spec.py`: **100% PASS** (15/15 parameters match SPEC 6.2).
    - `eval/check_status_integrity.py`: **100% PASS** (23 test files verified).
    - `eval/verify_export.py`: **100% PASS (17/17 checks passed)**.
+
+
+---
+
+## 49. PHASE V2-9: ENGINE INFERENCE SPEED INVESTIGATION & STARTUP OPTIMIZATION
+
+### 49.1 Objectives & Experimental Profile
+Phase V2-9 investigates opportunities for faster inference without altering output behavior:
+1. **ArcFace Batching Investigation**:
+   - Tested batched vs sequential `rec_model.get_feat()` inference across aligned face crops on CPU.
+   - Result: 20-crop batch took 4,481 ms vs 4,188 ms sequential (0.93x speedup). 40-crop batch took 16,997 ms vs 16,334 ms sequential (0.96x speedup).
+   - Analysis: On CPU with ONNX Runtime, intra-op multi-threading already fully utilizes all cores on single 112x112 ResNet50 evaluations; batching adds memory concatenation overhead with zero gain on multi-core CPU.
+2. **ONNX Runtime Execution Providers (DirectML)**:
+   - Evaluated `DirectMLExecutionProvider`. In a standard cross-platform distribution without GPU dependencies, CPUExecutionProvider remains canonical and avoids external DirectX runtime incompatibilities.
+3. **Selective Model Initialization (54.9% Speedup)**:
+   - By default, InsightFace's `buffalo_l` loads 5 ONNX models: `det_10g`, `w600k_r50`, `1k3d68`, `2d106det`, and `genderage`.
+   - CatLog uses only 3 models: detection (`det_10g`), recognition (`w600k_r50`), and 3D pose (`1k3d68`). `2d106det` and `genderage` are never queried.
+   - Configured `allowed_modules=["detection", "recognition", "landmark_3d_68"]` in `FaceDetector._init_app()`.
+   - Measured initialization latency dropped from **3,406.7 ms** to **1,535.0 ms** (**54.9% faster model init**), reducing RAM footprint and launch delay.
+4. **Conditional Flipped Embedding Evaluation**:
+   - Investigated skipping flipped embedding computation when `flip_average=False`.
+   - Sequential forward passes dropped from 20 to 10 for 10 faces (4,148 ms &rarr; 2,143 ms, 1.93x speedup).
+5. **Bit-for-Bit Reproduction Verification**:
+   - All 192 clusters, 1,256 clustered faces, 445 unrecognized faces, 1 collision cluster, and 28 maybe groups verified identically in `eval/check_baseline.py` (100% pass).
+   - Cold regression test `tests/test_engine_cold_regression.py` passes identically with 0 diffs.
