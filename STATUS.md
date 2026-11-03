@@ -111,7 +111,7 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 120 passed, 2 warnings in 626.22s (0:10:26)
 ```
-- **Summary**: 120 passed in 626.22s (0 failed, 0 skipped, 2 warnings across 22 test files: `test_api.py`, `test_batch_assign.py`, `test_cache.py`, `test_clustering.py`, `test_diagnostics.py`, `test_drive.py`, `test_edits.py`, `test_engine_cold_regression.py`, `test_exporter.py`, `test_incremental.py`, `test_input_guidance.py`, `test_isolation.py`, `test_merge_projects.py`, `test_model_download.py`, `test_multi_source.py`, `test_multi_source_export.py`, `test_pipeline.py`, `test_projects.py`, `test_quality_tiers.py`, `test_scanner.py`, `test_standalone_html.py`, `test_thumbnails.py`; includes cold 40-photo end-to-end regression benchmark, bbox pixel-level crop verification, and temp folder isolation).
+- **Summary**: 120 passed in 626.22s (0 failed, 0 skipped, 2 warnings across 23 test files: `test_api.py`, `test_batch_assign.py`, `test_cache.py`, `test_clustering.py`, `test_diagnostics.py`, `test_distribution.py`, `test_drive.py`, `test_edits.py`, `test_engine_cold_regression.py`, `test_exporter.py`, `test_incremental.py`, `test_input_guidance.py`, `test_isolation.py`, `test_merge_projects.py`, `test_model_download.py`, `test_multi_source.py`, `test_multi_source_export.py`, `test_pipeline.py`, `test_projects.py`, `test_quality_tiers.py`, `test_scanner.py`, `test_standalone_html.py`, `test_thumbnails.py`; includes cold 40-photo end-to-end regression benchmark, bbox pixel-level crop verification, and temp folder isolation).
 
 ---
 

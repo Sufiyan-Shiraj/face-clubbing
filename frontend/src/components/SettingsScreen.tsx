@@ -24,6 +24,7 @@ import {
 import { MascotSticker } from './MascotSticker';
 import { CopyDiagnosticsButton } from './CopyDiagnosticsButton';
 import { ModelDownloadBanner } from './ModelDownloadBanner';
+import { AppUpdateBanner } from './AppUpdateBanner';
 import {
   OrbitalClusterVisualizer,
   MergeFusionVisualizer,
@@ -897,7 +898,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               )}
             </div>
 
-            {/* AI Face Recognition Models */}
+                        {/* App Distribution & Update Notice */}
+            <div className="settings-panel p-5 space-y-3.5">
+              <div className="flex items-center justify-between border-b-2 border-[var(--line)] pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[var(--accent)]" />
+                  <span className="text-sm md:text-base font-extrabold uppercase tracking-wider text-[var(--text)]">
+                    CatLog Software Updates
+                  </span>
+                </div>
+              </div>
+              <AppUpdateBanner variant="settings" />
+            </div>
+
+{/* AI Face Recognition Models */}
             <div className="settings-panel p-5 space-y-3.5">
               <div className="flex items-center justify-between border-b-2 border-[var(--line)] pb-2.5">
                 <div className="flex items-center gap-2">

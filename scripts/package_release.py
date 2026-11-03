@@ -217,7 +217,54 @@ def package_release(
         print(f"[PASS] Onefile comparison archive created: {comp_path} ({comp_path.stat().st_size:,} bytes)")
         print(f"[PASS] SHA-256: {comp_sum}")
 
+    if 'windows' in target_platform:
+        build_windows_installer(version, out_dir)
+
     return archive_path
+
+def build_windows_installer(version: str, out_dir: Path) -> Path | None:
+    """Attempts to compile the Inno Setup script into CatLog-Setup-<version>.exe if ISCC is installed."""
+    iss_script = REPO_ROOT / "installer" / "catlog_setup.iss"
+    if not iss_script.exists():
+        print(f"[WARNING] Inno Setup script {iss_script} not found.")
+        return None
+
+    # Search common Inno Setup compiler locations
+    iscc_candidates = [
+        shutil.which("iscc"),
+        shutil.which("ISCC"),
+        r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+        r"C:\Program Files\Inno Setup 6\ISCC.exe",
+        r"C:\Program Files (x86)\Inno Setup 7\ISCC.exe",
+        r"C:\Program Files\Inno Setup 7\ISCC.exe",
+    ]
+    iscc_bin = next((c for c in iscc_candidates if c and Path(c).exists()), None)
+    if not iscc_bin:
+        print("[INFO] Inno Setup compiler (iscc) not found on PATH or default locations. Skipping installer compilation.")
+        return None
+
+    print("=" * 70)
+    print(f"COMPILING WINDOWS INSTALLER VIA INNO SETUP: v{version}")
+    print("=" * 70)
+    import subprocess
+    cmd = [
+        str(iscc_bin),
+        f"/DMyAppVersion={version}",
+        f"/O{str(out_dir)}",
+        str(iss_script),
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode == 0:
+        installer_path = out_dir / f"CatLog-Setup-{version}.exe"
+        if installer_path.exists():
+            checksum = compute_sha256(installer_path)
+            (out_dir / f"{installer_path.name}.sha256").write_text(f"{checksum}  {installer_path.name}\n", encoding="utf-8")
+            print(f"[PASS] Windows installer created: {installer_path} ({installer_path.stat().st_size:,} bytes)")
+            print(f"[PASS] SHA-256: {checksum}")
+            return installer_path
+    else:
+        print(f"[WARNING] Inno Setup compilation exited with code {res.returncode}: {res.stderr}")
+    return None
 
 
 def main():

@@ -44,6 +44,7 @@ from backend.api.models import (
     MergeProjectsResponse,
 )
 from backend.api.diagnostics import DiagnosticsReport, classify_error, generate_diagnostics_report
+from backend.api.updates import check_app_update
 from backend.engine.models_downloader import model_download_manager
 from backend.api.state import AppState
 from backend.api.jobs import JobManager
@@ -56,6 +57,11 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
     @router.get("/diagnostics", response_model=DiagnosticsReport)
     def get_diagnostics():
         return generate_diagnostics_report(state=state, job_manager=job_manager)
+
+    # 0.05 App Version & Update Check (V2-8)
+    @router.get("/app/check-update")
+    def check_app_version_update():
+        return check_app_update()
 
     # 0.1 Model Weights Management Endpoints
     @router.get("/models/status", response_model=ModelStatusResponse)

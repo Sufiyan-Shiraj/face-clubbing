@@ -488,7 +488,19 @@ export const api = {
       body: JSON.stringify({ force }),
     });
   },
+  async checkAppUpdate(): Promise<{
+    current_version: string;
+    latest_version: string;
+    update_available: boolean;
+    release_name: string;
+    release_url: string;
+    release_notes: string;
+    published_at: string;
+    checked_online: boolean;
+    error: string | null;
+  }> {
+    return fetchJson(${BASE_URL}/app/check-update);
+  },
 };
 
 export const apiClient = api;
-

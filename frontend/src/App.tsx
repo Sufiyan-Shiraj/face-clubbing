@@ -15,6 +15,7 @@ import { Header, RisoTheme } from './components/Header';
 import { HomeScreen } from './components/HomeScreen';
 import { CustomDialog, DialogOptions } from './components/CustomDialog';
 import { AlertTriangle, X } from 'lucide-react';
+import { AppUpdateBanner } from './components/AppUpdateBanner';
 
 const ProgressScreen = React.lazy(() => import('./components/ProgressScreen').then(m => ({ default: m.ProgressScreen })));
 const ReviewPeopleScreen = React.lazy(() => import('./components/ReviewPeopleScreen').then(m => ({ default: m.ReviewPeopleScreen })));
@@ -1071,6 +1072,7 @@ export const App: React.FC = () => {
 
       {/* Main Screen Content */}
       <div className={`main ${activeTab === 'settings' ? 'settings-mode' : ''} ${activeTab === 'export' ? 'export-mode' : ''}`}>
+        <AppUpdateBanner variant="banner" />
         {projectReadOnlyNotice && (
           <div
             data-testid="read-only-banner"

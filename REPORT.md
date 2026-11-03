@@ -6594,3 +6594,51 @@ Event photo organizers frequently receive photo collections from multiple contri
 
 
 
+
+
+---
+
+## 48. PHASE V2-8: DISTRIBUTION, WINDOWS INSTALLER, IN-APP VERSION NOTICE & MODEL DOWNLOAD RESILIENCE
+
+### 48.1 Architecture & Objectives
+Phase V2-8 establishes comprehensive production distribution infrastructure for CatLog:
+1. **Windows Installer (Inno Setup)**:
+   - Configured in `installer/catlog_setup.iss`.
+   - Packages the high-performance `onedir` distribution (`dist/CatLog/`) into a modern setup executable `CatLog-Setup-<version>.exe`.
+   - Provides per-machine or per-user installation without requiring mandatory elevation.
+   - Creates Start Menu & Desktop shortcuts, registers in Windows Add/Remove Programs, and checks for Microsoft Edge WebView2 runtime.
+   - Clean uninstaller purges application binaries and generated temporary/cache directories (`.cache/`, `*_temp`).
+   - Integrated into `scripts/package_release.py` (`build_windows_installer`) to compile automatically when the Inno Setup compiler (`iscc`) is present.
+2. **In-App Version Notice (Offline-Safe, Non-Telemetry)**:
+   - Implemented in `backend/api/updates.py` and exposed via `GET /api/app/check-update`.
+   - Semantic version parsing and comparison in `backend/version.py` (`parse_semver`, `is_newer_version`).
+   - Queries `https://api.github.com/repos/Sufiyan-Shiraj/face-clubbing/releases/latest` with a strict 3.0s timeout.
+   - **Privacy & Safety Guarantees**: Zero telemetry, zero analytics, zero background auto-installs. Network failures fail silently returning `update_available: false`.
+   - Frontend UI: subtle `AppUpdateBanner` component mounted on top of the main window (dismissible) and inside `SettingsScreen.tsx` (with a manual "Check for Update" trigger).
+3. **Model Download Resilience & Mirror Fallback**:
+   - Enhanced `backend/engine/models_downloader.py` with HTTP `Range` resume support (`Range: bytes={existing_bytes}-`). Interrupted downloads resume from their `.part` file instead of starting over.
+   - Added `BUFFALO_L_MIRRORS` list with primary GitHub Release URL and Hugging Face public mirror fallback.
+   - Added offline model pack discovery (`discover_offline_model_sources`) checking `./models/buffalo_l`, `./catlog_models/buffalo_l`, `~/.catlog/models/`, and `~/.insightface/models/`.
+4. **Documentation**:
+   - `docs/CODE_SIGNING_AND_REPUTATION.md`: SmartScreen and Gatekeeper behavior, EV vs OV signing, and unsigned bypass instructions.
+   - `docs/OFFLINE_MODEL_PACK.md`: Step-by-step air-gapped installation guide, ONNX hashes, and InsightFace non-commercial licensing notice.
+   - `docs/RELEASE_CHECKLIST.md`: Pre-flight audit verification, platform promotion criteria, and GitHub release protocol.
+
+### 48.2 Automated Test Suites & Verification
+1. **Distribution Test Suite (`tests/test_distribution.py`) (7/7 PASS)**:
+   - `test_semver_parsing_and_comparison`: Verifies semver tuple parsing and strict ordering including prerelease strings.
+   - `test_github_releases_update_check_offline`: Verifies silent failure and offline safety when GitHub is unreachable.
+   - `test_github_releases_update_check_online_success`: Verifies JSON parsing of upstream release payloads.
+   - `test_offline_model_pack_discovery`: Verifies pre-placed weights in candidate directories are discovered before network calls.
+   - `test_download_with_range_resume`: Verifies partial `.part` files issue HTTP Range requests with exact byte offsets.
+   - `test_multi_mirror_fallback`: Verifies automatic switch to secondary mirror if primary mirror returns HTTP 503 or fails.
+   - `test_api_app_check_update_endpoint`: Verifies `/api/app/check-update` endpoint in FastAPI router.
+2. **Model Download Suite (`tests/test_model_download.py`) (6/6 PASS)**:
+   - Verifies all checksum, corruption cleanup, and status verification logic.
+3. **Frontend Update Notice Suite (`frontend/src/__tests__/appUpdateNotice.test.tsx`) (3/3 PASS)**:
+   - Verifies dismissible top banner, settings panel card, and manual check button.
+4. **Integrity & Accessibility Audits**:
+   - `eval/check_ui_rules.py`: **100% PASS** (all fonts >= 12px, WCAG AA contrast).
+   - `eval/check_settings_spec.py`: **100% PASS** (15/15 parameters match SPEC 6.2).
+   - `eval/check_status_integrity.py`: **100% PASS** (23 test files verified).
+   - `eval/verify_export.py`: **100% PASS (17/17 checks passed)**.
