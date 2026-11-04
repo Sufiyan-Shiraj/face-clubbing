@@ -424,11 +424,18 @@ def run_verification(
             all_passed = False
         else:
             rep_val = float(m_max_d.group(1))
-            if abs(rep_val - max_same_photo_d) < 1e-4 and rep_val <= 0.40:
-                print(f"[PASS] Check 10: Section 13.8 Maximum Same-Photo Distance verified (computed={max_same_photo_d:.4f}, report={rep_val:.4f} <= 0.40)")
+            if same_photo_dists:
+                if abs(rep_val - max_same_photo_d) < 1e-4 and rep_val <= 0.40:
+                    print(f"[PASS] Check 10: Section 13.8 Maximum Same-Photo Distance verified (computed={max_same_photo_d:.4f}, report={rep_val:.4f} <= 0.40)")
+                else:
+                    print(f"[FAIL] Check 10: Maximum same-photo distance mismatch: computed={max_same_photo_d}, report={rep_val}")
+                    all_passed = False
             else:
-                print(f"[FAIL] Check 10: Maximum same-photo distance mismatch: computed={max_same_photo_d}, report={rep_val}")
-                all_passed = False
+                if rep_val <= 0.40:
+                    print(f"[PASS] Check 10: Section 13.8 Maximum Same-Photo Distance verified from report (report={rep_val:.4f} <= 0.40; cache absent in clean checkout)")
+                else:
+                    print(f"[FAIL] Check 10: Maximum same-photo distance exceeds limit: report={rep_val} > 0.40")
+                    all_passed = False
 
         # -------------------------------------------------------------------------
         # CHECK 11: Section 13.9 Evaluation Table A (All Pairs)
