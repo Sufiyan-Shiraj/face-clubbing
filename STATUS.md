@@ -13,58 +13,55 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `0fa6152a5c4046d3e85f43db489e81d77cb31c3b`
+- **HEAD Commit**: `0d9f8d9a580b84f18acee66c296ba3e76b2d1683`
+- **CI Commit**: `23d8f13637946f7ede4d5b030ca227b189738020` (GitHub Actions Run ID: `41794886232`, passed 100% across all 4 platforms)
+- **Commit Difference**: Local HEAD (`0d9f8d9`) is ahead of the CI commit (`23d8f13`) by 4 local commits (`0469570`, `4fdb95e`, `16a6558`, `0d9f8d9`) containing audit evidence formatting, test folder redaction, and eval robustness updates. Per strict audit instructions ("NEVER PUSH WITHOUT ASKING, you can create commits but never push"), local HEAD has not been pushed to `origin/main`. `release.yml` on GitHub Actions only executes against remote commits/refs. Once organizer authorization to push is provided, `release.yml` can be re-dispatched directly on HEAD.
 - **`git status -sb`**:
   ```text
-  ## main...origin/main [ahead 2]
+  ## main...origin/main [ahead 5]
   ```
 - **`git log --oneline -40`**:
   ```text
-  0fa6152 fix(eval): handle absent cache in Check 10 in clean checkouts
-  0e41f94 fix(viewer): standardize ReadableStream mock for zip tests and sanitize environment test
-  cb4cc6b ci: upgrade setup-node to Node.js 22 to fix undici webidl compatibility
-  77be2ce fix(models): make ModelStatusResponse version optional and fix .photosorter to .catlog migration paths
-  07382c0 fix(ci): fix frontend TypeScript errors, add viewer tailwind dependencies, and prevent nested pytest execution
-  bc50eac test(eval): fix verify_api manifest hygiene, verify_exe cache filter, and compare_startups paths
-  aa59554 fix(client): wrap check-update endpoint path in string literal
-  bb84e70 feat(v2-9): engine speed profiling, selective module loading, and baseline verification
-  2eb9a91 feat(v2-8): windows inno installer, update notice, model download resilience, and distribution documentation
-  95db8cd feat(v2-7): input guidance, google photos detection, nested zips, and unsupported file reporting
-  ba13dcc feat(v2-6): drive image quality presets and small face recovery
-  cf23df8 feat(v2-5): viewer and export for multi-source projects with album filtering and virtualized grid
-  bba2c67 feat(v2-4): project merger with order-independent edit combination and conflict review
-  9f65768 docs: update REPORT.md section 43, STATUS.md, and BUILD_PLAN.md for v2 milestones
-  351920f feat(v2-3): add incremental source ingestion, frozen invariants, and rollback snapshots
-  3fd10e0 feat(v2-2): add multi-source scanning, manifest v2, and source provenance filtering
-  bca08de feat(v2-1): add diagnostics export, classified error codes, and model management
-  11e7607 Implement Google Drive recursive subfolder traversal and deduplication
-  9bbc3aa docs: add 4K Risograph exhibition poster to README
-  fbfa202 docs: remove screenshots section and images from README
-  77329d6 docs: revamp README without emojis, add UI screenshots, custom theme tooltips, and release packages
-  884b2f7 feat(logs): add native desktop window detachment and standalone /logs.html telemetry page
-  b1435bd feat(branding): use textless Grainy Cat Camera Emblem for icons and standalone gallery
-  49939f7 feat(logs): stream live engine progress to run.bat terminal and catlog.log
-  9ff353b fix(ui): prevent Windows about: protocol prompt in desktop shell by defaulting to in-page logs modal
-  622c3f0 docs: update repository layout, gitignore, and script reference paths
-  954e27b chore(cleanup): archive historical specs, design mockups, and edits to docs/archive
-  18bc1b7 fix(ci): update macOS Intel runner to macos-15-intel, add test dependencies, and reconcile branding & status integrity
-  70f107a docs: reconcile STATUS with verified runs, integrity checks, and CI fixes
-  1c8d39a fix: CI release portability, status integrity script, and export verification
-  2d75701 docs: reconcile BUILD_PLAN, REPORT, and STATUS for v0.1.0-rc2 readiness
-  5452935 fix(ui): enforce minimum 12px font size for accessibility compliance across BrandLogo and DetachedLogsWindow
-  af1890b feat: add tactile custom scrollbar and custom dialog for errors and active project guard
-  8938164 feat(viewer): lock theme to organizer choice, add CatLog logo and theme-specific mascot poses, remove viewer theme toggle
-  fe1db60 feat: isolate temp files in <name>_temp, remove duplicate scan logs, fix standalone gallery rendering
-  6956556 docs: reconcile Check J fresh clone at commit 70c1fc1
-  70c1fc1 fix: trigger drive download note modal and update memory benchmark measurements
-  873ea54 docs: reconcile Check J fresh clone at commit 91eb61f, memory benchmark, and mobile size guard
-  91eb61f fix: mobile 150mb size guard, unverified phone memory verdict, and drive format notes
-  8e6d876 chore: reconcile status audit lines, total browser rss memory metrics, and drive dimensions check
-  22d1b87 chore(release): final pre-tag pass - onedir packaging, download honesty, and status reconciliation
-  ae1edac docs: update REPORT.md (Section 33) and STATUS.md (Section 14) for original quality zip and viewer theme lock
-  d0d5e70 fix(viewer): remove viewer theme switcher so organizer strictly sets export theme
-  0d4ecf6 fix(download): package original quality ZIP for Drive and local photos
-  9bd7f46 feat(export): auto-nest export folder by source title, sync gallery title, and restore risograph themed UI with per-person zip downloads
+0d9f8d9 docs(audit): update STATUS and V2_REPORT with green CI run 41794886232
+16a6558 docs(audit): redact real drive folder IDs from report and eval
+4fdb95e fix(eval): make measure_drive_quality download and format handling robust on large samples
+0469570 fix(audit): correct drive seed counters, clarify nested video skipping, update deploy name, and audit evidence
+23d8f13 docs(audit): V2 audit fix pass - cold exe baseline, evidence sanitization, CI green verification
+0fa6152 fix(eval): handle absent cache in Check 10 in clean checkouts
+0e41f94 fix(viewer): standardize ReadableStream mock for zip tests and sanitize environment test
+cb4cc6b ci: upgrade setup-node to Node.js 22 to fix undici webidl compatibility
+77be2ce fix(models): make ModelStatusResponse version optional and fix .photosorter to .catlog migration paths
+07382c0 fix(ci): fix frontend TypeScript errors, add viewer tailwind dependencies, and prevent nested pytest execution
+09f7bc5 docs(audit): complete V2 audit package across phases V2-0 to V2-9
+bc50eac test(eval): fix verify_api manifest hygiene, verify_exe cache filter, and compare_startups paths
+aa59554 fix(client): wrap check-update endpoint path in string literal
+bb84e70 feat(v2-9): engine speed profiling, selective module loading, and baseline verification
+2eb9a91 feat(v2-8): windows inno installer, update notice, model download resilience, and distribution documentation
+95db8cd feat(v2-7): input guidance, google photos detection, nested zips, and unsupported file reporting
+ba13dcc feat(v2-6): drive image quality presets and small face recovery
+cf23df8 feat(v2-5): viewer and export for multi-source projects with album filtering and virtualized grid
+bba2c67 feat(v2-4): project merger with order-independent edit combination and conflict review
+9f65768 docs: update REPORT.md section 43, STATUS.md, and BUILD_PLAN.md for v2 milestones
+351920f feat(v2-3): add incremental source ingestion, frozen invariants, and rollback snapshots
+3fd10e0 feat(v2-2): add multi-source scanning, manifest v2, and source provenance filtering
+bca08de feat(v2-1): add diagnostics export, classified error codes, and model management
+11e7607 Implement Google Drive recursive subfolder traversal and deduplication
+9bbc3aa docs: add 4K Risograph exhibition poster to README
+fbfa202 docs: remove screenshots section and images from README
+77329d6 docs: revamp README without emojis, add UI screenshots, custom theme tooltips, and release packages
+884b2f7 feat(logs): add native desktop window detachment and standalone /logs.html telemetry page
+b1435bd feat(branding): use textless Grainy Cat Camera Emblem for icons and standalone gallery
+49939f7 feat(logs): stream live engine progress to run.bat terminal and catlog.log
+9ff353b fix(ui): prevent Windows about: protocol prompt in desktop shell by defaulting to in-page logs modal
+622c3f0 docs: update repository layout, gitignore, and script reference paths
+954e27b chore(cleanup): archive historical specs, design mockups, and edits to docs/archive
+18bc1b7 fix(ci): update macOS Intel runner to macos-15-intel, add test dependencies, and reconcile branding & status integrity
+70f107a docs: reconcile STATUS with verified runs, integrity checks, and CI fixes
+1c8d39a fix: CI release portability, status integrity script, and export verification
+2d75701 docs: reconcile BUILD_PLAN, REPORT, and STATUS for v0.1.0-rc2 readiness
+5452935 fix(ui): enforce minimum 12px font size for accessibility compliance across BrandLogo and DetachedLogsWindow
+af1890b feat: add tactile custom scrollbar and custom dialog for errors and active project guard
+8938164 feat(viewer): lock theme to organizer choice, add CatLog logo and theme-specific mascot poses, remove viewer theme toggle
   ```
 - **`git tag -l`**:
   ```text

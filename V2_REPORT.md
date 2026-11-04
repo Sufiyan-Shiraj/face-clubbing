@@ -249,23 +249,73 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
   - Test Suite: `tests/test_quality_tiers.py` (8 passed).
   - Frontend Tests: `frontend/src/__tests__/driveQualityUI.test.tsx` (3 passed).
   - Verification Script: `eval/verify_export.py` Check 17 passed (verifying all 4 quality tiers and bandwidth/face yield properties).
-  - Empirical Quality Table (Measured live via `eval/measure_drive_quality.py` across all four tiers):
-    | Metric | Fast (`=s1000`) | Better (`=s1600`) | Best (`=s2000`) | Originals |
-    | :--- | :---: | :---: | :---: | :---: |
-    | Target Resolution (px) | 1000 px | 1600 px | 2000 px | Full (unscaled) |
-    | Bytes Downloaded | 2,357,971 | 5,484,335 | 7,730,635 | 46,293,482 |
-    | Bandwidth Reduction % | **94.9%** | **88.2%** | **83.3%** | 0.0% |
-    | Total Detected Faces | 100 | 98 | 96 | 97 |
-    | Faces < 64 px (Non-Seed) | 90 (90.0%) | 81 (82.7%) | 65 (67.7%) | 5 (5.2%) |
-    | Faces >= 64 px (Seed Eligible) | 10 (10.0%) | 17 (17.3%) | 31 (32.3%) | 92 (94.8%) |
-    | Seed Faces Formed | 2 | 4 | 14 | 49 |
-    | Attached Faces | 1 | 1 | 7 | 3 |
-    | Clustered Faces | 3 | 5 | 21 | 52 |
-    | People Clusters | 2 | 4 | 12 | 36 |
-    | Singletons | 1 | 3 | 8 | 28 |
-    | Unrecognized Faces | 97 | 93 | 75 | 45 |
-    | Unrecognized Photos | 15 | 15 | 15 | 14 |
-    | Invariant ($C + U = T$) | **PASS** ($3+97=100$) | **PASS** ($5+93=98$) | **PASS** ($21+75=96$) | **PASS** ($52+45=97$) |
+  - Raw Evidence Files: `scratch/check_drive_quality_259.txt` (`b3e17e984d92fd0ea1dce0504fb4dadf3fc143ee1d7cb554dd4aed6147d3da07`) and `scratch/check_drive_quality_259.json` (`44fcaadf9a42726352f41c1b8f5a45ea4463fe4f3a00c8ba3858a7904d63ca44`).
+
+  #### Headline Quality Benchmark Table (Full 259-Photo Google Drive Event Dataset)
+  Evaluated across all 259 supported image files from Google Drive event folder `<FOLDER_ID>` (`scratch/check_drive_quality_259.txt` / `scratch/check_drive_quality_259.json`):
+
+  | Metric | Fast (`=s1000`) | Better (`=s1600`) | Best (`=s2000`) | Originals |
+  | :--- | :---: | :---: | :---: | :---: |
+  | Target Resolution (px) | 1000 px | 1600 px | 2000 px | Full (unscaled) |
+  | Bytes Downloaded | 18,280,419 | 37,928,112 | 56,775,307 | 1,017,546,120 |
+  | Bandwidth Reduction % | **98.2%** | **96.3%** | **94.4%** | 0.0% |
+  | Total Detected Faces | 452 | 453 | 455 | 456 |
+  | Faces < 64 px (Non-Seed) | 257 (56.9%) | 115 (25.4%) | 70 (15.4%) | 0 (0.0%) |
+  | Faces >= 64 px (Seed Eligible) | 195 (43.1%) | 338 (74.6%) | 385 (84.6%) | 456 (100.0%) |
+  | Seed Faces Formed | 163 | 280 | 307 | 358 |
+  | Attached Faces | 82 | 47 | 42 | 28 |
+  | Clustered Faces | 245 | 327 | 349 | 386 |
+  | People Clusters | 22 | 33 | 37 | 46 |
+  | Singletons | 6 | 7 | 10 | 13 |
+  | Unrecognized Faces | 207 | 126 | 106 | 70 |
+  | Unrecognized Photos | 158 | 116 | 113 | 97 |
+  | Invariant ($C + U = T$) | **PASS** ($245+207=452$) | **PASS** ($327+126=453$) | **PASS** ($349+106=455$) | **PASS** ($386+70=456$) |
+
+  #### Small-Sample Benchmark Table (100-Face Sample across 15 photos from `<FOLDER_ID>`)
+  Evaluated across 15 representative group and portrait images from test Google Drive folder `<FOLDER_ID>` (`scratch/check_measure_drive_quality.txt` / `eval/drive_quality_evidence.json`):
+
+  | Metric | Fast (`=s1000`) | Better (`=s1600`) | Best (`=s2000`) | Originals |
+  | :--- | :---: | :---: | :---: | :---: |
+  | Target Resolution (px) | 1000 px | 1600 px | 2000 px | Full (unscaled) |
+  | Bytes Downloaded | 2,357,971 | 5,484,335 | 7,730,635 | 46,293,482 |
+  | Bandwidth Reduction % | **94.9%** | **88.2%** | **83.3%** | 0.0% |
+  | Total Detected Faces | 100 | 98 | 96 | 97 |
+  | Faces < 64 px (Non-Seed) | 90 (90.0%) | 81 (82.7%) | 65 (67.7%) | 5 (5.2%) |
+  | Faces >= 64 px (Seed Eligible) | 10 (10.0%) | 17 (17.3%) | 31 (32.3%) | 92 (94.8%) |
+  | Seed Faces Formed | 2 | 4 | 14 | 49 |
+  | Attached Faces | 1 | 1 | 7 | 3 |
+  | Clustered Faces | 3 | 5 | 21 | 52 |
+  | People Clusters | 2 | 4 | 12 | 36 |
+  | Singletons | 1 | 3 | 8 | 28 |
+  | Unrecognized Faces | 97 | 93 | 75 | 45 |
+  | Unrecognized Photos | 15 | 15 | 15 | 14 |
+  | Invariant ($C + U = T$) | **PASS** ($3+97=100$) | **PASS** ($5+93=98$) | **PASS** ($21+75=96$) | **PASS** ($52+45=97$) |
+
+  #### Dataset Verification & Detection Analysis (Counts Only)
+  1. **Is the Drive Folder the Same Photo Set as `test_photos`?**:
+     - **No**. Filename matches: **0 / 259** (0.0%). SHA-256 hash matches: **0 / 259** (0.0%). Drive MD5 matches: **0 / 259** (0.0%).
+     - The Drive folder is from an independent photoshoot / event with different subjects, different lighting, and a distinct camera origin.
+  2. **Why 456 Faces / 46 People Here vs Baseline's 1,701 Faces / 192 People?**:
+     - **Measured Cause**: Scene density differences between two entirely different photo collections.
+     - Baseline `test_photos`: 259 photos of dense social/collegiate event gatherings (averaging 6.57 detected faces per photo), yielding 1,701 total detected faces clustered into 192 people.
+     - Drive dataset: 259 photos of small groups and individual portraits (averaging 1.76 detected faces per photo), yielding 456 total detected faces clustered into 46 people.
+     - Both pipelines execute identical SPEC 6.2 clustering rules and thresholds (`min_face_size = 64`, `seed_min_face_size = 64`, `face_det_thresh = 0.50`).
+  3. **Per-Tier Cache Isolation & Seeding Proof**:
+     - Dedicated isolated directories: `scratch/bench_259_cache/fast/`, `scratch/bench_259_cache/better/`, `scratch/bench_259_cache/best/`, and `scratch/bench_259_cache/original/`.
+     - Intra-tier seeding: Pre-cached files were seeded strictly within the identical tier (`bench_150_cache/{tier}` -> `bench_259_cache/{tier}`); exactly 0 files were transferred across different tiers.
+     - Physical file distinction across tiers (measured on sample image `1-2cU8xVcryj4hppWQJarFyZFQqmVO...`):
+       - `fast`: 63,505 bytes, dimensions 563x1000 px
+       - `better`: 147,367 bytes, dimensions 900x1600 px
+       - `best`: 228,768 bytes, dimensions 1125x2000 px
+       - `original`: 3,526,232 bytes, dimensions 6000x3376 px
+     - Verified: Files in all four tiers are physically distinct files with different dimensions, bytes, and SHA-256 hashes. Zero tier results were copied from another tier.
+  4. **What Drives 452 -> 456 Detection Yield on the Full 259-Photo Set?**:
+     - **Measured Cause**: Resolution-dependent SCRFD face detection thresholding on distant group faces.
+     - In the 259-photo dataset, higher resolution resolves distant background faces:
+       - **+8 faces gained** across 7 photos in `best` (e.g., `DSC06823.JPG` 2 -> 3, `DSC06802.JPG` 0 -> 1) because higher resolution provided the pixel density required for SCRFD confidence to exceed the 0.50 threshold.
+       - **-5 faces dropped** across 5 photos (e.g., `DSC06974.JPG` 3 -> 2) as borderline low-contrast false detections cleared.
+       - **Net measured delta from fast to best**: +8 - 5 = +3 faces (452 -> 455), reaching 456 in `original`.
+     - *(Note: On the 15-photo small sample, the 100 -> 96 drop was driven exclusively by 3 HEIC files where 4 low-contrast compression artifacts dropped below 0.50 when resolved at higher resolutions).*
 
   - **Drive vs Local Deduplication & Hash Semantics**:
     - Photos are hashed via `backend/engine/scanner.py::compute_file_hash`, which computes a 16-hex prefix of the SHA-256 of the downloaded image file.
@@ -277,7 +327,7 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
 
 ---
 
-### Phase V2-7: Input Guidance
+## Phase V2-7: Input Guidance
 
 - **State**: **Done**
 - **Commit**: `95db8cd` ("feat(v2-7): input guidance, google photos detection, nested zips, and unsupported file reporting")
@@ -429,5 +479,7 @@ Every check cited in this report is backed by a verified, sanitized raw output f
 | `scratch/check_ci_run.json` | 14,765 | `5b4b1c749a5f79514368b96960bdb45afa60fd280c34996ec5f7d33b3ca14a3c` | GitHub Actions release.yml run 41794886232 dry_run=true (100% success across 4 platforms) |
 | `scratch/check_verify_exe_cold.txt` | 2,664 | `afd53cf59e07422344988bd644a43a9d552c684ff6d4f6ca26a14d5757c5ff4c` | Packaged cold exe 259-photo baseline run (192 people, 1701 faces, 28 maybe groups, 2027.69s) |
 | scratch/check_nested_drive.txt | 1,777 | da8c14f2e5211bf988f91a862c96d40a6262fd3eab99329e6751640c7bb4f582 | Nested Drive scan audit across 4 levels (1,065 files seen, 959 images, 87 videos skipped) |
-| scratch/check_measure_drive_quality.txt | 1,325 | a9d116b2c0433ef17bd5f4fea64d14c9e37c6c79b3f5b5b6adaf1e3bb1b32ae | Drive quality 4-tier live measurement (fast=94.9% bandwidth saving, all 4 tiers invariant exact) |
+| `scratch/check_measure_drive_quality.txt` | 1,325 | `ba9d116b2c0433ef17bd5f4fea64d14c9e37c6c79b3f5b5b6adaf1e3bb1b32ae` | Drive quality 4-tier live measurement (fast=94.9% bandwidth saving, all 4 tiers invariant exact) |
+| `scratch/check_drive_quality_259.txt` | 1,383 | `b3e17e984d92fd0ea1dce0504fb4dadf3fc143ee1d7cb554dd4aed6147d3da07` | Drive quality full 259-photo measurement across 4 tiers (headline benchmark, all invariants exact) |
+| `scratch/check_drive_quality_259.json` | 1,810 | `44fcaadf9a42726352f41c1b8f5a45ea4463fe4f3a00c8ba3858a7904d63ca44` | Drive quality full 259-photo structured measurement data |
 | `scratch/check_status_integrity.txt` | 1,686 | `0aa0506846e44f893023dce74ce76dcbf99d6c874e35252982b1d7f8a3b6ec39` | STATUS.md integrity audit script output (100% OK) |
