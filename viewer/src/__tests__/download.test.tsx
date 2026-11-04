@@ -203,10 +203,19 @@ describe('Local Streaming Zip Download Logic (downloadLocalZip)', () => {
     const progressCalls: Array<{ current: number; total: number }> = [];
     const controller = new AbortController();
 
-    // Mock fetch for image assets
-    vi.stubGlobal('fetch', vi.fn().mockImplementation(() =>
-      Promise.resolve(new Response(new Blob(['fake-jpg-content'], { type: 'image/jpeg' })))
-    ));
+    // Mock fetch for image assets with a standard ReadableStream body
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
+      const content = new TextEncoder().encode('fake-jpg-content');
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(content);
+          controller.close();
+        },
+      });
+      return Promise.resolve(new Response(stream, {
+        headers: { 'content-type': 'image/jpeg' },
+      }));
+    }));
 
     await downloadLocalZip(
       'Alice Wonderland',
@@ -358,9 +367,10 @@ describe('Mobile vs Desktop Size Guard Threshold Logic (isMobileClassBrowser, ch
   });
 
   it('defaults conservative (true) when navigator or userAgent is absent or unknown', () => {
-    expect(isMobileClassBrowser(undefined)).toBe(true);
+    expect(isMobileClassBrowser(null as any)).toBe(true);
     expect(isMobileClassBrowser({})).toBe(true);
     expect(isMobileClassBrowser({ userAgent: '' })).toBe(true);
+    expect(isMobileClassBrowser({ userAgent: 'unknown-crawler' })).toBe(true);
   });
 
   it('identifies unconstrained desktop browser with > 4 GB memory', () => {
