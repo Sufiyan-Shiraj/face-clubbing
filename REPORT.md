@@ -1,5 +1,8 @@
 # CatLog Final Verification & Release Candidate Report
 
+> [!NOTE]
+> **V2 Milestone Report Available**: For the comprehensive audit, verification, and architecture report covering V2 milestones (Phases V2-0 through V2-9), see [V2_REPORT.md](V2_REPORT.md). This document contains the historical V1 release candidate report.
+
 **Date**: 2026-10-20  
 **Project**: CatLog — Who was at the event? (`face-clubbing`)  
 **Status**: Release Candidate Ready (Final Pre-Tag Pass Complete). All Phases Complete: Phase 1 & 1b Engine Core, Phase 2 Static Viewer, Phase 3 FastAPI Layer, Phase 4 Organizer UI (React 19), Phase 5 Desktop Shell & Onedir Packaging (185 MB ZIP, 1.60s Cold Start), Phase 6 Google Drive Integration, Phase 6b Risograph Redesign, Phase 7 Multi-Platform Release Automation, Open Saved Project Feature, Full Resolution ZIP Downloads with Download Honesty & Size Guard, 11-Step Interactive Spotlight Tour, Standalone HTML Gallery, Tactile Custom Scrollbars, Custom Modal Dialogs (Errors & Active Project Guards), Minimum 12px Font Accessibility & WCAG 2.1 AA Contrast Enforced, Full Suite Reconciliation (Pytest 100/100, Frontend Vitest 82/82, Viewer Vitest 26/26, Export Invariants 15/15, UI Rules 3/3, 208 Total Tests Passing).

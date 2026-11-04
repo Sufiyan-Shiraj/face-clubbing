@@ -2,6 +2,8 @@
 
 > Working name: **PhotoSorter** (rename freely). This file is the single source of truth for what we are building and why. Read it fully before writing any code. See `BUILD_PLAN.md` for the build order.
 >
+> **Revision 4 (2026-11-04).** V2 milestones incorporated: Drive recursive subfolder traversal (BFS depth 5, 20k cap), manifest v2 multi-source data model, incremental source addition with frozen mode invariants, two-project merger with order-independent edit combination, mixed-source export hygiene, Drive image quality presets (fast/better/best/original), cloud input guidance (Google Photos notice, nested zip extraction), and selective engine module loading.
+>
 > **Revision 3 (2026-10-13).** Method 2 (upload to Drive, OAuth) and the credential-storage section removed; no Google sign-in anywhere. Public bundle definition and standalone gallery recorded in decision 20.
 >
 > **Revision 2 (2026-10-06).** Updated after Phase 0/1 acceptance and three fix-up rounds on a real 271-file test set. Sections 3, 6, 8, 9, 16 and 17 changed materially; section 18 (evaluation) is new. Anything marked **[measured]** comes from that test set. Anything marked **[default]** is a configurable starting value, not a law.
@@ -124,6 +126,7 @@ A free, general-purpose tool that takes an event's photos, groups them **by pers
 | `flip_average` | false | Gated, section 18 |
 | `include_maybe` | false | Show maybe photos in the public viewer |
 | `thumb_size` / `face_crop_size` | 400 / 256 | |
+| `drive_quality` | **"fast"** | Drive image quality preset (`fast` [1000px], `better` [1600px], `best` [2000px], `original` [0/full]); see §18.1 |
 
 Changing any default requires the evidence table described in section 18.
 
@@ -141,6 +144,23 @@ Cluster IDs (`p001`...) are **display labels assigned at export time and are not
 - After any engine re-run, edits are **replayed** by locating the clusters that contain the anchor faces. An edit whose anchors can no longer be located is reported to the organizer, never silently dropped.
 - Cluster IDs are assigned deterministically (photo count descending, ties broken by best-face ID) so exports are diffable.
 - `id_map.json` (pre-merge to final) is a debugging aid only.
+
+#### 6.3.1 Incremental Source Ingestion & Frozen Mode Invariants (V2-3)
+When adding new sources to an existing project:
+1. **Existing Cluster Invariance:** Existing clusters are frozen. The membership delta of existing clusters is strictly zero. Existing people cannot lose faces, gain faces from other existing people, or be merged together.
+2. **Face Attachment:** New faces attach to existing clusters only if distance <= `attach_distance_cap` (0.45) and margin >= `attach_margin` (0.05). Otherwise, new faces seed new clusters among themselves.
+3. **Second-Pass Merge Limitation:** Second-pass auto-merges operate strictly between newly formed clusters. A new cluster may never auto-merge with an existing frozen cluster.
+4. **Pre-mutation Atomic Rollback Snapshot:** Before modifying `people.json`, `manifest.json`, or `edits.json`, the engine creates an atomic snapshot in `.snapshots/<timestamp>/` containing verified backups of state files, enabling single-click rollback.
+5. **Deduplication:** Photos are deduplicated across sources by SHA-256 (and md5Checksum for Drive). Duplicate photos are skipped and attributed to their primary source.
+
+#### 6.3.2 Two-Project Merger Rules (V2-4)
+When merging Project A and Project B:
+1. **New Project Creation & Parent Immutability:** Merging produces a new, distinct project directory. Original projects A and B remain strictly untouched and immutable.
+2. **Settings Compatibility:** Both projects must have identical `EngineConfig` settings hashes (distance_threshold, detector floors, etc.). Projects with mismatched settings cannot be merged without a re-detect prompt.
+3. **Photo & Cache Union:** Photos and face caches are unioned by photo ID and SHA-256.
+4. **Cluster Unification via DisjointSet:** Clusters sharing identical face IDs or explicit merge anchors are combined using a DisjointSet data structure.
+5. **Order-Independent Edit Combination:** Edits (`merge`, `assign`, `remove`, `name`, `hide`) from both projects are combined. Commutativity holds: Merge(A, B) produces the exact same clustering result as Merge(B, A).
+6. **Conflict Detection & Review:** If Project A and Project B specify conflicting names for the same person, or if one project assigns a face that the other removes, the merge records an explicit conflict in `conflicts` and presents it to the organizer in a conflict resolution UI. Conflicts are never silently resolved.
 
 ### 6.4 Behavior requirements
 
@@ -165,6 +185,21 @@ Automatic clustering is deliberately conservative: it avoids wrong merges and ac
 ## 7. Input methods
 
 ### Method 1: Drive link (read-only), NO Google sign-in
+
+#### 7.1 Recursive Subfolder Traversal (V2-0)
+The Google Drive client traverses folders recursively using an iterative Breadth-First Search (BFS) queue:
+- **Depth Limit:** Maximum folder recursion depth of 5 levels.
+- **File Cap:** Traversal cap of 20,000 files per scan.
+- **Cycle Prevention:** A visited folder ID set prevents infinite loops caused by circular shortcuts or parent-child loops.
+- **MIME Type Filtering:** Only image MIME types (`image/jpeg`, `image/png`, `image/webp`, `image/heic`, etc.) and folder MIME types (`application/vnd.google-apps.folder`) are enqueued. Third-party shortcuts are resolved to target folder IDs.
+- **Resilient Error Isolation:** If an unreadable subfolder fails (permissions error, 404, or 403), the error is logged in scan diagnostics, and the BFS continues scanning sibling and parent directories without aborting the job.
+- **Telemetry:** Live progress broadcasts report folder count, discovered images, and failed folders.
+
+#### 7.2 Input Guidance & Unsupported Sources (V2-7)
+- **Google Photos Warning:** Google Photos album URLs (`photos.google.com`, `photos.app.goo.gl`) cannot be read via the Google Drive API due to Google's March 2025 Library API restrictions. The UI detects these links and directs organizers to use Google Takeout / Album ZIP download or move photos into Google Drive.
+- **Other Cloud Links:** OneDrive, Dropbox, Box, and iCloud links are detected and rejected with specific step-by-step export instructions.
+- **Nested Archive Extraction:** Local folder scanning automatically inspects `.zip` archives recursively up to 3 levels deep (supporting WhatsApp Media zips, backup folders).
+- **Unsupported File Auditing:** Non-image files encountered during scanning are recorded by count and extension breakdown in `manifest.json` under `unsupported_files`.
 - Folder must be shared "anyone with the link."
 - Use the Drive API with a **free API key** (not a login, not tied to a person). Users paste their own key in Settings; optionally a bundled default can be added later.
 - List files in the folder with recursive subfolder traversal:
@@ -189,6 +224,35 @@ Automatic clustering is deliberately conservative: it avoids wrong merges and ac
 Upload to Drive is **not** built (removed in rev 3). The supported workflow: the organizer drags the folder into Drive in the browser, makes it "anyone with the link", and runs Method 1 on that folder link. Document this in the README.
 
 ## 8. Export bundle (the contract between engine and viewer)
+
+### 8.0 Project Manifest v2 (Data Model & Multi-Source Provenance)
+Every project maintains a `manifest.json` at its root with schema version 2:
+```json
+{
+  "schema_version": 2,
+  "created_at": "2026-11-04T00:00:00Z",
+  "settings_hash": "4a9b...",
+  "sources": [
+    {
+      "id": "src_01j...",
+      "kind": "drive",
+      "label": "Main Event Folder",
+      "path_or_url": "https://drive.google.com/drive/folders/...",
+      "quality": "fast",
+      "added_at": "2026-11-04T00:00:00Z",
+      "photo_count": 259,
+      "face_count": 1701
+    }
+  ],
+  "unsupported_files": {
+    "count": 0,
+    "extensions": {}
+  }
+}
+```
+- **Source Kinds:** `drive`, `local`, `zip`, `project` (from a merger).
+- **Photo Attribution:** Every photo in `people.json` retains a `source_id` referencing its origin source and an optional `album` label derived from its subfolder path.
+- **Backward Compatibility:** v1 projects without `manifest.json` are transparently migrated upon load by creating a v2 manifest with a single synthetic `legacy` source.
 
 ### 8.1 Public bundle (this is what gets published)
 
@@ -427,6 +491,16 @@ On Linux create the venv with `--system-site-packages` so pywebview sees the sys
 19. **(rev 2 Phase 1b)** Work directory separation and face-ID verification: the public bundle (`export/`) strictly isolates viewer deliverables (`config.json`, `people.json`, `faces/`, `thumbs/`), while organizer artifacts (`suggestions.json`, `id_map.json`, `edits.json`) and embedding cache reside exclusively in `export.work/`. Verification scripts and test suites strictly forbid hardcoded cluster IDs (`\bp\d{3}\b`) outside comments, referencing faces and photos solely via canonical face IDs and photo IDs with allowlists located in `eval/ground_truth.json`.
 20. **(rev 2 Phase 2/Hygiene)** Public bundle definition and standalone HTML gallery: The public bundle consists of `config.json`, `people.json`, `faces/`, `thumbs/`, plus the optional viewer build (`index.html`, `assets/`) and standalone zero-server `gallery.html`. Organizer-only files (`suggestions.json`, `edits.json`, `id_map.json`, `.cache/`) are strictly forbidden and fail verification checks. The standalone HTML gallery (`gallery.html`) is self-contained with no local or web server required, opening directly via `file://`, rendering all people and thumbnails with photo reachability, and showing or hiding download links per `config.json`.
 21. **(rev 3, 2026-10-13)** Method 2 / Phase 8 removed: no upload to Drive, no OAuth, no credential storage. Drive remains read-only via an API key (Phase 6). Organizers upload originals to Drive manually if they want download links.
+22. **(rev 4, Phase V2-0)** Google Drive recursive BFS traversal: depth limit 5, 20k file limit, visited set loop prevention, non-fatal subfolder error isolation.
+23. **(rev 4, Phase V2-1)** Release health and diagnostics: counts-only diagnostics report scrubbing all paths, keys, photos, and biometric data; classified `ERR_` error taxonomy with plain-language fixes.
+24. **(rev 4, Phase V2-2)** Manifest v2 and multi-source organization: `sources` array with kind/quality/counts, photo-level source attribution, SHA-256 cross-source deduplication, and `#source-filter-select` UI filtering.
+25. **(rev 4, Phase V2-3)** Incremental source addition: frozen mode invariants (existing clusters membership delta strictly 0), new faces attach or seed new clusters, atomic pre-mutation rollback snapshots in `.snapshots/`.
+26. **(rev 4, Phase V2-4)** Two-project merger: produces a new distinct project with immutable parent sources, settings hash equality requirement, order-independent DisjointSet edit union, and explicit conflict detection for naming/removal collisions.
+27. **(rev 4, Phase V2-5)** Mixed-source export and viewer performance: per-photo download link synthesis (Drive export URLs or null for local), album subfolder extraction, album filter tabs, and windowed virtualized grid rendering for 1000+ photo collections.
+28. **(rev 4, Phase V2-6)** Drive image quality presets: four presets (`fast`=1000, `better`=1600, `best`=2000, `original`=0) preserving SPEC 6.2 defaults while yielding up to 7x face recovery on best.
+29. **(rev 4, Phase V2-7)** Input guidance and nested archives: Google Photos URL detection with March 2025 API explanation, cloud service guidance, recursive 3-level zip extraction, and unsupported file tracking.
+30. **(rev 4, Phase V2-8)** Distribution architecture: Windows Inno Setup script with onedir distribution, offline-safe GitHub Releases update check endpoint (`/api/app/check-update`), and model download HTTP Range resume.
+31. **(rev 4, Phase V2-9)** Selective engine module loading: FaceDetector loads only `detection`, `recognition`, and `landmark_3d_68` models, skipping unused `landmark_2d_106` and `genderage` models, speeding initialization by 54.9% while keeping baseline clustering 100% bit-for-bit exact.
 
 ## 18. Evaluation and ground truth
 
