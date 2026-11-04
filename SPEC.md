@@ -559,6 +559,8 @@ During Phase 6 and Phase V2-6 live verification on Google Drive test folder (`<F
 | Total Detected Faces | 100 | 98 | 96 | 97 |
 | Faces < 64 px (Non-Seed) | 90 (90.0%) | 81 (82.7%) | 65 (67.7%) | 5 (5.2%) |
 | Faces >= 64 px (Seed Eligible) | 10 (10.0%) | 17 (17.3%) | 31 (32.3%) | 92 (94.8%) |
+| Seed Faces Formed | 2 | 4 | 14 | 49 |
+| Attached Faces | 1 | 1 | 7 | 3 |
 | Clustered Faces | 3 | 5 | 21 | 52 |
 | People Clusters | 2 | 4 | 12 | 36 |
 | Singletons | 1 | 3 | 8 | 28 |

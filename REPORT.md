@@ -546,7 +546,7 @@ Because an authenticated remote deploy token / GitHub Actions secret is not conf
    cd viewer
    npm run build
    cp -r ../export/* dist/
-   npx wrangler pages deploy dist --project-name photosorter-viewer
+   npx wrangler pages deploy dist --project-name catlog
    ```
 
 #### 15.3.3 Task 1c: Config Swap Vitest Test Output

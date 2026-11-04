@@ -180,8 +180,8 @@ def run_measurement(
         singletons = sum(1 for p in people if len(p.photo_ids) == 1)
         people_clusters = len(people)
         unrec_photos = len(unrec.photo_ids)
-        seeds_count = clusterer.stats.get("seeds_count", 0)
-        attached_count = clusterer.stats.get("attached_count", 0)
+        seeds_count = clusterer.stats.get("seed_faces", 0)
+        attached_count = clusterer.stats.get("attached_faces", 0)
         elapsed = time.time() - t0
 
         results[tier_name] = {

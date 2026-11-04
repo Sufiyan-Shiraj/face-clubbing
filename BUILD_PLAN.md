@@ -88,7 +88,7 @@ Accepted result on the test set: 192 people (81 single-photo), 445 Unrecognized 
 5. Download button per photo (hidden when `download` is null).
 6. Theming from `config.json` (title, logo, accent, font, footer).
 7. Mobile-first responsive layout.
-8. Deploy test to GitHub Pages or Cloudflare Pages using a Phase 1b bundle.
+8. Deploy test to GitHub Pages or Cloudflare Pages (`npx wrangler pages deploy dist --project-name catlog`) using a Phase 1b bundle.
 9. **Standalone HTML gallery (`gallery.html`):** Single-file zero-server gallery embedded in the public bundle. Works purely via `file://` protocol with no local or web server required. Relative paths for thumbnails and face crops. Full photo reachability across all people and unrecognized photos. Download links dynamically rendered or hidden per `config.json`.
 10. **Standalone gallery verification:** Automated verification opening `gallery.html` with no server, asserting every photo reachable and download links present or hidden per config.
 

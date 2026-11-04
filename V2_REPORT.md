@@ -258,6 +258,8 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
     | Total Detected Faces | 100 | 98 | 96 | 97 |
     | Faces < 64 px (Non-Seed) | 90 (90.0%) | 81 (82.7%) | 65 (67.7%) | 5 (5.2%) |
     | Faces >= 64 px (Seed Eligible) | 10 (10.0%) | 17 (17.3%) | 31 (32.3%) | 92 (94.8%) |
+    | Seed Faces Formed | 2 | 4 | 14 | 49 |
+    | Attached Faces | 1 | 1 | 7 | 3 |
     | Clustered Faces | 3 | 5 | 21 | 52 |
     | People Clusters | 2 | 4 | 12 | 36 |
     | Singletons | 1 | 3 | 8 | 28 |
@@ -426,6 +428,6 @@ Every check cited in this report is backed by a verified, sanitized raw output f
 | `scratch/check_v2_suites.txt` | 187 | `47b1a09017fe268ad56e7be8958fcc828cf0d8924b27c853a013d4b02b0a1a0b` | V2 core feature suites (105 passed in 22.18s across 10 test suites) |
 | `scratch/check_ci_run.json` | 14,765 | `a7e8c6a8c032f4580a7265936acb66037c91096df2da3fd936e7a1fd2e275348` | GitHub Actions release.yml run 41769578829 dry_run=true (100% success across 4 platforms) |
 | `scratch/check_verify_exe_cold.txt` | 2,664 | `afd53cf59e07422344988bd644a43a9d552c684ff6d4f6ca26a14d5757c5ff4c` | Packaged cold exe 259-photo baseline run (192 people, 1701 faces, 28 maybe groups, 2027.69s) |
-| `scratch/check_nested_drive.txt` | 1,803 | `67c5a5adfc7a338fbb9dbe8d73df4a21584f6dbdfe8f8fe7f5ca43a7ce202735` | Nested Drive scan audit across 4 levels (1,065 files seen, 959 images, 87 non-images skipped) |
-| `scratch/check_measure_drive_quality.txt` | 1,371 | `a0d434c6b6b7c859a8b1eab05c960746d554e08a69f2b2a798c2c639601bfbc0` | Drive quality 4-tier live measurement (fast=94.9% bandwidth saving, all 4 tiers invariant exact) |
+| scratch/check_nested_drive.txt | 1,777 | da8c14f2e5211bf988f91a862c96d40a6262fd3eab99329e6751640c7bb4f582 | Nested Drive scan audit across 4 levels (1,065 files seen, 959 images, 87 videos skipped) |
+| scratch/check_measure_drive_quality.txt | 1,325 | a9d116b2c0433ef17bd5f4fea64d14c9e37c6c79b3f5b5b6adaf1e3bb1b32ae | Drive quality 4-tier live measurement (fast=94.9% bandwidth saving, all 4 tiers invariant exact) |
 | `scratch/check_status_integrity.txt` | 1,686 | `0aa0506846e44f893023dce74ce76dcbf99d6c874e35252982b1d7f8a3b6ec39` | STATUS.md integrity audit script output (100% OK) |

@@ -302,17 +302,17 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 
 ### Check S: Nested Google Drive Scan Audit (`scratch/run_nested_drive_test.py`)
 - **Source File**: `scratch/check_nested_drive.txt`
-- **SHA-256 Digest**: `67c5a5adfc7a338fbb9dbe8d73df4a21584f6dbdfe8f8fe7f5ca43a7ce202735`
+- **SHA-256 Digest**: `da8c14f2e5211bf988f91a862c96d40a6262fd3eab99329e6751640c7bb4f582`
 - **Summary**: Real nested Google Drive event folder traversed across 4 levels (0-3):
   - Total Files Seen: 1,065
   - Images Imported: 959
   - Folders Scanned: 20 (19 subfolders traversed)
-  - Non-Images / Videos Skipped: 87
+  - Videos Skipped: 87 (Other Non-Images: 0)
   - Shortcuts Skipped: 0
 
 ### Check T: Drive Image Quality 4-Tier Measurement (`eval/measure_drive_quality.py`)
 - **Source File**: `scratch/check_measure_drive_quality.txt`
-- **SHA-256 Digest**: `a0d434c6b6b7c859a8b1eab05c960746d554e08a69f2b2a798c2c639601bfbc0`
+- **SHA-256 Digest**: `ba9d116b2c0433ef17bd5f4fea64d14c9e37c6c79b3f5b5b6adaf1e3bb1b32ae`
 - **Summary**: All four quality tiers measured live against same Google Drive event photos:
   - Fast (`=s1000`): 2,357,971 bytes (**94.9% bandwidth reduction**), Invariant $3 + 97 = 100$ (PASS)
   - Better (`=s1600`): 5,484,335 bytes (88.2% reduction), Invariant $5 + 93 = 98$ (PASS)
