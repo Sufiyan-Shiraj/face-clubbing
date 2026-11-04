@@ -36,7 +36,7 @@ if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
 DEFAULT_EVIDENCE_PATH = repo_root / "eval" / "drive_quality_evidence.json"
-DEFAULT_TEST_FOLDER_ID = "1hrKfZacNX7T9H6pNLegJVpPev1PG-khG"
+DEFAULT_TEST_FOLDER_ID = "105Q9voNju18JQd530XNJAQ5R_VySJgWw"
 
 
 def format_markdown_table(data: Dict[str, Dict[str, Any]]) -> str:
@@ -114,10 +114,11 @@ def run_measurement(
         raise RuntimeError("No Google Drive API key found for live measurement.")
 
     client = DriveClient(api_key=api_key)
-    list_res = client.list_folder_images(folder_id)
-    files = list_res.files[:sample_size]
+    list_res = client.list_folder_images(folder_id, recursive=True)
+    supported_exts = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
+    files = [f for f in list_res.files if Path(f.name).suffix.lower() in supported_exts][:sample_size]
 
-    cache_dir = cache_base or (repo_root / "scratch" / "bench_cache")
+    cache_dir = cache_base or (repo_root / "scratch" / f"bench_{sample_size}_cache" if sample_size > 50 else (repo_root / "scratch" / "bench_cache"))
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     loader = ImageLoader()
@@ -137,19 +138,42 @@ def run_measurement(
         tier_cache = cache_dir / tier_name
         tier_cache.mkdir(parents=True, exist_ok=True)
 
-        downloaded = client.download_thumbnails(
-            files,
-            cache_dir=tier_cache,
-            quality=tier_name,
-            target_size=target_size,
-            max_workers=4,
-        )
+        downloaded = []
+        try:
+            downloaded = client.download_thumbnails(
+                files,
+                cache_dir=tier_cache,
+                quality=tier_name,
+                target_size=target_size,
+                max_workers=4,
+            )
+        except Exception:
+            pass
 
-        total_bytes = sum(tp.stat().st_size for _, tp in downloaded)
+        import re
+        final_downloaded = []
+        for df in files:
+            safe_name = re.sub(r'[^\w\.-]', '_', df.name)
+            target_path = tier_cache / f"{df.id}_{safe_name}"
+            if target_path.exists() and target_path.stat().st_size > 100:
+                final_downloaded.append((df, target_path))
+            else:
+                if df.thumbnail_link:
+                    s_link = df.thumbnail_link.replace("=s220", f"=s{target_size}")
+                    resp = client._request_with_retry("GET", s_link, timeout=40)
+                    if resp.status_code == 200 and len(resp.content) > 100:
+                        target_path.write_bytes(resp.content)
+                        final_downloaded.append((df, target_path))
+                        time.sleep(0.1)
+
+        total_bytes = sum(tp.stat().st_size for _, tp in final_downloaded)
 
         photos_dict = {}
-        for idx, (df, target_path) in enumerate(downloaded):
-            rgb_arr, orig_w, orig_h, _ = loader.load_image(target_path)
+        for idx, (df, target_path) in enumerate(final_downloaded):
+            try:
+                rgb_arr, orig_w, orig_h, _ = loader.load_image(target_path)
+            except Exception:
+                continue
             photo_id = f"p_{idx+1:03d}_{tier_name}"
             detections = detector.detect_and_embed(rgb_arr, photo_id)
             photos_dict[photo_id] = PhotoRecord(
