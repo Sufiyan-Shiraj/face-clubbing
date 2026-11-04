@@ -33,7 +33,7 @@ class FaceDetector:
         self.model_name = model_name
         if model_root is None:
             # SPEC section 9 & 13: Models stored under ~/.photosorter/models
-            model_root = str(Path.home() / ".photosorter")
+            model_root = str(Path.home() / ".catlog")
         self.model_root = model_root
         self.det_size = det_size
         self.min_det_score = min_det_score

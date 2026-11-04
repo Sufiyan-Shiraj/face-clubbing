@@ -352,8 +352,8 @@ class ModelStatusResponse(BaseModel):
     missing_files: List[str] = Field(default_factory=list)
     installed_files: List[str] = Field(default_factory=list)
     total_size_bytes: int = 0
-    version: str = "1.0.0"
-    latest_version: str = "1.0.0"
+    version: Optional[str] = None
+    latest_version: Optional[str] = "1.0.0"
     update_available: bool = False
     update_message: Optional[str] = None
     is_downloading: bool = False

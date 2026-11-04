@@ -220,7 +220,7 @@ def ensure_model_available(
     4. Downloads archive to .part file using HTTP Range resume, trying primary and backup mirrors.
     5. Verifies archive size and contents before atomic finalization.
     """
-    root_p = Path(model_root or (Path.home() / ".photosorter")).resolve()
+    root_p = Path(model_root or (Path.home() / ".catlog")).resolve()
     target_dir = root_p / "models" / model_name
     models_parent = target_dir.parent
     models_parent.mkdir(parents=True, exist_ok=True)
@@ -371,7 +371,7 @@ def ensure_model_available(
 
 def get_model_target_dir(model_name: str = "buffalo_l", model_root: Optional[str | Path] = None) -> Path:
     """Returns canonical storage directory for model weights."""
-    root_p = Path(model_root or (Path.home() / ".photosorter")).resolve()
+    root_p = Path(model_root or (Path.home() / ".catlog")).resolve()
     return root_p / "models" / model_name
 
 
