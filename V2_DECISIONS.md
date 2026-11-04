@@ -46,7 +46,7 @@
   2. New faces attach to existing clusters if distance <= 0.45, or form new clusters.
   3. Second-pass auto-merge is restricted strictly to new-to-new clusters.
 - **Alternative Rejected**: Re-clustering all photos from scratch, which changes cluster IDs and invalidates manual names and triage.
-- **Organizer Confirmation**: Approved as the safest workflow for event organizers.
+- **Organizer Confirmation**: Pending organizer decision — Confirm whether mathematical cluster freezing is the preferred workflow for late arrivals.
 
 ### D-V2-08: Merge Conflict Resolution (Phase V2-4)
 - **Context**: Merging Project A and Project B when both projects have assigned different names to the same person, or when one project assigned a face that the other removed.

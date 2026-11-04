@@ -13,13 +13,18 @@
 - **`git rev-parse --show-toplevel`**: `<REPO_ROOT>`
 
 ### Git State
-- **HEAD Commit**: `bc50eac14143d9a16ad32f470dd9191901221a0b`
+- **HEAD Commit**: `0fa6152a5c4046d3e85f43db489e81d77cb31c3b`
 - **`git status -sb`**:
   ```text
   ## main...origin/main [ahead 2]
   ```
 - **`git log --oneline -40`**:
   ```text
+  0fa6152 fix(eval): handle absent cache in Check 10 in clean checkouts
+  0e41f94 fix(viewer): standardize ReadableStream mock for zip tests and sanitize environment test
+  cb4cc6b ci: upgrade setup-node to Node.js 22 to fix undici webidl compatibility
+  77be2ce fix(models): make ModelStatusResponse version optional and fix .photosorter to .catlog migration paths
+  07382c0 fix(ci): fix frontend TypeScript errors, add viewer tailwind dependencies, and prevent nested pytest execution
   bc50eac test(eval): fix verify_api manifest hygiene, verify_exe cache filter, and compare_startups paths
   aa59554 fix(client): wrap check-update endpoint path in string literal
   bb84e70 feat(v2-9): engine speed profiling, selective module loading, and baseline verification
@@ -86,7 +91,7 @@
 | Phase | State | Commit Hash | Key Files / Modules | Verification Summary |
 | :--- | :--- | :--- | :--- | :--- |
 | **V2-0 Drive Subfolder Recursion** | Done | `11e7607` | `backend/drive/client.py`, `backend/engine/pipeline.py`, `backend/api/jobs.py` | BFS traversal (depth 5, 20k file cap, loop prevention, resilient subfolder error isolation). 39/39 Drive tests pass. |
-| **V2-1 Release Health & First-User Fixes** | Done | `bca08de` | `backend/api/diagnostics.py`, `frontend/src/components/CopyDiagnosticsButton.tsx`, `backend/engine/models_downloader.py` | Counts-only diagnostics report scrubbing all paths/keys/faces; classified `ERR_` codes with remedies; model verification. 12/12 diagnostics tests pass. |
+| **V2-1 Release Health & First-User Fixes** | Done | `bca08de` | `backend/api/diagnostics.py`, `frontend/src/components/CopyDiagnosticsButton.tsx`, `backend/engine/models_downloader.py` | Counts-only diagnostics report scrubbing all paths/keys/faces; classified `ERR_` codes with remedies; model verification; release.yml multi-platform CI 100% green across 4 platforms (run 41769578829). 12/12 diagnostics tests pass. |
 | **V2-2 Multi-Source Scan & Organization** | Done | `3fd10e0` | `backend/engine/models.py`, `scanner.py`, `pipeline.py`, `backend/api/models.py`, `routes.py`, `state.py` | Manifest v2 schema with `sources` array, per-source provenance, cross-source SHA-256 dedupe, `#source-filter-select`. 8/8 multi-source tests pass. |
 | **V2-3 Add Source to Existing Project** | Done | `351920f` | `backend/engine/snapshots.py`, `clusterer.py`, `pipeline.py`, `frontend/src/components/AddSourceModal.tsx` | Incremental ingestion with frozen mode invariants (0 existing cluster delta), rollback snapshots in `.snapshots/`. 8/8 incremental tests pass. |
 | **V2-4 Merge Two Projects** | Done | `bba2c67` | `backend/engine/merger.py`, `backend/api/state.py`, `routes.py`, `frontend/src/components/MergeProjectsModal.tsx` | Creates new project, parents immutable, settings hash verification, DisjointSet anchor merge, conflict review UI. 6/6 merger tests pass. |
@@ -102,7 +107,7 @@
 
 ### Check A: `pytest -q -rs` (Full Committed Suite)
 - **Source File**: `scratch/check_a_pytest.txt`
-- **SHA-256 Digest**: `39642657ca753d4bb8a7fabcd5c02b6aaed5504ca16f979554b50876069d8f1f`
+- **SHA-256 Digest**: `f65d6e045c75622fabfbdef912edc7d29229e453985d6a7ece470a4fd35c0233`
 - **Summary**: 173 passed, 2 warnings in 889.76s across 23 test files
 ```text
 ........................................................................ [ 41%]
@@ -113,7 +118,7 @@
 
 ### Check B: `python eval/verify_export.py` (Phase 1b Verification Audit)
 - **Source File**: `scratch/check_b_verify_export.txt`
-- **SHA-256 Digest**: `90488f7afa0b14ce3980cb56448eb4924eeba4e05af62b50fe6cd6a528b25742`
+- **SHA-256 Digest**: `0e9bd344f45619d8b29e6a9d4964db6d9f6a623aabf819c0b6debcff417940f1`
 - **Summary**: 17/17 checks passed
 ```text
 [PASS] Check 1: Output directory contains exactly the expected set of files
@@ -138,7 +143,7 @@ OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (17/17 CHECKS & TABLES VERIFIED)
 
 ### Check C: `python eval/verify_api.py --mode all` (Phase 3 FastAPI Layer Verification)
 - **Source File**: `scratch/check_c_verify_api.txt`
-- **SHA-256 Digest**: `9328228a918c0f7c4a1d172377969c58a6c4a89769fbf0c9fc15644ca2544520`
+- **SHA-256 Digest**: `3c98c61cb72cb9e103ba712c2f9c7a957fcb17d18f8852907b3a3646b43a54e7`
 - **Summary**: All 8 fixture checks and all 7 live export metrics passed
 ```text
 [PASS] People count: 192 (matched REPORT.md: 192)
@@ -158,7 +163,7 @@ LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
 
 ### Check D1: `npm test` in `frontend/` (Frontend Vitest Suite)
 - **Source File**: `scratch/check_d1_vitest_frontend.txt`
-- **SHA-256 Digest**: `30d89014e52116240d22164328b7303dd091dd915035eefd91048dcb7f77a272`
+- **SHA-256 Digest**: `8305e0790bb3e1c03719b1ab75332e33921a8ac2f587cc1d91be9aff65093ef3`
 - **Summary**: 136 passed across 24 test files in 187.47s
 ```text
  Test Files  24 passed (24)
@@ -168,7 +173,7 @@ LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
 
 ### Check D2: `npm test` in `viewer/` (Static Viewer Vitest Suite)
 - **Source File**: `scratch/check_d2_vitest_viewer.txt`
-- **SHA-256 Digest**: `cdc26624ebd7300286d115a9858cd32ce89e1144c4cc71cd66230fc758e4b751`
+- **SHA-256 Digest**: `d398e337078d687fc17b7532cb4134cff71bc7fcdd54b33171ed0923a493565e`
 - **Summary**: 31 passed across 3 test files in 22.70s
 ```text
  Test Files  3 passed (3)
@@ -183,7 +188,7 @@ LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
 
 ### Check F: `python eval/check_baseline.py` (Pinned Baseline Fixture Verification)
 - **Source File**: `scratch/check_baseline.txt`
-- **SHA-256 Digest**: `fb46d19d9a9258e665c64c249ceb2073597123e674444274646ff016702d27e8`
+- **SHA-256 Digest**: `8cc1482119bc38c719a0dbc1cfc219839e65a81ae86a71272249f9602ea65387`
 - **Summary**: Baseline 192 people, 445 unrecognized faces, 168 unrecognized photos, 259 photos, 1256 clustered + 445 unrec = 1701 total
 ```text
 [PASS] People clusters: 192 == 192
@@ -204,17 +209,17 @@ ALL CANONICAL BASELINE METRICS VERIFIED (100% OK)
 
 ### Check G: `python eval/verify_windowed.py` (Windowed Launch Automation)
 - **Source File**: `scratch/check_verify_windowed.txt`
-- **SHA-256 Digest**: `143368e95f8ecada2232ce5fe9638f54c51163aa83c42e03ea6f1e2602e07567`
+- **SHA-256 Digest**: `d28c7f145d8db23ba432b66c9569bdbe0aa465f570ca9838a51eef8cdf33416f`
 - **Summary**: Subsystem 2 GUI execution confirmed, zero console window, window title "CatLog", clean WM_CLOSE port release.
 
 ### Check H: `python eval/verify_exe.py` (Standalone Executable Verification)
 - **Source File**: `scratch/check_verify_exe.txt`
-- **SHA-256 Digest**: `cb9af42b71c361286c49d36b0ecf9f3293e36c5af9835ea4da64d79117feef7f`
+- **SHA-256 Digest**: `03d08f4db17260cc1e3a925d89f829bd22bf847f394d2317c328d3a034ec2509`
 - **Summary**: Onedir binary online in 1.60s, cold run completes in 22.20s, produces exact baseline: 192 clusters, 445 unrec faces, 168 unrec photos, 259 photos, clean bundle hygiene.
 
 ### Check I: Cold Engine Regression (`tests/test_engine_cold_regression.py`)
 - **Source File**: `scratch/check_cold_regression.txt`
-- **SHA-256 Digest**: `d76425fae72f45df86a3d2d7cb54ce1e7e2e3408c190ef39e054a06667e34552`
+- **SHA-256 Digest**: `5d1983ccf28988ca5ccb953b655346fcd4c9bf8b352c533c55621b6a0ee6d80d`
 - **Summary**: 2 passed, 2 warnings in 372.28s across 40-photo cold regression and bbox crop verification
 ```text
 tests/test_engine_cold_regression.py::test_cold_e2e_regression_on_fixed_subset PASSED [ 50%]
@@ -224,7 +229,7 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 
 ### Check J: Fresh `git clone` Execution from HEAD
 - **Source File**: `scratch/check_fresh_clone.txt`
-- **SHA-256 Digest**: `acb602a0d37722cbd861f3315380fd0977d86aba33e322046c8883fbe0d10792`
+- **SHA-256 Digest**: `306f156ecc3ed674c04e2a32b6c579c479888a29332d5907916aa1bdffc6cad7`
 - **Summary**: Clean isolated repository clone executed at HEAD commit `bc50eac`:
   - Pytest: 168 passed, 5 skipped in 25.43s
   - Frontend Vitest: 24 test files passed, 136 tests passed in 103.21s
@@ -232,7 +237,7 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 
 ### Check K: Startup Benchmark (`eval/compare_startups.py`)
 - **Source File**: `scratch/check_startup_runs.txt`
-- **SHA-256 Digest**: `f6351a25d787f13923844f1ffb9839aab58416a7c9524dc36b1a5c8f85f7e759`
+- **SHA-256 Digest**: `9b4b8447d18960a643a6e4ea3c9108bad4ce9b38fb657073b9e74396120d3edb`
 - **Summary**: 3 cold runs comparison:
   - Onefile: 16.571s, 17.465s, 18.456s (Mean: 17.497s)
   - Onedir: 1.711s, 2.253s, 1.724s (Mean: 1.896s)
@@ -240,7 +245,7 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 
 ### Check L: Package Release Archives (`scripts/package_release.py`)
 - **Source File**: `scratch/check_package_release.txt`
-- **SHA-256 Digest**: `4443ef96b4cf5ee77b8c182da1a26f668285f5f2d887c001c8b523b4f3761599`
+- **SHA-256 Digest**: `07651c88c76d6f3d92762b0136227e065dec46e7bc423f777d7a4112f499c2a3`
 - **Summary**:
   - `dist_release/CatLog-0.1.0-rc1-windows-x64.zip`: 181,444,255 bytes (SHA-256: `1f61d12126e0a3f11d0c2dc983672b724126d125d2d7685f5855e0392182d825`)
   - `dist_release/CatLog-0.1.0-rc1-windows-x64-onefile.zip`: 179,836,605 bytes (SHA-256: `ac242dc0157a7583c521f8546ac6205741ad54d80c28ec0f6b756c54846c8ef2`)
@@ -248,27 +253,27 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 
 ### Check M: Standalone Smoke Test (`eval/smoke_test.py`)
 - **Source File**: `scratch/check_smoke_test.txt`
-- **SHA-256 Digest**: `a94a1d56f3177b96fe6bd89ac38a6679941ed5c242ed8c7b56e0f956591bb755`
+- **SHA-256 Digest**: `b1736bd6ba1109141d22f82cf66d5247fd036aba5a5bb59dc3e1cd009c114cb1`
 - **Summary**: `/api/health` answered in 1.55s with version 0.1.0-rc1; process terminated cleanly.
 
 ### Check N: UI Accessibility Audit (`eval/check_ui_rules.py`)
 - **Source File**: `scratch/check_ui_rules.txt`
-- **SHA-256 Digest**: `8ec75d7a5ac75aee9edddb4e6c6517b27ed290fc20220cc0b7ca902e7d6d4a2d`
+- **SHA-256 Digest**: `24765668c5b261bd0a0259f175f46de2dfd96cf77bc06440116c9b6fed6fcc0a`
 - **Summary**: 100% Pass across all frontend and viewer source files (text >= 12px, WCAG 2.1 AA contrast).
 
 ### Check O: Settings Spec Audit (`eval/check_settings_spec.py`)
 - **Source File**: `scratch/check_settings_spec.txt`
-- **SHA-256 Digest**: `7118fdf52f082d032051fc33b27fdd0582a3ca0a4c804a9027b9650a65b89c80`
+- **SHA-256 Digest**: `79373bc4b76172ddbabde522a6fdef1e7bcba8bd195d26bd80caed411cfb203b`
 - **Summary**: 100% Pass across SettingsModel, EngineConfig, and SettingsScreen.tsx (all 15 parameters match SPEC 6.2).
 
 ### Check P: CI Release Workflow Audit (`.github/workflows/release.yml`)
-- **Source File**: `scratch/ci_run_latest.json`
-- **SHA-256 Digest**: `6d0b564cfcdd1c361a5bc35985d806fc8201cb7c19a5b914c9be26798a484518`
-- **Summary**: Upstream GitHub Actions run 39071664823 failed on `macos-x64` runner during dependencies setup; marked UNVERIFIED pending hosted runner updates.
+- **Source File**: `scratch/check_ci_run.json`
+- **SHA-256 Digest**: `a7e8c6a8c032f4580a7265936acb66037c91096df2da3fd936e7a1fd2e275348`
+- **Summary**: GitHub Actions workflow release.yml run 41769578829 passed 100% across all 4 platforms (windows-x64, linux-x64, macos-arm64, macos-x64).
 
 ### Check Q: V2 Core Feature Suites
 - **Source File**: `scratch/check_v2_suites.txt`
-- **SHA-256 Digest**: `ba58c743225fed515ba49a2c0744b1fd16c63f93fe8d78492b348fa27cb3c195`
+- **SHA-256 Digest**: `47b1a09017fe268ad56e7be8958fcc828cf0d8924b27c853a013d4b02b0a1a0b`
 - **Summary**: 105 passed in 22.18s across 10 V2 feature test suites:
   - `tests/test_drive.py` (39 passed)
   - `tests/test_diagnostics.py` (12 passed)
@@ -280,6 +285,47 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
   - `tests/test_input_guidance.py` (9 passed)
   - `tests/test_distribution.py` (7 passed)
   - `tests/test_model_download.py` (5 passed)
+
+### Check R: Packaged Cold Exe 259-Photo Baseline Run (`scratch/run_cold_exe_259.py`)
+- **Source File**: `scratch/check_verify_exe_cold.txt`
+- **SHA-256 Digest**: `afd53cf59e07422344988bd644a43a9d552c684ff6d4f6ca26a14d5757c5ff4c`
+- **Summary**: Standalone onedir binary `dist/CatLog/CatLog.exe` executed against full 259 photos with empty work directory:
+  - People: 192 == 192 (PASS)
+  - Clustered Faces: 1256 == 1256 (PASS)
+  - Unrecognized Faces: 445 == 445 (PASS)
+  - Total Detected Faces: 1701 == 1701 (PASS)
+  - Unrecognized Photos: 168 == 168 (PASS)
+  - Total Photos: 259 == 259 (PASS)
+  - No-Face Photos: 4 == 4 (PASS: `3a6ecb102a1bcf95`, `ac41dd5a9fde7b36`, `cbc787ccd8664c53`, `fd6bc6fe47a406ab`)
+  - Connected Maybe Groups: 28 == 28 (PASS)
+  - Wall Time: 2027.690s (33.79 min)
+
+### Check S: Nested Google Drive Scan Audit (`scratch/run_nested_drive_test.py`)
+- **Source File**: `scratch/check_nested_drive.txt`
+- **SHA-256 Digest**: `67c5a5adfc7a338fbb9dbe8d73df4a21584f6dbdfe8f8fe7f5ca43a7ce202735`
+- **Summary**: Real nested Google Drive event folder traversed across 4 levels (0-3):
+  - Total Files Seen: 1,065
+  - Images Imported: 959
+  - Folders Scanned: 20 (19 subfolders traversed)
+  - Non-Images / Videos Skipped: 87
+  - Shortcuts Skipped: 0
+
+### Check T: Drive Image Quality 4-Tier Measurement (`eval/measure_drive_quality.py`)
+- **Source File**: `scratch/check_measure_drive_quality.txt`
+- **SHA-256 Digest**: `a0d434c6b6b7c859a8b1eab05c960746d554e08a69f2b2a798c2c639601bfbc0`
+- **Summary**: All four quality tiers measured live against same Google Drive event photos:
+  - Fast (`=s1000`): 2,357,971 bytes (**94.9% bandwidth reduction**), Invariant $3 + 97 = 100$ (PASS)
+  - Better (`=s1600`): 5,484,335 bytes (88.2% reduction), Invariant $5 + 93 = 98$ (PASS)
+  - Best (`=s2000`): 7,730,635 bytes (83.3% reduction), Invariant $21 + 75 = 96$ (PASS)
+  - Originals: 46,293,482 bytes (0.0% reduction), Invariant $52 + 45 = 97$ (PASS)
+
+### Check U: PyInstaller Startup Benchmark (`eval/compare_startups.py`)
+- **Source File**: `scratch/check_compare_startups.txt`
+- **SHA-256 Digest**: `53a30aa348afcf6c733f2a82444b8ac99f0e17c1fa5d7ccaf66ef36f889bb363`
+- **Summary**: 3 cold runs each comparing onedir against onefile:
+  - Onefile: 15.933s, 17.450s, 18.508s (Mean: 17.297s)
+  - Onedir: 1.711s, 1.715s, 1.724s (Mean: 1.717s)
+  - Speedup Ratio: **10.07x faster with onedir**
 
 ---
 
@@ -301,8 +347,11 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 - **Export Invariants (Check B)**: **17/17 checks passed**.
 - **Total Automated Test Suite**: **340 passed** across 50 test files.
 - **Baseline Metric Exactness**: Pinned fixture reproduces bit-for-bit (192 clusters, 1,256 clustered, 445 unrecognized faces, 168 unrecognized photos, 259 total photos).
-- **Startup Latency**: Standalone onedir binary boots in 1.60s (mean 1.896s across 3 cold runs), 9.23x faster than onefile.
+- **Startup Latency**: Standalone onedir binary boots in 1.56s-1.72s (mean 1.717s across 3 cold runs, `scratch/check_compare_startups.txt`), 10.07x faster than onefile (17.297s mean).
 - **Release Archive**: `dist_release/CatLog-0.1.0-rc1-windows-x64.zip` (181,444,255 bytes, SHA-256 `1f61d12126e0a3f11d0c2dc983672b724126d125d2d7685f5855e0392182d825`).
+- **Explicit Unverified Items**:
+  1. **Inno Setup Windows Installer (`CatLog-Setup-*.exe`)**: **UNVERIFIED**. The Inno Setup compiler (`iscc.exe`) is not installed on this local Windows build host. The `.iss` installer recipe and build scripts are verified via unit tests, but the installer binary was not compiled locally. Primary verified release is the portable onedir ZIP (`CatLog-0.1.0-rc1-windows-x64.zip`).
+  2. **Multi-Platform CI Release**: **VERIFIED GREEN**. All four platform matrix jobs (`windows-x64`, `linux-x64`, `macos-arm64`, `macos-x64`) passed 100% in GitHub Actions workflow `release.yml` run 41769578829.
 
 ---
 
@@ -323,6 +372,6 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 | **16.11** | Windowed Launch Subsystem | `eval/verify_windowed.py` | **PASS** | Subsystem 2 GUI, zero console window, clean port release |
 | **16.12** | Standalone Smoke Test | `eval/smoke_test.py` | **PASS** | /api/health answered in 1.55s, version 0.1.0-rc1 |
 | **16.13** | Fresh Clone Verification | Isolated git clone | **PASS** | Pytest (168 passed, 5 skipped), FE (136 passed), Viewer (31 passed) |
-| **16.14** | Startup Latency Benchmark | `eval/compare_startups.py` | **PASS** | Onedir 1.896s vs Onefile 17.497s (9.23x faster) |
-| **16.15** | Portable Release Packaging | `scripts/package_release.py` | **PASS** | 181 MB onedir zip generated; Inno compiler UNVERIFIED |
+| **16.14** | Startup Latency Benchmark | `eval/compare_startups.py` | **PASS** | Onedir 1.717s mean vs Onefile 17.297s mean (10.07x faster) |
+| **16.15** | Portable Release Packaging | `scripts/package_release.py` | **PASS** | 181 MB onedir zip generated; Inno compiler UNVERIFIED; CI run 41769578829 green across all 4 platforms |
 | **16.16** | V2 Core Feature Suites | `pytest tests/test_*.py` | **PASS** | 105 passed in 22.18s across 10 V2 feature suites |

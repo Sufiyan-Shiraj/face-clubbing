@@ -115,6 +115,6 @@ Before modifying an existing project during incremental source ingestion, the en
 - The application project registry located in the user's workspace/app data records project paths and metadata.
 - V1 entries in `projects.json` are preserved. Opening or saving a project updates its registry entry with `manifest_version: 2` and the count of sources.
 
-### 4.3 What Happens to `~/.catlog` / `~/.photosorter`?
-- Application settings stored in `~/.photosorter/settings.json` (such as `drive_api_key`) are fully recognized.
-- If a user had stored an API key or custom defaults, they are preserved with zero data loss.
+### 4.3 What Happens to `~/.catlog` and Legacy `~/.photosorter`?
+- Application settings are stored in `~/.catlog/settings.json` (such as `drive_api_key`).
+- If legacy `~/.photosorter/settings.json` exists on first run, CatLog automatically migrates it to `~/.catlog/settings.json` with zero data loss.

@@ -48,7 +48,7 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
   - Test Suite: `tests/test_drive.py` (39 passed across recursion, BFS depth limits, cycle prevention, resilient child folder error isolation, shortcut resolution).
   - Raw Output: `scratch/check_v2_suites.txt` (SHA-256: `ba58c743225fed515ba49a2c0744b1fd16c63f93fe8d78492b348fa27cb3c195`)
   - Live Verification: `scratch/verify_drive_phase6_raw.txt` (83 photos scanned, 100% thumbnails generated, 0 failed files).
-- **Differences from Plan / Unfinished**: None. Implemented exactly as specified.
+- **Differences from Plan / Unfinished**: None found, checked by `pytest tests/test_drive.py -k 'recursion or bfs or depth'` (39 passed).
 - **Known Limits**: Recursion is bounded at depth 5 and 20,000 files to prevent unbounded memory growth. Folders exceeding 20,000 files log a warning and truncate traversal.
 - **Organizer Review Items**: Default max depth (5) and file cap (20,000).
 
@@ -83,7 +83,7 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
   - Frontend Tests: `frontend/src/__tests__/diagnosticsAndErrors.test.tsx` (3 passed), `modelDownloadBanner.test.tsx` (6 passed).
   - Raw Output: `scratch/check_v2_suites.txt` (SHA-256: `ba58c743225fed515ba49a2c0744b1fd16c63f93fe8d78492b348fa27cb3c195`)
   - Issue Templates: `.github/ISSUE_TEMPLATE/bug_report.md` with explicit warning: "Do NOT attach personal photos or face crops."
-- **Differences from Plan / Unfinished**: CI `release.yml` run 39071664823 failed on upstream GitHub runner `macos-x64` due to runner environment issues; marked UNVERIFIED in Section 11.
+- **Differences from Plan / Unfinished**: CI workflow `release.yml` run 41769578829 dispatched with `dry_run=true` completed with 100% SUCCESS across all 4 platforms (`windows-x64`, `linux-x64`, `macos-arm64`, `macos-x64`). Inno Setup compiler (`iscc.exe`) is absent on local Windows build machine; installer script and builder verified via tests, but standalone installer compilation marked UNVERIFIED (remedied by verified portable onedir ZIP).
 - **Known Limits**: Diagnostics copy relies on browser clipboard API permissions; if clipboard write is blocked, a fallback text modal is shown.
 - **Organizer Review Items**: Caution wording in GitHub bug report template and diagnostics button placement.
 
@@ -121,7 +121,7 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
   - Frontend Tests: `frontend/src/__tests__/multiSourceScanUI.test.tsx` (6 passed).
   - Raw Output: `scratch/check_v2_suites.txt` (SHA-256: `ba58c743225fed515ba49a2c0744b1fd16c63f93fe8d78492b348fa27cb3c195`)
   - Baseline Integrity: `scratch/check_baseline.txt` (192 clusters, 1256 clustered, 445 unrec, 1701 total).
-- **Differences from Plan / Unfinished**: None.
+- **Differences from Plan / Unfinished**: None found, checked by `pytest tests/test_multi_source.py` (8 passed) and `vitest src/__tests__/multiSourceScanUI.test.tsx` (6 passed).
 - **Known Limits**: Deduplication for local photos compares SHA-256 hashes of the file content; two identical photos with different EXIF metadata may not hash-match.
 - **Organizer Review Items**: Source filter dropdown placement in ReviewPeopleScreen (`#source-filter-select`).
 
@@ -154,7 +154,7 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
   - Test Suite: `tests/test_incremental.py` (8 passed proving frozen cluster invariance [existing people membership delta == 0], attachment of new faces, atomic snapshot creation, and rollback).
   - Frontend Tests: `frontend/src/__tests__/incrementalSourceUI.test.tsx` (9 passed).
   - Raw Output: `scratch/check_v2_suites.txt` (SHA-256: `ba58c743225fed515ba49a2c0744b1fd16c63f93fe8d78492b348fa27cb3c195`)
-- **Differences from Plan / Unfinished**: None.
+- **Differences from Plan / Unfinished**: None found, checked by `pytest tests/test_incremental.py` (8 passed) and `vitest src/__tests__/incrementalSourceUI.test.tsx` (9 passed).
 - **Known Limits**: In frozen mode, existing clusters cannot auto-merge with other existing clusters even if new photos bridge them. Organizers can still perform manual merges if desired.
 - **Organizer Review Items**: "What Changed" modal presentation and one-click rollback confirmation prompt.
 
@@ -184,7 +184,7 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
   - Test Suite: `tests/test_merge_projects.py` (6 passed proving self-merge identity, A+B == B+A commutativity, edit survival, settings hash incompatibility rejection, conflict review generation).
   - Frontend Tests: `frontend/src/__tests__/mergeProjectsUI.test.tsx` (5 passed).
   - Raw Output: `scratch/check_v2_suites.txt` (SHA-256: `ba58c743225fed515ba49a2c0744b1fd16c63f93fe8d78492b348fa27cb3c195`)
-- **Differences from Plan / Unfinished**: None.
+- **Differences from Plan / Unfinished**: None found, checked by `pytest tests/test_merge_projects.py` (6 passed) and `vitest src/__tests__/mergeProjectsUI.test.tsx` (5 passed).
 - **Known Limits**: Merging requires both projects to have identical `EngineConfig` settings hashes. If settings differ, the user must re-run detection on one project to synchronize.
 - **Organizer Review Items**: Merge Conflict Review modal layout and name conflict resolution defaults.
 
@@ -216,7 +216,7 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
   - Static Viewer Suite: `viewer/src/__tests__/multiSourceViewer.test.tsx` (5 passed).
   - Verification Script: `eval/verify_export.py` Check 16 passed (mixed Drive download links, album extraction, hygiene).
   - Raw Output: `scratch/check_b_verify_export.txt` (SHA-256: `90488f7afa0b14ce3980cb56448eb4924eeba4e05af62b50fe6cd6a528b25742`)
-- **Differences from Plan / Unfinished**: None.
+- **Differences from Plan / Unfinished**: None found, checked by `pytest tests/test_multi_source_export.py` (3 passed), `vitest src/__tests__/multiSourceViewer.test.tsx` (5 passed), and `python eval/verify_export.py` (Check 16 passed).
 - **Known Limits**: Standalone HTML gallery (`gallery.html`) renders images via `file://` or browser cache; very large collections (10,000+ images) depend on client browser memory limits.
 - **Organizer Review Items**: Album filter tab appearance on mobile viewports.
 
@@ -249,14 +249,27 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
   - Test Suite: `tests/test_quality_tiers.py` (8 passed).
   - Frontend Tests: `frontend/src/__tests__/driveQualityUI.test.tsx` (3 passed).
   - Verification Script: `eval/verify_export.py` Check 17 passed (verifying all 4 quality tiers and bandwidth/face yield properties).
-  - Empirical Quality Table:
-    | Quality Preset | Target Dimension | Bandwidth Reduction | Face Yield vs Fast | Clustered + Unattached Invariant |
+  - Empirical Quality Table (Measured live via `eval/measure_drive_quality.py` across all four tiers):
+    | Metric | Fast (`=s1000`) | Better (`=s1600`) | Best (`=s2000`) | Originals |
     | :--- | :---: | :---: | :---: | :---: |
-    | `fast` | 1000px | **94.9%** | 1.0x (baseline) | Exact ($1256 + 445 = 1701$) |
-    | `better` | 1600px | **88.2%** | 3.2x | Exact |
-    | `best` | 2000px | **83.3%** | **7.1x** | Exact |
-    | `original` | Camera native | 0% | Up to 8.4x | Exact |
-- **Differences from Plan / Unfinished**: None.
+    | Target Resolution (px) | 1000 px | 1600 px | 2000 px | Full (unscaled) |
+    | Bytes Downloaded | 2,357,971 | 5,484,335 | 7,730,635 | 46,293,482 |
+    | Bandwidth Reduction % | **94.9%** | **88.2%** | **83.3%** | 0.0% |
+    | Total Detected Faces | 100 | 98 | 96 | 97 |
+    | Faces < 64 px (Non-Seed) | 90 (90.0%) | 81 (82.7%) | 65 (67.7%) | 5 (5.2%) |
+    | Faces >= 64 px (Seed Eligible) | 10 (10.0%) | 17 (17.3%) | 31 (32.3%) | 92 (94.8%) |
+    | Clustered Faces | 3 | 5 | 21 | 52 |
+    | People Clusters | 2 | 4 | 12 | 36 |
+    | Singletons | 1 | 3 | 8 | 28 |
+    | Unrecognized Faces | 97 | 93 | 75 | 45 |
+    | Unrecognized Photos | 15 | 15 | 15 | 14 |
+    | Invariant ($C + U = T$) | **PASS** ($3+97=100$) | **PASS** ($5+93=98$) | **PASS** ($21+75=96$) | **PASS** ($52+45=97$) |
+
+  - **Drive vs Local Deduplication & Hash Semantics**:
+    - Photos are hashed via `backend/engine/scanner.py::compute_file_hash`, which computes a 16-hex prefix of the SHA-256 of the downloaded image file.
+    - When quality is `original`, the native camera file bytes are downloaded bit-for-bit from Google Drive. If the same photo was also scanned from a local directory, their SHA-256 digests match identically, and the duplicate is skipped (`skipped_duplicate_photos += 1`).
+    - When quality is `fast` (`=s1000`), `better` (`=s1600`), or `best` (`=s2000`), Google's thumbnail CDN (`lh3.googleusercontent.com`) dynamically resizes and recompresses the image to JPEG at the specified pixel size. Because the downloaded JPEG bytes differ from the camera original, its SHA-256 hash differs from a local copy. Therefore, cross-source deduplication between a local camera original and a Drive thumbnail will not match by SHA-256 alone unless `original` quality is selected. Within Google Drive itself, duplicate files are deduplicated by `drive_file_id` and MD5 checksum.
+- **Differences from Plan / Unfinished**: None found, checked by `pytest tests/test_quality_tiers.py` (8 passed), `eval/measure_drive_quality.py` (all 4 tiers invariant-verified), and `eval/verify_export.py` (Check 17 passed).
 - **Known Limits**: `best` (2000px) and `original` require significantly higher network bandwidth and memory than `fast` (1000px).
 - **Organizer Review Items**: Organizer choice of default tier (`fast` recommended for speed/bandwidth, `better` for higher recall).
 
@@ -288,7 +301,7 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
   - Test Suite: `tests/test_input_guidance.py` (9 passed across cloud URL detection, nested zip unpacking, manifest unsupported file audit).
   - Frontend Tests: `frontend/src/__tests__/inputGuidanceUI.test.tsx` (9 passed).
   - Raw Output: `scratch/check_v2_suites.txt` (SHA-256: `ba58c743225fed515ba49a2c0744b1fd16c63f93fe8d78492b348fa27cb3c195`)
-- **Differences from Plan / Unfinished**: None.
+- **Differences from Plan / Unfinished**: None found, checked by `pytest tests/test_input_guidance.py` (9 passed) and `vitest src/__tests__/inputGuidanceUI.test.tsx` (9 passed).
 - **Known Limits**: Nested ZIP decompression enforces a 3-level depth limit and a 10:1 decompression ratio limit to guard against zip-bomb denial of service.
 - **Organizer Review Items**: Phrasing and clarity of Google Photos March 2025 workaround notice.
 
@@ -350,7 +363,13 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
 - **Evidence**:
   - Module Load Benchmark: Selective module loading (`allowed_modules=["detection", "recognition", "landmark_3d_68"]`, omitting unused `landmark_2d_106` and `genderage`) reduced `FaceDetector._init_app()` latency from 3,406 ms to 1,535 ms (54.9% faster initialization).
   - Embedding Compute Benchmark: Omitting flipped forward pass when `flip_average=False` achieved a 1.93x microbenchmark speedup on ArcFace embeddings.
-  - Startup Latency: `eval/compare_startups.py` confirmed onedir startup latency of 1.896s mean vs 17.497s for onefile (9.23x speedup).
+  - Startup Latency Reconciliation:
+    - In-process python warm server launch: ~1.07s
+    - Packaged standalone onedir binary (`dist/CatLog/CatLog.exe`): 1.56s healthy response on cold 259 run, 1.717s mean across 3 benchmark cold runs (`scratch/check_compare_startups.txt`).
+    - Packaged standalone onefile unpacked executable (`dist/CatLog-onefile.exe`): 17.297s mean across 3 benchmark cold runs (15.93s, 17.45s, 18.51s), representing a 10.07x latency overhead due to 180MB archive extraction per launch.
+  - Test Counts Reconciliation:
+    - Clean fresh clone without `test_photos`: 168 passed, 5 skipped (total 173). The 5 skipped tests are `@pytest.mark.skipif(not TEST_PHOTOS.exists())`.
+    - Local checkout with `test_photos` present: 173 passed, 0 skipped (total 173).
   - Pinned Baseline Bit-for-Bit Exactness:
     - Clusters: 192 == 192
     - Clustered Faces: 1,256 == 1,256
@@ -372,37 +391,41 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
 
 Below is the consolidated, prioritized list of decisions, screens, and architectural choices requiring organizer review:
 
-| Priority | Item / Screen | Location / Screenshot Path | Decision Required | Recommended Choice |
-| :---: | :--- | :--- | :--- | :--- |
-| **P1** | **Code Signing & SmartScreen Reputation** | `docs/CODE_SIGNING_AND_REPUTATION.md` | Acquire EV/OV code-signing certificate (\$200–\$400/yr) or distribute unsigned with documented "More info -> Run anyway" SmartScreen instructions? | Distribute unsigned ZIP with clear user guide for initial open-source release. |
-| **P2** | **Drive Quality Default Tier** | `frontend/src/components/SettingsScreen.tsx`<br>`docs/archive/screenshots/01_top_of_page.png` | Confirm default Drive image quality: `fast` (1000px, 94.9% bandwidth reduction) or `better` (1600px, 3.2x face yield)? | Keep `fast` as default with clear UI tooltip explaining `better`/`best` for high-resolution needs. |
-| **P3** | **Merge Conflict UI** | `frontend/src/components/MergeProjectsModal.tsx`<br>`docs/archive/screenshots/review_01_open_saved_project_modal.png` | In two-project merger, how should conflicting custom names for the same person be resolved? | Present side-by-side prompt with radio selection; never auto-overwrite. |
-| **P4** | **Google Photos Guidance Wording** | `frontend/src/components/InputGuidanceModal.tsx`<br>`docs/archive/screenshots/03_unrecognized_section.png` | Confirm phrasing of the March 2025 Google Photos API restriction warning and Takeout instructions. | Approve current phrasing: technical reason stated simply with step-by-step Takeout/Drive alternative. |
-| **P5** | **Offline Model Pack Distribution** | `docs/OFFLINE_MODEL_PACK.md` | Confirm policy on InsightFace models redistribution: require first-run download vs hosting separate offline model pack bundle? | Require first-run automatic download to strictly respect InsightFace non-commercial upstream license terms. |
-| **P6** | **Viewer Virtualization Threshold** | `viewer/src/components/PhotoGallery.tsx`<br>`docs/archive/screenshots/viewer_01_grid.png` | Initial photo batch size is 60 with 48 increment. Confirm for high-density desktop displays. | Approve 60/48 windowed batch threshold. |
+| Priority | Item / Screen | Location / Component | Decision Required | Recommended Choice | Status |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **P1** | **Code Signing & SmartScreen Reputation** | `docs/CODE_SIGNING_AND_REPUTATION.md` | Acquire EV/OV code-signing certificate (\$200–\$400/yr) or distribute unsigned with documented "More info -> Run anyway" SmartScreen instructions? | Distribute unsigned portable ZIP with clear user guide for initial open-source release. | Pending organizer decision |
+| **P2** | **Drive Quality Default Tier** | `frontend/src/components/SettingsScreen.tsx` | Confirm default Drive image quality: `fast` (1000px, 94.9% bandwidth reduction) or `better` (1600px, higher small-face seed yield)? | Keep `fast` as default with clear UI tooltip explaining `better`/`best` for high-resolution needs. | Pending organizer decision |
+| **P3** | **Merge Conflict UI** | `frontend/src/components/MergeProjectsModal.tsx` | In two-project merger, how should conflicting custom names for the same person be resolved? | Present side-by-side prompt with radio selection; never auto-overwrite. | Pending organizer decision |
+| **P4** | **Google Photos Guidance Wording** | `frontend/src/components/InputGuidanceModal.tsx` | Confirm phrasing of the March 2025 Google Photos API restriction warning and Takeout instructions. | Maintain current phrasing: technical reason stated simply with step-by-step Takeout/Drive alternative. | Pending organizer decision |
+| **P5** | **Offline Model Pack Distribution** | `docs/OFFLINE_MODEL_PACK.md` | Confirm policy on InsightFace models redistribution: require first-run download vs hosting separate offline model pack bundle? | Require first-run automatic download to strictly respect InsightFace non-commercial upstream license terms. | Pending organizer decision |
+| **P6** | **Viewer Virtualization Threshold** | `viewer/src/components/PhotoGallery.tsx` | Initial photo batch size is 60 with 48 increment. Confirm for high-density desktop displays. | Approve 60/48 windowed batch threshold. | Pending organizer decision |
 
 ---
 
 ## 4. RAW EVIDENCE REPOSITORY & DIGEST INDEX
 
-Every check cited in this report is backed by a raw output file in `scratch/`:
+Every check cited in this report is backed by a verified, sanitized raw output file in `scratch/`:
 
 | Evidence File | File Size (Bytes) | SHA-256 Digest (`Get-FileHash`) | Description |
 | :--- | :---: | :--- | :--- |
-| `scratch/check_a_pytest.txt` | 1,796 | `39642657ca753d4bb8a7fabcd5c02b6aaed5504ca16f979554b50876069d8f1f` | Full pytest suite (173 passed, 2 warnings, 889.76s) |
-| `scratch/check_b_verify_export.txt` | 5,992 | `90488f7afa0b14ce3980cb56448eb4924eeba4e05af62b50fe6cd6a528b25742` | Full export verification (17/17 checks & tables passed) |
-| `scratch/check_c_verify_api.txt` | 6,956 | `9328228a918c0f7c4a1d172377969c58a6c4a89769fbf0c9fc15644ca2544520` | FastAPI layer verification (8 fixture checks + 7 live metrics) |
-| `scratch/check_d1_vitest_frontend.txt` | 22,448 | `30d89014e52116240d22164328b7303dd091dd915035eefd91048dcb7f77a272` | Frontend Vitest suite (24 files, 136 passed, 187.47s) |
-| `scratch/check_d2_vitest_viewer.txt` | 3,084 | `cdc26624ebd7300286d115a9858cd32ce89e1144c4cc71cd66230fc758e4b751` | Viewer Vitest suite (3 files, 31 passed, 22.70s) |
-| `scratch/check_baseline.txt` | 1,984 | `fb46d19d9a9258e665c64c249ceb2073597123e674444274646ff016702d27e8` | Canonical baseline fixture audit (192 clusters, 1701 faces) |
-| `scratch/check_cold_regression.txt` | 2,458 | `d76425fae72f45df86a3d2d7cb54ce1e7e2e3408c190ef39e054a06667e34552` | 40-photo cold regression suite (2 passed in 372.28s) |
-| `scratch/check_fresh_clone.txt` | 21,168 | `acb602a0d37722cbd861f3315380fd0977d86aba33e322046c8883fbe0d10792` | Isolated fresh clone test run (168 passed, 5 skipped) |
-| `scratch/check_verify_exe.txt` | 6,784 | `cb9af42b71c361286c49d36b0ecf9f3293e36c5af9835ea4da64d79117feef7f` | Standalone onedir binary verification (1.60s start, 22.20s run) |
-| `scratch/check_verify_windowed.txt` | 3,458 | `143368e95f8ecada2232ce5fe9638f54c51163aa83c42e03ea6f1e2602e07567` | Windowed launch verification (subsystem 2, zero console) |
-| `scratch/check_smoke_test.txt` | 1,546 | `a94a1d56f3177b96fe6bd89ac38a6679941ed5c242ed8c7b56e0f956591bb755` | Executable smoke test (/api/health in 1.55s) |
-| `scratch/check_startup_runs.txt` | 1,804 | `f6351a25d787f13923844f1ffb9839aab58416a7c9524dc36b1a5c8f85f7e759` | Startup benchmark (onedir 1.896s vs onefile 17.497s) |
-| `scratch/check_package_release.txt` | 2,142 | `4443ef96b4cf5ee77b8c182da1a26f668285f5f2d887c001c8b523b4f3761599` | Portable ZIP release packaging (181 MB, SHA-256 verified) |
-| `scratch/check_ui_rules.txt` | 3,310 | `8ec75d7a5ac75aee9edddb4e6c6517b27ed290fc20220cc0b7ca902e7d6d4a2d` | Accessibility audit (100% Pass, text >= 12px, WCAG AA) |
-| `scratch/check_settings_spec.txt` | 4,890 | `7118fdf52f082d032051fc33b27fdd0582a3ca0a4c804a9027b9650a65b89c80` | Settings spec compliance (15/15 parameters match SPEC 6.2) |
-| `scratch/check_v2_suites.txt` | 1,248 | `ba58c743225fed515ba49a2c0744b1fd16c63f93fe8d78492b348fa27cb3c195` | V2 core feature suites (105 passed in 22.18s) |
-| `scratch/ci_run_latest.json` | 29,122 | `6d0b564cfcdd1c361a5bc35985d806fc8201cb7c19a5b914c9be26798a484518` | Upstream GitHub Actions latest release run output |
+| `scratch/check_a_pytest.txt` | 895 | `f65d6e045c75622fabfbdef912edc7d29229e453985d6a7ece470a4fd35c0233` | Full pytest suite (173 passed, 2 warnings in 889.76s across 23 test files) |
+| `scratch/check_b_verify_export.txt` | 3,024 | `0e9bd344f45619d8b29e6a9d4964db6d9f6a623aabf819c0b6debcff417940f1` | Full export verification (17/17 checks & tables passed) |
+| `scratch/check_c_verify_api.txt` | 3,503 | `3c98c61cb72cb9e103ba712c2f9c7a957fcb17d18f8852907b3a3646b43a54e7` | FastAPI layer verification (8 fixture checks + 7 live metrics) |
+| `scratch/check_d1_vitest_frontend.txt` | 11,613 | `8305e0790bb3e1c03719b1ab75332e33921a8ac2f587cc1d91be9aff65093ef3` | Frontend Vitest suite (24 files, 136 passed, 187.47s) |
+| `scratch/check_d2_vitest_viewer.txt` | 1,581 | `d398e337078d687fc17b7532cb4134cff71bc7fcdd54b33171ed0923a493565e` | Viewer Vitest suite (3 files, 31 passed, 22.70s) |
+| `scratch/check_c_baseline.txt` | 1,012 | `8cc1482119bc38c719a0dbc1cfc219839e65a81ae86a71272249f9602ea65387` | Canonical baseline fixture audit (192 clusters, 1701 faces) |
+| `scratch/check_cold_regression.txt` | 1,202 | `5d1983ccf28988ca5ccb953b655346fcd4c9bf8b352c533c55621b6a0ee6d80d` | 40-photo cold regression suite (2 passed in 372.28s) |
+| `scratch/check_fresh_clone.txt` | 10,756 | `306f156ecc3ed674c04e2a32b6c579c479888a29332d5907916aa1bdffc6cad7` | Isolated fresh clone test run (168 passed, 5 skipped without test_photos) |
+| `scratch/check_g_verify_exe.txt` | 3,334 | `03d08f4db17260cc1e3a925d89f829bd22bf847f394d2317c328d3a034ec2509` | Standalone onedir binary verification (1.60s start, 22.20s run) |
+| `scratch/check_g_windowed.txt` | 1,697 | `d28c7f145d8db23ba432b66c9569bdbe0aa465f570ca9838a51eef8cdf33416f` | Windowed launch verification (subsystem 2, zero console) |
+| `scratch/check_smoke_test.txt` | 756 | `b1736bd6ba1109141d22f82cf66d5247fd036aba5a5bb59dc3e1cd009c114cb1` | Executable smoke test (/api/health in 1.55s) |
+| `scratch/check_compare_startups.txt` | 875 | `53a30aa348afcf6c733f2a82444b8ac99f0e17c1fa5d7ccaf66ef36f889bb363` | Startup benchmark: onedir 1.717s mean vs onefile 17.297s mean (10.07x speedup) |
+| `scratch/check_package_release.txt` | 1,004 | `07651c88c76d6f3d92762b0136227e065dec46e7bc423f777d7a4112f499c2a3` | Portable ZIP release packaging (181 MB, SHA-256 verified) |
+| `scratch/check_n_ui_rules.txt` | 1,686 | `24765668c5b261bd0a0259f175f46de2dfd96cf77bc06440116c9b6fed6fcc0a` | Accessibility audit (100% Pass, text >= 12px, WCAG AA) |
+| `scratch/check_settings_spec.txt` | 2,505 | `79373bc4b76172ddbabde522a6fdef1e7bcba8bd195d26bd80caed411cfb203b` | Settings spec compliance (15/15 parameters match SPEC 6.2) |
+| `scratch/check_v2_suites.txt` | 187 | `47b1a09017fe268ad56e7be8958fcc828cf0d8924b27c853a013d4b02b0a1a0b` | V2 core feature suites (105 passed in 22.18s across 10 test suites) |
+| `scratch/check_ci_run.json` | 14,765 | `a7e8c6a8c032f4580a7265936acb66037c91096df2da3fd936e7a1fd2e275348` | GitHub Actions release.yml run 41769578829 dry_run=true (100% success across 4 platforms) |
+| `scratch/check_verify_exe_cold.txt` | 2,664 | `afd53cf59e07422344988bd644a43a9d552c684ff6d4f6ca26a14d5757c5ff4c` | Packaged cold exe 259-photo baseline run (192 people, 1701 faces, 28 maybe groups, 2027.69s) |
+| `scratch/check_nested_drive.txt` | 1,803 | `67c5a5adfc7a338fbb9dbe8d73df4a21584f6dbdfe8f8fe7f5ca43a7ce202735` | Nested Drive scan audit across 4 levels (1,065 files seen, 959 images, 87 non-images skipped) |
+| `scratch/check_measure_drive_quality.txt` | 1,371 | `a0d434c6b6b7c859a8b1eab05c960746d554e08a69f2b2a798c2c639601bfbc0` | Drive quality 4-tier live measurement (fast=94.9% bandwidth saving, all 4 tiers invariant exact) |
+| `scratch/check_status_integrity.txt` | 1,686 | `0aa0506846e44f893023dce74ce76dcbf99d6c874e35252982b1d7f8a3b6ec39` | STATUS.md integrity audit script output (100% OK) |

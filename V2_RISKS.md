@@ -11,7 +11,7 @@
 | Risk ID | Category | Description | Severity | Likelihood | Mitigation / Status |
 | :---: | :--- | :--- | :---: | :---: | :--- |
 | **R-01** | **Packaging** | Inno Setup compiler (`iscc.exe`) absent on local build machine | Medium | High | **UNVERIFIED**: Primary distribution relies on verified onedir portable ZIP (`CatLog-0.1.0-rc1-windows-x64.zip`). |
-| **R-02** | **CI / Platform** | GitHub Actions `macos-x64` runner failure in latest run 39071664823 | Medium | Medium | **UNVERIFIED**: Local fresh clone passes 100% of tests. Runner requires environment dependency update. |
+| **R-02** | **CI / Platform** | GitHub Actions multi-platform release CI | Low | Low | **VERIFIED GREEN**: CI workflow `release.yml` run 41769578829 passed 100% across all 4 platforms (`windows-x64`, `linux-x64`, `macos-arm64`, `macos-x64`). |
 | **R-03** | **OS Security** | Windows SmartScreen warning on launching unsigned binary | Medium | High | Documented in `docs/CODE_SIGNING_AND_REPUTATION.md` with step-by-step user bypass instructions ("More info -> Run anyway"). |
 | **R-04** | **API / Quota** | Google Drive API daily quota exhaustion (1M queries/day) | High | Very Low | A 2,000-photo scan uses ~2,020 queries (0.2% of daily quota). Exponential backoff handles transient rate limits. |
 | **R-05** | **Cloud Source** | Google Photos March 2025 API restrictions | Medium | High | Addressed in Phase V2-7: explicit link detection blocks silent failures and guides users to Google Takeout or Drive upload. |
@@ -28,10 +28,14 @@
 - **Details**: The Inno Setup compiler (`iscc.exe`) is not installed on this local build machine. The installer script (`installer/catlog_setup.iss`) and build script (`scripts/build_inno_installer.py`) are fully implemented and verified via unit tests (`tests/test_distribution.py`), but the final compiled `CatLog-Setup-0.1.0-rc1.exe` binary has not been compiled or executed locally.
 - **Remedy / Safety**: The primary standalone onedir ZIP distribution (`dist_release/CatLog-0.1.0-rc1-windows-x64.zip`, 181 MB) is verified locally and passes all verification checks (`eval/verify_exe.py`, `eval/verify_windowed.py`, `eval/smoke_test.py`).
 
-### 2.2 GitHub Actions Hosted CI Runner (`macos-x64`)
-- **Audit Declaration**: **UNVERIFIED**
-- **Details**: In GitHub Actions run 39071664823 (`scratch/ci_run_latest.json`), the `Build (macos-x64)` job failed during the frontend build step due to runner environment node dependencies. The Windows build job also timed out on the un-cached full Pytest suite.
-- **Remedy / Safety**: All 173 backend pytest tests, 136 frontend vitest tests, and 31 viewer vitest tests pass locally on a clean fresh clone (`scratch/check_fresh_clone.txt`). The CI workflow requires runner dependency caching optimization before tagging.
+### 2.2 Multi-Platform CI Release Workflow
+- **Audit Declaration**: **VERIFIED GREEN (ALL 4 PLATFORMS PASSING)**
+- **Details**: In GitHub Actions workflow `release.yml` run 41769578829 (dispatched with `dry_run=true`), all four matrix platforms completed with conclusion `success`:
+  - `Build (windows-x64)`: **success** (All 33 steps passed, Pytest passed, Vitest passed, PyInstaller built, artifact uploaded)
+  - `Build (linux-x64)`: **success** (All 33 steps passed, Pytest passed, Vitest passed, PyInstaller built, artifact uploaded)
+  - `Build (macos-arm64)`: **success** (All 33 steps passed, Pytest passed, Vitest passed, PyInstaller built, artifact uploaded)
+  - `Build (macos-x64)`: **success** (All 33 steps passed, Pytest passed, Vitest passed, PyInstaller built, artifact uploaded)
+  - Raw JSON saved: `scratch/check_ci_run.json` (SHA-256: `a7e8c6a8c032f4580a7265936acb66037c91096df2da3fd936e7a1fd2e275348`).
 
 ---
 
@@ -56,7 +60,7 @@
 
 ### 4.1 Sensitive Credential Isolation
 - Google Drive API keys (`AIzaSy...`) are never written to exported viewer bundles, `manifest.json`, `people.json`, or diagnostic reports.
-- Keys are stored locally in the user's home directory (`~/.photosorter/settings.json`) with standard operating system user-profile permissions.
+- Keys are stored locally in the user's home directory (`~/.catlog/settings.json`) with standard operating system user-profile permissions.
 - In `backend/api/diagnostics.py`, all API keys matching regex `AIzaSy[A-Za-z0-9_-]{33}` are stripped and replaced with `[MASKED_API_KEY]`.
 
 ### 4.2 Biometric Face Data Protection

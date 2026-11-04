@@ -541,7 +541,7 @@ During Phase 6 live verification on a real Google Drive folder (83 photos, 127.7
 
 #### 18.1.2 Phase V2-6 Quality Preset Benchmark: =s1000 vs =s1600 vs =s2000 vs Originals
 
-During Phase 6 and Phase V2-6 live verification on Google Drive test folder (`1hrKfZacNX7T9H6pNLegJVpPev1PG-khG`), the engine was evaluated across all four image quality tiers (`=s1000`, `=s1600`, `=s2000`, and `originals`):
+During Phase 6 and Phase V2-6 live verification on Google Drive test folder (`<FOLDER_ID>`), the engine was evaluated across all four image quality tiers (`=s1000`, `=s1600`, `=s2000`, and `originals`):
 
 **Empirical Finding**:
 - **On Originals (unscaled camera files)**: Face sizes range up to 733.4 px. Over 94% of detected faces qualify as seeds (>= 64 px). 52 faces clustered into 36 people clusters.
