@@ -70,8 +70,17 @@ def measure_single_run(exe_path: Path, timeout: float = 45.0) -> float:
 
 def run_benchmark():
     repo_root = Path(__file__).resolve().parent.parent
-    onefile_exe = repo_root / "dist" / "CatLog.exe"
-    onedir_exe = repo_root / "dist" / "CatLog_onedir" / "CatLog.exe"
+    onefile_candidates = [
+        repo_root / "dist" / "CatLog-onefile.exe",
+        repo_root / "dist" / "CatLog.exe",
+    ]
+    onefile_exe = next((p for p in onefile_candidates if p.exists()), onefile_candidates[0])
+
+    onedir_candidates = [
+        repo_root / "dist" / "CatLog" / "CatLog.exe",
+        repo_root / "dist" / "CatLog_onedir" / "CatLog.exe",
+    ]
+    onedir_exe = next((p for p in onedir_candidates if p.exists()), onedir_candidates[0])
     
     print("=" * 70)
     print("PYINSTALLER STARTUP BENCHMARK: ONEFILE VS ONEDIR (3 COLD RUNS EACH)")

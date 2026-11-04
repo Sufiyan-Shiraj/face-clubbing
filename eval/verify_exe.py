@@ -132,7 +132,7 @@ def main():
     for src in source_caches:
         if src.exists():
             for f in src.glob("*.json"):
-                if f.name not in {"edits.json", "id_map.json", "suggestions.json"}:
+                if len(f.stem) == 16:
                     dest = temp_work / f.name
                     if not dest.exists():
                         shutil.copy2(f, dest)
@@ -211,6 +211,7 @@ def main():
         {
             "input_path": str(test_photos),
             "output_dir": str(temp_out),
+            "cache_dir": str(temp_work),
         },
     )
     assert start_status == 200, f"Failed to start job: {start_status} {start_resp}"
