@@ -91,7 +91,7 @@
 | Phase | State | Commit Hash | Key Files / Modules | Verification Summary |
 | :--- | :--- | :--- | :--- | :--- |
 | **V2-0 Drive Subfolder Recursion** | Done | `11e7607` | `backend/drive/client.py`, `backend/engine/pipeline.py`, `backend/api/jobs.py` | BFS traversal (depth 5, 20k file cap, loop prevention, resilient subfolder error isolation). 39/39 Drive tests pass. |
-| **V2-1 Release Health & First-User Fixes** | Done | `bca08de` | `backend/api/diagnostics.py`, `frontend/src/components/CopyDiagnosticsButton.tsx`, `backend/engine/models_downloader.py` | Counts-only diagnostics report scrubbing all paths/keys/faces; classified `ERR_` codes with remedies; model verification; release.yml multi-platform CI 100% green across 4 platforms (run 41769578829). 12/12 diagnostics tests pass. |
+| **V2-1 Release Health & First-User Fixes** | Done | `bca08de` | `backend/api/diagnostics.py`, `frontend/src/components/CopyDiagnosticsButton.tsx`, `backend/engine/models_downloader.py` | Counts-only diagnostics report scrubbing all paths/keys/faces; classified `ERR_` codes with remedies; model verification; release.yml multi-platform CI 100% green across 4 platforms (run 41794886232). 12/12 diagnostics tests pass. |
 | **V2-2 Multi-Source Scan & Organization** | Done | `3fd10e0` | `backend/engine/models.py`, `scanner.py`, `pipeline.py`, `backend/api/models.py`, `routes.py`, `state.py` | Manifest v2 schema with `sources` array, per-source provenance, cross-source SHA-256 dedupe, `#source-filter-select`. 8/8 multi-source tests pass. |
 | **V2-3 Add Source to Existing Project** | Done | `351920f` | `backend/engine/snapshots.py`, `clusterer.py`, `pipeline.py`, `frontend/src/components/AddSourceModal.tsx` | Incremental ingestion with frozen mode invariants (0 existing cluster delta), rollback snapshots in `.snapshots/`. 8/8 incremental tests pass. |
 | **V2-4 Merge Two Projects** | Done | `bba2c67` | `backend/engine/merger.py`, `backend/api/state.py`, `routes.py`, `frontend/src/components/MergeProjectsModal.tsx` | Creates new project, parents immutable, settings hash verification, DisjointSet anchor merge, conflict review UI. 6/6 merger tests pass. |
@@ -268,8 +268,8 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 
 ### Check P: CI Release Workflow Audit (`.github/workflows/release.yml`)
 - **Source File**: `scratch/check_ci_run.json`
-- **SHA-256 Digest**: `a7e8c6a8c032f4580a7265936acb66037c91096df2da3fd936e7a1fd2e275348`
-- **Summary**: GitHub Actions workflow release.yml run 41769578829 passed 100% across all 4 platforms (windows-x64, linux-x64, macos-arm64, macos-x64).
+- **SHA-256 Digest**: `5b4b1c749a5f79514368b96960bdb45afa60fd280c34996ec5f7d33b3ca14a3c`
+- **Summary**: GitHub Actions workflow release.yml run 41794886232 passed 100% across all 4 platforms (windows-x64, linux-x64, macos-arm64, macos-x64).
 
 ### Check Q: V2 Core Feature Suites
 - **Source File**: `scratch/check_v2_suites.txt`
@@ -351,7 +351,7 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 - **Release Archive**: `dist_release/CatLog-0.1.0-rc1-windows-x64.zip` (181,444,255 bytes, SHA-256 `1f61d12126e0a3f11d0c2dc983672b724126d125d2d7685f5855e0392182d825`).
 - **Explicit Unverified Items**:
   1. **Inno Setup Windows Installer (`CatLog-Setup-*.exe`)**: **UNVERIFIED**. The Inno Setup compiler (`iscc.exe`) is not installed on this local Windows build host. The `.iss` installer recipe and build scripts are verified via unit tests, but the installer binary was not compiled locally. Primary verified release is the portable onedir ZIP (`CatLog-0.1.0-rc1-windows-x64.zip`).
-  2. **Multi-Platform CI Release**: **VERIFIED GREEN**. All four platform matrix jobs (`windows-x64`, `linux-x64`, `macos-arm64`, `macos-x64`) passed 100% in GitHub Actions workflow `release.yml` run 41769578829.
+  2. **Multi-Platform CI Release**: **VERIFIED GREEN**. All four platform matrix jobs (`windows-x64`, `linux-x64`, `macos-arm64`, `macos-x64`) passed 100% in GitHub Actions workflow `release.yml` run 41794886232.
 
 ---
 
@@ -373,5 +373,5 @@ tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxe
 | **16.12** | Standalone Smoke Test | `eval/smoke_test.py` | **PASS** | /api/health answered in 1.55s, version 0.1.0-rc1 |
 | **16.13** | Fresh Clone Verification | Isolated git clone | **PASS** | Pytest (168 passed, 5 skipped), FE (136 passed), Viewer (31 passed) |
 | **16.14** | Startup Latency Benchmark | `eval/compare_startups.py` | **PASS** | Onedir 1.717s mean vs Onefile 17.297s mean (10.07x faster) |
-| **16.15** | Portable Release Packaging | `scripts/package_release.py` | **PASS** | 181 MB onedir zip generated; Inno compiler UNVERIFIED; CI run 41769578829 green across all 4 platforms |
+| **16.15** | Portable Release Packaging | `scripts/package_release.py` | **PASS** | 181 MB onedir zip generated; Inno compiler UNVERIFIED; CI run 41794886232 green across all 4 platforms |
 | **16.16** | V2 Core Feature Suites | `pytest tests/test_*.py` | **PASS** | 105 passed in 22.18s across 10 V2 feature suites |

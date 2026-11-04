@@ -83,7 +83,7 @@ This report provides the authoritative engineering audit for the CatLog V2 miles
   - Frontend Tests: `frontend/src/__tests__/diagnosticsAndErrors.test.tsx` (3 passed), `modelDownloadBanner.test.tsx` (6 passed).
   - Raw Output: `scratch/check_v2_suites.txt` (SHA-256: `ba58c743225fed515ba49a2c0744b1fd16c63f93fe8d78492b348fa27cb3c195`)
   - Issue Templates: `.github/ISSUE_TEMPLATE/bug_report.md` with explicit warning: "Do NOT attach personal photos or face crops."
-- **Differences from Plan / Unfinished**: CI workflow `release.yml` run 41769578829 dispatched with `dry_run=true` completed with 100% SUCCESS across all 4 platforms (`windows-x64`, `linux-x64`, `macos-arm64`, `macos-x64`). Inno Setup compiler (`iscc.exe`) is absent on local Windows build machine; installer script and builder verified via tests, but standalone installer compilation marked UNVERIFIED (remedied by verified portable onedir ZIP).
+- **Differences from Plan / Unfinished**: CI workflow `release.yml` run 41794886232 dispatched with `dry_run=true` completed with 100% SUCCESS across all 4 platforms (`windows-x64`, `linux-x64`, `macos-arm64`, `macos-x64`). Inno Setup compiler (`iscc.exe`) is absent on local Windows build machine; installer script and builder verified via tests, but standalone installer compilation marked UNVERIFIED (remedied by verified portable onedir ZIP).
 - **Known Limits**: Diagnostics copy relies on browser clipboard API permissions; if clipboard write is blocked, a fallback text modal is shown.
 - **Organizer Review Items**: Caution wording in GitHub bug report template and diagnostics button placement.
 
@@ -426,7 +426,7 @@ Every check cited in this report is backed by a verified, sanitized raw output f
 | `scratch/check_n_ui_rules.txt` | 1,686 | `24765668c5b261bd0a0259f175f46de2dfd96cf77bc06440116c9b6fed6fcc0a` | Accessibility audit (100% Pass, text >= 12px, WCAG AA) |
 | `scratch/check_settings_spec.txt` | 2,505 | `79373bc4b76172ddbabde522a6fdef1e7bcba8bd195d26bd80caed411cfb203b` | Settings spec compliance (15/15 parameters match SPEC 6.2) |
 | `scratch/check_v2_suites.txt` | 187 | `47b1a09017fe268ad56e7be8958fcc828cf0d8924b27c853a013d4b02b0a1a0b` | V2 core feature suites (105 passed in 22.18s across 10 test suites) |
-| `scratch/check_ci_run.json` | 14,765 | `a7e8c6a8c032f4580a7265936acb66037c91096df2da3fd936e7a1fd2e275348` | GitHub Actions release.yml run 41769578829 dry_run=true (100% success across 4 platforms) |
+| `scratch/check_ci_run.json` | 14,765 | `5b4b1c749a5f79514368b96960bdb45afa60fd280c34996ec5f7d33b3ca14a3c` | GitHub Actions release.yml run 41794886232 dry_run=true (100% success across 4 platforms) |
 | `scratch/check_verify_exe_cold.txt` | 2,664 | `afd53cf59e07422344988bd644a43a9d552c684ff6d4f6ca26a14d5757c5ff4c` | Packaged cold exe 259-photo baseline run (192 people, 1701 faces, 28 maybe groups, 2027.69s) |
 | scratch/check_nested_drive.txt | 1,777 | da8c14f2e5211bf988f91a862c96d40a6262fd3eab99329e6751640c7bb4f582 | Nested Drive scan audit across 4 levels (1,065 files seen, 959 images, 87 videos skipped) |
 | scratch/check_measure_drive_quality.txt | 1,325 | a9d116b2c0433ef17bd5f4fea64d14c9e37c6c79b3f5b5b6adaf1e3bb1b32ae | Drive quality 4-tier live measurement (fast=94.9% bandwidth saving, all 4 tiers invariant exact) |
