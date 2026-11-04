@@ -1,22 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 
-export interface DropdownOption {
-  value: number;
+export interface DropdownOption<T = any> {
+  value: T;
   label: string;
   badge?: string;
   desc?: string;
 }
 
-interface CustomDropdownProps {
+interface CustomDropdownProps<T = any> {
   id: string;
-  value: number;
-  onChange: (value: number) => void;
-  options: DropdownOption[];
+  value: T;
+  onChange: (value: T) => void;
+  options: DropdownOption<T>[];
   label: string;
 }
 
-export const CustomDropdown: React.FC<CustomDropdownProps> = ({
+export const CustomDropdown: React.FC<CustomDropdownProps<any>> = ({
   id,
   value,
   onChange,

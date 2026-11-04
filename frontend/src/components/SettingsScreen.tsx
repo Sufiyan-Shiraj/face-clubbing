@@ -90,7 +90,7 @@ const SUBFOLDER_DEPTH_OPTIONS: DropdownOption[] = [
   { value: 10, label: '10 Levels', desc: 'Maximum' },
 ];
 
-const DRIVE_QUALITY_OPTIONS: DropdownOption[] = [
+const DRIVE_QUALITY_OPTIONS: DropdownOption<string>[] = [
   { value: 'fast', label: 'Fast (1000 px)', desc: '95% bandwidth reduction, best for speed', badge: 'DEFAULT' },
   { value: 'better', label: 'Better (1600 px)', desc: 'Balanced face detail and download speed', badge: 'RECOMMENDED' },
   { value: 'best', label: 'Best (2000 px)', desc: 'Maximum face resolution from Drive CDN', badge: 'HD' },
@@ -684,7 +684,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   id="select-drive-image-quality"
                   label="Drive Image Quality"
                   value={settings.drive_image_quality || 'fast'}
-                  onChange={(val) => {
+                  onChange={(val: any) => {
                     const updated = { ...settings, drive_image_quality: val as 'fast' | 'better' | 'best' };
                     setSettings(updated);
                     api.updateSettings({ drive_image_quality: val }).catch(console.error);

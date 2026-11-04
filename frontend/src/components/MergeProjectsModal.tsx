@@ -43,7 +43,7 @@ export const MergeProjectsModal: React.FC<MergeProjectsModalProps> = ({
     setErrorMsg(null);
     try {
       const data = await apiClient.getRecentProjects();
-      const list = Array.isArray(data) ? data : (data?.projects || []);
+      const list = Array.isArray(data) ? data : ((data as any)?.projects || []);
       setProjects(list);
       if (list.length >= 2) {
         setProjAId(list[0].id);

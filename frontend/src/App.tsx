@@ -1233,16 +1233,24 @@ export const App: React.FC = () => {
             onMergedSuccess={(res) => {
               handleProjectOpened({
                 success: true,
-                project_name: res.project_name,
-                work_dir: res.work_dir,
-                export_path: res.export_dir,
-                counts: {
-                  people: res.people_count,
-                  photos: res.total_photos,
-                  unrecognized_photos: res.unrecognized_photos,
-                  unrecognized_faces: res.unrecognized_faces,
-                },
                 message: "Merged project opened",
+                project: {
+                  id: res.project_name || 'merged',
+                  name: res.project_name,
+                  work_dir: res.work_dir,
+                  export_path: res.export_dir,
+                  last_opened: new Date().toISOString(),
+                  counts: {
+                    people: res.people_count,
+                    photos: res.total_photos,
+                  },
+                  exists: true,
+                },
+                people_count: res.people_count,
+                photos_count: res.total_photos,
+                unrecognized_faces_count: res.unrecognized_faces,
+                applied_edits_count: 0,
+                read_only: false,
               });
             }}
             theme={theme}

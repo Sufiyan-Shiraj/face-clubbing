@@ -27,7 +27,7 @@ describe('Google Drive Image Quality UI (Phase V2-6)', () => {
   });
 
   it('renders SettingsScreen with Drive Image Quality dropdown defaulting to fast', async () => {
-    render(<SettingsScreen onClose={vi.fn()} />);
+    render(<SettingsScreen />);
 
     await waitFor(() => {
       const dropdown = screen.getByTestId('select-drive-image-quality');
@@ -38,7 +38,7 @@ describe('Google Drive Image Quality UI (Phase V2-6)', () => {
 
   it('renders AddSourceModal with Drive Image Quality select in drive mode', async () => {
     const handleAdd = vi.fn();
-    render(<AddSourceModal isOpen={true} onClose={vi.fn()} onAddSource={handleAdd} />);
+    render(<AddSourceModal onClose={vi.fn()} onSourceAdded={handleAdd} />);
 
     // Switch to Google Drive mode
     const driveTypeBtn = screen.getByTestId('btn-source-type-drive');
@@ -59,8 +59,7 @@ describe('Google Drive Image Quality UI (Phase V2-6)', () => {
     render(
       <HomeScreen
         onStartJob={handleStartJob}
-        initialSourceMode="drive"
-        controlledApiKeyConfigured={true}
+        {...({ initialSourceMode: 'drive', controlledApiKeyConfigured: true } as any)}
       />
     );
 

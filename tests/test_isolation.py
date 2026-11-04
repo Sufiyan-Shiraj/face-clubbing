@@ -40,8 +40,16 @@ def test_checks_do_not_modify_export_or_work():
     if not os.environ.get("IN_VERIFY_EXPORT"):
         from eval.verify_export import run_verification
 
-        export_ok = run_verification(export_dir="eval/baseline", work_dir="eval/baseline")
-        assert export_ok is True, "verify_export failed"
+        orig_inv = os.environ.get("IN_VERIFY_EXPORT")
+        os.environ["IN_VERIFY_EXPORT"] = "1"
+        try:
+            export_ok = run_verification(export_dir="eval/baseline", work_dir="eval/baseline")
+            assert export_ok is True, "verify_export failed"
+        finally:
+            if orig_inv is None:
+                os.environ.pop("IN_VERIFY_EXPORT", None)
+            else:
+                os.environ["IN_VERIFY_EXPORT"] = orig_inv
 
     after_export = _compute_tree_hash(export_dir)
     after_work = _compute_tree_hash(work_dir)

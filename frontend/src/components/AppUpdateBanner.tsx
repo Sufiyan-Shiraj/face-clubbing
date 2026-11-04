@@ -7,14 +7,7 @@ interface AppUpdateBannerProps {
 }
 
 export const AppUpdateBanner: React.FC<AppUpdateBannerProps> = ({ variant = 'banner' }) => {
-  const [updateInfo, setUpdateInfo] = useState<{
-    update_available: boolean;
-    current_version: string;
-    latest_version: string;
-    release_name: string;
-    release_url: string;
-    release_notes: string;
-  } | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<Awaited<ReturnType<typeof api.checkAppUpdate>> | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 

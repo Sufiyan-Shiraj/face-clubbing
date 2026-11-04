@@ -316,7 +316,9 @@ def run_verification(
         except ImportError:
             pytest_installed = False
 
-        if not pytest_installed:
+        if os.environ.get('IN_VERIFY_EXPORT'):
+            print('[SKIP] Check 6: Pytest execution skipped (already inside test runner or recursive run)')
+        elif not pytest_installed:
             print('[SKIP] pytest not installed')
         else:
             try:
