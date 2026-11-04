@@ -499,7 +499,7 @@ export const api = {
     checked_online: boolean;
     error: string | null;
   }> {
-    return fetchJson(${BASE_URL}/app/check-update);
+    return fetchJson(`/app/check-update`);
   },
 };
 
