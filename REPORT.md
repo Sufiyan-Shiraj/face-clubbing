@@ -6478,7 +6478,7 @@ In Phase 6 and Phase V2-0, Google Drive integration downloaded Google CDN thumbn
    - `HomeScreen.tsx`: Added `#select-home-drive-quality` in both initial and configured landing states with minimum 12px font size.
 
 ### 46.3 Empirical Evidence & Benchmark Table
-Evaluated across 15 representative group and portrait images from test Google Drive folder `1hrKfZacNX7T9H6pNLegJVpPev1PG-khG` (`eval/drive_quality_evidence.json`):
+Evaluated across 15 representative group and portrait images from test Google Drive folder `<FOLDER_ID>` (`eval/drive_quality_evidence.json`):
 
 | Metric | Fast (=s1000) | Better (=s1600) | Best (=s2000) | Originals |
 |---|:---:|:---:|:---:|:---:|

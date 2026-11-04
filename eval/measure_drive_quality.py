@@ -36,7 +36,7 @@ if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
 DEFAULT_EVIDENCE_PATH = repo_root / "eval" / "drive_quality_evidence.json"
-DEFAULT_TEST_FOLDER_ID = "105Q9voNju18JQd530XNJAQ5R_VySJgWw"
+DEFAULT_TEST_FOLDER_ID = os.environ.get("DRIVE_TEST_FOLDER_ID", "<FOLDER_ID>")
 
 
 def format_markdown_table(data: Dict[str, Dict[str, Any]]) -> str:
