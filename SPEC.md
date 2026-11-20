@@ -126,7 +126,7 @@ A free, general-purpose tool that takes an event's photos, groups them **by pers
 | `flip_average` | false | Gated, section 18 |
 | `include_maybe` | false | Show maybe photos in the public viewer |
 | `thumb_size` / `face_crop_size` | 400 / 256 | |
-| `drive_quality` | **"fast"** | Drive image quality preset (`fast` [1000px], `better` [1600px], `best` [2000px], `original` [0/full]); see §18.1 |
+| `drive_quality` | **"original"** | Drive image quality preset (`original` [0/full], `best` [2000px], `better` [1600px], `fast` [1000px]); see §18.1 |
 
 Changing any default requires the evidence table described in section 18.
 
@@ -569,9 +569,10 @@ During Phase 6 and Phase V2-6 live verification on Google Drive test folder (`<F
 
 **Formal Proposal & Implementation (Phase V2-6)**:
 1. **Drive Image Quality Setting**:
-   - `fast` (default): `=s1000` (1000 px, 95% bandwidth reduction, fastest scan).
-   - `better`: `=s1600` (1600 px, 88% bandwidth reduction, higher face detail).
+   - `original` (default): full unscaled original camera files bit-for-bit from Google Drive.
    - `best`: `=s2000` (2000 px, 83% bandwidth reduction, maximum face recall from Drive CDN).
+   - `better`: `=s1600` (1600 px, 88% bandwidth reduction, balanced face detail and download speed).
+   - `fast`: `=s1000` (1000 px, 95% bandwidth reduction, fastest scan).
 2. **Strict Floor Invariant**:
    - SPEC 6.2 defaults remain strictly **unchanged** (`min_face_size = 64`, `seed_min_face_size = 64`).
    - Non-seed faces (< 64 px) continue to be safely attached to seed clusters via second-pass attachment without relaxing seed quality.

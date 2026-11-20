@@ -121,6 +121,41 @@ export interface DriveVerifyResult {
   summary?: Record<string, any>;
 }
 
+export interface DriveEstimateRequest {
+  drive_folder: string;
+  drive_api_key?: string;
+  quality?: 'original' | 'best' | 'better' | 'fast';
+  scan_subfolders?: boolean;
+  max_subfolder_depth?: number;
+  follow_shortcuts?: boolean;
+  output_dir?: string;
+  cache_dir?: string;
+}
+
+export interface DriveEstimateResponse {
+  valid: boolean;
+  folder_id?: string | null;
+  folder_name?: string | null;
+  total_photos: number;
+  total_original_bytes: number;
+  tier_estimates: Record<string, number>;
+  selected_quality: 'original' | 'best' | 'better' | 'fast';
+  required_bytes: number;
+  target_disk_free_bytes?: number | null;
+  target_disk_total_bytes?: number | null;
+  temp_disk_free_bytes?: number | null;
+  temp_disk_total_bytes?: number | null;
+  is_space_sufficient: boolean;
+  warning_message?: string | null;
+  folders_scanned: number;
+  skipped_videos: number;
+  error_type?: string | null;
+  error_code?: string | null;
+  plain_language_fix?: string | null;
+  diagnostics_report?: string | null;
+  message?: string;
+}
+
 export interface DiagnosticsReport {
   version: string;
   os_name: string;
@@ -188,7 +223,7 @@ export interface Settings {
   drive_api_key?: string | null;
   drive_api_key_masked?: string | null;
   drive_api_key_configured?: boolean;
-  drive_image_quality?: 'fast' | 'better' | 'best';
+  drive_image_quality?: 'original' | 'best' | 'better' | 'fast';
   scan_subfolders?: boolean;
   max_subfolder_depth?: number;
   follow_shortcuts?: boolean;

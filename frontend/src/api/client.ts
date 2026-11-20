@@ -56,7 +56,13 @@ export const api = {
     driveApiKey?: string,
     outputDir: string = 'export',
     keepEdits?: boolean,
-    scanOptions?: { scan_subfolders?: boolean; max_subfolder_depth?: number; follow_shortcuts?: boolean },
+    scanOptions?: {
+      scan_subfolders?: boolean;
+      max_subfolder_depth?: number;
+      follow_shortcuts?: boolean;
+      drive_image_quality?: 'original' | 'best' | 'better' | 'fast';
+      cache_dir?: string;
+    },
     sources?: ScanSourceItem[]
   ): Promise<JobStatus> {
     let driveFolder: string | undefined = undefined;
@@ -93,7 +99,9 @@ export const api = {
         input_path: driveFolder ? undefined : (inputPath || undefined),
         drive_folder: driveFolder || undefined,
         drive_api_key: apiKey || undefined,
+        drive_image_quality: scanOptions?.drive_image_quality,
         output_dir: actualOutputDir || 'export',
+        cache_dir: scanOptions?.cache_dir || undefined,
         keep_edits: !!keepEdits,
         scan_subfolders: scanOptions?.scan_subfolders,
         max_subfolder_depth: scanOptions?.max_subfolder_depth,
@@ -123,6 +131,13 @@ export const api = {
         max_subfolder_depth: scanOptions?.max_subfolder_depth,
         follow_shortcuts: scanOptions?.follow_shortcuts,
       }),
+    });
+  },
+
+  async estimateDrive(req: DriveEstimateRequest): Promise<DriveEstimateResponse> {
+    return fetchJson(`${BASE_URL}/drive/estimate`, {
+      method: 'POST',
+      body: JSON.stringify(req),
     });
   },
 

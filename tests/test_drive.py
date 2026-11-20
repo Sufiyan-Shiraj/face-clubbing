@@ -332,11 +332,7 @@ class TestDriveDownloadAndCache:
         resp1.status_code = 200
         resp1.content = fake_jpeg
 
-        resp2 = MagicMock()
-        resp2.status_code = 200
-        resp2.content = fake_jpeg
-
-        mock_get.side_effect = [resp1, resp2]
+        mock_get.return_value = resp1
 
         client = DriveClient(api_key="AIzaSyTestKey")
         files = [
@@ -357,15 +353,24 @@ class TestDriveDownloadAndCache:
         ]
 
         dest_dir = tmp_path / "cache_thumbs"
-        downloaded = client.download_thumbnails(files, dest_dir=dest_dir, max_workers=1)
+        downloaded = client.download_thumbnails(files, dest_dir=dest_dir, max_workers=1, quality="better")
 
         assert len(downloaded) == 2
 
-        # First call should request resized thumbnail =s1000
+        # When quality="better", first call should request resized thumbnail =s1600
         first_call_url = mock_get.call_args_list[0][0][0]
-        assert "=s1000" in first_call_url
+        assert "=s1600" in first_call_url
 
-        # Second call should request alt=media
+        # Second call has no thumbnail link so should request alt=media
+        assert mock_get.call_args_list[1][1]["params"]["alt"] == "media"
+
+        # Also verify default quality is 'original' which downloads full-resolution media directly
+        mock_get.reset_mock()
+        dest_dir_orig = tmp_path / "cache_thumbs_orig"
+        downloaded_orig = client.download_thumbnails(files, dest_dir=dest_dir_orig, max_workers=1)
+        assert len(downloaded_orig) == 2
+        # In original mode, eff_size == 0 so thumbnail resize is skipped and alt=media requested
+        assert mock_get.call_args_list[0][1]["params"]["alt"] == "media"
         assert mock_get.call_args_list[1][1]["params"]["alt"] == "media"
 
     @patch("time.sleep", return_value=None)
@@ -1045,5 +1050,119 @@ class TestDriveSubfolderRecursion:
         assert "img_target" in file_ids
         assert res_enabled.shortcuts_skipped == 0
         assert res_enabled.summary["follow_shortcuts"] is True
+
+
+class TestDriveEstimateAndDiskUsage:
+    """Verifies POST /api/drive/estimate calculation and disk usage guards."""
+
+    @patch("backend.drive.DriveClient.list_folder_images")
+    @patch("requests.get")
+    def test_drive_estimate_success_and_tiers(self, mock_get, mock_list, tmp_path):
+        from fastapi.testclient import TestClient
+        from backend.api.app import create_app
+        from backend.drive.client import DriveListResult
+
+        app = create_app(work_dir=tmp_path / "work", output_dir=tmp_path / "export")
+        client = TestClient(app)
+
+        mock_meta = MagicMock()
+        mock_meta.status_code = 200
+        mock_meta.json.return_value = {
+            "id": "1a2b3c4d5e6f7g8h9i0j_FOLDER_ID",
+            "name": "Event Photos 2026",
+            "mimeType": "application/vnd.google-apps.folder",
+            "trashed": False,
+        }
+        mock_get.return_value = mock_meta
+
+        fake_files = [
+            DriveFile(id=f"img_{i}", name=f"photo_{i}.jpg", mime_type="image/jpeg", modified_time="2026-10-14T01:00:00Z", size=5000000)
+            for i in range(10)
+        ]
+        mock_list.return_value = DriveListResult(
+            files=fake_files,
+            total_files_in_folder=10,
+            image_count=10,
+            skipped_folders_count=0,
+            skipped_non_images_count=0,
+            folders_scanned=1,
+            summary={},
+        )
+
+        res = client.post("/api/drive/estimate", json={
+            "drive_folder": "https://drive.google.com/drive/folders/1a2b3c4d5e6f7g8h9i0j_FOLDER_ID",
+            "drive_api_key": "AIzaSyTestEstimateKey123",
+            "quality": "original",
+            "output_dir": str(tmp_path / "export"),
+            "cache_dir": str(tmp_path / "cache"),
+        })
+
+        assert res.status_code == 200
+        data = res.json()
+        assert data["valid"] is True
+        assert data["folder_id"] == "1a2b3c4d5e6f7g8h9i0j_FOLDER_ID"
+        assert data["total_photos"] == 10
+        assert data["total_original_bytes"] == 50000000  # 10 * 5,000,000 bytes = 50 MB
+        assert data["selected_quality"] == "original"
+        assert data["required_bytes"] == 50000000
+        assert "tier_estimates" in data
+        assert data["tier_estimates"]["original"] == 50000000
+        assert data["tier_estimates"]["best"] == 10 * 228000
+        assert data["tier_estimates"]["better"] == 10 * 147000
+        assert data["tier_estimates"]["fast"] == 10 * 64000
+        assert data["target_disk_free_bytes"] is not None
+        assert data["temp_disk_free_bytes"] is not None
+
+    @patch("backend.drive.DriveClient.list_folder_images")
+    @patch("requests.get")
+    @patch("shutil.disk_usage")
+    def test_drive_estimate_low_disk_space_warning(self, mock_disk, mock_get, mock_list, tmp_path):
+        from fastapi.testclient import TestClient
+        from backend.api.app import create_app
+        from backend.drive.client import DriveListResult
+
+        # Mock 10 MB free space where 50 MB is needed
+        mock_disk.return_value = MagicMock(free=10 * 1024 * 1024, total=100 * 1024 * 1024)
+
+        app = create_app(work_dir=tmp_path / "work", output_dir=tmp_path / "export")
+        client = TestClient(app)
+
+        mock_meta = MagicMock()
+        mock_meta.status_code = 200
+        mock_meta.json.return_value = {
+            "id": "1a2b3c4d5e6f7g8h9i0j_FOLDER_ID",
+            "name": "Event Photos 2026",
+            "mimeType": "application/vnd.google-apps.folder",
+            "trashed": False,
+        }
+        mock_get.return_value = mock_meta
+
+        fake_files = [
+            DriveFile(id=f"img_{i}", name=f"photo_{i}.jpg", mime_type="image/jpeg", modified_time="2026-10-14T01:00:00Z", size=5000000)
+            for i in range(10)
+        ]
+        mock_list.return_value = DriveListResult(
+            files=fake_files,
+            total_files_in_folder=10,
+            image_count=10,
+            skipped_folders_count=0,
+            skipped_non_images_count=0,
+            folders_scanned=1,
+            summary={},
+        )
+
+        res = client.post("/api/drive/estimate", json={
+            "drive_folder": "https://drive.google.com/drive/folders/1a2b3c4d5e6f7g8h9i0j_FOLDER_ID",
+            "drive_api_key": "AIzaSyTestEstimateKey123",
+            "quality": "original",
+            "output_dir": str(tmp_path / "export"),
+        })
+
+        assert res.status_code == 200
+        data = res.json()
+        assert data["valid"] is True
+        assert data["is_space_sufficient"] is False
+        assert "Low disk space" in data["warning_message"]
+
 
 

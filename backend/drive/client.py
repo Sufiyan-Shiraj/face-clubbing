@@ -132,7 +132,7 @@ def get_drive_target_size(quality: Optional[str] = None, target_size: Optional[i
     """
     Resolve a Drive quality setting ('fast', 'better', 'best', 'original')
     or explicit target_size integer to effective dimension.
-    Defaults to 1000 (fast) per SPEC 18.1 proposal.
+    Defaults to 0 (original).
     """
     if target_size is not None:
         return target_size
@@ -142,7 +142,7 @@ def get_drive_target_size(quality: Optional[str] = None, target_size: Optional[i
             return DRIVE_QUALITY_SIZES[q_norm]
         if q_norm.isdigit():
             return int(q_norm)
-    return 1000
+    return 0
 
 
 def resize_thumbnail_link(link: str, target_size: int = 1000) -> str:
@@ -596,7 +596,7 @@ class DriveClient:
         cancel_check: Optional[Callable[[], bool]] = None,
         max_workers: int = 4,
         dest_dir: Optional[Path | str] = None,
-        quality: str = "fast",
+        quality: str = "original",
         target_size: Optional[int] = None,
     ) -> List[Tuple[DriveFile, Path]]:
         """

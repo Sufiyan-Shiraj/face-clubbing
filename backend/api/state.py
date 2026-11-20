@@ -1096,7 +1096,7 @@ class AppState:
             include_maybe=self.settings.include_maybe,
             event_title=self.settings.event_title,
             event_subtitle=self.settings.event_subtitle,
-            drive_image_quality=getattr(self.settings, "drive_image_quality", "fast"),
+            drive_image_quality=getattr(self.settings, "drive_image_quality", "original"),
         )
 
         res = run_pipeline(config)
@@ -1548,7 +1548,7 @@ class AppState:
             event_title=self.settings.event_title,
             event_subtitle=self.settings.event_subtitle,
             drive_api_key=drive_key,
-            drive_image_quality=new_source.get("quality") or getattr(self.settings, "drive_image_quality", "fast"),
+            drive_image_quality=new_source.get("quality") or getattr(self.settings, "drive_image_quality", "original"),
             scan_subfolders=getattr(self.settings, "scan_subfolders", True),
             max_subfolder_depth=getattr(self.settings, "max_subfolder_depth", 5),
             follow_shortcuts=getattr(self.settings, "follow_shortcuts", False),

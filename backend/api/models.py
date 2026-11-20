@@ -55,7 +55,7 @@ class SettingsModel(BaseModel):
     drive_api_key: Optional[str] = None
     drive_api_key_masked: Optional[str] = None
     drive_api_key_configured: bool = False
-    drive_image_quality: str = "fast"
+    drive_image_quality: str = "original"
     scan_subfolders: bool = True
     max_subfolder_depth: int = 5
     follow_shortcuts: bool = False
@@ -98,6 +98,41 @@ class DriveVerifyResponse(BaseModel):
     diagnostics_report: Optional[str] = None
     message: str
     summary: Optional[Dict[str, Any]] = None
+
+
+class DriveEstimateRequest(BaseModel):
+    drive_folder: str
+    drive_api_key: Optional[str] = None
+    quality: Optional[str] = "original"
+    output_dir: Optional[str] = None
+    cache_dir: Optional[str] = None
+    scan_subfolders: Optional[bool] = None
+    max_subfolder_depth: Optional[int] = None
+    follow_shortcuts: Optional[bool] = None
+
+
+class DriveEstimateResponse(BaseModel):
+    valid: bool
+    folder_id: Optional[str] = None
+    folder_name: Optional[str] = None
+    total_photos: int = 0
+    total_original_bytes: int = 0
+    tier_estimates: Dict[str, int] = Field(default_factory=dict)
+    selected_quality: str = "original"
+    required_bytes: int = 0
+    target_disk_free_bytes: Optional[int] = None
+    target_disk_total_bytes: Optional[int] = None
+    temp_disk_free_bytes: Optional[int] = None
+    temp_disk_total_bytes: Optional[int] = None
+    is_space_sufficient: bool = True
+    warning_message: Optional[str] = None
+    folders_scanned: int = 1
+    skipped_videos: int = 0
+    error_type: Optional[str] = None
+    error_code: Optional[str] = None
+    plain_language_fix: Optional[str] = None
+    diagnostics_report: Optional[str] = None
+    message: str = ""
 
 
 class JobStatusResponse(BaseModel):

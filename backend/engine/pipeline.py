@@ -58,7 +58,7 @@ class EngineConfig:
     model_root: Optional[str] = None
     suggestions_path: Optional[str | Path] = None
     drive_api_key: Optional[str] = None
-    drive_image_quality: str = "fast"
+    drive_image_quality: str = "original"
     scan_subfolders: bool = True
     max_subfolder_depth: int = 5
     follow_shortcuts: bool = False
@@ -213,7 +213,7 @@ def run_pipeline(config: EngineConfig) -> EngineResult:
 
                 drive_summary_aggregate = list_res.summary
 
-                eff_quality = src.get("quality") or config.drive_image_quality or "fast"
+                eff_quality = src.get("quality") or config.drive_image_quality or "original"
                 downloaded_items = client.download_thumbnails(
                     files=list_res.files,
                     cache_dir=drive_cache_p,
@@ -823,7 +823,7 @@ def run_incremental_pipeline(
             max_depth=config.max_subfolder_depth,
             include_shortcuts=config.follow_shortcuts,
         )
-        eff_quality = new_source.get("quality") or config.drive_image_quality or "fast"
+        eff_quality = new_source.get("quality") or config.drive_image_quality or "original"
         downloaded = client.download_thumbnails(
             files=list_res.files,
             cache_dir=drive_cache_p,

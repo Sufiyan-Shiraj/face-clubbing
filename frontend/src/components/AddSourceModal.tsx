@@ -31,7 +31,7 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = ({
   const [pathOrUrl, setPathOrUrl] = useState('');
   const [label, setLabel] = useState('');
   const [driveApiKey, setDriveApiKey] = useState('');
-  const [driveQuality, setDriveQuality] = useState<'fast' | 'better' | 'best'>('fast');
+  const [driveQuality, setDriveQuality] = useState<'original' | 'best' | 'better' | 'fast'>('original');
   const [frozenMode, setFrozenMode] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -391,12 +391,13 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = ({
                   data-testid="select-source-drive-quality"
                   disabled={isSubmitting}
                   value={driveQuality}
-                  onChange={(e) => setDriveQuality(e.target.value as 'fast' | 'better' | 'best')}
+                  onChange={(e) => setDriveQuality(e.target.value as 'original' | 'best' | 'better' | 'fast')}
                   className="w-full px-3 py-2 rounded-lg text-xs font-mono bg-[var(--bg)] border border-[var(--line)] focus:outline-none focus:border-[var(--accent)] text-[var(--text)]"
                 >
-                  <option value="fast">Fast (1000 px) - 95% bandwidth reduction (Default)</option>
-                  <option value="better">Better (1600 px) - Higher face recall &amp; detail</option>
+                  <option value="original">Original (Full resolution) - Complete camera files (Default)</option>
                   <option value="best">Best (2000 px) - Maximum resolution from Drive CDN</option>
+                  <option value="better">Better (1600 px) - Balanced face detail and speed</option>
+                  <option value="fast">Fast (1000 px) - 95% bandwidth reduction</option>
                 </select>
               </div>
             </div>

@@ -43,8 +43,8 @@ class TestQualityTierPresets:
         assert get_drive_target_size("better") == 1600
         assert get_drive_target_size("best") == 2000
         assert get_drive_target_size("original") == 0
-        assert get_drive_target_size(None) == 1000  # Default is fast
-        assert get_drive_target_size("nonexistent") == 1000
+        assert get_drive_target_size(None) == 0  # Default is original
+        assert get_drive_target_size("nonexistent") == 0
 
     def test_custom_target_size_override(self):
         # Explicit target_size overrides quality string
@@ -122,7 +122,7 @@ class TestSpecDefaultsPreservation:
 
     def test_engine_config_defaults(self):
         cfg = EngineConfig(input_path="dummy_path")
-        assert cfg.drive_image_quality == "fast"
+        assert cfg.drive_image_quality == "original"
         # SPEC 6.2 defaults MUST NOT be changed
         assert cfg.min_face_size == 64
         assert cfg.seed_min_face_size == 64
@@ -130,7 +130,7 @@ class TestSpecDefaultsPreservation:
 
     def test_settings_model_defaults(self):
         sm = SettingsModel()
-        assert sm.drive_image_quality == "fast"
+        assert sm.drive_image_quality == "original"
         assert sm.min_face_size == 64
         assert sm.distance_threshold == 0.50
 

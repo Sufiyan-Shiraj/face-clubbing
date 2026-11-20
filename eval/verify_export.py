@@ -848,14 +848,14 @@ def run_verification(
             get_drive_target_size("fast") == 1000 and
             get_drive_target_size("better") == 1600 and
             get_drive_target_size("best") == 2000 and
-            get_drive_target_size(None) == 1000
+            get_drive_target_size(None) == 0
         )
 
         has_preserved_defaults = (
-            EngineConfig(input_path="dummy").drive_image_quality == "fast" and
+            EngineConfig(input_path="dummy").drive_image_quality == "original" and
             EngineConfig(input_path="dummy").min_face_size == 64 and
             EngineConfig(input_path="dummy").seed_min_face_size == 64 and
-            SettingsModel().drive_image_quality == "fast" and
+            SettingsModel().drive_image_quality == "original" and
             SettingsModel().min_face_size == 64
         )
 

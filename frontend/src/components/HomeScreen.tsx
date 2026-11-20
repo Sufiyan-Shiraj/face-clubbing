@@ -16,12 +16,14 @@ import {
   Sliders,
   FolderTree,
   HelpCircle,
+  HardDrive,
+  AlertTriangle,
 } from 'lucide-react';
 import { RisoTheme } from './Header';
 import { api } from '../api/client';
 import { CopyDiagnosticsButton } from './CopyDiagnosticsButton';
 import { ModelDownloadBanner } from './ModelDownloadBanner';
-import { ScanSourceItem } from '../types';
+import { ScanSourceItem, DriveEstimateResponse } from '../types';
 import { InputGuidanceModal } from './InputGuidanceModal';
 
 export interface HomeScreenProps {
@@ -29,7 +31,13 @@ export interface HomeScreenProps {
     inputPath?: string,
     driveFolder?: string,
     driveApiKey?: string,
-    scanOptions?: { scan_subfolders?: boolean; max_subfolder_depth?: number; follow_shortcuts?: boolean },
+    scanOptions?: {
+      scan_subfolders?: boolean;
+      max_subfolder_depth?: number;
+      follow_shortcuts?: boolean;
+      drive_image_quality?: 'original' | 'best' | 'better' | 'fast';
+      cache_dir?: string;
+    },
     sources?: ScanSourceItem[]
   ) => void;
   isLoading?: boolean;
@@ -244,13 +252,42 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const isApiKeyConfigured = controlledApiKeyConfigured !== undefined ? controlledApiKeyConfigured : internalApiKeyConfigured;
   const [verifiedSummary, setVerifiedSummary] = useState<Record<string, any> | null>(null);
 
-  const [driveQuality, setDriveQuality] = useState<'fast' | 'better' | 'best'>('fast');
+  const [driveQuality, setDriveQuality] = useState<'original' | 'best' | 'better' | 'fast'>('original');
+  const [customCacheDir, setCustomCacheDir] = useState<string>('');
+  const [driveEstimate, setDriveEstimate] = useState<DriveEstimateResponse | null>(null);
+  const [isEstimating, setIsEstimating] = useState<boolean>(false);
   const [scanSubfolders, setScanSubfolders] = useState<boolean>(true);
   const [maxSubfolderDepth, setMaxSubfolderDepth] = useState<number>(5);
   const [followShortcuts, setFollowShortcuts] = useState<boolean>(false);
   const [showScanOptions, setShowScanOptions] = useState<boolean>(false);
   const [isGuidanceOpen, setIsGuidanceOpen] = useState<boolean>(false);
   const [guidanceTab, setGuidanceTab] = useState<'photos' | 'drive' | 'phone' | 'formats'>('photos');
+
+  const formatBytes = (bytes?: number | null): string => {
+    if (bytes === null || bytes === undefined) return 'Unknown';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  };
+
+  const handleQualityChange = (newQual: 'original' | 'best' | 'better' | 'fast') => {
+    setDriveQuality(newQual);
+    if (driveEstimate && driveEstimate.tier_estimates) {
+      const reqBytes = driveEstimate.tier_estimates[newQual] ?? driveEstimate.required_bytes;
+      const freeBytes = driveEstimate.target_disk_free_bytes;
+      const isSufficient = freeBytes ? freeBytes >= reqBytes * 1.15 : true;
+      setDriveEstimate({
+        ...driveEstimate,
+        selected_quality: newQual,
+        required_bytes: reqBytes,
+        is_space_sufficient: isSufficient,
+        warning_message: !isSufficient
+          ? `Low disk space on export drive: ${formatBytes(freeBytes)} available, ~${formatBytes(reqBytes)} needed.`
+          : null,
+      });
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -293,8 +330,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setInternalVerifiedImageCount(imgCount || 0);
     if (!verified) {
       setVerifiedSummary(null);
+      setDriveEstimate(null);
     }
     onDriveVerifiedChange?.(verified, folderId || null, folderName || null, imgCount || 0);
+  };
+
+  const handleBrowseCacheDir = async () => {
+    if (window.pywebview?.api?.select_folder) {
+      try {
+        const selected = await window.pywebview.api.select_folder('Select Temp / Cache Directory');
+        if (selected) {
+          setCustomCacheDir(selected);
+        }
+      } catch (err) {
+        console.error('Failed to select cache folder:', err);
+      }
+    }
   };
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -527,6 +578,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         setErrorMsg(null);
         setDriveErrorInfo(null);
         setInternalApiKeyConfigured(true);
+
+        // Fetch pre-scan storage and disk space estimation
+        try {
+          setIsEstimating(true);
+          const est = await api.estimateDrive({
+            drive_folder: trimmed,
+            drive_api_key: apiKeyOverride || undefined,
+            quality: driveQuality,
+            cache_dir: customCacheDir.trim() || undefined,
+            scan_subfolders: scanSubfolders,
+            max_subfolder_depth: maxSubfolderDepth,
+            follow_shortcuts: followShortcuts,
+          });
+          if (est && est.valid) {
+            setDriveEstimate(est);
+          }
+        } catch (estErr) {
+          console.warn('Storage estimate failed:', estErr);
+        } finally {
+          setIsEstimating(false);
+        }
+
         return { valid: true, folder_name: res.folder_name, folder_id: res.folder_id };
       } else {
         setVerifiedState(false, null, null, 0);
@@ -657,10 +730,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   // Start Job handler
   const handleStart = async (e?: React.FormEvent) => {
     e?.preventDefault?.();
-    const isCustomOptions = !scanSubfolders || maxSubfolderDepth !== 5 || followShortcuts;
-    const scanOpts = isCustomOptions
-      ? { scan_subfolders: scanSubfolders, max_subfolder_depth: maxSubfolderDepth, follow_shortcuts: followShortcuts }
-      : undefined;
+    const scanOpts = {
+      scan_subfolders: scanSubfolders,
+      max_subfolder_depth: maxSubfolderDepth,
+      follow_shortcuts: followShortcuts,
+      drive_image_quality: driveQuality,
+      cache_dir: customCacheDir.trim() || undefined,
+    };
 
     // Multi-source mode: if configuredSources has entries
     if (configuredSources.length > 0) {
@@ -709,22 +785,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       }
       setErrorMsg(null);
       const ephemeralKey = sessionStorage.getItem('drive_api_key_ephemeral') || undefined;
-      if (scanOpts) {
-        onStartJob(undefined, driveLink.trim(), ephemeralKey, scanOpts);
-      } else {
-        onStartJob(undefined, driveLink.trim(), ephemeralKey);
-      }
+      onStartJob(undefined, driveLink.trim(), ephemeralKey, scanOpts);
     } else {
       if (!folderPath.trim()) {
         setErrorMsg('Please specify a local folder path or zip archive.');
         return;
       }
       setErrorMsg(null);
-      if (scanOpts) {
-        onStartJob(folderPath.trim(), undefined, undefined, scanOpts);
-      } else {
-        onStartJob(folderPath.trim());
-      }
+      onStartJob(folderPath.trim(), undefined, undefined, scanOpts);
     }
   };
 
@@ -931,6 +999,62 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   ))}
                 </div>
 
+                {/* Pre-scan Storage Estimate & Disk Space Indicator */}
+                {driveEstimate && driveEstimate.valid && (
+                  <div
+                    id="drive-storage-estimate-card"
+                    data-testid="drive-storage-estimate-card"
+                    className="p-3 mb-3 rounded-lg text-xs"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      border: '1px solid var(--line)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <HardDrive className="w-4 h-4 text-[var(--accent)] flex-shrink-0" />
+                        <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                          Download Size: ~{formatBytes(driveEstimate.tier_estimates?.[driveQuality] ?? driveEstimate.required_bytes)}
+                        </span>
+                        <span style={{ color: 'var(--muted)' }}>
+                          ({driveEstimate.total_photos} photos{driveEstimate.folders_scanned > 1 ? ` across ${driveEstimate.folders_scanned} folders` : ''})
+                        </span>
+                      </div>
+                      <div style={{ color: 'var(--muted)', textAlign: 'right' }}>
+                        Free disk space:{' '}
+                        <span style={{ color: 'var(--text)', fontWeight: 600 }}>
+                          {formatBytes(driveEstimate.target_disk_free_bytes)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {!driveEstimate.is_space_sufficient && (
+                      <div
+                        id="drive-space-warning-banner"
+                        data-testid="drive-space-warning-banner"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          marginTop: '6px',
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          background: 'rgba(245, 158, 11, 0.12)',
+                          border: '1px solid #f59e0b',
+                          color: '#f59e0b',
+                          fontWeight: 600,
+                        }}
+                      >
+                        <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        <span>
+                          {driveEstimate.warning_message ||
+                            `Low disk space warning: ~${formatBytes(driveEstimate.required_bytes)} needed, only ${formatBytes(driveEstimate.target_disk_free_bytes)} free.`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Status line & action row */}
                 <div className="drive-detected-bar">
                   <div className="drive-detected-text">
@@ -946,7 +1070,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         id="select-home-drive-quality"
                         data-testid="select-home-drive-quality"
                         value={driveQuality}
-                        onChange={(e) => setDriveQuality(e.target.value as 'fast' | 'better' | 'best')}
+                        onChange={(e) => handleQualityChange(e.target.value as 'original' | 'best' | 'better' | 'fast')}
                         style={{
                           fontSize: '12px',
                           padding: '3px 8px',
@@ -957,9 +1081,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                           fontFamily: 'inherit',
                         }}
                       >
-                        <option value="fast">Fast (1000px)</option>
-                        <option value="better">Better (1600px)</option>
+                        <option value="original">Original (Full resolution) [Default]</option>
                         <option value="best">Best (2000px)</option>
+                        <option value="better">Better (1600px)</option>
+                        <option value="fast">Fast (1000px)</option>
                       </select>
                     </div>
                     <button
@@ -1063,7 +1188,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         id="select-home-drive-quality-initial"
                         data-testid="select-home-drive-quality"
                         value={driveQuality}
-                        onChange={(e) => setDriveQuality(e.target.value as 'fast' | 'better' | 'best')}
+                        onChange={(e) => handleQualityChange(e.target.value as 'original' | 'best' | 'better' | 'fast')}
                         style={{
                           fontSize: '12px',
                           padding: '3px 8px',
@@ -1074,9 +1199,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                           fontFamily: 'inherit',
                         }}
                       >
-                        <option value="fast">Fast (1000px)</option>
-                        <option value="better">Better (1600px)</option>
+                        <option value="original">Original (Full resolution) [Default]</option>
                         <option value="best">Best (2000px)</option>
+                        <option value="better">Better (1600px)</option>
+                        <option value="fast">Fast (1000px)</option>
                       </select>
                     </div>
                     <button
@@ -1457,6 +1583,38 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   />
                   <span className="font-medium text-[var(--text)]">Shortcut folders</span>
                 </label>
+              </div>
+
+              {/* Temp & Cache Storage Location Override */}
+              <div className="pt-2.5 mt-2.5 border-t border-[var(--line)]">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div>
+                    <span className="font-semibold text-[var(--text)]">Temp &amp; Cache Storage Location</span>
+                    <p className="text-[11px] text-[var(--muted)]">Store intermediate downloads and face embeddings on a custom drive partition.</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                    <input
+                      type="text"
+                      id="input-cache-dir"
+                      data-testid="input-cache-dir"
+                      value={customCacheDir}
+                      onChange={(e) => setCustomCacheDir(e.target.value)}
+                      placeholder="Default system temp"
+                      className="px-2 py-1 rounded text-xs bg-[var(--bg)] border border-[var(--line)] text-[var(--text)] font-mono w-48"
+                    />
+                    <button
+                      type="button"
+                      id="btn-browse-cache-dir"
+                      data-testid="btn-browse-cache-dir"
+                      onClick={handleBrowseCacheDir}
+                      className="btn sm"
+                      style={{ padding: '3px 8px', fontSize: '11px' }}
+                    >
+                      <Folder className="w-3 h-3" />
+                      <span>Browse</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@
 
 import re
 import os
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
@@ -13,6 +13,8 @@ from backend.api.models import (
     JobStatusResponse,
     DriveVerifyRequest,
     DriveVerifyResponse,
+    DriveEstimateRequest,
+    DriveEstimateResponse,
     PersonClusterResponse,
     UnrecognizedResponse,
     SuggestionsResponse,
@@ -310,6 +312,166 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
                 fid=folder_id,
                 err_type="other",
             )
+
+    def _get_disk_space_info(target_path: Optional[str | Path]) -> Tuple[Optional[int], Optional[int]]:
+        import shutil
+        if not target_path:
+            p = Path.cwd().resolve()
+        else:
+            p = Path(target_path).resolve()
+        while not p.exists() and p.parent != p:
+            p = p.parent
+        try:
+            usage = shutil.disk_usage(p)
+            return int(usage.free), int(usage.total)
+        except Exception:
+            return None, None
+
+    def _format_bytes_display(n_bytes: Optional[int]) -> str:
+        if n_bytes is None:
+            return "Unknown"
+        if n_bytes < 1024:
+            return f"{n_bytes} B"
+        if n_bytes < 1024 * 1024:
+            return f"{n_bytes / 1024:.1f} KB"
+        if n_bytes < 1024 * 1024 * 1024:
+            return f"{n_bytes / (1024 * 1024):.1f} MB"
+        return f"{n_bytes / (1024 * 1024 * 1024):.2f} GB"
+
+    @router.post("/drive/estimate", response_model=DriveEstimateResponse)
+    def estimate_drive_storage(req: DriveEstimateRequest):
+        import requests
+        from backend.drive.parser import parse_drive_folder_id
+        from backend.drive.config import get_drive_api_key
+
+        def _make_error_est(err_val: Any, default_code: str, fix: str, msg: str, fid: Optional[str] = None, err_type: str = "other") -> DriveEstimateResponse:
+            classification = classify_error(err_val)
+            code = classification.error_code if classification.error_code != "GENERIC_ERROR" else default_code
+            plain_fix = classification.plain_language_fix or fix
+            report = generate_diagnostics_report(state, job_manager, error_override=err_val)
+            return DriveEstimateResponse(
+                valid=False,
+                folder_id=fid,
+                error_type=err_type,
+                error_code=code,
+                plain_language_fix=plain_fix,
+                diagnostics_report=report.formatted_report,
+                message=msg,
+            )
+
+        # 1. Parse folder ID
+        try:
+            folder_id = parse_drive_folder_id(req.drive_folder)
+        except ValueError as e:
+            return _make_error_est(e, "CORRUPT_INPUT", "Make sure you copied a valid Google Drive folder link or ID.", str(e), err_type="invalid_link")
+
+        # 2. Check API key
+        api_key = (req.drive_api_key or "").strip() or get_drive_api_key()
+        if not api_key:
+            return _make_error_est(
+                "api_key_missing", "BAD_KEY_400",
+                "Google Drive requires an API key for public folders. Open Settings to configure your API key.",
+                "Google Drive API key is missing. Please provide your API key in Settings.",
+                fid=folder_id, err_type="api_key_missing",
+            )
+
+        # 3. Check metadata
+        try:
+            meta_url = f"https://www.googleapis.com/drive/v3/files/{folder_id}"
+            meta_resp = requests.get(meta_url, params={"fields": "id,name,mimeType,trashed", "key": api_key, "supportsAllDrives": "true"}, timeout=8)
+            if meta_resp.status_code != 200:
+                if meta_resp.status_code == 400:
+                    return _make_error_est("api key not valid 400", "BAD_KEY_400", "The Google Drive API key is invalid or expired.", "Invalid Google Drive API key.", fid=folder_id, err_type="api_key_invalid")
+                if meta_resp.status_code == 404:
+                    return _make_error_est("404 not found", "PRIVATE_FOLDER_404", "CatLog could not find this folder. Check permissions or link.", "Google Drive folder was not found.", fid=folder_id, err_type="folder_not_found")
+                if meta_resp.status_code == 403:
+                    is_q = "quota" in meta_resp.text.lower() or "ratelimit" in meta_resp.text.lower()
+                    return _make_error_est(meta_resp.text, "QUOTA_403" if is_q else "PRIVATE_FOLDER_404", "Rate limit exceeded or folder private.", "Access denied or quota exceeded.", fid=folder_id, err_type="quota_exceeded" if is_q else "folder_permission_denied")
+                return _make_error_est(f"HTTP {meta_resp.status_code}", "GENERIC_ERROR", "Check network connection.", f"Drive API error {meta_resp.status_code}", fid=folder_id)
+
+            meta_data = meta_resp.json()
+            if meta_data.get("trashed"):
+                return _make_error_est("trash folder", "PRIVATE_FOLDER_404", "Folder is in trash.", "Folder is in trash.", fid=folder_id, err_type="folder_not_found")
+            if meta_data.get("mimeType") != "application/vnd.google-apps.folder":
+                return _make_error_est("file not folder", "CORRUPT_INPUT", "Please provide a folder link, not a file link.", "Link is for a file, not a folder.", fid=folder_id, err_type="invalid_link")
+
+            folder_name = meta_data.get("name", "Google Drive Folder")
+
+            # 4. Full BFS scan across the folder tree
+            from backend.drive import DriveClient
+            client = DriveClient(api_key=api_key)
+            rec = req.scan_subfolders if req.scan_subfolders is not None else getattr(state.settings, "scan_subfolders", True)
+            depth = req.max_subfolder_depth if req.max_subfolder_depth is not None else getattr(state.settings, "max_subfolder_depth", 5)
+            shortcuts = req.follow_shortcuts if req.follow_shortcuts is not None else getattr(state.settings, "follow_shortcuts", False)
+
+            list_res = client.list_folder_images(
+                folder_id=folder_id,
+                recursive=rec,
+                max_depth=depth,
+                include_shortcuts=shortcuts,
+            )
+
+            total_photos = len(list_res.files)
+            if total_photos == 0:
+                return _make_error_est("no_images", "CORRUPT_INPUT", "Folder has no supported images.", f"Folder '{folder_name}' has no image files.", fid=folder_id, err_type="no_images")
+
+            total_orig_bytes = sum(getattr(f, "size", 0) for f in list_res.files)
+            if total_orig_bytes == 0:
+                total_orig_bytes = total_photos * 3_500_000
+
+            tier_estimates = {
+                "original": total_orig_bytes,
+                "best": int(total_photos * 228_000),
+                "better": int(total_photos * 147_000),
+                "fast": int(total_photos * 64_000),
+            }
+
+            sel_qual = (req.quality or "original").strip().lower()
+            if sel_qual not in tier_estimates:
+                sel_qual = "original"
+            required_bytes = tier_estimates[sel_qual]
+
+            # 5. Check disk space on target and temp
+            target_path = req.output_dir or state.settings.output_dir or "export"
+            temp_path = req.cache_dir or state.settings.cache_dir or str(state.work_dir)
+
+            target_free, target_total = _get_disk_space_info(target_path)
+            temp_free, temp_total = _get_disk_space_info(temp_path)
+
+            is_sufficient = True
+            warning_msg = None
+
+            safety_needed = int(required_bytes * 1.15)
+            if target_free is not None and target_free < safety_needed:
+                is_sufficient = False
+                warning_msg = f"Low disk space on export drive: {_format_bytes_display(target_free)} available, ~{_format_bytes_display(required_bytes)} needed."
+            elif temp_free is not None and temp_free < safety_needed:
+                is_sufficient = False
+                warning_msg = f"Low disk space on temp/cache drive: {_format_bytes_display(temp_free)} available, ~{_format_bytes_display(required_bytes)} needed."
+
+            return DriveEstimateResponse(
+                valid=True,
+                folder_id=folder_id,
+                folder_name=folder_name,
+                total_photos=total_photos,
+                total_original_bytes=total_orig_bytes,
+                tier_estimates=tier_estimates,
+                selected_quality=sel_qual,
+                required_bytes=required_bytes,
+                target_disk_free_bytes=target_free,
+                target_disk_total_bytes=target_total,
+                temp_disk_free_bytes=temp_free,
+                temp_disk_total_bytes=temp_total,
+                is_space_sufficient=is_sufficient,
+                warning_message=warning_msg,
+                folders_scanned=max(1, list_res.folders_scanned),
+                skipped_videos=list_res.skipped_videos_count,
+                message=f"Found {total_photos} photos across {max(1, list_res.folders_scanned)} folder(s). Estimated download size: {_format_bytes_display(required_bytes)}.",
+            )
+        except requests.exceptions.RequestException as e:
+            return _make_error_est(e, "OFFLINE", "Check your internet connection.", f"Network error: {e}", fid=folder_id)
+        except Exception as e:
+            return _make_error_est(e, "GENERIC_ERROR", "Check your settings and link.", f"Estimate failed: {e}", fid=folder_id)
 
     # 2. People & Unrecognized Endpoints
     @router.get("/people", response_model=List[PersonClusterResponse])

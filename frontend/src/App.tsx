@@ -826,7 +826,13 @@ export const App: React.FC = () => {
     inputPath?: string,
     driveFolder?: string,
     driveApiKey?: string,
-    scanOptions?: { scan_subfolders?: boolean; max_subfolder_depth?: number; follow_shortcuts?: boolean },
+    scanOptions?: {
+      scan_subfolders?: boolean;
+      max_subfolder_depth?: number;
+      follow_shortcuts?: boolean;
+      drive_image_quality?: 'original' | 'best' | 'better' | 'fast';
+      cache_dir?: string;
+    },
     sources?: ScanSourceItem[]
   ) => {
     try {

@@ -20,6 +20,8 @@ import {
   Cpu,
   Compass,
   FolderTree,
+  HardDrive,
+  Folder,
 } from 'lucide-react';
 import { MascotSticker } from './MascotSticker';
 import { CopyDiagnosticsButton } from './CopyDiagnosticsButton';
@@ -91,9 +93,10 @@ const SUBFOLDER_DEPTH_OPTIONS: DropdownOption[] = [
 ];
 
 const DRIVE_QUALITY_OPTIONS: DropdownOption<string>[] = [
-  { value: 'fast', label: 'Fast (1000 px)', desc: '95% bandwidth reduction, best for speed', badge: 'DEFAULT' },
-  { value: 'better', label: 'Better (1600 px)', desc: 'Balanced face detail and download speed', badge: 'RECOMMENDED' },
+  { value: 'original', label: 'Original (Full camera resolution)', desc: 'Full image size from Google Drive', badge: 'DEFAULT' },
   { value: 'best', label: 'Best (2000 px)', desc: 'Maximum face resolution from Drive CDN', badge: 'HD' },
+  { value: 'better', label: 'Better (1600 px)', desc: 'Balanced face detail and download speed' },
+  { value: 'fast', label: 'Fast (1000 px)', desc: '95% bandwidth reduction, best for speed' },
 ];
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
@@ -123,7 +126,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     include_maybe: false,
     event_title: 'CatLog Gallery',
     event_subtitle: 'Auto-sorted face albums and photo gallery',
-    drive_image_quality: 'fast',
+    drive_image_quality: 'original',
     scan_subfolders: true,
     max_subfolder_depth: 5,
     follow_shortcuts: false,
@@ -683,16 +686,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <CustomDropdown
                   id="select-drive-image-quality"
                   label="Drive Image Quality"
-                  value={settings.drive_image_quality || 'fast'}
+                  value={settings.drive_image_quality || 'original'}
                   onChange={(val: any) => {
-                    const updated = { ...settings, drive_image_quality: val as 'fast' | 'better' | 'best' };
+                    const updated = { ...settings, drive_image_quality: val as 'original' | 'best' | 'better' | 'fast' };
                     setSettings(updated);
                     api.updateSettings({ drive_image_quality: val }).catch(console.error);
                   }}
                   options={DRIVE_QUALITY_OPTIONS}
                 />
                 <p className="text-xs text-[var(--muted)] mt-1.5 leading-relaxed">
-                  Controls image resolution downloaded from Google Drive CDN (Fast: =s1000, Better: =s1600, Best: =s2000). Higher tiers retain distant/small faces without modifying SPEC 6.2 clustering floors.
+                  Controls image resolution downloaded from Google Drive CDN (Original: full camera resolution [Default], Best: =s2000, Better: =s1600, Fast: =s1000). Higher tiers retain distant/small faces without modifying SPEC 6.2 clustering floors.
                 </p>
               </div>
 
@@ -799,6 +802,113 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   title="Include Shortcut Folders"
                   subtitle="Follow Google Drive shortcuts to other folders (default: disabled)."
                 />
+              </div>
+            </div>
+
+            {/* Storage & Working Directories */}
+            <div id="card-settings-storage" className="settings-panel p-5 space-y-4">
+              <div className="flex items-center justify-between border-b-2 border-[var(--line)] pb-2.5">
+                <span className="text-sm md:text-base font-extrabold uppercase tracking-wider text-[var(--text)] flex items-center gap-2">
+                  <HardDrive className="w-4 h-4 text-[var(--accent)]" />
+                  Storage &amp; Working Directories
+                </span>
+                <span className="text-xs font-mono text-[var(--muted)]">Paths</span>
+              </div>
+
+              <div className="space-y-3.5">
+                <div>
+                  <label htmlFor="setting-output-dir" className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-1">
+                    Export Output Directory
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="setting-output-dir"
+                      data-testid="setting-output-dir"
+                      type="text"
+                      value={settings.output_dir || 'export'}
+                      onChange={(e) => {
+                        const updated = { ...settings, output_dir: e.target.value };
+                        setSettings(updated);
+                      }}
+                      onBlur={() => {
+                        api.updateSettings({ output_dir: settings.output_dir || 'export' }).catch(console.error);
+                      }}
+                      placeholder="export"
+                      className="settings-input flex-1"
+                      style={{ height: '36px', fontSize: '13px' }}
+                    />
+                    <button
+                      type="button"
+                      id="btn-browse-export-dir"
+                      data-testid="btn-browse-export-dir"
+                      onClick={async () => {
+                        if (window.pywebview?.api?.select_folder) {
+                          const folder = await window.pywebview.api.select_folder('Select Export Directory');
+                          if (folder) {
+                            const updated = { ...settings, output_dir: folder };
+                            setSettings(updated);
+                            api.updateSettings({ output_dir: folder }).catch(console.error);
+                          }
+                        }
+                      }}
+                      className="btn sm"
+                      style={{ height: '36px', padding: '0 12px' }}
+                    >
+                      <Folder className="w-3.5 h-3.5" />
+                      <span>Browse</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--muted)] mt-1">
+                    Where exported face galleries and grouped albums are saved.
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="setting-cache-dir" className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-1">
+                    Temp &amp; Cache Storage Directory
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="setting-cache-dir"
+                      data-testid="setting-cache-dir"
+                      type="text"
+                      value={settings.cache_dir || ''}
+                      onChange={(e) => {
+                        const updated = { ...settings, cache_dir: e.target.value };
+                        setSettings(updated);
+                      }}
+                      onBlur={() => {
+                        api.updateSettings({ cache_dir: settings.cache_dir || undefined }).catch(console.error);
+                      }}
+                      placeholder="Default system temporary folder (auto)"
+                      className="settings-input flex-1"
+                      style={{ height: '36px', fontSize: '13px' }}
+                    />
+                    <button
+                      type="button"
+                      id="btn-browse-cache-dir-settings"
+                      data-testid="btn-browse-cache-dir-settings"
+                      onClick={async () => {
+                        if (window.pywebview?.api?.select_folder) {
+                          const folder = await window.pywebview.api.select_folder('Select Temp / Cache Directory');
+                          if (folder) {
+                            const updated = { ...settings, cache_dir: folder };
+                            setSettings(updated);
+                            api.updateSettings({ cache_dir: folder }).catch(console.error);
+                          }
+                        }
+                      }}
+                      className="btn sm"
+                      style={{ height: '36px', padding: '0 12px' }}
+                    >
+                      <Folder className="w-3.5 h-3.5" />
+                      <span>Browse</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--muted)] mt-1">
+                    Where raw downloaded Drive images and intermediate face embeddings are stored. Choose a secondary drive (e.g. D:\) if primary C:\ disk space is constrained.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
