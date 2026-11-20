@@ -33,6 +33,10 @@ export const MergeProjectsModal: React.FC<MergeProjectsModalProps> = ({
   const [isMerging, setIsMerging] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mergeResult, setMergeResult] = useState<MergeProjectsResponse | null>(null);
+  const [conflictResolutions, setConflictResolutions] = useState<
+    Record<number, { choice: 'a' | 'b' | 'both' | 'custom'; customText: string }>
+  >({});
+  const [isApplyingResolutions, setIsApplyingResolutions] = useState<boolean>(false);
 
   useEffect(() => {
     loadRecentProjects();
@@ -81,6 +85,43 @@ export const MergeProjectsModal: React.FC<MergeProjectsModalProps> = ({
       setErrorMsg(err.message || 'Failed to merge projects. Please ensure both projects use identical settings.');
     } finally {
       setIsMerging(false);
+    }
+  };
+
+  const handleApplyResolutionsAndOpen = async () => {
+    if (!mergeResult) return;
+    setIsApplyingResolutions(true);
+    try {
+      for (let i = 0; i < mergeResult.conflicts.length; i++) {
+        const c = mergeResult.conflicts[i];
+        if (c.conflict_type === 'name_conflict') {
+          const res = conflictResolutions[i] || { choice: 'a', customText: '' };
+          let finalLabel = String(c.val_a || '');
+          if (res.choice === 'b') {
+            finalLabel = String(c.val_b || '');
+          } else if (res.choice === 'both') {
+            finalLabel = `${c.val_a} / ${c.val_b}`;
+          } else if (res.choice === 'custom' && res.customText.trim()) {
+            finalLabel = res.customText.trim();
+          }
+
+          try {
+            await apiClient.applyEdit({
+              op: 'name',
+              person: [c.entity_id],
+              label: finalLabel,
+            });
+          } catch (e) {
+            console.warn(`Failed to apply resolved name to ${c.entity_id}:`, e);
+          }
+        }
+      }
+      onMergedSuccess(mergeResult);
+      onClose();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to apply conflict resolutions.');
+    } finally {
+      setIsApplyingResolutions(false);
     }
   };
 
@@ -194,35 +235,175 @@ export const MergeProjectsModal: React.FC<MergeProjectsModalProps> = ({
                 </div>
               </div>
 
-              {/* Conflict Review Section */}
+              {/* Conflict Review & Side-by-Side Resolution Section */}
               {mergeResult.conflicts_count > 0 ? (
                 <div
                   data-testid="merge-conflicts-section"
-                  className="p-3.5 rounded border text-xs space-y-2.5"
+                  className="p-3.5 rounded border text-xs space-y-3"
                   style={{
-                    background: 'rgba(245, 158, 11, 0.1)',
+                    background: 'rgba(245, 158, 11, 0.08)',
                     borderColor: '#f59e0b',
                   }}
                 >
-                  <div className="flex items-center gap-2 text-amber-400 font-bold">
-                    <AlertTriangle className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-amber-500 font-bold">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     <span>Review Needed: {mergeResult.conflicts_count} Conflicts Flagged</span>
                   </div>
-                  <p className="text-[var(--muted)] text-[11px]">
-                    Conflicts were not silently overwritten; both items were preserved for your review:
+                  <p className="text-[var(--muted)] text-[11px] leading-relaxed">
+                    Choose how each conflict should be resolved in the merged project. Naming choices can be selected side-by-side or given a custom name:
                   </p>
-                  <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                    {mergeResult.conflicts.map((c, idx) => (
-                      <div
-                        key={idx}
-                        className="p-2 rounded bg-[var(--panel)] border border-[var(--line)] text-[11px]"
-                      >
-                        <span className="font-semibold text-amber-300">
-                          [{c.conflict_type}]
-                        </span>{' '}
-                        {c.description}
-                      </div>
-                    ))}
+
+                  <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                    {mergeResult.conflicts.map((c, idx) => {
+                      const isNameConflict = c.conflict_type === 'name_conflict';
+                      const currentRes = conflictResolutions[idx] || { choice: 'a', customText: '' };
+
+                      return (
+                        <div
+                          key={idx}
+                          data-testid={`conflict-item-${idx}`}
+                          className="p-3 rounded space-y-2"
+                          style={{
+                            background: 'var(--panel)',
+                            border: '1.5px solid var(--line)',
+                          }}
+                        >
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-amber-500 uppercase tracking-wider">
+                              [{c.conflict_type.replace('_', ' ')}]
+                            </span>
+                            <span className="font-mono text-[var(--muted)]">{c.entity_id}</span>
+                          </div>
+                          <p className="text-[11px] text-[var(--text)]">{c.description}</p>
+
+                          {isNameConflict && (
+                            <div className="pt-2 border-t border-[var(--line)] space-y-2">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] block">
+                                Choose Resolved Name:
+                              </span>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                                {/* Option A */}
+                                <label
+                                  className="flex items-center gap-2 p-2 rounded cursor-pointer border"
+                                  style={{
+                                    borderColor: currentRes.choice === 'a' ? 'var(--accent)' : 'var(--line)',
+                                    background: currentRes.choice === 'a' ? 'rgba(250, 113, 117, 0.08)' : 'var(--bg)',
+                                  }}
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`conflict-${idx}`}
+                                    data-testid={`radio-keep-a-${idx}`}
+                                    checked={currentRes.choice === 'a'}
+                                    onChange={() =>
+                                      setConflictResolutions((prev) => ({
+                                        ...prev,
+                                        [idx]: { ...currentRes, choice: 'a' },
+                                      }))
+                                    }
+                                    className="accent-[var(--accent)]"
+                                  />
+                                  <span className="truncate">Keep A: <strong>&quot;{c.val_a}&quot;</strong></span>
+                                </label>
+
+                                {/* Option B */}
+                                <label
+                                  className="flex items-center gap-2 p-2 rounded cursor-pointer border"
+                                  style={{
+                                    borderColor: currentRes.choice === 'b' ? 'var(--accent)' : 'var(--line)',
+                                    background: currentRes.choice === 'b' ? 'rgba(250, 113, 117, 0.08)' : 'var(--bg)',
+                                  }}
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`conflict-${idx}`}
+                                    data-testid={`radio-keep-b-${idx}`}
+                                    checked={currentRes.choice === 'b'}
+                                    onChange={() =>
+                                      setConflictResolutions((prev) => ({
+                                        ...prev,
+                                        [idx]: { ...currentRes, choice: 'b' },
+                                      }))
+                                    }
+                                    className="accent-[var(--accent)]"
+                                  />
+                                  <span className="truncate">Keep B: <strong>&quot;{c.val_b}&quot;</strong></span>
+                                </label>
+
+                                {/* Option Both */}
+                                <label
+                                  className="flex items-center gap-2 p-2 rounded cursor-pointer border"
+                                  style={{
+                                    borderColor: currentRes.choice === 'both' ? 'var(--accent)' : 'var(--line)',
+                                    background: currentRes.choice === 'both' ? 'rgba(250, 113, 117, 0.08)' : 'var(--bg)',
+                                  }}
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`conflict-${idx}`}
+                                    data-testid={`radio-keep-both-${idx}`}
+                                    checked={currentRes.choice === 'both'}
+                                    onChange={() =>
+                                      setConflictResolutions((prev) => ({
+                                        ...prev,
+                                        [idx]: { ...currentRes, choice: 'both' },
+                                      }))
+                                    }
+                                    className="accent-[var(--accent)]"
+                                  />
+                                  <span className="truncate">Combine: <strong>&quot;{c.val_a} / {c.val_b}&quot;</strong></span>
+                                </label>
+
+                                {/* Option Custom */}
+                                <label
+                                  className="flex items-center gap-2 p-2 rounded cursor-pointer border"
+                                  style={{
+                                    borderColor: currentRes.choice === 'custom' ? 'var(--accent)' : 'var(--line)',
+                                    background: currentRes.choice === 'custom' ? 'rgba(250, 113, 117, 0.08)' : 'var(--bg)',
+                                  }}
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`conflict-${idx}`}
+                                    data-testid={`radio-custom-${idx}`}
+                                    checked={currentRes.choice === 'custom'}
+                                    onChange={() =>
+                                      setConflictResolutions((prev) => ({
+                                        ...prev,
+                                        [idx]: { ...currentRes, choice: 'custom' },
+                                      }))
+                                    }
+                                    className="accent-[var(--accent)]"
+                                  />
+                                  <span>Custom name:</span>
+                                </label>
+                              </div>
+
+                              {currentRes.choice === 'custom' && (
+                                <input
+                                  type="text"
+                                  data-testid={`input-custom-name-${idx}`}
+                                  value={currentRes.customText}
+                                  onChange={(e) =>
+                                    setConflictResolutions((prev) => ({
+                                      ...prev,
+                                      [idx]: { ...currentRes, customText: e.target.value },
+                                    }))
+                                  }
+                                  placeholder={`Enter name (default: ${c.val_a})`}
+                                  className="w-full text-xs p-2 rounded border riso-input mt-1"
+                                  style={{
+                                    background: 'var(--bg)',
+                                    borderColor: 'var(--line)',
+                                    color: 'var(--text)',
+                                  }}
+                                />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
@@ -236,15 +417,19 @@ export const MergeProjectsModal: React.FC<MergeProjectsModalProps> = ({
                 <button
                   type="button"
                   data-testid="open-merged-project-btn"
-                  onClick={() => {
-                    onMergedSuccess(mergeResult);
-                    onClose();
-                  }}
+                  onClick={handleApplyResolutionsAndOpen}
+                  disabled={isApplyingResolutions}
                   className="riso-btn-accent text-xs"
                   style={{ height: '36px', padding: '0 18px' }}
                 >
-                  <span>Open Merged Project</span>
-                  <ArrowRight className="w-4 h-4 ml-1.5 inline" />
+                  {isApplyingResolutions ? (
+                    <span>Applying Resolutions...</span>
+                  ) : (
+                    <>
+                      <span>{mergeResult.conflicts_count > 0 ? 'Apply Resolutions & Open Project' : 'Open Merged Project'}</span>
+                      <ArrowRight className="w-4 h-4 ml-1.5 inline" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>

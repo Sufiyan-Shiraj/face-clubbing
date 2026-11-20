@@ -193,4 +193,36 @@ describe('ModelDownloadBanner & Model Management', () => {
     expect(screen.getAllByText(/45.2%/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/124.5 MB \/ 275.3 MB/i)).toBeDefined();
   });
+
+  it('triggers auto-download on first run when autoDownloadOnFirstRun is true and models missing', async () => {
+    localStorage.removeItem('catlog_auto_download_attempted');
+    const missingStatus: ModelStatus = {
+      model_name: 'buffalo_l',
+      installed: false,
+      valid: false,
+      status: 'missing',
+      version: '1.0.0',
+      latest_version: '1.0.0',
+      update_available: false,
+      is_downloading: false,
+      stage: 'idle',
+      percent: 0,
+      current_bytes: 0,
+      total_bytes: 288621354,
+      message: 'Models are missing',
+    };
+    vi.mocked(api.getModelStatus).mockResolvedValue(missingStatus);
+    vi.mocked(api.downloadModels).mockResolvedValue({
+      ...missingStatus,
+      is_downloading: true,
+      stage: 'connecting',
+    });
+
+    render(<ModelDownloadBanner autoDownloadOnFirstRun={true} />);
+
+    await waitFor(() => {
+      expect(api.downloadModels).toHaveBeenCalledWith(false);
+      expect(localStorage.getItem('catlog_auto_download_attempted')).toBe('true');
+    });
+  });
 });

@@ -730,12 +730,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   // Start Job handler
   const handleStart = async (e?: React.FormEvent) => {
     e?.preventDefault?.();
-    const scanOpts = {
-      scan_subfolders: scanSubfolders,
-      max_subfolder_depth: maxSubfolderDepth,
-      follow_shortcuts: followShortcuts,
-      drive_image_quality: driveQuality,
-      cache_dir: customCacheDir.trim() || undefined,
+    const isCustomOptions = !scanSubfolders || maxSubfolderDepth !== 5 || followShortcuts;
+    const hasCustomCache = Boolean(customCacheDir.trim());
+    const isDriveCustom = sourceMode === 'drive' && (driveQuality !== 'original' || hasCustomCache);
+
+    const buildScanOpts = () => {
+      const opts: any = {
+        scan_subfolders: scanSubfolders,
+        max_subfolder_depth: maxSubfolderDepth,
+        follow_shortcuts: followShortcuts,
+      };
+      if (sourceMode === 'drive') {
+        opts.drive_image_quality = driveQuality;
+      }
+      if (hasCustomCache) {
+        opts.cache_dir = customCacheDir.trim();
+      }
+      return opts;
     };
 
     // Multi-source mode: if configuredSources has entries
@@ -772,7 +783,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       }
       setErrorMsg(null);
       const ephemeralKey = sessionStorage.getItem('drive_api_key_ephemeral') || undefined;
-      onStartJob(undefined, undefined, ephemeralKey, scanOpts, allSources);
+      onStartJob(undefined, undefined, ephemeralKey, buildScanOpts(), allSources);
       return;
     }
 
@@ -785,14 +796,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       }
       setErrorMsg(null);
       const ephemeralKey = sessionStorage.getItem('drive_api_key_ephemeral') || undefined;
-      onStartJob(undefined, driveLink.trim(), ephemeralKey, scanOpts);
+      if (isCustomOptions || isDriveCustom) {
+        onStartJob(undefined, driveLink.trim(), ephemeralKey, buildScanOpts());
+      } else {
+        onStartJob(undefined, driveLink.trim(), ephemeralKey);
+      }
     } else {
       if (!folderPath.trim()) {
         setErrorMsg('Please specify a local folder path or zip archive.');
         return;
       }
       setErrorMsg(null);
-      onStartJob(folderPath.trim(), undefined, undefined, scanOpts);
+      if (isCustomOptions || hasCustomCache) {
+        onStartJob(folderPath.trim(), undefined, undefined, buildScanOpts());
+      } else {
+        onStartJob(folderPath.trim());
+      }
     }
   };
 
@@ -863,7 +882,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
 
         {/* Face Model Download / Update Banner (Blank when installed & up to date) */}
-        <ModelDownloadBanner />
+        <ModelDownloadBanner autoDownloadOnFirstRun={true} />
 
         {/* Three Source-Mode Buttons */}
         <div id="source-mode-nav" className="source-mode-nav" aria-label="Source mode selection">
@@ -1175,6 +1194,96 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     {isLoading ? 'Scanning...' : 'Scan folder'}
                   </button>
                 </div>
+
+                {/* Proactive Google Photos Album Intercept Card */}
+                {(driveLink.toLowerCase().includes('photos.google.com') || driveLink.toLowerCase().includes('photos.app.goo.gl')) && (
+                  <div
+                    id="google-photos-intercept-card"
+                    data-testid="google-photos-intercept-card"
+                    className="p-4 mt-3 rounded-xl border text-left"
+                    style={{
+                      background: 'rgba(245, 158, 11, 0.10)',
+                      border: '1.5px solid #f59e0b',
+                      color: 'var(--text)',
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                        style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#d97706' }}
+                      >
+                        <AlertTriangle className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-bold" style={{ color: '#d97706' }}>
+                            Google Photos Album URL Detected
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={handleClearDriveLink}
+                            className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                        <p className="text-xs leading-relaxed" style={{ color: 'var(--text)', opacity: 0.95 }}>
+                          Under Google&apos;s API policy (effective March 2025), third-party applications are prohibited from reading photo album contents directly via shared URL.
+                        </p>
+                        <div
+                          className="p-2.5 rounded-lg text-xs space-y-1.5"
+                          style={{
+                            background: 'var(--panel)',
+                            border: '1px solid var(--line)',
+                          }}
+                        >
+                          <span className="font-bold text-[var(--text)] block">Quick 2-Step Workaround:</span>
+                          <ol className="list-decimal pl-4 space-y-1 text-[var(--muted)]">
+                            <li>
+                              In your Google Photos album, press <kbd className="px-1.5 py-0.5 rounded font-mono font-bold" style={{ background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--text)' }}>Shift + D</kbd> (or click <strong>⋮ &rarr; Download all</strong>) to save as a ZIP.
+                            </li>
+                            <li>
+                              Click below to select the downloaded ZIP file directly in CatLog!
+                            </li>
+                          </ol>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1 flex-wrap">
+                          <button
+                            type="button"
+                            id="btn-switch-zip-from-photos"
+                            data-testid="btn-switch-zip-from-photos"
+                            onClick={async () => {
+                              handleClearDriveLink();
+                              setSourceMode('zip');
+                              await handleBrowseFile();
+                            }}
+                            className="btn pri sm inline-flex items-center gap-1.5"
+                          >
+                            <FolderArchive className="w-3.5 h-3.5" />
+                            <span>Select Downloaded ZIP File</span>
+                          </button>
+                          <button
+                            type="button"
+                            id="btn-open-photos-intercept-guide"
+                            data-testid="btn-open-photos-intercept-guide"
+                            onClick={() => {
+                              setGuidanceTab('photos');
+                              setIsGuidanceOpen(true);
+                            }}
+                            className="btn sm inline-flex items-center gap-1.5"
+                            style={{ border: '1px solid var(--line)' }}
+                          >
+                            <HelpCircle className="w-3.5 h-3.5 text-[var(--accent)]" />
+                            <span>View Full Instructions</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '8px' }}>
                   <p className="hint" style={{ margin: 0 }}>
                     Click &apos;Check link&apos; to verify Google Drive folder. Folder must be shared as &apos;Anyone with the link&apos;.

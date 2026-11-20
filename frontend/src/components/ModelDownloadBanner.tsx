@@ -7,17 +7,20 @@ export interface ModelDownloadBannerProps {
   onStatusChange?: (status: ModelStatus) => void;
   className?: string;
   showCompactTriggerWhenInstalled?: boolean;
+  autoDownloadOnFirstRun?: boolean;
 }
 
 export const ModelDownloadBanner: React.FC<ModelDownloadBannerProps> = ({
   onStatusChange,
   className = '',
   showCompactTriggerWhenInstalled = true,
+  autoDownloadOnFirstRun = false,
 }) => {
   const [status, setStatus] = useState<ModelStatus | null>(null);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isFirstRunSetup, setIsFirstRunSetup] = useState<boolean>(false);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -32,8 +35,32 @@ export const ModelDownloadBanner: React.FC<ModelDownloadBannerProps> = ({
   }, [onStatusChange]);
 
   useEffect(() => {
-    fetchStatus();
-  }, [fetchStatus]);
+    let mounted = true;
+    const init = async () => {
+      const res = await fetchStatus();
+      if (mounted && autoDownloadOnFirstRun && res && !res.installed && !res.is_downloading) {
+        const hasAutoDownloaded = localStorage.getItem('catlog_auto_download_attempted');
+        if (!hasAutoDownloaded) {
+          localStorage.setItem('catlog_auto_download_attempted', 'true');
+          setIsFirstRunSetup(true);
+          try {
+            const downRes = await api.downloadModels(false);
+            if (mounted && downRes) {
+              setStatus(downRes);
+            } else if (mounted) {
+              setStatus((prev) => (prev ? { ...prev, is_downloading: true } : prev));
+            }
+          } catch (e) {
+            console.warn('Auto download on first run failed:', e);
+          }
+        }
+      }
+    };
+    init();
+    return () => {
+      mounted = false;
+    };
+  }, [fetchStatus, autoDownloadOnFirstRun]);
 
   // Poll while downloading
   useEffect(() => {
@@ -41,12 +68,12 @@ export const ModelDownloadBanner: React.FC<ModelDownloadBannerProps> = ({
     const interval = setInterval(async () => {
       const res = await fetchStatus();
       if (res && !res.is_downloading && res.stage === 'completed') {
-        setFeedback('Models verified and up to date!');
-        setTimeout(() => setFeedback(null), 4000);
+        setFeedback(isFirstRunSetup ? 'First-time setup complete! Models verified and ready for offline use.' : 'Models verified and up to date!');
+        setTimeout(() => setFeedback(null), 4500);
       }
     }, 600);
     return () => clearInterval(interval);
-  }, [status?.is_downloading, fetchStatus]);
+  }, [status?.is_downloading, fetchStatus, isFirstRunSetup]);
 
   const handleCheckUpdate = async (simulate = false) => {
     setIsChecking(true);
@@ -141,9 +168,17 @@ export const ModelDownloadBanner: React.FC<ModelDownloadBannerProps> = ({
             <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
             <div>
               <h4 className="text-sm font-semibold text-[var(--text)]">
-                {status.update_available ? 'Updating Face Models...' : 'Downloading Face Models...'}
+                {isFirstRunSetup
+                  ? 'First-Time Setup: Downloading Face Models...'
+                  : status.update_available
+                  ? 'Updating Face Models...'
+                  : 'Downloading Face Models...'}
               </h4>
-              <p className="text-xs text-[var(--muted)]">{status.message || 'Connecting to model repository...'}</p>
+              <p className="text-xs text-[var(--muted)]">
+                {isFirstRunSetup
+                  ? 'First-time setup: Downloading AI face recognition models (~288 MB). This happens once so CatLog works completely offline afterwards.'
+                  : (status.message || 'Connecting to model repository...')}
+              </p>
             </div>
           </div>
           <span className="text-xs font-mono font-bold text-blue-400">{pct.toFixed(1)}%</span>
