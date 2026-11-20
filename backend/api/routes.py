@@ -590,6 +590,45 @@ def create_router(state: AppState, job_manager: JobManager) -> APIRouter:
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
+    @router.post("/export/open-browser")
+    def open_export_in_browser(req: dict = {}):
+        import webbrowser
+        path_str = req.get("path") or req.get("output_dir")
+        if not path_str:
+            path_str = state.settings.output_dir or "export"
+        p = Path(path_str).resolve()
+        gallery_file = p / "gallery.html"
+        if not gallery_file.exists():
+            if (p / "index.html").exists():
+                gallery_file = p / "index.html"
+            elif p.is_file():
+                gallery_file = p
+        if gallery_file.exists():
+            webbrowser.open(gallery_file.as_uri())
+            return {"success": True, "opened": str(gallery_file)}
+        return {"success": False, "message": f"Gallery file not found in {p}"}
+
+    @router.post("/export/open-folder")
+    def open_export_folder(req: dict = {}):
+        import subprocess, sys
+        path_str = req.get("path") or req.get("output_dir")
+        if not path_str:
+            path_str = state.settings.output_dir or "export"
+        p = Path(path_str).resolve()
+        if p.is_file():
+            p = p.parent
+        p.mkdir(parents=True, exist_ok=True)
+        try:
+            if sys.platform == "win32":
+                os.startfile(str(p))
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", str(p)])
+            else:
+                subprocess.Popen(["xdg-open", str(p)])
+            return {"success": True, "opened": str(p)}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     # 7. Settings Endpoints
     @router.get("/settings", response_model=SettingsModel)
     def get_settings():

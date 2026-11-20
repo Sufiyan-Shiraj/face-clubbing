@@ -171,8 +171,8 @@ export const ModelDownloadBanner: React.FC<ModelDownloadBannerProps> = ({
                 {isFirstRunSetup
                   ? 'First-Time Setup: Downloading Face Models...'
                   : status.update_available
-                  ? 'Updating Face Models...'
-                  : 'Downloading Face Models...'}
+                    ? 'Updating Face Models...'
+                    : 'Downloading Face Models...'}
               </h4>
               <p className="text-xs text-[var(--muted)]">
                 {isFirstRunSetup

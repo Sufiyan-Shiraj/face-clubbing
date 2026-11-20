@@ -84,6 +84,16 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [hoveredFaceId, setHoveredFaceId] = useState<string | null>(null);
 
+  // QoL 6: Auto-scroll faces drawer card into view when face box is hovered
+  useEffect(() => {
+    if (hoveredFaceId && showFacesDrawer) {
+      const card = document.getElementById(`drawer-face-card-${hoveredFaceId}`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [hoveredFaceId, showFacesDrawer]);
+
   // Face assignment & reassign state
   const [localAssignments, setLocalAssignments] = useState<
     Record<string, { personId?: string | null; personLabel?: string; isUnrecognized: boolean }>
@@ -1063,6 +1073,7 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
                   return (
                     <div
                       key={f.faceId}
+                      id={`drawer-face-card-${f.faceId}`}
                       onMouseEnter={() => setHoveredFaceId(f.faceId)}
                       onMouseLeave={() => setHoveredFaceId(null)}
                       className="p-3.5 rounded transition-all"

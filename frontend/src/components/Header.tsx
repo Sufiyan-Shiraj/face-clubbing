@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActiveTab } from '../types';
-import { Folder, Settings as SettingsIcon, RotateCcw, RefreshCw, Plus } from 'lucide-react';
+import { Folder, Settings as SettingsIcon, RotateCcw, RefreshCw, Plus, HelpCircle } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
 export type RisoTheme = 't-dark' | 't-paper' | 't-navy';
@@ -22,6 +22,8 @@ interface HeaderProps {
   onOpenProject?: () => void;
   onNewProject?: () => void;
   onOpenTutorial?: () => void;
+  activeProjectName?: string;
+  totalPhotosCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -36,6 +38,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenProject,
   onNewProject,
   onOpenTutorial,
+  activeProjectName,
+  totalPhotosCount,
 }) => {
   return (
     <div className="hdr">
@@ -46,6 +50,29 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => onTabChange('home')}
         />
       </div>
+
+      {/* Active Project Pill (QoL 5) */}
+      {activeProjectName && (
+        <button
+          type="button"
+          id="header-active-project-pill"
+          data-testid="header-active-project-pill"
+          onClick={onOpenProject}
+          className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono transition-all hover:scale-105"
+          style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid var(--line)',
+            color: 'var(--text)',
+          }}
+          title="Active Project. Click to switch or open recent projects"
+        >
+          <Folder className="w-3.5 h-3.5 text-[var(--accent)]" />
+          <span className="font-bold truncate max-w-[200px]">{activeProjectName}</span>
+          {totalPhotosCount !== undefined && totalPhotosCount > 0 && (
+            <span className="opacity-60 text-[11px]">({totalPhotosCount} photos)</span>
+          )}
+        </button>
+      )}
 
       {/* Right Controls: 3 Theme Dots, Open Saved Project, Minimal Settings */}
       <div className="hdr-r">
@@ -128,6 +155,25 @@ export const Header: React.FC<HeaderProps> = ({
           <Folder className="w-4 h-4 opacity-75" />
           <span>Open saved project</span>
         </button>
+
+        {/* CatLog Handbook & Shortcuts Link */}
+        {onOpenTutorial && (
+          <button
+            type="button"
+            id="header-handbook-help-btn"
+            data-testid="header-handbook-help-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onOpenTutorial();
+            }}
+            className="lnk"
+            title="CatLog Handbook & Keyboard Shortcuts (?)"
+          >
+            <HelpCircle className="w-4 h-4 opacity-75" />
+            <span>Guide (?)</span>
+          </button>
+        )}
 
 
 

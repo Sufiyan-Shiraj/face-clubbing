@@ -16,6 +16,7 @@ import { HomeScreen } from './components/HomeScreen';
 import { CustomDialog, DialogOptions } from './components/CustomDialog';
 import { AlertTriangle, X } from 'lucide-react';
 import { AppUpdateBanner } from './components/AppUpdateBanner';
+import { ToastContainer, ToastItem } from './components/ToastContainer';
 
 const ProgressScreen = React.lazy(() => import('./components/ProgressScreen').then(m => ({ default: m.ProgressScreen })));
 const ReviewPeopleScreen = React.lazy(() => import('./components/ReviewPeopleScreen').then(m => ({ default: m.ReviewPeopleScreen })));
@@ -24,6 +25,7 @@ const SettingsScreen = React.lazy(() => import('./components/SettingsScreen').th
 const OpenProjectModal = React.lazy(() => import('./components/OpenProjectModal').then(m => ({ default: m.OpenProjectModal })));
 const MergeProjectsModal = React.lazy(() => import('./components/MergeProjectsModal').then(m => ({ default: m.MergeProjectsModal })));
 const TutorialSpotlight = React.lazy(() => import('./components/TutorialSpotlight').then(m => ({ default: m.TutorialSpotlight })));
+const TutorialHandbookModal = React.lazy(() => import('./components/TutorialHandbookModal').then(m => ({ default: m.TutorialHandbookModal })));
 
 const DEMO_TUTORIAL_PEOPLE: PersonCluster[] = [
   {
@@ -217,6 +219,9 @@ export const App: React.FC = () => {
   const [isOpenProjectModalOpen, setIsOpenProjectModalOpen] = useState<boolean>(false);
   const [isMergeModalOpen, setIsMergeModalOpen] = useState<boolean>(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
+  const [isHandbookOpen, setIsHandbookOpen] = useState<boolean>(false);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [activeProjectName, setActiveProjectName] = useState<string | null>(null);
 
   const handleTabChange = (t: ActiveTab) => {
     setActiveTab(t);
@@ -515,7 +520,10 @@ export const App: React.FC = () => {
       loadAllData().then(() => {
         api.getActiveProject()
           .then((proj) => {
-            if (!proj.active) {
+            if (proj.active && proj.name) {
+              setActiveProjectName(proj.name);
+            } else if (!proj.active) {
+              setActiveProjectName(null);
               setActiveTab((prev) => (prev === 'people' ? 'home' : prev));
             }
           })
@@ -663,6 +671,41 @@ export const App: React.FC = () => {
     setSelectedIds(new Set());
   };
 
+  // Undo action
+  const handleUndo = useCallback(async () => {
+    try {
+      const res = await api.undo();
+      if (res.success) {
+        setAppliedEditsCount((c) => Math.max(0, c - 1));
+        await loadAllData();
+        showToast('Undo successful', 'info', false);
+      } else {
+        showErrorDialog(res.message || 'No edits to undo', undefined, 'Undo Status');
+      }
+    } catch (err: any) {
+      showErrorDialog(`Undo failed: ${err.message || err}`);
+    }
+  }, [loadAllData, showErrorDialog]);
+
+  // Toast notification system (QoL 3)
+  const showToast = useCallback(
+    (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success', withUndo = false) => {
+      const id = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const newToast: ToastItem = {
+        id,
+        message,
+        type,
+        undoAction: withUndo ? handleUndo : undefined,
+      };
+      setToasts((prev) => [...prev.slice(-3), newToast]);
+    },
+    [handleUndo]
+  );
+
+  const handleDismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   // Merge selected people
   const handleMergeSelected = async () => {
     if (selectedIds.size < 2) return;
@@ -682,6 +725,7 @@ export const App: React.FC = () => {
         setAppliedEditsCount((c) => c + 1);
         handleClearSelection();
         await loadAllData();
+        showToast(`Merged ${personIds.length} people into a group`, 'success', true);
       }
     } catch (err: any) {
       showErrorDialog(`Merge failed: ${err.message || err}`);
@@ -709,6 +753,7 @@ export const App: React.FC = () => {
       if (res.success) {
         setAppliedEditsCount((c) => c + 1);
         await loadAllData();
+        showToast('Accepted match & merged', 'success', true);
       }
     } catch (err: any) {
       showErrorDialog(`Suggestion accept failed: ${err.message || err}`);
@@ -727,6 +772,7 @@ export const App: React.FC = () => {
       if (res.success) {
         setAppliedEditsCount((c) => c + 1);
         await loadAllData();
+        showToast(targetPersonId ? 'Face assigned to person' : 'New person created from face', 'success', true);
       }
     } catch (err: any) {
       showErrorDialog(`Assign face failed: ${err.message || err}`);
@@ -739,6 +785,7 @@ export const App: React.FC = () => {
       if (res.success) {
         setAppliedEditsCount((c) => c + faceIds.length);
         await loadAllData();
+        showToast(`Assigned ${faceIds.length} faces`, 'success', true);
       }
     } catch (err: any) {
       showErrorDialog(`Batch assign failed: ${err.message || err}`);
@@ -751,6 +798,7 @@ export const App: React.FC = () => {
       if (res.success) {
         setAppliedEditsCount((c) => c + photoIds.length);
         await loadAllData();
+        showToast(`Assigned ${photoIds.length} photos`, 'success', true);
       }
     } catch (err: any) {
       showErrorDialog(`Assign photos failed: ${err.message || err}`);
@@ -764,6 +812,7 @@ export const App: React.FC = () => {
       if (res.success) {
         setAppliedEditsCount((c) => c + 1);
         await loadAllData();
+        showToast(`Renamed person to "${label}"`, 'success', true);
       }
     } catch (err: any) {
       showErrorDialog(`Rename failed: ${err.message || err}`);
@@ -776,6 +825,7 @@ export const App: React.FC = () => {
       if (res.success) {
         setAppliedEditsCount((c) => c + 1);
         await loadAllData();
+        showToast('Person hidden from review and export', 'info', true);
       }
     } catch (err: any) {
       showErrorDialog(`Hide failed: ${err.message || err}`);
@@ -788,6 +838,7 @@ export const App: React.FC = () => {
       if (res.success) {
         setAppliedEditsCount((c) => c + 1);
         await loadAllData();
+        showToast('Face detached from person', 'info', true);
       }
     } catch (err: any) {
       showErrorDialog(`Remove face failed: ${err.message || err}`);
@@ -800,24 +851,10 @@ export const App: React.FC = () => {
       if (res.success) {
         setAppliedEditsCount((c) => c + 1);
         await loadAllData();
+        showToast('Photo removed from person', 'info', true);
       }
     } catch (err: any) {
       showErrorDialog(`Remove photo failed: ${err.message || err}`);
-    }
-  };
-
-  // Undo action
-  const handleUndo = async () => {
-    try {
-      const res = await api.undo();
-      if (res.success) {
-        setAppliedEditsCount((c) => Math.max(0, c - 1));
-        await loadAllData();
-      } else {
-        showErrorDialog(res.message || 'No edits to undo', undefined, 'Undo Status');
-      }
-    } catch (err: any) {
-      showErrorDialog(`Undo failed: ${err.message || err}`);
     }
   };
 
@@ -884,6 +921,9 @@ export const App: React.FC = () => {
       }
 
       const st = await api.startJob(inputPath, driveFolder, driveApiKey, 'export', keepEdits, scanOptions, sources);
+      if (computedSourceTitle) {
+        setActiveProjectName(computedSourceTitle);
+      }
       setJobStatus(st);
       setProgressHistory([st]);
       setActiveTab('progress');
@@ -929,7 +969,7 @@ export const App: React.FC = () => {
   };
 
   const handleOpenTutorial = () => {
-    setIsTutorialOpen(true);
+    setIsHandbookOpen(true);
   };
 
   const executeNewProject = async () => {
@@ -938,6 +978,7 @@ export const App: React.FC = () => {
     } catch (e) {
       console.error('Failed to reset project on backend:', e);
     }
+    setActiveProjectName(null);
     setPeople([]);
     setPhotos({});
     setUnrecognized({ total_unrecognized_photos: 0, no_face_photos: [], faces: [] });
@@ -978,6 +1019,7 @@ export const App: React.FC = () => {
 
   const handleProjectOpened = async (res: OpenProjectResponse) => {
     setHasExportedCurrentSession(false);
+    setActiveProjectName(res.project?.name || null);
     await loadAllData();
     handleTabChange('people');
     if (res.read_only) {
@@ -988,6 +1030,103 @@ export const App: React.FC = () => {
       setProjectReadOnlyNotice(null);
     }
   };
+
+  // Global keyboard shortcuts (QoL 2)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
+
+      // Undo: Ctrl+Z or Cmd+Z
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        if (!isInput) {
+          e.preventDefault();
+          handleUndo();
+          return;
+        }
+      }
+
+      // Open Project: Ctrl+O or Cmd+O
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        handleOpenProject();
+        return;
+      }
+
+      // New Project: Ctrl+N or Cmd+N
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        handleNewProject();
+        return;
+      }
+
+      // Escape: dismiss handbook or spotlight
+      if (e.key === 'Escape') {
+        if (isHandbookOpen) {
+          setIsHandbookOpen(false);
+          return;
+        }
+        if (isTutorialOpen) {
+          setIsTutorialOpen(false);
+          return;
+        }
+      }
+
+      // Ignore remaining hotkeys if focused on form input
+      if (isInput) return;
+
+      // ? or Shift+/ opens handbook
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setIsHandbookOpen((prev) => !prev);
+        return;
+      }
+
+      // 1-5 keys for tab navigation when no modal is open
+      if (
+        !isHandbookOpen &&
+        !isTutorialOpen &&
+        !isOpenProjectModalOpen &&
+        !isMergeModalOpen &&
+        !dialogState.isOpen
+      ) {
+        if (e.key === '1') {
+          e.preventDefault();
+          handleTabChange('home');
+        } else if (e.key === '2') {
+          e.preventDefault();
+          handleTabChange('progress');
+        } else if (e.key === '3') {
+          e.preventDefault();
+          handleTabChange('people');
+        } else if (e.key === '4') {
+          e.preventDefault();
+          handleTabChange('export');
+        } else if (e.key === '5') {
+          e.preventDefault();
+          handleTabChange('settings');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [
+    isHandbookOpen,
+    isTutorialOpen,
+    isOpenProjectModalOpen,
+    isMergeModalOpen,
+    dialogState.isOpen,
+    handleUndo,
+    handleOpenProject,
+    handleNewProject,
+    handleTabChange,
+  ]);
 
   if (isInitialLoading) {
     return (
@@ -1020,6 +1159,8 @@ export const App: React.FC = () => {
         onOpenProject={handleOpenProject}
         onNewProject={handleNewProject}
         onOpenTutorial={handleOpenTutorial}
+        activeProjectName={activeProjectName || (people.length > 0 ? computedSourceTitle : undefined)}
+        totalPhotosCount={Object.keys(photos).length}
       />
 
       {/* Left Vertical Step Rail matching screenshot */}
@@ -1263,6 +1404,19 @@ export const App: React.FC = () => {
           />
         )}
 
+        {/* Visual Handbook Modal (Dual-Mode Tutorial) */}
+        {isHandbookOpen && (
+          <TutorialHandbookModal
+            isOpen={isHandbookOpen}
+            onClose={() => setIsHandbookOpen(false)}
+            onStartSpotlightTour={() => {
+              setIsHandbookOpen(false);
+              setIsTutorialOpen(true);
+            }}
+            theme={theme}
+          />
+        )}
+
         {/* Interactive Onboarding Spotlight Tour */}
         {isTutorialOpen && (
           <TutorialSpotlight
@@ -1284,6 +1438,13 @@ export const App: React.FC = () => {
 
       {/* CatLog Tactile Custom Dialog for errors & active-project guard */}
       <CustomDialog {...dialogState} theme={theme} />
+
+      {/* Floating Undo Notification Toasts (QoL 3) */}
+      <ToastContainer
+        toasts={toasts}
+        onDismiss={handleDismissToast}
+        onUndo={handleUndo}
+      />
     </div>
   );
 };

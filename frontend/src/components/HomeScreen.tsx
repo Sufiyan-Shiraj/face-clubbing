@@ -819,9 +819,70 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const isLocalReady = Boolean(folderPath.trim());
   const canStartScan = configuredSources.length > 0 || (sourceMode === 'drive' ? isDriveReady : isLocalReady);
 
+  // Drag and Drop State & Handlers (QoL 1)
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragOver) setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const name = file.name.toLowerCase();
+      const path = (file as any).path || file.name;
+
+      if (name.endsWith('.zip')) {
+        setSourceMode('zip');
+        setFolderPath(path);
+      } else {
+        setSourceMode('local');
+        setFolderPath(path);
+      }
+      setErrorMsg(null);
+    }
+  };
+
   return (
-    <div className="main-content-flow">
-      <div className={`home-stage-container ${sourceMode === 'drive' && driveVerified ? 'stage-expanded' : ''}`}>
+    <div
+      className="main-content-flow relative"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <div className={`home-stage-container ${sourceMode === 'drive' && driveVerified ? 'stage-expanded' : ''} relative`}>
+        {/* Full-screen Drag and Drop Overlay */}
+        {isDragOver && (
+          <div
+            data-testid="drag-drop-overlay"
+            className="absolute inset-0 z-50 rounded-2xl flex flex-col items-center justify-center p-6 text-center backdrop-blur-md pointer-events-none animate-in fade-in zoom-in-95 duration-150"
+            style={{
+              background: 'rgba(234, 88, 12, 0.15)',
+              border: '3px dashed var(--accent)',
+              color: 'var(--text)',
+            }}
+          >
+            <FolderArchive className="w-16 h-16 text-[var(--accent)] mb-3 animate-bounce" />
+            <h3 className="text-xl font-bold font-mono">Drop Folder or ZIP Archive Here</h3>
+            <p className="text-xs text-[var(--muted)] mt-1.5 font-mono">
+              Release to instantly set as photo source for clustering
+            </p>
+          </div>
+        )}
         {/* Headline & Supporting Sentence with Image Title */}
         <div className="headline-group">
           <h1 className="h1 h1-title-container">

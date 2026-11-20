@@ -36,7 +36,7 @@ export const TUTORIAL_SPOTLIGHT_STEPS: TutorialSpotlightStep[] = [
     pageTitle: '01 SOURCE • INPUT OPTIONS',
     stepTitle: 'Photo Source Modes',
     description:
-      'Choose where your event photos live: Google Drive (stream directly from a public folder link without OAuth), Local Folder (on-device hard drive/SD card), or Zip Archive.',
+      'Choose where your event photos live: Google Drive (stream directly from a public folder link without OAuth), Local Folder (on-device hard drive/SD card), or Zip Archive. Add multiple sources to queue them together.',
     preferredPlacement: 'bottom',
     mascotPose: 1, // Hello
   },
@@ -66,123 +66,38 @@ export const TUTORIAL_SPOTLIGHT_STEPS: TutorialSpotlightStep[] = [
     pageTitle: '03 REVIEW • SELECTION & MERGE',
     stepTitle: 'Multi-Select & Batch Merge',
     description:
-      'All attendees are clustered by identity. Select multiple people using the card checkboxes to merge duplicate clusters with one click. Instant Undo lets you revert any merge anytime.',
+      'All attendees are clustered by identity. Select multiple people using the card checkboxes to merge duplicate clusters with one click. Instant Undo (Ctrl+Z) lets you revert any merge anytime.',
     preferredPlacement: 'bottom',
     mascotPose: 3, // Pointing
   },
 
-  // --- 03 REVIEW: SUGGESTIONS ---
+  // --- 04 REVIEW: SUGGESTIONS & TRIAGE ---
   {
     id: 'review-suggestions',
     tab: 'people',
     subTab: 'suggestions',
     selector: '#suggestions-list, [data-testid^="suggestion-card-"]',
     fallbackSelector: '.review-tabs-bar',
-    pageTitle: '03 REVIEW • SMART MATCH SUGGESTIONS',
-    stepTitle: 'Borderline Match Suggestions',
+    pageTitle: '04 TRIAGE • SMART SUGGESTIONS & UNKNOWNS',
+    stepTitle: 'Borderline Matches & Face Inspector',
     description:
-      'Pairs that fall in the "maybe" range (between auto-merge and the suggestion cap) appear here. Compare both faces side-by-side and click "Accept & Merge" or "Reject".',
+      'Pairs in the "maybe" range appear here for 1-click Accept or Reject. In the photo viewer, open "Inspect Faces" to view bounding boxes and reassign faces directly.',
     preferredPlacement: 'bottom',
     mascotPose: 2, // Looking around / examining
   },
 
-  // --- 03 REVIEW: UNRECOGNIZED ---
-  {
-    id: 'review-unrecognized',
-    tab: 'people',
-    subTab: 'unrecognized',
-    selector: '#unrec-faces-grid, #unrecognized-triage-container',
-    fallbackSelector: '.review-tabs-bar',
-    pageTitle: '03 REVIEW • UNRECOGNIZED TRIAGE',
-    stepTitle: 'Unrecognized Faces Triage',
-    description:
-      'Low-confidence, blurry, or side-angle faces that missed cluster thresholds are gathered here. Select unassigned faces and quickly assign them to an attendee or create a new person.',
-    preferredPlacement: 'bottom',
-    mascotPose: 8, // Idle / snoozing while searching for stray faces
-  },
-
-  // --- 04 PUBLISH ---
+  // --- 05 PUBLISH ---
   {
     id: 'export-publish',
     tab: 'export',
     selector: '#export-bundle-btn',
     fallbackSelector: '.export-actions-row',
-    pageTitle: '04 PUBLISH • STANDALONE VIEWER',
+    pageTitle: '05 PUBLISH • STANDALONE VIEWER',
     stepTitle: 'Zero-Server Offline Gallery',
     description:
       'Generates a self-contained gallery.html and static web bundle. Opens offline directly from a USB stick on any device or web host with zero backend dependencies.',
     preferredPlacement: 'top',
     mascotPose: 6, // Done! (checklist)
-  },
-
-  // --- 05 SETTINGS: SLIDER 1 ---
-  {
-    id: 'settings-distance',
-    tab: 'settings',
-    selector: '#card-slider-distance',
-    fallbackSelector: '#setting-distance-threshold',
-    pageTitle: '05 SETTINGS • SLIDER 1 OF 4',
-    stepTitle: 'Primary Distance Cutoff (0.30 - 0.65)',
-    description:
-      'Controls initial clustering strictness. Lower (<0.45) = strict (matches only near-identical faces, creating separate clusters). Higher (>0.55) = loose (groups faces across angles, lighting, and expressions).',
-    preferredPlacement: 'right',
-    mascotPose: 3, // Pointing
-  },
-
-  // --- 05 SETTINGS: SLIDER 2 ---
-  {
-    id: 'settings-merge',
-    tab: 'settings',
-    selector: '#card-slider-merge',
-    fallbackSelector: '#setting-merge-threshold',
-    pageTitle: '05 SETTINGS • SLIDER 2 OF 4',
-    stepTitle: 'Second-Pass Merge Cutoff (0.30 - 0.60)',
-    description:
-      'Consolidates sub-clusters by centroid distance. Lower (<0.45) keeps clusters separate. Higher (>0.55) aggressively auto-merges duplicate clusters into one person without asking.',
-    preferredPlacement: 'left',
-    mascotPose: 2, // Looking around / examining
-  },
-
-  // --- 05 SETTINGS: SLIDER 3 ---
-  {
-    id: 'settings-maybe',
-    tab: 'settings',
-    selector: '#card-slider-maybe',
-    fallbackSelector: '#setting-maybe-threshold',
-    pageTitle: '05 SETTINGS • SLIDER 3 OF 4',
-    stepTitle: 'Suggestion Range Cap (0.50 - 0.75)',
-    description:
-      'Defines the radar sweep for the "Suggestions" tab. Borderline pairs between the merge cutoff and this ceiling are queued for 1-click human approval.',
-    preferredPlacement: 'right',
-    mascotPose: 5, // Working on laptop / tuning radar
-  },
-
-  // --- 05 SETTINGS: SLIDER 4 ---
-  {
-    id: 'settings-guard',
-    tab: 'settings',
-    selector: '#card-slider-guard',
-    fallbackSelector: '#setting-same-photo-guard',
-    pageTitle: '05 SETTINGS • SLIDER 4 OF 4',
-    stepTitle: 'Same-Photo Guard Cap (0.20 - 0.50)',
-    description:
-      'The sanity-check barrier. Prevents merging two faces that appear together in the exact same photograph, guaranteeing distinct co-attendees never fuse.',
-    preferredPlacement: 'left',
-    mascotPose: 7, // Leaving / keeping distance
-  },
-
-  // --- 05 SETTINGS: DRIVE API KEY ---
-  {
-    id: 'settings-key',
-    tab: 'settings',
-    selector: '#card-settings-drive-key',
-    fallbackSelector: '#setting-drive-api-key',
-    pageTitle: '05 SETTINGS • GOOGLE DRIVE KEY',
-    stepTitle: 'Optional Cloud API Key',
-    description:
-      'Stored locally in your browser. Raises Google Drive quota limits when scanning large event albums with hundreds of photos.',
-    preferredPlacement: 'top',
-    mascotPose: 4, // Excited
   },
 ];
 
@@ -228,6 +143,13 @@ export const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({
     arrowPlacement: 'top',
     arrowOffset: 20,
   });
+
+  const initialTabRef = useRef<ActiveTab>(activeTab);
+  useEffect(() => {
+    if (isOpen) {
+      initialTabRef.current = activeTab;
+    }
+  }, [isOpen]);
 
   const step = TUTORIAL_SPOTLIGHT_STEPS[currentStepIndex];
 
@@ -471,6 +393,9 @@ export const TutorialSpotlight: React.FC<TutorialSpotlightProps> = ({
     } catch (e) { }
     onSetSelectedPeopleIds?.(new Set());
     onSetReviewSubTab?.('people');
+    if (initialTabRef.current) {
+      onNavigateTab(initialTabRef.current);
+    }
     onClose();
   };
 

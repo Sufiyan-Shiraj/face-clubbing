@@ -108,7 +108,7 @@ export const MergeProjectsModal: React.FC<MergeProjectsModalProps> = ({
           try {
             await apiClient.applyEdit({
               op: 'name',
-              person: [c.entity_id],
+              person_id: c.entity_id,
               label: finalLabel,
             });
           } catch (e) {

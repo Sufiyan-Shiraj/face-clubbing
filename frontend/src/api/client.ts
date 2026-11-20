@@ -16,6 +16,8 @@ import {
   WhatChangedResponse,
   SnapshotItem,
   UndoSnapshotResponse,
+  DriveEstimateRequest,
+  DriveEstimateResponse,
 } from '../types';
 
 const BASE_URL = '/api';
@@ -339,6 +341,20 @@ export const api = {
     return fetchJson(`${BASE_URL}/export`, {
       method: 'POST',
       body: JSON.stringify(options),
+    });
+  },
+
+  async openExportInBrowser(path?: string): Promise<{ success: boolean; opened?: string; message?: string }> {
+    return fetchJson(`${BASE_URL}/export/open-browser`, {
+      method: 'POST',
+      body: JSON.stringify({ path }),
+    });
+  },
+
+  async openExportInFolder(path?: string): Promise<{ success: boolean; opened?: string; error?: string }> {
+    return fetchJson(`${BASE_URL}/export/open-folder`, {
+      method: 'POST',
+      body: JSON.stringify({ path }),
     });
   },
 

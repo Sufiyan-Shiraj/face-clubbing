@@ -18,6 +18,8 @@ import {
   Sun,
   Compass,
   Palette,
+  ExternalLink,
+  FolderOpen,
 } from 'lucide-react';
 import { MascotSticker } from './MascotSticker';
 
@@ -748,15 +750,55 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => copyToClipboard(exportResult.output_dir, 'dir')}
-              className="btn sm flex items-center gap-2"
-              style={{ height: '46px', fontSize: '15px', fontWeight: 700 }}
-            >
-              {copiedKey === 'dir' ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
-              <span>{copiedKey === 'dir' ? 'Path Copied!' : 'Copy Absolute Path'}</span>
-            </button>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                type="button"
+                id="btn-open-gallery-browser"
+                data-testid="btn-open-gallery-browser"
+                onClick={async () => {
+                  try {
+                    await api.openExportInBrowser(exportResult.output_dir);
+                  } catch (e: any) {
+                    setBrowseError(`Failed to open browser: ${e.message || e}`);
+                  }
+                }}
+                className="btn pri sm flex items-center gap-2"
+                style={{ height: '46px', fontSize: '14px', fontWeight: 700 }}
+                title="Launch standalone gallery.html in your default web browser"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>Preview Gallery</span>
+              </button>
+
+              <button
+                type="button"
+                id="btn-open-export-folder"
+                data-testid="btn-open-export-folder"
+                onClick={async () => {
+                  try {
+                    await api.openExportInFolder(exportResult.output_dir);
+                  } catch (e: any) {
+                    setBrowseError(`Failed to open folder: ${e.message || e}`);
+                  }
+                }}
+                className="btn sm flex items-center gap-2"
+                style={{ height: '46px', fontSize: '14px', fontWeight: 700 }}
+                title="Open export directory in File Explorer"
+              >
+                <FolderOpen className="w-4 h-4" />
+                <span>Show in Explorer</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => copyToClipboard(exportResult.output_dir, 'dir')}
+                className="btn sm flex items-center gap-2"
+                style={{ height: '46px', fontSize: '14px', fontWeight: 700 }}
+              >
+                {copiedKey === 'dir' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                <span>{copiedKey === 'dir' ? 'Path Copied!' : 'Copy Path'}</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 pt-2 font-mono">

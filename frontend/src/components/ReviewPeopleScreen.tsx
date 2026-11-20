@@ -14,7 +14,7 @@ import { PersonModal } from './PersonModal';
 import { ImageViewerModal } from './ImageViewerModal';
 import { AddSourceModal } from './AddSourceModal';
 import { WhatChangedModal } from './WhatChangedModal';
-import { Users, Sparkles, HelpCircle, Undo2, CheckCircle, ShieldAlert, Plus, Check } from 'lucide-react';
+import { Users, Sparkles, HelpCircle, Undo2, CheckCircle, ShieldAlert, Plus, Check, Search, Filter, ArrowUpDown, X } from 'lucide-react';
 
 interface ReviewPeopleScreenProps {
   people: PersonCluster[];
@@ -158,6 +158,44 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
       });
     });
   }, [people, photos, activeSourceFilter]);
+
+  // People Search, Filter & Sort states (QoL 7)
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filterChip, setFilterChip] = useState<'all' | 'multiple' | 'prominent' | 'unlabeled'>('all');
+  const [sortBy, setSortBy] = useState<'count_desc' | 'count_asc' | 'name_asc'>('count_desc');
+
+  const displayedPeople = useMemo(() => {
+    let list = [...filteredPeopleBySource];
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((p) => {
+        const lbl = (p.label || p.id || '').toLowerCase();
+        return lbl.includes(q) || p.id.toLowerCase().includes(q);
+      });
+    }
+    if (filterChip === 'multiple') {
+      list = list.filter((p) => (p.photo_count ?? p.photos?.length ?? p.photo_ids?.length ?? 0) > 1);
+    } else if (filterChip === 'prominent') {
+      list = list.filter((p) => (p.photo_count ?? p.photos?.length ?? p.photo_ids?.length ?? 0) > 5);
+    } else if (filterChip === 'unlabeled') {
+      list = list.filter((p) => {
+        const lbl = p.label || p.id || '';
+        return /^person\s*\d+/i.test(lbl) || /^cluster\s*\d+/i.test(lbl);
+      });
+    }
+
+    list.sort((a, b) => {
+      const countA = a.photo_count ?? a.photos?.length ?? a.photo_ids?.length ?? 0;
+      const countB = b.photo_count ?? b.photos?.length ?? b.photo_ids?.length ?? 0;
+      if (sortBy === 'count_desc') return countB - countA;
+      if (sortBy === 'count_asc') return countA - countB;
+      const labelA = a.label || a.id || '';
+      const labelB = b.label || b.id || '';
+      return labelA.localeCompare(labelB);
+    });
+
+    return list;
+  }, [filteredPeopleBySource, searchQuery, filterChip, sortBy]);
 
   // Map for quick person lookup
   const peopleMap = useMemo(() => {
@@ -367,20 +405,102 @@ export const ReviewPeopleScreen: React.FC<ReviewPeopleScreenProps> = ({
 
       {/* Sub-tab Contents */}
       {activeSubTab === 'people' && (
-        <PeopleGrid
-          people={filteredPeopleBySource}
-          photos={photos}
-          selectedIds={selectedIds}
-          onToggleSelect={onToggleSelect}
-          onSelectAll={onSelectAll}
-          onClearSelection={onClearSelection}
-          onMergeSelected={onMergeSelected}
-          onSelectPerson={(p) => setInspectingPerson(p)}
-          isMerging={isMerging}
-          theme={theme}
-          selectedSourceId={activeSourceFilter}
-          availableSources={availableSources}
-        />
+        <div className="space-y-4">
+          {/* People Search, Filter Chips & Sort Bar (QoL 7) */}
+          <div
+            id="people-filter-toolbar"
+            data-testid="people-filter-toolbar"
+            className="flex items-center justify-between gap-3 flex-wrap p-2.5 rounded-lg border text-xs"
+            style={{
+              background: 'var(--panel)',
+              borderColor: 'var(--line)',
+            }}
+          >
+            <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+              <div className="relative flex-1 max-w-xs">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" />
+                <input
+                  type="text"
+                  id="input-people-search"
+                  data-testid="input-people-search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter attendees by name..."
+                  className="w-full pl-8 pr-7 py-1.5 rounded bg-[var(--bg)] border border-[var(--line)] text-[var(--text)] font-mono text-xs placeholder:text-[var(--muted)]"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Chips */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[
+                  { id: 'all', label: `All (${filteredPeopleBySource.length})` },
+                  { id: 'multiple', label: 'Multiple (>1)' },
+                  { id: 'prominent', label: 'Prominent (>5)' },
+                  { id: 'unlabeled', label: 'Unlabeled' },
+                ].map((chip) => {
+                  const isActive = filterChip === chip.id;
+                  return (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      id={`filter-chip-${chip.id}`}
+                      data-testid={`filter-chip-${chip.id}`}
+                      onClick={() => setFilterChip(chip.id as any)}
+                      className="px-2.5 py-1 rounded-full text-[11px] font-bold font-mono transition-all"
+                      style={{
+                        background: isActive ? 'var(--accent)' : 'var(--bg)',
+                        color: isActive ? '#121110' : 'var(--text)',
+                        border: '1px solid var(--line)',
+                      }}
+                    >
+                      {chip.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-1.5 ml-auto">
+              <ArrowUpDown className="w-3.5 h-3.5 text-[var(--muted)]" />
+              <select
+                id="select-people-sort"
+                data-testid="select-people-sort"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="bg-[var(--bg)] border border-[var(--line)] text-[var(--text)] text-xs font-mono px-2 py-1 rounded cursor-pointer"
+              >
+                <option value="count_desc">Most Photos</option>
+                <option value="count_asc">Fewest Photos</option>
+                <option value="name_asc">Name (A-Z)</option>
+              </select>
+            </div>
+          </div>
+
+          <PeopleGrid
+            people={displayedPeople}
+            photos={photos}
+            selectedIds={selectedIds}
+            onToggleSelect={onToggleSelect}
+            onSelectAll={onSelectAll}
+            onClearSelection={onClearSelection}
+            onMergeSelected={onMergeSelected}
+            onSelectPerson={(p) => setInspectingPerson(p)}
+            isMerging={isMerging}
+            theme={theme}
+            selectedSourceId={activeSourceFilter}
+            availableSources={availableSources}
+          />
+        </div>
       )}
 
       {activeSubTab === 'suggestions' && (
