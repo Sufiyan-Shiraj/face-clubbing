@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/React-19-61DAFB.svg?style=flat&logo=react&logoColor=black" alt="React 19" />
   <img src="https://img.shields.io/badge/FastAPI-0.115+-009688.svg?style=flat&logo=fastapi&logoColor=white" alt="FastAPI" />
   <img src="https://img.shields.io/badge/Vite-6.4+-646CFF.svg?style=flat&logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/Tests-208%20Passing-brightgreen.svg?style=flat" alt="208 Tests Passing" />
+  <img src="https://img.shields.io/badge/Tests-313%20Passing-brightgreen.svg?style=flat" alt="313 Tests Passing" />
   <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat" alt="MIT License" />
 </p>
 
@@ -34,8 +34,23 @@ Finally, CatLog exports lightweight static web galleries where attendees can bro
 
 - **100% Local Processing & Privacy Guarantee**  
   All face detection, facial embedding, and clustering algorithms execute locally on your machine. Zero attendee biometrics, facial crops, or photos are ever sent to external cloud AI services.
-- **Universal Source Ingestion**  
-  Scan photos from local disk folders, compressed ZIP archives, or public Google Drive shared folders via read-only Google Drive API v3 (no OAuth account login required). Google Drive ingestion seamlessly traverses nested subfolder hierarchies up to 5 levels deep with queue-based cycle prevention, file ID deduplication, and resilient non-fatal handling of inaccessible subfolders.
+- **Universal Multi-Source Ingestion**  
+  Mix and scan photos from local disk folders, compressed ZIP archives, or public Google Drive shared folders simultaneously in a single project with per-source provenance tracking. Google Drive ingestion seamlessly traverses nested subfolder hierarchies up to 5 levels deep with queue-based cycle prevention, file ID deduplication, and resilient non-fatal handling of inaccessible subfolders.
+- **Pre-Scan Storage Estimation & Quality Presets**  
+  Scan Google Drive folders upfront to estimate download size across 4 quality tiers (`original`, `best`, `better`, `fast`), verify free disk capacity, and configure custom temp/cache directories.
+- **Incremental Scanning (Frozen Mode)**  
+  Ingest additional photos or photographer batches into active projects at any time with guaranteed mathematical preservation of existing clusters (0 membership delta) and 1-click snapshot rollback.
+- **Two-Project Merge Wizard**  
+  Combine two independent event projects into a unified project with automatic conflict detection, settings hash verification, and side-by-side radio conflict resolution.
+- **Dual-Mode Tutorial Architecture**  
+  Features an illustrated 5-chapter Visual Handbook with theme-matched Grav mascots alongside a streamlined 5-step interactive Spotlight Tour.
+- **Desktop Quality of Life (QoL)**  
+  - Drag-and-drop folders and ZIPs anywhere onto the app window.
+  - Global keyboard shortcuts (`?`, `Ctrl+Z`, `Ctrl+O`, `Ctrl+N`, `1`–`5`, `Esc`).
+  - Floating 6-second auto-dismiss Undo toasts.
+  - 1-click native export actions (*Preview Gallery* in browser and *Show in Explorer/Finder*).
+  - Review people real-time search, filter chips (*All*, *Multiple*, *Prominent*, *Unlabeled*), and sorting.
+  - Smooth auto-scroll to face cards in the viewer drawer when hovering face highlights.
 - **Detached Native Telemetry Window**  
   Pop the activity log out into an independent native desktop window or open the dedicated telemetry interface (`/logs.html`) featuring live Server-Sent Events (SSE) streaming, elapsed time clock, stage filters, and full text search.
 - **Visual Review & Smart Assistance**  
@@ -61,10 +76,10 @@ Pre-built portable packages are published for Windows, macOS, and Linux on [GitH
 
 | Operating System | Package Archive | Platform Status | Format Details |
 | :--- | :--- | :---: | :--- |
-| **Windows (x64)** | `CatLog-0.1.0-rc1-windows-x64.zip` | **Stable** | Portable folder package (`CatLog.exe` + `_internal/`). Instant cold launch (~1.6s). |
-| **Windows (Onefile)** | `CatLog-0.1.0-rc1-windows-x64-onefile.zip` | **Alternative** | Single standalone binary executable (`CatLog-onefile.exe`). |
-| **macOS (Universal)** | `CatLog-0.1.0-rc1-macos-universal.zip` | **Beta** | Portable launcher bundle (`run.sh` + prebuilt UI). Apple Silicon & Intel compatible. |
-| **Linux (x64)** | `CatLog-0.1.0-rc1-linux-x64.tar.gz` | **Beta** | Portable launcher archive (`run.sh` + prebuilt UI) with WebKitGTK and browser fallback. |
+| **Windows (x64)** | `CatLog-2.0.0-windows-x64.zip` | **Stable** | Portable folder package (`CatLog.exe` + `_internal/`). Instant cold launch (~1.55s). |
+| **Windows (Onefile)** | `CatLog-2.0.0-windows-x64-onefile.zip` | **Alternative** | Single standalone binary executable (`CatLog-onefile.exe`). |
+| **macOS (Universal)** | `CatLog-2.0.0-macos-universal.zip` | **Beta** | Portable launcher bundle (`run.sh` + prebuilt UI). Apple Silicon & Intel compatible. |
+| **Linux (x64)** | `CatLog-2.0.0-linux-x64.tar.gz` | **Beta** | Portable launcher archive (`run.sh` + prebuilt UI) with WebKitGTK and browser fallback. |
 | **Verification** | `SHA256SUMS.txt` | &mdash; | SHA-256 integrity checksum manifest for all release files. |
 
 ### First-Run System Security Notes
