@@ -1,0 +1,18 @@
+﻿================================================================================
+VERIFYING PINNED BASELINE FIXTURE (eval\baseline)
+================================================================================
+[PASS] People clusters: 192 == 192
+[PASS] Clustered faces: 1256 == 1256
+[PASS] Unrecognized faces: 445 == 445
+[PASS] Total detected faces: 1701 == 1701
+[PASS] Unrecognized photos: 168 == 168
+[PASS] Total unique photos: 259 == 259
+[PASS] No-face photos: 4 == 4 (['3a6ecb102a1bcf95', 'ac41dd5a9fde7b36', 'cbc787ccd8664c53', 'fd6bc6fe47a406ab'])
+[PASS] Singletons: 81 == 81
+[PASS] Collision clusters: exactly 1 collage cluster verified (4a9b927f5789cd69)
+[PASS] Pre-merge cluster count: 242 == 242
+[PASS] Final clusters mapped in id_map: 192 == 192
+[PASS] Connected maybe groups: 28 == 28
+[PASS] Baseline edits.json is empty: 0 == 0
+================================================================================
+ALL CANONICAL BASELINE METRICS VERIFIED (100% OK)

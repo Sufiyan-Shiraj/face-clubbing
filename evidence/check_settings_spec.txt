@@ -1,0 +1,58 @@
+﻿================================================================================
+VERIFYING CLUSTERING SETTINGS SLIDER DEFAULTS AGAINST SPEC 6.2
+================================================================================
+
+[CHECK 1] backend.api.models.SettingsModel Defaults:
+  [PASS] distance_threshold: 0.5 == 0.5
+  [PASS] min_det_score: 0.5 == 0.5
+  [PASS] min_face_size: 64 == 64
+  [PASS] max_yaw: 70.0 == 70.0
+  [PASS] seed_min_det_score: 0.7 == 0.7
+  [PASS] seed_min_face_size: 64 == 64
+  [PASS] seed_max_yaw: 60.0 == 60.0
+  [PASS] attach_distance_cap: 0.45 == 0.45
+  [PASS] second_pass_merge: True == True
+  [PASS] merge_threshold: 0.5 == 0.5
+  [PASS] maybe_threshold: 0.65 == 0.65
+  [PASS] same_photo_merge_max: 0.4 == 0.4
+  [PASS] flip_average: False == False
+  [PASS] thumb_size: 400 == 400
+  [PASS] face_crop_size: 256 == 256
+
+[CHECK 2] backend.engine.pipeline.EngineConfig Defaults:
+  [PASS] distance_threshold: 0.5 == 0.5
+  [PASS] min_det_score: 0.5 == 0.5
+  [PASS] min_face_size: 64 == 64
+  [PASS] max_yaw: 70.0 == 70.0
+  [PASS] seed_min_det_score: 0.7 == 0.7
+  [PASS] seed_min_face_size: 64 == 64
+  [PASS] seed_max_yaw: 60.0 == 60.0
+  [PASS] attach_distance_cap: 0.45 == 0.45
+  [PASS] second_pass_merge: True == True
+  [PASS] merge_threshold: 0.5 == 0.5
+  [PASS] maybe_threshold: 0.65 == 0.65
+  [PASS] same_photo_merge_max: 0.4 == 0.4
+  [PASS] flip_average: False == False
+  [PASS] thumb_size: 400 == 400
+  [PASS] face_crop_size: 256 == 256
+
+[CHECK 3] frontend/src/components/SettingsScreen.tsx React State Defaults:
+  [PASS] distance_threshold defaults to 0.5
+  [PASS] min_det_score defaults to 0.5
+  [PASS] min_face_size defaults to 64
+  [PASS] max_yaw defaults to 70.0
+  [PASS] seed_min_det_score defaults to 0.7
+  [PASS] seed_min_face_size defaults to 64
+  [PASS] seed_max_yaw defaults to 60.0
+  [PASS] attach_distance_cap defaults to 0.45
+  [PASS] second_pass_merge defaults to True
+  [PASS] merge_threshold defaults to 0.5
+  [PASS] maybe_threshold defaults to 0.65
+  [PASS] same_photo_merge_max defaults to 0.4
+  [PASS] flip_average defaults to False
+  [PASS] thumb_size defaults to 400
+  [PASS] face_crop_size defaults to 256
+
+================================================================================
+ALL SETTINGS SLIDER AND ENGINE CONFIG DEFAULTS MATCH SPEC 6.2 (100% OK)
+================================================================================

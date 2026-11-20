@@ -1,0 +1,23 @@
+﻿
+> catlog-viewer@0.1.0-rc1 test
+> vitest run --run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90m<REPO_ROOT>/viewer[39m
+
+ [32mΓ£ô[39m src/__tests__/multiSourceViewer.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 763[2mms[22m[39m
+   [32mΓ£ô[39m Phase V2-5: Multi-Source Viewer Features [2m(5)[22m
+     [33m[2mΓ£ô[22m[39m virtualizes large photo galleries with windowed batch rendering[33m 372[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/viewer.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 984[2mms[22m[39m
+   [32mΓ£ô[39m Requirement 12: Config Swap Look Changes Without Code Change [2m(2)[22m
+     [33m[2mΓ£ô[22m[39m loads two different config.json files through App code path and verifies title, accent, footer, and toggle differ[33m 605[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/download.test.tsx [2m([22m[2m20 tests[22m[2m)[22m[33m 1567[2mms[22m[39m
+   [32mΓ£ô[39m PhotoGallery Selection and Download UI Flow [2m(3)[22m
+     [33m[2mΓ£ô[22m[39m displays the exact photo count in the primary "Download all N photos" button[33m 675[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m supports select mode toggle, photo ticking, select-all, and deselect-all[33m 601[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m31 passed[39m[22m[90m (31)[39m
+[2m   Start at [22m 06:17:23
+[2m   Duration [22m 22.70s[2m (environment 46%, import 46%, tests 6%, transform 2%)[22m
+

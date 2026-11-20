@@ -1,0 +1,11 @@
+﻿======================================================================
+PACKAGING CATLOG RELEASE ARTIFACT: windows-x64 (v0.1.0-rc1)
+======================================================================
+[INFO] Found onedir release directory: <REPO_ROOT>\dist\CatLog
+[INFO] Creating zip archive (onedir release): <REPO_ROOT>\dist_release\CatLog-0.1.0-rc1-windows-x64.zip
+[PASS] Archive created: <REPO_ROOT>\dist_release\CatLog-0.1.0-rc1-windows-x64.zip (181,444,255 bytes)
+[PASS] SHA-256: 1f61d12126e0a3f11d0c2dc983672b724126d125d2d7685f5855e0392182d825
+[INFO] Packaging onefile comparison archive: <REPO_ROOT>\dist_release\CatLog-0.1.0-rc1-windows-x64-onefile.zip
+[PASS] Onefile comparison archive created: <REPO_ROOT>\dist_release\CatLog-0.1.0-rc1-windows-x64-onefile.zip (179,836,605 bytes)
+[PASS] SHA-256: ac242dc0157a7583c521f8546ac6205741ad54d80c28ec0f6b756c54846c8ef2
+[INFO] Inno Setup compiler (iscc) not found on PATH or default locations. Skipping installer compilation.

@@ -1,0 +1,117 @@
+﻿Cloning repository to <TEMP_DIR>\catlog_clone_e268775804fe4a0b915899341cea9e74...
+Linking node_modules...
+Junction created for <TEMP_DIR>\catlog_clone_e268775804fe4a0b915899341cea9e74\frontend\node_modules <<===>> <REPO_ROOT>\frontend\node_modules
+Junction created for <TEMP_DIR>\catlog_clone_e268775804fe4a0b915899341cea9e74\viewer\node_modules <<===>> <REPO_ROOT>\viewer\node_modules
+=== FRESH CLONE PYTEST ===
+......s.s............................................................... [ 41%]
+...........................ss....................s...................... [ 83%]
+.............................                                            [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_api.py:450: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_api.py:569: Requires baseline fixture and embedding cache
+SKIPPED [1] tests\test_engine_cold_regression.py:41: test_photos/ directory is absent (photos not tracked in git per privacy rules)
+SKIPPED [1] tests\test_engine_cold_regression.py:124: test_photos/ directory is absent (photos not tracked in git per privacy rules)
+SKIPPED [1] tests\test_isolation.py:24: Requires export/ and export.work/ embedding cache
+168 passed, 5 skipped in 27.29s
+=== FRESH CLONE FRONTEND VITEST ===
+
+> catlog-ui@0.1.0-rc1 test
+> vitest run --run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90m<TEMP_DIR>/catlog_clone_e268775804fe4a0b915899341cea9e74/frontend[39m
+
+ [32mΓ£ô[39m src/__tests__/pollingFallback.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/homeScreen.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 572[2mms[22m[39m
+   [32mΓ£ô[39m HomeScreen Native OS Picker & pywebview Bridge [2m(3)[22m
+     [33m[2mΓ£ô[22m[39m triggers native OS folder picker via window.pywebview.api.select_folder when present[33m 440[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/sourceBadgingAndFilter.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 972[2mms[22m[39m
+   [32mΓ£ô[39m Source Badging & Filtering in Gallery/Review Screen (Phase V2-2 Piece 3) [2m(7)[22m
+     [33m[2mΓ£ô[22m[39m renders source filter dropdown in ReviewPeopleScreen when multiple sources are present[33m 420[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/imageViewerModal.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1748[2mms[22m[39m
+   [32mΓ£ô[39m ImageViewerModal - Unknown Face Boxes & Person Changing [2m(4)[22m
+     [33m[2mΓ£ô[22m[39m renders bounding boxes for BOTH known and unknown faces[33m 379[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m allows changing an unknown face to an existing person directly from Inspect Faces drawer[33m 857[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/driveIntegration.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1315[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/twoStageInteraction.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 1822[2mms[22m[39m
+   [32mΓ£ô[39m Organizer Two-Stage Interaction & Drive Folder ID Extraction [2m(8)[22m
+     [33m[2mΓ£ô[22m[39m renders Initial State with no face preview frames visible[33m 757[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m does NOT convert to cells on paste until Check link is clicked; then transitions to Stage 2 with folder name[33m 326[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/exportScreen.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 2105[2mms[22m[39m
+   [32mΓ£ô[39m ExportScreen Component [2m(5)[22m
+     [33m[2mΓ£ô[22m[39m renders file explorer window with breadcrumbs and directory items[33m 427[2mms[22m[39m
+   [32mΓ£ô[39m ProgressScreen Time Elapsed Component [2m(6)[22m
+     [33m[2mΓ£ô[22m[39m renders Logs button, omits removed hint text, and opens dedicated activity logs window with all logs[33m 588[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/tutorialSpotlight.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1003[2mms[22m[39m
+   [32mΓ£ô[39m TutorialSpotlight - Streamlined Tour with In-Depth Slider Explanations [2m(7)[22m
+     [33m[2mΓ£ô[22m[39m renders spotlight SVG mask and tooltip box with 11 total steps[33m 334[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/openProject.test.tsx [2m([22m[2m12 tests[22m[2m)[22m[33m 1722[2mms[22m[39m
+   [32mΓ£ô[39m Open Saved Project Feature [2m(12)[22m
+     [33m[2mΓ£ô[22m[39m renders recent projects list with name, source, and counts[33m 425[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/multiSourceUI.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 1321[2mms[22m[39m
+   [32mΓ£ô[39m Multi-Source Frontend UI & Sources Manager (Phase V2-2 Piece 2) [2m(8)[22m
+     [33m[2mΓ£ô[22m[39m renders initial state with no configured sources and sources-list hidden[33m 370[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m allows adding local folders to configured sources list[33m 355[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m supports adding multiple mixed sources (local, zip, drive)[33m 306[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/incrementalSourceUI.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 1006[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/diagnosticsAndErrors.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 739[2mms[22m[39m
+   [32mΓ£ô[39m CopyDiagnosticsButton and Error Screens (Phase V2-1) [2m(3)[22m
+     [33m[2mΓ£ô[22m[39m renders CopyDiagnosticsButton and copies provided reportText to clipboard[33m 423[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/mascotIntegration.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 1024[2mms[22m[39m
+   [32mΓ£ô[39m Mascots & Tutorial in Settings Integration [2m(8)[22m
+     [33m[2mΓ£ô[22m[39m SettingsScreen renders Interactive Tutorial card with pose 1 and fires onOpenTutorial[33m 463[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/driveQualityUI.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 597[2mms[22m[39m
+   [32mΓ£ô[39m Google Drive Image Quality UI (Phase V2-6) [2m(3)[22m
+     [33m[2mΓ£ô[22m[39m renders SettingsScreen with Drive Image Quality dropdown defaulting to fast[33m 394[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/inputGuidanceUI.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 839[2mms[22m[39m
+   [32mΓ£ô[39m Phase V2-7: Input Guidance & Cloud Link Detection UI [2m(9)[22m
+     [32mΓ£ô[39m HomeScreen Guidance & Cloud Link Validation [2m(2)[22m
+       [33m[2mΓ£ô[22m[39m opens InputGuidanceModal when "How do I get my photos in?" button is clicked[33m 379[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/mergeProjectsUI.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 811[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/unrecognizedTriageRevamp.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 801[2mms[22m[39m
+   [32mΓ£ô[39m Revamped Unrecognized Triage & Image Viewer [2m(4)[22m
+     [33m[2mΓ£ô[22m[39m renders unrecognized faces grid with triage controls[33m 365[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/traversalOptions.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 832[2mms[22m[39m
+   [32mΓ£ô[39m Folder & Subfolder Traversal Options [2m(3)[22m
+     [33m[2mΓ£ô[22m[39m renders HomeScreen traversal options with correct defaults (subfolders=true, depth=5, shortcuts=false)[33m 308[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m renders Folder & Cloud Traversal card on SettingsScreen and saves updates[33m 361[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/modelDownloadBanner.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 565[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/customDialog.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 394[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/appUpdateNotice.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 227[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/undoControl.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/suggestionList.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/mergeSelection.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m24 passed[39m[22m[90m (24)[39m
+[2m      Tests [22m [1m[32m136 passed[39m[22m[90m (136)[39m
+[2m   Start at [22m 06:52:01
+[2m   Duration [22m 103.21s[2m (import 53%, environment 39%, tests 7%, transform 1%)[22m
+
+[2m    Isolate [22m [33m24 workers spawned[39m[2m ┬╖ ~5.20s startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~36.39s faster with [22m[33misolate: false[39m[2m ΓÇö reuses workers across files instead of one per file[22m
+
+=== FRESH CLONE VIEWER VITEST ===
+
+> catlog-viewer@0.1.0-rc1 test
+> vitest run --run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90m<TEMP_DIR>/catlog_clone_e268775804fe4a0b915899341cea9e74/viewer[39m
+
+ [32mΓ£ô[39m src/__tests__/multiSourceViewer.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 922[2mms[22m[39m
+   [32mΓ£ô[39m Phase V2-5: Multi-Source Viewer Features [2m(5)[22m
+     [33m[2mΓ£ô[22m[39m virtualizes large photo galleries with windowed batch rendering[33m 429[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/viewer.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1037[2mms[22m[39m
+   [32mΓ£ô[39m Requirement 12: Config Swap Look Changes Without Code Change [2m(2)[22m
+     [33m[2mΓ£ô[22m[39m loads two different config.json files through App code path and verifies title, accent, footer, and toggle differ[33m 593[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/download.test.tsx [2m([22m[2m20 tests[22m[2m)[22m[33m 1475[2mms[22m[39m
+   [32mΓ£ô[39m PhotoGallery Selection and Download UI Flow [2m(3)[22m
+     [33m[2mΓ£ô[22m[39m displays the exact photo count in the primary "Download all N photos" button[33m 735[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m supports select mode toggle, photo ticking, select-all, and deselect-all[33m 486[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m31 passed[39m[22m[90m (31)[39m
+[2m   Start at [22m 06:53:48
+[2m   Duration [22m 13.85s[2m (import 53%, environment 35%, tests 9%, transform 3%)[22m
+
+Cleaning up <TEMP_DIR>\catlog_clone_e268775804fe4a0b915899341cea9e74...

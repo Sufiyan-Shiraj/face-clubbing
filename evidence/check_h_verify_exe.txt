@@ -1,0 +1,59 @@
+================================================================================
+PHOTOSORTER STANDALONE EXECUTABLE VERIFICATION (eval/verify_exe.py)
+================================================================================
+[PASS] Executable located: <REPO_ROOT>\dist\photosorter.exe
+       Binary Size: 171,065,458 bytes (163.14 MB)
+       Subsystem Code: 2 -> IMAGE_SUBSYSTEM_WINDOWS_GUI (Windowed - No console popup)
+[PASS] Subsystem check: Built as pure Windows GUI application (console=False).
+[INFO] Pre-seeded embedding cache into temp work dir (489 cached photos)
+
+[INFO] Isolated Test Environment:
+       Temp Root:   <TEMP_DIR>\photosorter_exe_verify_rejrmrbr
+       Work Dir:    <TEMP_DIR>\photosorter_exe_verify_rejrmrbr\work
+       Export Dir:  <TEMP_DIR>\photosorter_exe_verify_rejrmrbr\export
+       Port:        65372
+
+[INFO] Launching: <REPO_ROOT>\dist\photosorter.exe --no-gui --port 65372 --work-dir <TEMP_DIR>\photosorter_exe_verify_rejrmrbr\work --output-dir <TEMP_DIR>\photosorter_exe_verify_rejrmrbr\export
+[PASS] Executable online in 10.59s at http://127.0.0.1:65372
+[PASS] Frontend UI assets properly mounted at root / (status 200)
+
+[INFO] Triggering job on input: <REPO_ROOT>\test_photos
+[PASS] Job started: {'job_id': '323db30d', 'status': 'running', 'stage': 'starting', 'current': 0, 'total': 0, 'percent': 0.0, 'progress': 0.0, 'current_file': None, 'eta_seconds': None, 'elapsed_seconds': 0.0, 'start_time': 1792259201.1362143, 'message': 'Initializing job...', 'error': None, 'result_summary': None, 'recent_faces': []}
+       [Job Progress] Stage: scanning     | Progress:   2.0% (percent=  2.0%) | [270/271] Scanning photos: [270/271] IMG_9436.HEIC.heif
+       [Job Progress] Stage: processing   | Progress:  20.4% (percent= 20.4%) | [58/271] [58/271] IMG_2105.HEIC (5 faces)
+       [Job Progress] Stage: clustering   | Progress:  92.0% (percent= 92.0%) | [271/271] Clustering faces by person with second-pass m
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: exporting    | Progress: 100.0% (percent=100.0%) | [271/271] Generating static export bundle in <USER_HOME>
+       [Job Progress] Stage: complete     | Progress: 100.0% (percent=100.0%) | [271/271] Job finished. Clustered 192 people.
+
+[PASS] Pipeline finished in 25.12s
+[PASS] Real progress broadcast verified: job.percent actively tracked scanning/detection.
+
+--- BASELINE METRICS REPRODUCIBILITY CHECK ---
+People Clusters:     192 (Baseline expected: 192)
+Unrecognized Faces:  445 (Baseline expected: 445)
+Unrecognized Photos: 168 (Baseline expected: 168)
+Total Photo Records: 259 (Baseline expected: 259)
+[PASS] All cluster, face, and photo counts match pinned baseline fixture identically!
+[PASS] Public Export Bundle Hygiene verified. Export files: ['config.json', 'faces', 'people.json', 'thumbs']
+
+[INFO] Terminating executable...
+[PASS] Executable terminated cleanly; port 65372 released.
+
+================================================================================
+ALL PHASE 5 EXECUTABLE REQUIREMENTS VERIFIED SUCCESSFULLY!
+================================================================================

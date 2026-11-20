@@ -1,0 +1,34 @@
+﻿================================================================================
+NESTED GOOGLE DRIVE SCAN TEST: 3+ LEVELS, SHORTCUTS, NON-IMAGES AUDIT
+Folder ID: <FOLDER_ID>
+Folder Name: BOO26 x Catlog
+================================================================================
+
+[PER-LEVEL SCAN BREAKDOWN]
+Level    | Depth    | Files Seen   | Images Imported  | Subfolders   | Videos   | Shortcuts  | Other Non-Img
+---------------------------------------------------------------------------------------------------------
+Root (0) | 0        | 3            | 0                | 3            | 0        | 0          | 0
+Level 1  | 1        | 13           | 1                | 12           | 0        | 0          | 0
+Level 2  | 2        | 987          | 896              | 4            | 87       | 0          | 0
+Level 3  | 3        | 62           | 62               | 0            | 0        | 0          | 0
+---------------------------------------------------------------------------------------------------------
+TOTAL    | 0-3      | 1065         | 959              | 19           | 87       | 0          | 0
+
+[APP DRIVE LIST RESULT]
+Total files in folder : 1065
+Images imported       : 959
+Folders scanned       : 20
+Subfolders traversed  : 19
+Shortcuts skipped     : 0
+Videos skipped        : 87
+Other non-images      : 0
+Total skipped non-img : 87
+Docs skipped          : 0
+Max depth reached     : 3 levels
+Top folder has images : False
+Summary message       : Found 959 images in 20 folders (top folder contains no direct images; 959 images found across subfolders)
+
+[VERIFICATION STATUS]
+[PASS] Nesting: 4 levels traversed (>= 3 levels)
+[PASS] Images imported: 959 images
+[PASS] Videos skipped: 87 videos (other non-images: 0)

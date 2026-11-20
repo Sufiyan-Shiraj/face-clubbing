@@ -1,0 +1,88 @@
+﻿================================================================================
+
+CATLOG STANDALONE EXECUTABLE VERIFICATION (eval/verify_exe.py)
+
+================================================================================
+
+[PASS] Executable located: <REPO_ROOT>\dist\CatLog\CatLog.exe
+
+       Binary Size: 24,767,959 bytes (23.62 MB)
+
+       Subsystem Code: 2 -> IMAGE_SUBSYSTEM_WINDOWS_GUI (Windowed - No console popup)
+
+[PASS] Subsystem check: Built as pure Windows GUI application (console=False).
+
+[INFO] Pre-seeded embedding cache into temp work dir (406 cached photos)
+
+
+
+[INFO] Isolated Test Environment:
+
+       Temp Root:   <TEMP_DIR>\photosorter_exe_verify_vdwvrb8z
+
+       Work Dir:    <TEMP_DIR>\photosorter_exe_verify_vdwvrb8z\work
+
+       Export Dir:  <TEMP_DIR>\photosorter_exe_verify_vdwvrb8z\export
+
+       Port:        57068
+
+
+
+[INFO] Launching: <REPO_ROOT>\dist\CatLog\CatLog.exe --no-gui --port 57068 --work-dir <TEMP_DIR>\photosorter_exe_verify_vdwvrb8z\work --output-dir <TEMP_DIR>\photosorter_exe_verify_vdwvrb8z\export
+
+[PASS] Executable online in 1.60s at http://127.0.0.1:57068
+
+[PASS] Frontend UI assets properly mounted at root / (status 200)
+
+
+
+[INFO] Triggering job on input: <REPO_ROOT>\test_photos
+
+[PASS] Job started: {'job_id': '7d2ba1f0', 'status': 'running', 'stage': 'starting', 'current': 0, 'total': 0, 'percent': 0.0, 'progress': 0.0, 'current_file': None, 'eta_seconds': None, 'elapsed_seconds': 0.0, 'start_time': 1793756443.8431182, 'message': 'Initializing job...', 'error': None, 'error_code': None, 'error_title': None, 'plain_language_fix': None, 'diagnostics_report': None, 'result_summary': None, 'recent_faces': []}
+
+       [Job Progress] Stage: processing   | Progress:   6.9% (percent=  6.9%) | [8/259] [8/259] IMG_20260303_233345.jpg (22 faces)
+
+       [Job Progress] Stage: clustering   | Progress:  72.0% (percent= 72.0%) | [259/259] Clustering faces by person with second-pass m
+
+       [Job Progress] Stage: exporting    | Progress:  88.0% (percent= 88.0%) | [259/259] Generating static export bundle in <TEMP_DIR>\export...
+
+       [Job Progress] Stage: complete     | Progress: 100.0% (percent=100.0%) | [259/259] Export complete!
+
+       [Job Progress] Stage: complete     | Progress: 100.0% (percent=100.0%) | [259/259] Job finished. Clustered 192 people.
+
+
+
+[PASS] Pipeline finished in 22.20s
+
+[PASS] Real progress broadcast verified: job.percent actively tracked scanning/detection.
+
+
+
+--- BASELINE METRICS REPRODUCIBILITY CHECK ---
+
+People Clusters:     192 (Baseline expected: 192)
+
+Unrecognized Faces:  445 (Baseline expected: 445)
+
+Unrecognized Photos: 168 (Baseline expected: 168)
+
+Total Photo Records: 259 (Baseline expected: 259)
+
+[PASS] All cluster, face, and photo counts match pinned baseline fixture identically!
+
+[PASS] Public Export Bundle Hygiene verified. Export files: ['config.json', 'faces', 'manifest.json', 'people.json', 'thumbs']
+
+
+
+[INFO] Terminating executable...
+
+[PASS] Executable terminated cleanly; port 57068 released.
+
+
+
+================================================================================
+
+ALL PHASE 5 EXECUTABLE REQUIREMENTS VERIFIED SUCCESSFULLY!
+
+================================================================================
+

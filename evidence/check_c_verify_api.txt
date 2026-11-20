@@ -1,0 +1,39 @@
+﻿================================================================================
+PHOTOSORTER PHASE 3 FASTAPI LAYER VERIFICATION (eval/verify_api.py)
+================================================================================
+[PASS] Check 1: Baseline inspection endpoints: 4 people, 1 unrecognized faces
+[PASS] Check 2: Merging 3 people persisted 3 anchor face groups without cluster IDs (0 \bp\d{3}\b violations in edits.json)
+[PASS] Check 3: Assigned unrecognized face survived re-run with threshold 0.42 (0 unapplied edits)
+[PASS] Check 4: Missing anchor face gracefully reported in unapplied_edits without crash (could not locate person for anchors ['f_missing_999']: anchors ['f_missing_999'] not found in any person cluster)
+[PASS] Check 5: Undo restores previous state across all 5 edit operations (merge, remove, assign, hide, name)
+[07:16:58] [START     ]   0.0% | Starting face sorting engine pipeline...
+[07:16:58] [START     ] Job d396ff4d initiated. Input: '<REPO_ROOT>\test_photos' -> Output: 'export'
+[07:16:58] [CANCELLING]   0.0% | Cancelling job...
+[07:16:58] [CANCEL    ] Job cancelled by organizer after 0.0s.
+[07:16:58] [CANCELLED ]   0.0% | Job was cancelled by organizer.
+[PASS] Check 6: Job cancellation successfully transitioned job to 'cancelled'
+[PASS] Check 7: Public bundle hygiene verified (8 files/dirs: ['assets', 'config.json', 'faces', 'gallery.html', 'index.html', 'manifest.json', 'people.json', 'thumbs']; 0 forbidden files)
+[PASS] Check 8: Suggestions endpoint returned valid schema (0 maybe groups, 0 ambiguous faces)
+================================================================================
+FIXTURE API VERIFICATION: ALL 8 CHECKS PASSED
+================================================================================
+
+================================================================================
+PHOTOSORTER PHASE 3 LIVE EXPORT API VERIFICATION (eval/verify_api.py --mode export)
+================================================================================
+Dynamically parsed expected metrics from REPORT.md: {'people': 192, 'unrec_photos': 168, 'unrec_faces': 445, 'no_face_photos': 4, 'maybe_groups': 28, 'ranked_pairs': 29, 'ambiguous_faces': 68}
+[PASS] People count: 192 (matched REPORT.md: 192)
+[PASS] Unrecognized photos: 168 (matched REPORT.md: 168)
+[PASS] Unrecognized faces: 445 (matched REPORT.md: 445)
+[PASS] No-face photos: 4 (matched REPORT.md: 4)
+[PASS] Maybe groups: 28 (matched REPORT.md: 28)
+[PASS] Ranked pairs: 29 (matched REPORT.md: 29)
+[PASS] Ambiguous faces: 68 (matched REPORT.md: 68)
+[PASS] Check 4a: Baseline invariant holds: 1256 clustered + 445 unrecognized = 1701 total faces
+[PASS] Check 4b: Batch assign (2 face_ids) and undo verified; invariant 1256 + 445 = 1701 holds, zero pNNN in edits.json
+[PASS] Check 4c: Detach known face to unknown and undo verified; invariant 1256 + 445 = 1701 holds, zero pNNN in edits.json
+[PASS] Check 4d: Create new person from selected faces and undo verified (192 -> 193 -> 192); invariant holds, zero pNNN in edits.json
+[PASS] Check 4e: Failed edits handled gracefully (HTTP 400 for bad op, unapplied for ghost face); state preserved and invariant 1256 + 445 = 1701 holds
+================================================================================
+LIVE EXPORT API VERIFICATION: ALL 7 METRICS MATCH REPORT EXACTLY
+================================================================================

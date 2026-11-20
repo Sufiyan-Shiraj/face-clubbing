@@ -1,0 +1,26 @@
+﻿================================================================================
+CATLOG / PHOTOSORTER WINDOWED LAUNCH VERIFICATION (eval/verify_windowed.py)
+================================================================================
+[INFO] PE Subsystem: 2 (2 = Windows GUI, 3 = Windows CUI/Console)
+[PASS] (b) PE Subsystem is IMAGE_SUBSYSTEM_WINDOWS_GUI (no console window)
+
+[INFO] Launching executable in WINDOWED mode (without --no-gui):
+       <REPO_ROOT>\dist\CatLog\CatLog.exe --port 57105 --work-dir <TEMP_DIR>\test_windowed_yrney7m3\work --output-dir <TEMP_DIR>\test_windowed_yrney7m3\export
+[PASS] (c) Server online and healthy at http://127.0.0.1:57105/api/health
+[PASS] (c) Frontend page loads successfully (status 200, HTML content served)
+
+[INFO] Searching for top-level window titled 'CatLog' (or 'PhotoSorter')...
+[PASS] (a) Top-level window found: hwnd=15599446, title='CatLog'
+[PASS] (b) Verified no ConsoleWindowClass window associated with the process
+
+[INFO] Sending WM_CLOSE (0x0010) to window hwnd=15599446...
+[PASS] (d) Closing window cleanly ended process (exit code: 0)
+[PASS] (d) Port 57105 successfully released and re-bindable
+
+================================================================================
+ALL WINDOWED LAUNCH CHECKS PASSED AUTOMATICALLY:
+ [PASS] (a) Top-level window titled 'CatLog' appeared
+ [PASS] (b) No console window (PE Subsystem 2 GUI, no ConsoleWindowClass)
+ [PASS] (c) Page loads (health check 200, HTML served on process port)
+ [PASS] (d) WM_CLOSE cleanly terminated process and released bound port
+================================================================================

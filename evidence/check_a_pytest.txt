@@ -1,0 +1,11 @@
+﻿........................................................................ [ 41%]
+........................................................................ [ 83%]
+.............................                                            [100%]
+============================== warnings summary ===============================
+tests/test_engine_cold_regression.py::test_cold_e2e_regression_on_fixed_subset
+tests/test_engine_cold_regression.py::test_avatar_and_face_crops_match_own_bboxes
+  <REPO_ROOT>\.venv\Lib\site-packages\insightface\utils\face_align.py:23: FutureWarning: `estimate` is deprecated since version 0.26 and will be removed in version 2.2. Please use `SimilarityTransform.from_estimate` class constructor instead.
+    tform.estimate(lmk, dst)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+173 passed, 2 warnings in 889.76s (0:14:49)

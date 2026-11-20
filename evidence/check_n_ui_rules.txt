@@ -1,0 +1,29 @@
+﻿================================================================================
+PHOTOSORTER UI RULES & ACCESSIBILITY SCRIPT AUDIT (eval/check_ui_rules.py)
+================================================================================
+
+--- CHECK 1: Minimum Text Size >= 12px ---
+[PASS] Zero sub-12px font sizes found in frontend/src code! Minimum font size >= 12px enforced.
+
+--- CHECK 2: WCAG 2.1 AA Body Text Contrast (>= 4.5:1) in All 3 Themes ---
+[PASS] Dark Theme (.t-dark):
+       Background: #141211 | Text: #f5eedf (Contrast: 16.17:1 >= 4.5:1)
+       Muted Text: #b8a896 (Contrast: 8.08:1 >= 4.5:1)
+       Panel Text Contrast: 14.98:1 >= 4.5:1
+[PASS] Paper Theme (.t-paper):
+       Background: #efe8db | Text: #0e1c2f (Contrast: 14.06:1 >= 4.5:1)
+       Muted Text: #384656 (Contrast: 7.91:1 >= 4.5:1)
+       Panel Text Contrast: 12.81:1 >= 4.5:1
+[PASS] Navy Theme (.t-navy):
+       Background: #1a3350 | Text: #ffffff (Contrast: 12.86:1 >= 4.5:1)
+       Muted Text: #d0e0f2 (Contrast: 9.57:1 >= 4.5:1)
+       Panel Text Contrast: 10.03:1 >= 4.5:1
+
+--- CHECK 3: Keyboard Reachability (Popover, Drawer, Modals) ---
+[PASS] ImageViewerModal: Escape key dismisses popover -> drawer -> modal hierarchically; focusable tags support keyboard selection
+[PASS] FaceCompareModal: Global Escape key listener cleanly dismisses comparison modal
+[PASS] PersonModal: Escape key listener dismisses person detail modal
+
+================================================================================
+ALL UI RULES & ACCESSIBILITY AUDITS PASSED (100%)
+================================================================================

@@ -1,0 +1,22 @@
+﻿================================================================================
+PHASE 6 LIVE VERIFICATION: GOOGLE DRIVE READ-ONLY INTEGRATION
+================================================================================
+Timestamp: 2026-10-18T08:58:24.353598
+Key Resolution Source: ~/.photosorter/settings.json
+Key Status           : CONFIGURED (AIzaSy...hgKI)
+Folder Target        : None
+.venv\Scripts\python.exe : Traceback (most recent call last):
+At line:1 char:1
++ .venv\Scripts\python.exe eval/verify_drive_phase6.py > scratch/check_ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<REPO_ROOT>\eval\verify_drive_phase6.py", line 667, in <module>
+    main()
+  File "<REPO_ROOT>\eval\verify_drive_phase6.py", line 274, in main
+    folder_id = parse_drive_folder_id(folder_input)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<REPO_ROOT>\backend\drive\parser.py", line 38, in parse_drive_folder_id
+    raise ValueError("Google Drive link or ID cannot be empty.")
+ValueError: Google Drive link or ID cannot be empty.

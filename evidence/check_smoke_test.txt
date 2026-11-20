@@ -1,0 +1,13 @@
+﻿======================================================================
+CATLOG STANDALONE EXECUTABLE SMOKE TEST
+======================================================================
+[INFO] Executable: <REPO_ROOT>\dist\CatLog\CatLog.exe (24,767,959 bytes)
+[INFO] Expected Version: 0.1.0-rc1
+[INFO] Launching: <REPO_ROOT>\dist\CatLog\CatLog.exe --no-gui --port 59384
+[PASS] /api/health answered in 1.55s: {'status': 'ok', 'version': '0.1.0-rc1'}
+[PASS] Version verification passed: 0.1.0-rc1
+[INFO] Terminating executable...
+[PASS] Executable terminated cleanly.
+======================================================================
+ALL SMOKE CHECKS PASSED
+======================================================================

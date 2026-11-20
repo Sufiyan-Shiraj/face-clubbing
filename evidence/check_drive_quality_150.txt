@@ -1,0 +1,24 @@
+================================================================================
+LARGE DRIVE SAMPLE QUALITY BENCHMARK (150 PHOTOS)
+Folder ID: <FOLDER_ID>
+================================================================================
+
+| Metric | Fast (=s1000) | Better (=s1600) | Best (=s2000) | Originals |
+|---|:---:|:---:|:---:|:---:|
+| Target Resolution (px) | 1000 px | 1600 px | 2000 px | Full (unscaled) |
+| Bytes Downloaded | 11,819,216 (11.3 MB) | 24,472,950 (23.3 MB) | 36,446,966 (34.8 MB) | 811,209,573 (773.6 MB) |
+| Bandwidth Reduction % | 98.5% | 97.0% | 95.5% | 0.0% |
+| Total Detected Faces | 433 | 436 | 435 | 233 |
+| Faces < 64 px (Non-Seed) | 325 (75.1%) | 262 (60.1%) | 220 (50.6%) | 0 (0.0%) |
+| Faces >= 64 px (Seed Eligible) | 108 (24.9%) | 174 (39.9%) | 215 (49.4%) | 233 (100.0%) |
+| Seed Faces Formed | 90 | 150 | 175 | 186 |
+| Attached Faces | 39 | 58 | 74 | 11 |
+| Clustered Faces | 129 | 208 | 249 | 197 |
+| People Clusters | 19 | 33 | 44 | 39 |
+| Singletons | 2 | 4 | 7 | 10 |
+| Unrecognized Faces | 304 | 228 | 186 | 36 |
+| Unrecognized Photos | 92 | 72 | 68 | 49 |
+| Invariant (Clustered + Unrec == Total) | PASS (Exact) | PASS (Exact) | PASS (Exact) | PASS (Exact) |
+
+[PASS] All invariant checks passed across all 4 tiers (Clustered + Unrec == Total).
+[OK] Raw JSON saved to <REPO_ROOT>/scratch/check_drive_quality_150.json

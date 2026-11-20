@@ -1,0 +1,21 @@
+======================================================================
+PYINSTALLER STARTUP BENCHMARK: ONEFILE VS ONEDIR (3 COLD RUNS EACH)
+======================================================================
+
+[INFO] Measuring Onefile: <REPO_ROOT>\dist\CatLog-onefile.exe (180,840,651 bytes)
+  Run 1: 15.933 s
+  Run 2: 17.450 s
+  Run 3: 18.508 s
+
+[INFO] Measuring Onedir: <REPO_ROOT>\dist\CatLog\CatLog.exe
+  Run 1: 1.711 s
+  Run 2: 1.715 s
+  Run 3: 1.724 s
+
+======================================================================
+BENCHMARK SUMMARY
+Onefile: 15.933s, 17.450s, 18.508s | Mean: 17.297s
+Onedir:  1.711s, 1.715s, 1.724s | Mean: 1.717s
+Ratio (Onefile / Onedir): 10.07x faster with onedir
+Results written to: <REPO_ROOT>\scratch\startup_benchmark.json
+======================================================================

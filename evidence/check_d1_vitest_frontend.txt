@@ -1,0 +1,111 @@
+﻿
+> catlog-ui@0.1.0-rc1 test
+> vitest run --run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.3 [39m[90m<REPO_ROOT>/frontend[39m
+
+ [32mΓ£ô[39m src/__tests__/openProject.test.tsx [2m([22m[2m12 tests[22m[2m)[22m[33m 2702[2mms[22m[39m
+   [32mΓ£ô[39m Open Saved Project Feature [2m(12)[22m
+     [33m[2mΓ£ô[22m[39m renders recent projects list with name, source, and counts[33m 891[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m handles moved/deleted folder (404) and offers removal from list[33m 321[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/imageViewerModal.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 2874[2mms[22m[39m
+   [32mΓ£ô[39m ImageViewerModal - Unknown Face Boxes & Person Changing [2m(4)[22m
+     [33m[2mΓ£ô[22m[39m renders bounding boxes for BOTH known and unknown faces[33m 755[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m allows changing an unknown face to an existing person directly from Inspect Faces drawer[33m 1548[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/twoStageInteraction.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 3990[2mms[22m[39m
+   [32mΓ£ô[39m Organizer Two-Stage Interaction & Drive Folder ID Extraction [2m(8)[22m
+     [33m[2mΓ£ô[22m[39m renders Initial State with no face preview frames visible[33m 2173[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m does NOT convert to cells on paste until Check link is clicked; then transitions to Stage 2 with folder name[33m 390[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m prompts API key modal when API key is missing during verification[33m 344[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m reverses to Initial State when Change link is clicked[33m 509[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m switches between source modes without leaving stale Drive content[33m 334[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/driveIntegration.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1831[2mms[22m[39m
+   [32mΓ£ô[39m Phase 6 UI: HomeScreen Drive Mode & Link Input [2m(4)[22m
+     [33m[2mΓ£ô[22m[39m switches to Google Drive mode and renders Drive folder input[33m 515[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m validates and submits Drive folder link when verified and Start is clicked[33m 512[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/exportScreen.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 2274[2mms[22m[39m
+   [32mΓ£ô[39m ExportScreen Component [2m(5)[22m
+     [33m[2mΓ£ô[22m[39m renders file explorer window with breadcrumbs and directory items[33m 602[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m filters directory listing in file explorer[33m 338[2mms[22m[39m
+   [32mΓ£ô[39m ProgressScreen Time Elapsed Component [2m(6)[22m
+     [33m[2mΓ£ô[22m[39m renders Logs button, omits removed hint text, and opens dedicated activity logs window with all logs[33m 413[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/sourceBadgingAndFilter.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1081[2mms[22m[39m
+   [32mΓ£ô[39m Source Badging & Filtering in Gallery/Review Screen (Phase V2-2 Piece 3) [2m(7)[22m
+     [33m[2mΓ£ô[22m[39m renders source filter dropdown in ReviewPeopleScreen when multiple sources are present[33m 410[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/incrementalSourceUI.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 2756[2mms[22m[39m
+   [32mΓ£ô[39m Incremental Source Ingestion & What Changed UI (Phase V2-3) [2m(9)[22m
+     [32mΓ£ô[39m AddSourceModal [2m(4)[22m
+       [33m[2mΓ£ô[22m[39m renders source type options and defaults to local folder with frozen mode checked[33m 367[2mms[22m[39m
+       [33m[2mΓ£ô[22m[39m handles backend error gracefully and shows alert[33m 552[2mms[22m[39m
+     [32mΓ£ô[39m WhatChangedModal [2m(2)[22m
+       [33m[2mΓ£ô[22m[39m renders structured diff metrics and frozen invariant banner[33m 354[2mms[22m[39m
+       [33m[2mΓ£ô[22m[39m triggers undo addition rollback flow with user confirmation[33m 330[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/multiSourceUI.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 3349[2mms[22m[39m
+   [32mΓ£ô[39m Multi-Source Frontend UI & Sources Manager (Phase V2-2 Piece 2) [2m(8)[22m
+     [33m[2mΓ£ô[22m[39m renders initial state with no configured sources and sources-list hidden[33m 871[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m allows adding local folders to configured sources list[33m 552[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m supports adding multiple mixed sources (local, zip, drive)[33m 863[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m allows removing an individual source from the list[33m 321[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m allows clearing all sources via Clear All button[33m 375[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/diagnosticsAndErrors.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 1779[2mms[22m[39m
+   [32mΓ£ô[39m CopyDiagnosticsButton and Error Screens (Phase V2-1) [2m(3)[22m
+     [33m[2mΓ£ô[22m[39m renders CopyDiagnosticsButton and copies provided reportText to clipboard[33m 961[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m renders failure banner in ProgressScreen with classified error code and plain-language fix[33m 591[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/traversalOptions.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 2316[2mms[22m[39m
+   [32mΓ£ô[39m Folder & Subfolder Traversal Options [2m(3)[22m
+     [33m[2mΓ£ô[22m[39m renders HomeScreen traversal options with correct defaults (subfolders=true, depth=5, shortcuts=false)[33m 662[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m passes customized traversal options to onStartJob when starting scan[33m 430[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m renders Folder & Cloud Traversal card on SettingsScreen and saves updates[33m 1209[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/tutorialSpotlight.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 3010[2mms[22m[39m
+   [32mΓ£ô[39m TutorialSpotlight - Streamlined Tour with In-Depth Slider Explanations [2m(7)[22m
+     [33m[2mΓ£ô[22m[39m renders spotlight SVG mask and tooltip box with 11 total steps[33m 682[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m navigates through steps sequentially and updates tabs, subtabs, and selection[33m 872[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m explains what each of the 4 clustering sliders does in Settings[33m 596[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/mascotIntegration.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 1889[2mms[22m[39m
+   [32mΓ£ô[39m Mascots & Tutorial in Settings Integration [2m(8)[22m
+     [33m[2mΓ£ô[22m[39m Header does NOT render any tutorial button in top bar[33m 546[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m SettingsScreen renders Interactive Tutorial card with pose 1 and fires onOpenTutorial[33m 663[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m ExportScreen success summary renders leaving mascot with packed bundle (Pose 7)[33m 311[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/unrecognizedTriageRevamp.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1840[2mms[22m[39m
+   [32mΓ£ô[39m Revamped Unrecognized Triage & Image Viewer [2m(4)[22m
+     [33m[2mΓ£ô[22m[39m renders unrecognized faces grid with triage controls[33m 602[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m displays the target person preview when a person is selected in batch picker so user knows if correct to merge[33m 345[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m allows multi-selecting faces and clicking one button to add them all[33m 660[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/mergeProjectsUI.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 2526[2mms[22m[39m
+   [32mΓ£ô[39m MergeProjectsModal Component (Phase V2-4) [2m(5)[22m
+     [33m[2mΓ£ô[22m[39m renders modal with project selections and defaults[33m 611[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m executes merge with selected projects and custom name[33m 985[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m displays flagged conflicts for user review if present[33m 406[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/inputGuidanceUI.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 2622[2mms[22m[39m
+   [32mΓ£ô[39m Phase V2-7: Input Guidance & Cloud Link Detection UI [2m(9)[22m
+     [32mΓ£ô[39m HomeScreen Guidance & Cloud Link Validation [2m(2)[22m
+       [33m[2mΓ£ô[22m[39m opens InputGuidanceModal when "How do I get my photos in?" button is clicked[33m 1515[2mms[22m[39m
+       [33m[2mΓ£ô[22m[39m warns user when Google Photos link is entered in Drive input[33m 414[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/modelDownloadBanner.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 946[2mms[22m[39m
+   [32mΓ£ô[39m ModelDownloadBanner & Model Management [2m(4)[22m
+     [33m[2mΓ£ô[22m[39m renders blank download banner when models are already installed and up to date[33m 345[2mms[22m[39m
+     [33m[2mΓ£ô[22m[39m shows update banner and converts download button to Update button when an update is found[33m 337[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/driveQualityUI.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 1184[2mms[22m[39m
+   [32mΓ£ô[39m Google Drive Image Quality UI (Phase V2-6) [2m(3)[22m
+     [33m[2mΓ£ô[22m[39m renders SettingsScreen with Drive Image Quality dropdown defaulting to fast[33m 773[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/homeScreen.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 1158[2mms[22m[39m
+   [32mΓ£ô[39m HomeScreen Native OS Picker & pywebview Bridge [2m(3)[22m
+     [33m[2mΓ£ô[22m[39m triggers native OS folder picker via window.pywebview.api.select_folder when present[33m 698[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/pollingFallback.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/suggestionList.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/appUpdateNotice.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 500[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/customDialog.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 768[2mms[22m[39m
+   [32mΓ£ô[39m CustomDialog Component [2m(5)[22m
+     [33m[2mΓ£ô[22m[39m renders error dialog with message, icon, and dismiss button[33m 412[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/mergeSelection.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32mΓ£ô[39m src/__tests__/undoControl.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m24 passed[39m[22m[90m (24)[39m
+[2m      Tests [22m [1m[32m136 passed[39m[22m[90m (136)[39m
+[2m   Start at [22m 06:13:59
+[2m   Duration [22m 187.47s[2m (import 46%, environment 45%, tests 8%, transform 1%)[22m
+
+[2m    Isolate [22m [33m24 workers spawned[39m[2m ┬╖ ~11.08s startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~77.56s faster with [22m[33misolate: false[39m[2m ΓÇö reuses workers across files instead of one per file[22m
+

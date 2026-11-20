@@ -1,0 +1,23 @@
+﻿================================================================================
+PHOTOSORTER PHASE 1b VERIFICATION AUDIT (eval/verify_export.py)
+================================================================================
+[PASS] Check 1: Engine Invariants (259/259 photos covered, 1256 clustered + 445 unrec = 1701 detected faces, photos==photo_ids, maybe_photos empty)
+[PASS] Check 2: Public Bundle Hygiene verified (['assets', 'config.json', 'faces', 'gallery.html', 'index.html', 'people.json', 'thumbs'] - zero organizer files)
+[PASS] Check 3: Same-Photo Distance Constraint: 0 collisions above 0.40 across all 192 clusters. Max same-photo distance=0.2878 (<= 0.40)
+[PASS] Check 4: Collision Audit by Face IDs: 1 collision instance verified (photo 4a9b927f5789cd69, faces ['f_4a9b927f5789cd69_001', 'f_4a9b927f5789cd69_005', 'f_4a9b927f5789cd69_007'], max distance 0.2878 <= 0.40, allowlist verified)
+[PASS] Check 5: Stable Identity & id_map.json (242 pre-merge clusters -> 192 final clusters; merged_from present in all clusters)
+[PASS] Check 6: Pytest full suite execution passed (173 passed, 0 failures/errors)
+[PASS] Check 7: Section 13.2 Merge Arithmetic verified (83 pre-merge clusters -> 33 final clusters = 50 net merges, 242 - 50 = 192)
+[PASS] Check 8: Section 13.4 Flip-Averaged Benchmark Reproduction Table verified (Clusters=176, Singletons=70, Unrec=420f/160p, Collisions=1, Extra=2)
+[PASS] Check 9: Blocked Merges by Best-Face IDs verified (3 blocked links < 0.50 matched; 8 same_photo_conflict links total)
+[PASS] Check 10: Section 13.8 Maximum Same-Photo Distance verified (computed=0.2878, report=0.2878 <= 0.40)
+[PASS] Check 11: Section 13.9 Evaluation Table A (All Pairs: 30 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 12: Section 13.9 Evaluation Table B (Clean Set: 22 positive, 3246 negative) verified across 7 thresholds
+[PASS] Check 13: Section 13.11 Aligned Cap-Sweep Table verified (0.45: 253 att/445 unrec; 0.50: 275 att/423 unrec; 0.55: 322 att/376 unrec)
+[PASS] Check 14: Zero cluster-ID tokens in code outside comments/docstrings (82 files scanned across eval/, tests/, and frontend/)
+[PASS] Check 15: Drive Export Invariants verified (0 full-size local photos, 100% photos have Drive view links, 'unavailable - open in Drive' tile on image failure)
+[PASS] Check 16: Multi-Source Mixed Export Invariants verified (Drive photo download link present, local photo download link null, album labels extracted into people.json, zero organizer files in public bundle)
+[PASS] Check 17: Drive Image Quality Presets and SPEC ┬º18.1 Evidence Reproduction verified (fast=1000, better=1600, best=2000, SPEC 6.2 defaults preserved, all 4 tiers verify Clustered + Unattached == Total)
+================================================================================
+OVERALL VERIFICATION STATUS: ALL CHECKS PASSED (17/17 CHECKS & TABLES VERIFIED)
+================================================================================

@@ -1,0 +1,47 @@
+================================================================================
+COLD PACKAGED APP VERIFICATION: dist/CatLog/CatLog.exe ON FULL 259 PHOTOS
+================================================================================
+Exe Path:       <REPO_ROOT>/dist/CatLog/CatLog.exe
+Test Photos:    <REPO_ROOT>/test_photos
+Temp Root:      <TEMP_DIR>/catlog_cold_exe_test_yxasg12s
+Empty Work Dir: <TEMP_DIR>/catlog_cold_exe_test_yxasg12s/work (initial files: 0)
+Port:           59205
+Base URL:       http://127.0.0.1:59205
+
+[1/5] Launching packaged app: <REPO_ROOT>/dist/CatLog/CatLog.exe --no-gui --port 59205 --work-dir <TEMP_DIR>/catlog_cold_exe_test_yxasg12s/work --output-dir <TEMP_DIR>/catlog_cold_exe_test_yxasg12s/export
+[PASS] Packaged server healthy in 1.56s
+
+[2/5] Triggering cold sorting job on 259 photos...
+Job started: dc6c94cc
+       [Progress] status=running stage=starting percent=0.0%
+       [Progress] status=running stage=processing percent=10.1%
+       [Progress] status=running stage=processing percent=20.1%
+       [Progress] status=running stage=processing percent=30.0%
+       [Progress] status=running stage=processing percent=40.0%
+       [Progress] status=running stage=processing percent=50.2%
+       [Progress] status=running stage=processing percent=60.1%
+       [Progress] status=running stage=complete percent=100.0%
+       [Progress] status=completed percent=100.0%
+
+[3/5] Job completed successfully!
+      Wall Time: 2027.690 seconds (33.79 minutes)
+
+[4/5] Reading output artifacts from export and work directories...
+
+[5/5] Comparing results against pinned baseline:
+--------------------------------------------------------------------------------
+[PASS] People                : actual=192   | expected=192  
+[PASS] Clustered Faces       : actual=1256  | expected=1256 
+[PASS] Unrecognized Faces    : actual=445   | expected=445  
+[PASS] Total Faces           : actual=1701  | expected=1701 
+[PASS] Unrecognized Photos   : actual=168   | expected=168  
+[PASS] Total Photos          : actual=259   | expected=259  
+[PASS] No Face Photos        : actual=4     | expected=4    
+[PASS] Maybe Groups          : actual=28    | expected=28   
+--------------------------------------------------------------------------------
+Wall Time: 2027.690s
+No-face Photo IDs: ['3a6ecb102a1bcf95', 'ac41dd5a9fde7b36', 'cbc787ccd8664c53', 'fd6bc6fe47a406ab']
+Expected No-face Photo IDs: ['3a6ecb102a1bcf95', 'ac41dd5a9fde7b36', 'cbc787ccd8664c53', 'fd6bc6fe47a406ab']
+
+[SUCCESS] ALL BASELINE METRICS MATCH BIT-FOR-BIT EXACTLY!
+Server process stopped.
